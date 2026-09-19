@@ -7,10 +7,10 @@
 (() => {
   // biome-ignore lint/suspicious/noRedundantUseStrict: This bridge is loaded as a classic script by external sites.
   'use strict';
-  var script = document.currentScript;
-  var configuredOrigin = script && script.getAttribute('data-parent-origin');
+  const script = document.currentScript;
+  const configuredOrigin = script && script.getAttribute('data-parent-origin');
   if (!configuredOrigin || window.parent === window) return;
-  var parentOrigin;
+  let parentOrigin;
   try {
     const parsedOrigin = new URL(configuredOrigin);
     if (!/^https?:$/.test(parsedOrigin.protocol) || parsedOrigin.origin !== configuredOrigin)
@@ -20,9 +20,9 @@
     return;
   }
 
-  var protocol = 'forma:element-picker';
-  var activeChannel = null;
-  var session = null;
+  const protocol = 'forma:element-picker';
+  let activeChannel = null;
+  let session = null;
   function send(type, values) {
     window.parent.postMessage(
       Object.assign({ protocol: protocol, channel: activeChannel, type: type }, values || {}),
@@ -33,7 +33,7 @@
     if (window.CSS && window.CSS.escape) return window.CSS.escape(value);
     return Array.from(value)
       .map((character, index) => {
-        var code = character.charCodeAt(0);
+        const code = character.charCodeAt(0);
         if (code === 0) return '\uFFFD';
         if (
           (code >= 1 && code <= 31) ||
@@ -55,8 +55,8 @@
         return false;
       }
     }
-    var parts = [];
-    var current = element;
+    const parts = [];
+    let current = element;
     while (current) {
       const tag = current.tagName.toLowerCase();
       if (current.id && unique('#' + escapeSelector(current.id))) {
@@ -88,28 +88,28 @@
     return parts.join(' > ');
   }
   function attach() {
-    var root = document.createElement('div');
+    const root = document.createElement('div');
     root.setAttribute('data-forma-picker', 'overlay');
     root.setAttribute('aria-hidden', 'true');
     root.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:2147483647;';
     function outline(selected) {
-      var box = document.createElement('div');
+      const box = document.createElement('div');
       box.style.cssText =
         'position:fixed;display:none;pointer-events:none;border:2px ' +
         (selected ? 'solid' : 'dashed') +
         ' #42966c;box-sizing:border-box;border-radius:3px;background:rgba(77,157,112,.09);';
-      var label = document.createElement('span');
+      const label = document.createElement('span');
       label.style.cssText =
         'position:absolute;left:-2px;bottom:100%;max-width:330px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:5px 8px;background:#28724b;color:white;border-radius:4px 4px 0 0;font:11px/1.2 ui-monospace,monospace;';
       box.appendChild(label);
       root.appendChild(box);
       return { box: box, label: label };
     }
-    var hoveredOutline = outline(false);
-    var selectedOutline = outline(true);
+    const hoveredOutline = outline(false);
+    const selectedOutline = outline(true);
     document.documentElement.appendChild(root);
-    var hovered = null;
-    var selected = null;
+    let hovered = null;
+    let selected = null;
     function detail(element) {
       return {
         selector: selectorFor(element),
@@ -122,7 +122,7 @@
         highlight.box.style.display = 'none';
         return;
       }
-      var rect = element.getBoundingClientRect();
+      const rect = element.getBoundingClientRect();
       Object.assign(highlight.box.style, {
         display: 'block',
         left: rect.left + 'px',
@@ -191,7 +191,7 @@
   }
   window.addEventListener('message', (event) => {
     if (event.source !== window.parent || event.origin !== parentOrigin) return;
-    var data = event.data;
+    const data = event.data;
     if (
       !data ||
       data.protocol !== protocol ||
