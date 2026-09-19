@@ -1,0 +1,607 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Atelier — Objects for everyday living</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      html {
+        scroll-behavior: smooth;
+      }
+      body {
+        margin: 0;
+        background: #f8f6f1;
+        color: #353b32;
+        font-family: Arial, Helvetica, sans-serif;
+      }
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+      button,
+      input {
+        font: inherit;
+      }
+      button,
+      a {
+        cursor: pointer;
+      }
+      .announcement {
+        background: #e7e9df;
+        text-align: center;
+        padding: 9px 20px;
+        font-size: 9px;
+        letter-spacing: 1.15px;
+        color: #727969;
+      }
+      header {
+        height: 80px;
+        margin: 0 7%;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 1px solid #dfdfd5;
+      }
+      .logo {
+        font-family: Georgia, serif;
+        font-size: 29px;
+        font-weight: 500;
+        letter-spacing: -1px;
+      }
+      .logo span {
+        font-size: 11px;
+        vertical-align: top;
+        margin-left: 3px;
+      }
+      nav {
+        display: flex;
+        gap: 25px;
+        font-size: 10px;
+        color: #727668;
+      }
+      .nav-icons {
+        display: flex;
+        gap: 18px;
+        align-items: center;
+        color: #626b59;
+      }
+      .nav-icons svg {
+        width: 16px;
+        height: 16px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 1.3;
+      }
+      .hero {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 5%;
+        padding: 48px 7% 42px;
+        align-items: center;
+      }
+      .eyebrow {
+        font-size: 8px;
+        letter-spacing: 2px;
+        color: #909781;
+        text-transform: uppercase;
+        margin: 0 0 18px;
+      }
+      .hero h1 {
+        font:
+          46px/1.08 Georgia,
+          serif;
+        letter-spacing: -1.9px;
+        max-width: 400px;
+        margin: 0 0 22px;
+        font-weight: 400;
+      }
+      .hero h1 em {
+        font-weight: 400;
+        color: #777f66;
+      }
+      .hero p.description {
+        max-width: 300px;
+        font-size: 11px;
+        line-height: 1.9;
+        color: #939788;
+        margin: 0 0 27px;
+      }
+      .shop-button {
+        display: inline-flex;
+        align-items: center;
+        gap: 34px;
+        background: #697856;
+        color: #fff;
+        padding: 13px 18px;
+        font-size: 10px;
+        border: 0;
+        border-radius: 2px;
+      }
+      .shop-button svg {
+        width: 13px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 1.5;
+      }
+      .hero-art {
+        position: relative;
+        min-height: 325px;
+        background: #eae5da;
+        border-radius: 2px;
+        overflow: hidden;
+      }
+      .hero-art:before {
+        content: '';
+        position: absolute;
+        right: -40px;
+        top: 0;
+        width: 65%;
+        height: 100%;
+        background: #e3ddd0;
+        transform: skew(-20deg);
+      }
+      .art-caption {
+        position: absolute;
+        bottom: 16px;
+        left: 20px;
+        right: 20px;
+        display: flex;
+        justify-content: space-between;
+        font-size: 8px;
+        color: #92907c;
+        letter-spacing: 0.3px;
+      }
+      .hero-art svg {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+      }
+      .values {
+        display: flex;
+        align-items: center;
+        justify-content: space-around;
+        margin: 0 7%;
+        padding: 20px 0;
+        border-top: 1px solid #dedfd4;
+        border-bottom: 1px solid #dedfd4;
+        gap: 20px;
+        font-size: 9px;
+        letter-spacing: 0.1px;
+        color: #8e9682;
+      }
+      .values span {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .values svg {
+        width: 14px;
+        height: 14px;
+        fill: none;
+        stroke: #839174;
+        stroke-width: 1.3;
+      }
+      .collection {
+        margin: 36px 7%;
+      }
+      .section-heading {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        margin-bottom: 20px;
+      }
+      .section-heading h2 {
+        font:
+          25px Georgia,
+          serif;
+        letter-spacing: -0.4px;
+        margin: 0;
+      }
+      .section-heading a {
+        font-size: 9px;
+        color: #8d957e;
+        text-decoration: underline;
+        text-underline-offset: 4px;
+      }
+      .products {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 18px;
+      }
+      .product-image {
+        height: 180px;
+        position: relative;
+        display: grid;
+        place-items: center;
+        background: #eae7de;
+        overflow: hidden;
+      }
+      .product-image svg {
+        width: 75%;
+        height: 85%;
+      }
+      .product:nth-child(2) .product-image {
+        background: #e5e8df;
+      }
+      .product:nth-child(3) .product-image {
+        background: #ece4d8;
+      }
+      .product-badge {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        font-size: 7px;
+        background: #faf9f3;
+        padding: 5px 7px;
+        color: #8a917d;
+      }
+      .product-info {
+        display: flex;
+        justify-content: space-between;
+        align-items: start;
+        padding-top: 11px;
+      }
+      .product-info h3 {
+        font-size: 10px;
+        font-weight: 400;
+        margin: 0 0 5px;
+      }
+      .product-info p {
+        margin: 0;
+        font-size: 8px;
+        color: #9a9e91;
+      }
+      .product-info span {
+        font-size: 9px;
+        color: #828976;
+      }
+      #newsletter {
+        background: #e9ecdf;
+        margin-top: 38px;
+        padding: 36px 7%;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 30px;
+      }
+      #newsletter h2 {
+        font:
+          25px Georgia,
+          serif;
+        letter-spacing: -0.3px;
+        margin: 0 0 9px;
+      }
+      #newsletter p {
+        font-size: 10px;
+        color: #8a937d;
+        margin: 0;
+      }
+      #newsletter form {
+        display: flex;
+        border-bottom: 1px solid #a6af97;
+        padding: 9px 0;
+        gap: 30px;
+        min-width: 260px;
+      }
+      #newsletter input {
+        background: none;
+        border: 0;
+        min-width: 0;
+        flex: 1;
+        font-size: 10px;
+        color: #647052;
+        outline: none;
+      }
+      #newsletter input::placeholder {
+        color: #929d81;
+      }
+      #newsletter button {
+        background: none;
+        border: 0;
+        color: #72825e;
+        font-size: 15px;
+      }
+      footer {
+        margin: 0 7%;
+        padding: 23px 0;
+        display: flex;
+        justify-content: space-between;
+        font-size: 8px;
+        color: #9ba08f;
+      }
+      footer .logo {
+        font-size: 18px;
+        color: #7c856e;
+      }
+      @media (max-width: 600px) {
+        header {
+          height: 62px;
+          margin: 0 6%;
+        }
+        nav {
+          gap: 12px;
+          font-size: 9px;
+        }
+        .nav-icons {
+          display: none;
+        }
+        .hero {
+          padding: 30px 6%;
+          gap: 20px;
+        }
+        .hero h1 {
+          font-size: 31px;
+        }
+        .hero p.description {
+          font-size: 10px;
+        }
+        .hero-art {
+          min-height: 270px;
+        }
+        .eyebrow {
+          font-size: 7px;
+          letter-spacing: 1px;
+        }
+        .values {
+          font-size: 7px;
+          gap: 8px;
+        }
+        .values svg {
+          display: none;
+        }
+        .products {
+          gap: 10px;
+        }
+        .product-image {
+          height: 140px;
+        }
+        .product-info {
+          gap: 8px;
+        }
+        .product-info h3 {
+          font-size: 9px;
+        }
+        .collection {
+          margin: 28px 6%;
+        }
+        #newsletter {
+          padding: 25px 6%;
+          flex-direction: column;
+          align-items: stretch;
+          gap: 20px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="announcement">
+      Thoughtfully made. Meant to stay. &nbsp; Complimentary shipping on orders over €75.
+    </div>
+    <header>
+      <a class="logo" href="#" aria-label="Atelier home">atelier<span>®</span></a>
+      <nav aria-label="Main navigation">
+        <a href="#collection">Shop all</a><a href="#collection">New arrivals</a
+        ><a href="#newsletter">Our story</a>
+      </nav>
+      <div class="nav-icons">
+        <svg aria-label="Search" viewBox="0 0 20 20">
+          <circle cx="8" cy="8" r="5.5" />
+          <path d="m12 12 5 5" /></svg
+        ><svg aria-label="Shopping bag" viewBox="0 0 20 20">
+          <path d="M4 6h12l1 12H3L4 6Z M7 7V5a3 3 0 0 1 6 0v2" />
+        </svg>
+      </div>
+    </header>
+    <main>
+      <section class="hero" aria-label="Spring collection">
+        <div>
+          <p class="eyebrow">A little slower. A little simpler.</p>
+          <h1>Good things.<br />For <em>everyday</em><br />living.</h1>
+          <p class="description">
+            Considered objects for the moments in between. Natural materials, honest craft, and a
+            quieter kind of beautiful.
+          </p>
+          <button id="shop-now" class="shop-button" type="button">
+            Explore the collection <svg viewBox="0 0 18 18"><path d="M2 9h13m-5-5 5 5-5 5" /></svg>
+          </button>
+        </div>
+        <div
+          class="hero-art"
+          role="img"
+          aria-label="Sculptural ceramic vase and cup in soft natural light"
+        >
+          <svg viewBox="0 0 400 380" aria-hidden="true">
+            <defs>
+              <linearGradient id="vase" x1="0" x2="1">
+                <stop stop-color="#a8a490" />
+                <stop offset=".4" stop-color="#d0cbb5" />
+                <stop offset=".72" stop-color="#c5bea6" />
+                <stop offset="1" stop-color="#a39c83" />
+              </linearGradient>
+              <linearGradient id="cup" x1="0" x2="1">
+                <stop stop-color="#b89e83" />
+                <stop offset=".5" stop-color="#dec6a6" />
+                <stop offset="1" stop-color="#c4a886" />
+              </linearGradient>
+              <filter id="blur"><feGaussianBlur stdDeviation="9" /></filter>
+            </defs>
+            <ellipse
+              cx="216"
+              cy="307"
+              rx="128"
+              ry="16"
+              fill="#ada589"
+              opacity=".28"
+              filter="url(#blur)"
+            />
+            <path
+              d="M132 123c0-11 8-17 20-17h54c11 0 19 7 19 17l-5 39c3 27 34 49 34 91 0 28-19 50-69 50s-70-22-70-50c0-43 29-64 31-91l-14-39Z"
+              fill="url(#vase)"
+            />
+            <ellipse cx="178" cy="111" rx="38" ry="9" fill="#ada791" />
+            <ellipse cx="178" cy="111" rx="27" ry="5" fill="#817f6a" />
+            <path
+              d="M173 111c12-34 24-62 46-87M175 98c-5-29-12-44-27-60M199 53c21 4 32-1 43-10"
+              stroke="#778065"
+              stroke-width="2.4"
+              fill="none"
+            />
+            <path
+              d="M188 80c-2-21-12-31-21-34-3 17 7 32 21 34M204 49c2-18 12-29 21-33 1 18-7 30-21 33M160 58c-19-4-29-16-30-30 19 3 28 14 30 30M219 51c14-13 29-13 40-6-12 13-27 15-40 6"
+              fill="#879176"
+            />
+            <path
+              d="M279 238h13c26 0 28 43 3 43h-11"
+              fill="none"
+              stroke="#c7ac8d"
+              stroke-width="12"
+            />
+            <path d="M240 226h49l-4 61c-1 13-10 19-22 19s-22-7-23-20l-4-54Z" fill="url(#cup)" />
+            <ellipse cx="262" cy="228" rx="27" ry="8" fill="#dcc5a8" />
+            <ellipse cx="262" cy="228" rx="20" ry="4" fill="#a48d73" />
+          </svg>
+          <div class="art-caption"><span>THE EVERYDAY COLLECTION</span><span>01 / 03</span></div>
+        </div>
+      </section>
+      <div class="values">
+        <span
+          ><svg viewBox="0 0 18 18"><path d="M4 15C0 6 8 2 15 2c0 9-4 14-11 13Zm0 0 7-8" /></svg>
+          Responsibly sourced</span
+        ><span
+          ><svg viewBox="0 0 18 18">
+            <path d="m9 1 2.5 5 5.5 1-4 4 1 6-5-3-5 3 1-6-4-4 5.5-1Z" />
+          </svg>
+          Made to be kept</span
+        ><span
+          ><svg viewBox="0 0 18 18">
+            <path d="M2 5h10v9H2zM12 8h3l2 3v3h-5" />
+            <circle cx="5" cy="15" r="1.5" />
+            <circle cx="14" cy="15" r="1.5" />
+          </svg>
+          A thoughtful delivery</span
+        >
+      </div>
+      <section id="collection" class="collection">
+        <div class="section-heading">
+          <h2>Objects with a little soul.</h2>
+          <a href="#newsletter">Discover all objects ↗</a>
+        </div>
+        <div class="products">
+          <article class="product" data-testid="stoneware-vase">
+            <div class="product-image">
+              <span class="product-badge">THE EVERYDAY EDIT</span
+              ><svg viewBox="0 0 180 180" aria-label="Stoneware vase">
+                <ellipse cx="90" cy="158" rx="43" ry="7" fill="#b5ad992e" />
+                <path
+                  d="M73 28h34l-4 36c0 13 24 34 24 57 0 26-13 35-37 35s-38-10-38-35c0-23 24-44 24-57Z"
+                  fill="#bcb9a3"
+                />
+                <ellipse cx="90" cy="28" rx="17" ry="5" fill="#a09f88" />
+                <path
+                  d="M64 121c-1-21 23-45 21-83"
+                  stroke="#d2cfbc"
+                  stroke-width="9"
+                  opacity=".4"
+                  fill="none"
+                />
+              </svg>
+            </div>
+            <div class="product-info">
+              <div>
+                <h3>The everyday vase</h3>
+                <p>Stoneware · Sand</p>
+              </div>
+              <span>€38</span>
+            </div>
+          </article>
+          <article class="product" data-testid="linen-throw">
+            <div class="product-image">
+              <svg viewBox="0 0 180 180" aria-label="Linen throw">
+                <path d="m31 53 108-12 19 94-108 16Z" fill="#abb39a" />
+                <path d="m31 53 108-12 4 20L35 75Z" fill="#c1c7b0" />
+                <path
+                  d="m36 80 108-12m-104 28 108-12M43 112l108-12M47 128l108-12"
+                  stroke="#ccd1c0"
+                  stroke-width="1"
+                />
+                <path
+                  d="m53 150-2 9m11-10-2 9m11-10-2 9m11-10-2 9m11-10-2 9m11-10-2 9m11-10-2 9m11-10-2 9m11-10-2 9m11-10-2 9"
+                  stroke="#abb39a"
+                  stroke-width="2"
+                />
+              </svg>
+            </div>
+            <div class="product-info">
+              <div>
+                <h3>Soft mornings throw</h3>
+                <p>Belgian linen · Sage</p>
+              </div>
+              <span>€89</span>
+            </div>
+          </article>
+          <article class="product" data-testid="ceramic-cup">
+            <div class="product-image">
+              <svg viewBox="0 0 180 180" aria-label="Ceramic cup">
+                <ellipse cx="87" cy="150" rx="49" ry="7" fill="#a58e6b21" />
+                <path
+                  d="M120 65h11c28 0 28 49 3 49h-10"
+                  fill="none"
+                  stroke="#b79d7d"
+                  stroke-width="12"
+                />
+                <path d="M47 55h79l-5 76c-1 14-15 20-35 20s-32-9-33-23Z" fill="#cfb999" />
+                <path
+                  d="m58 66 4 62c1 10 8 13 16 13"
+                  stroke="#dfccb2"
+                  stroke-width="9"
+                  fill="none"
+                  opacity=".45"
+                />
+                <ellipse cx="87" cy="56" rx="40" ry="12" fill="#dfcab0" />
+                <ellipse cx="87" cy="56" rx="31" ry="7" fill="#ae9373" />
+              </svg>
+            </div>
+            <div class="product-info">
+              <div>
+                <h3>A moment to pause</h3>
+                <p>Ceramic cup · Oat</p>
+              </div>
+              <span>€24</span>
+            </div>
+          </article>
+        </div>
+      </section>
+      <section id="newsletter">
+        <div>
+          <h2>A quieter kind of inbox.</h2>
+          <p>New objects, slow stories, and things we think you’ll love.</p>
+        </div>
+        <form>
+          <label hidden for="email">Email address</label
+          ><input id="email" type="email" placeholder="Your email address" required /><button
+            type="submit"
+            aria-label="Subscribe to the Atelier newsletter"
+          >
+            →
+          </button>
+        </form>
+      </section>
+    </main>
+    <footer>
+      <span class="logo">atelier</span
+      ><span>Good things, thoughtfully made. &nbsp; © 2026 Atelier</span>
+    </footer>
+    <script>
+      document.getElementById('shop-now').addEventListener('click', function () {
+        document.getElementById('collection').scrollIntoView({ behavior: 'smooth' });
+      });
+      document.querySelector('#newsletter form').addEventListener('submit', function (event) {
+        event.preventDefault();
+        this.innerHTML = '<p>Thank you. Make a little room for good things.</p>';
+      });
+    </script>
+  </body>
+</html>
