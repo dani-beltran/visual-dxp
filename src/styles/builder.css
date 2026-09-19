@@ -547,6 +547,7 @@
 .dxp-canvas {
   flex: 1;
   min-width: 0;
+  container-type: inline-size;
   position: relative;
   background: #f8faf9;
 }
@@ -567,12 +568,26 @@
 .dxp-builder .react-flow__panel.top.right {
   margin: 26px 28px;
 }
-.dxp-builder .react-flow__panel.dxp-node-library {
-  bottom: 78px;
+.dxp-builder .react-flow__panel.dxp-canvas-dock {
+  right: 28px;
+  bottom: 23px;
+  left: 28px;
   margin: 0;
-  transform: translateX(-50%);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  pointer-events: none;
+}
+.dxp-canvas-dock > * {
+  pointer-events: auto;
+}
+.dxp-node-library {
   width: max-content;
-  max-width: calc(100% - 32px);
+  max-width: 100%;
+  margin-inline: auto;
+  flex-shrink: 0;
   padding: 8px;
   display: flex;
   flex-wrap: wrap;
@@ -791,11 +806,9 @@
 .dxp-builder .react-flow__edge-text {
   font-family: 'DM Sans', sans-serif;
 }
-.dxp-builder .react-flow__panel.bottom.left {
-  margin: 23px 28px;
-}
 .dxp-canvas-controls {
   display: flex;
+  flex-shrink: 0;
   align-items: center;
   background: white;
   border: 1px solid #e4eae5;
@@ -840,6 +853,11 @@
   gap: 6px;
   font-size: 9px;
   color: #a9b4ab;
+}
+@container (max-width: 800px) {
+  .dxp-canvas-tip {
+    display: none;
+  }
 }
 .dxp-builder .react-flow__minimap {
   bottom: 42px !important;
@@ -1428,9 +1446,8 @@
   }
 }
 @media (min-width: 701px) and (max-width: 1150px) {
-  .dxp-work-area:has(> .dxp-inspector) .react-flow__panel.dxp-node-library {
-    left: calc((100% - 310px) / 2);
-    max-width: calc(100% - 342px);
+  .dxp-work-area:has(> .dxp-inspector) .react-flow__panel.dxp-canvas-dock {
+    right: 338px;
   }
 }
 @media (max-width: 800px) {
@@ -1619,8 +1636,10 @@
   .dxp-view-tabs {
     gap: 13px;
   }
-  .dxp-builder .react-flow__panel.bottom.left {
-    margin-left: 15px;
+  .dxp-builder .react-flow__panel.dxp-canvas-dock {
+    right: 15px;
+    left: 15px;
+    margin: 0;
   }
 }
 

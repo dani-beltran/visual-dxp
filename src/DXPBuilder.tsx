@@ -570,9 +570,9 @@ function Builder({
               minZoom={0.25}
               maxZoom={1.8}
               deleteKeyCode={['Backspace', 'Delete']}
+              proOptions={{ hideAttribution: true }}
             >
               <Background variant={BackgroundVariant.Dots} gap={20} size={1.1} color="#d8e0dc" />
-              <NodeLibrary onAdd={add} />
               <Panel position="top-left" className="dxp-canvas-heading">
                 <div className="dxp-canvas-kicker">
                   <span /> YOUR EXPERIENCE, CONNECTED
@@ -601,33 +601,36 @@ function Builder({
                   pannable
                 />
               )}
-              <Panel position="bottom-left" className="dxp-canvas-controls">
-                <button onClick={() => void flow.zoomOut({ duration: 180 })} title="Zoom out">
-                  <ZoomOut size={17} />
-                </button>
-                <span>{zoom}%</span>
-                <button onClick={() => void flow.zoomIn({ duration: 180 })} title="Zoom in">
-                  <ZoomIn size={17} />
-                </button>
-                <i />
-                <button
-                  onClick={() => void flow.fitView({ padding: 0.18, duration: 300 })}
-                  title="Fit all nodes"
-                >
-                  <Maximize size={16} />
-                </button>
-                <button
-                  className={showMinimap ? 'active' : ''}
-                  onClick={() => setShowMinimap(!showMinimap)}
-                  title="Toggle minimap"
-                >
-                  <Layers2 size={16} />
-                </button>
-              </Panel>
-              <Panel position="bottom-right" className="dxp-canvas-tip">
-                <span>
-                  <MousePointer2 size={12} /> Click a step to make it yours
-                </span>
+              <Panel position="bottom-left" className="dxp-canvas-dock nodrag nopan nowheel">
+                <div className="dxp-canvas-controls">
+                  <button onClick={() => void flow.zoomOut({ duration: 180 })} title="Zoom out">
+                    <ZoomOut size={17} />
+                  </button>
+                  <span>{zoom}%</span>
+                  <button onClick={() => void flow.zoomIn({ duration: 180 })} title="Zoom in">
+                    <ZoomIn size={17} />
+                  </button>
+                  <i />
+                  <button
+                    onClick={() => void flow.fitView({ padding: 0.18, duration: 300 })}
+                    title="Fit all nodes"
+                  >
+                    <Maximize size={16} />
+                  </button>
+                  <button
+                    className={showMinimap ? 'active' : ''}
+                    onClick={() => setShowMinimap(!showMinimap)}
+                    title="Toggle minimap"
+                  >
+                    <Layers2 size={16} />
+                  </button>
+                </div>
+                <NodeLibrary onAdd={add} />
+                <div className="dxp-canvas-tip">
+                  <span>
+                    <MousePointer2 size={12} /> Click a step to make it yours
+                  </span>
+                </div>
               </Panel>
               {workflow.nodes.length === 0 && (
                 <Panel position="top-center" className="dxp-empty-canvas">

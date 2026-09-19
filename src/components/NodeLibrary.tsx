@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { Panel } from '@xyflow/react';
 import { catalog } from '../lib/catalog';
 import type { NodeKind } from '../lib/types';
 
@@ -7,8 +6,7 @@ export function NodeLibrary({ onAdd }: { onAdd: (kind: NodeKind) => void }) {
   const [activeTooltip, setActiveTooltip] = useState<NodeKind | null>(null);
 
   return (
-    <Panel
-      position="bottom-center"
+    <div
       className="dxp-node-library nodrag nopan nowheel"
       role="group"
       aria-label="Node library"
@@ -48,6 +46,6 @@ export function NodeLibrary({ onAdd }: { onAdd: (kind: NodeKind) => void }) {
           )}
         </button>
       ))}
-    </Panel>
+    </div>
   );
 }
