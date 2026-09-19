@@ -14,9 +14,18 @@ npm run dev
 Open http://localhost:5173. The included Atelier demo website supports the element picker and live workflow testing without additional setup. The demo saves changes in local browser storage.
 
 ```sh
-npm test       # Runtime, export, picker bridge, and import boundary tests
-npm run build # Typecheck, demo-dist/, and reusable dist/ library with declarations
+npm test             # Runtime, export, picker bridge, and import boundary tests
+npm run build        # Typecheck, demo-dist/, and reusable dist/ library with declarations
+npm run lint         # Check Biome lint rules
+npm run lint:fix     # Apply safe lint fixes
+npm run format       # Format supported files with Biome
+npm run format:check # Check formatting without changing files
+npm run check        # Check lint rules, formatting, and import organization
+npm run check:fix    # Apply safe lint fixes, formatting, and import organization
 ```
+
+[Biome](https://biomejs.dev/) handles linting and formatting, configured in `biome.json`.
+Generated output, dependencies, and `package-lock.json` are excluded.
 
 ## Use in another React project
 
