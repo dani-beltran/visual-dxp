@@ -7,6 +7,7 @@ import {
   GitFork,
   Globe2,
   Info,
+  Maximize2,
   MousePointer2,
   MousePointerClick,
   PanelTop,
@@ -27,6 +28,7 @@ interface NodeInspectorProps {
   onPickElement: () => void;
   onDelete: () => void;
   onDuplicate: () => void;
+  onPreviewContent: () => void;
 }
 
 const details = {
@@ -154,6 +156,7 @@ export function NodeInspector({
   onPickElement,
   onDelete,
   onDuplicate,
+  onPreviewContent,
 }: NodeInspectorProps) {
   const prefix = useId();
   const config = node.data.config;
@@ -552,19 +555,31 @@ export function NodeInspector({
                 <span>px</span>
               </div>
             </Field>
-            {(config.contentType ?? 'html') === 'html' && config.content && (
-              <div className="dxp-inspector-preview">
-                <div>
-                  <span>CONTENT PREVIEW</span>
-                  <span className="dxp-inspector-preview-dot" />
-                </div>
+            <div className="dxp-inspector-preview">
+              <div>
+                <span>CONTENT PREVIEW</span>
+                <button
+                  type="button"
+                  className="dxp-inspector-preview-expand"
+                  onClick={onPreviewContent}
+                  aria-label="Open fullscreen content preview"
+                  title="Preview on the demo website"
+                >
+                  <Maximize2 size={12} /> Fullscreen
+                </button>
+              </div>
+              {(config.contentType ?? 'html') === 'html' && config.content ? (
                 <iframe
                   title="Popover HTML preview"
                   sandbox=""
                   srcDoc={`<!doctype html><html><head><meta name="viewport" content="width=device-width, initial-scale=1"><style>body{font-family:system-ui,sans-serif;font-size:13px;color:#243c31;padding:8px;overflow-wrap:anywhere}h1,h2,h3{font-size:17px;margin:8px 0}p{line-height:1.6}img{max-width:100%}button{font:inherit}</style></head><body>${config.content}</body></html>`}
                 />
-              </div>
-            )}
+              ) : (
+                <p className="dxp-inspector-preview-hint">
+                  Preview your popover in position on the demo website.
+                </p>
+              )}
+            </div>
           </>
         )}
       </div>

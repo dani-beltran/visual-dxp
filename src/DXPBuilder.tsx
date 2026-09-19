@@ -47,6 +47,7 @@ import { CanvasHelp } from './components/CanvasHelp';
 import { ElementPicker } from './components/ElementPicker';
 import { NodeInspector } from './components/NodeInspector';
 import { NodeLibrary } from './components/NodeLibrary';
+import { PopoverPreview } from './components/PopoverPreview';
 import { Preview } from './components/Preview';
 import { WorkflowCard } from './components/WorkflowCard';
 import {
@@ -128,7 +129,9 @@ function Builder({
   const [canvasAssistant, setCanvasAssistant] = useState<'chat' | 'help' | null>(null);
   const toggleChat = useCallback((open: boolean) => setCanvasAssistant(open ? 'chat' : null), []);
   const toggleHelp = useCallback((open: boolean) => setCanvasAssistant(open ? 'help' : null), []);
-  const [modal, setModal] = useState<'export' | 'preview' | 'help' | 'website' | null>(null);
+  const [modal, setModal] = useState<
+    'export' | 'preview' | 'popover-preview' | 'help' | 'website' | null
+  >(null);
   const [picking, setPicking] = useState(false);
   const [exportTab, setExportTab] = useState<'javascript' | 'json'>('javascript');
   const [toast, setToast] = useState('');
@@ -138,7 +141,7 @@ function Builder({
   const [zoom, setZoom] = useState(100);
   const [websiteDraft, setWebsiteDraft] = useState(workflow.websiteUrl);
   const [websiteError, setWebsiteError] = useState('');
-  const modalRef = useDialogFocus(!!modal && modal !== 'preview');
+  const modalRef = useDialogFocus(!!modal && modal !== 'preview' && modal !== 'popover-preview');
   const changeCallback = useRef(onChange);
   changeCallback.current = onChange;
   const upload = useRef<HTMLInputElement>(null);
@@ -729,6 +732,7 @@ function Builder({
               onPickElement={() => setPicking(true)}
               onDelete={removeNode}
               onDuplicate={duplicate}
+              onPreviewContent={() => setModal('popover-preview')}
             />
           )}
         </div>
@@ -781,7 +785,10 @@ function Builder({
           onLog={(log) => setStatuses((s) => ({ ...s, [log.nodeId]: log.status }))}
         />
       )}
-      {modal && modal !== 'preview' && (
+      {modal === 'popover-preview' && selected?.data.kind === 'popover' && (
+        <PopoverPreview node={selected} onClose={() => setModal(null)} />
+      )}
+      {modal && modal !== 'preview' && modal !== 'popover-preview' && (
         // biome-ignore lint/a11y/useKeyWithClickEvents: The close button and Escape key dismiss this dialog for keyboard users.
         // biome-ignore lint/a11y/noStaticElementInteractions: Only the backdrop uses clicks to dismiss the dialog.
         <div className="dxp-modal-backdrop" onClick={() => setModal(null)}>

@@ -357,11 +357,26 @@
   font-weight: 600;
   letter-spacing: 1px;
 }
-.dxp-inspector-preview-dot {
-  height: 5px;
-  width: 5px;
-  border-radius: 50%;
-  background: #91ac74;
+.dxp-inspector-preview-expand {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 6px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: #627f51;
+  font-size: 10px;
+  letter-spacing: 0;
+}
+.dxp-inspector-preview-expand:hover {
+  background: #e8eedf;
+}
+.dxp-inspector-preview-hint {
+  padding: 15px 12px;
+  color: #919b89;
+  font-size: 11px;
+  line-height: 1.6;
 }
 .dxp-inspector-preview iframe {
   display: block;
