@@ -73,7 +73,7 @@ const configStrings = [
   'position',
 ] as const;
 const configNumbers = ['duration', 'iterations', 'width'] as const;
-const own = (value: object, key: string) => Object.prototype.hasOwnProperty.call(value, key);
+const own = (value: object, key: string) => Object.hasOwn(value, key);
 
 function record(value: unknown, label: string): Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value))
@@ -91,6 +91,7 @@ function text(value: unknown, label: string, max: number, allowEmpty = false): s
 
 function id(value: unknown): string {
   const result = text(value, 'An ID', 200);
+  // biome-ignore lint/suspicious/noControlCharactersInRegex: IDs must reject control characters.
   if (result.trim() !== result || /[\u0000-\u001f\u007f]/.test(result))
     throw new Error('IDs cannot contain surrounding whitespace or control characters.');
   return result;

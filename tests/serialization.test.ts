@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { isWorkflow } from '../src/lib/serialization';
 import type { Workflow } from '../src/lib/types';
+
 const valid: Workflow = {
   version: 1,
   name: 'Journey',

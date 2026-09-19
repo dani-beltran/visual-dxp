@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { CanvasChat, type CanvasChatProps } from '../src/components/CanvasChat';
 import { DXPBuilder } from '../src/DXPBuilder';
 import type { Workflow } from '../src/lib/types';
@@ -185,8 +186,8 @@ describe('canvas AI chat', () => {
     try {
       await pressKey('Delete');
       expect(canvasShortcut).not.toHaveBeenCalled();
-      const escape = await pressKey('Escape');
-      expect(escape.defaultPrevented).toBe(true);
+      const escapeEvent = await pressKey('Escape');
+      expect(escapeEvent.defaultPrevented).toBe(true);
       expect(host.querySelector('[role="dialog"]')).toBeNull();
       expect(document.activeElement).toBe(button('AI chat'));
       expect(button('AI chat').getAttribute('aria-expanded')).toBe('false');

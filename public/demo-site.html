@@ -91,7 +91,7 @@
       }
       .hero h1 {
         font:
-          46px/1.08 Georgia,
+          46px / 1.08 Georgia,
           serif;
         letter-spacing: -1.9px;
         max-width: 400px;
@@ -376,12 +376,12 @@
       }
     </style>
   </head>
-  <body>
+  <body id="top">
     <div class="announcement">
       Thoughtfully made. Meant to stay. &nbsp; Complimentary shipping on orders over €75.
     </div>
     <header>
-      <a class="logo" href="#" aria-label="Atelier home">atelier<span>®</span></a>
+      <a class="logo" href="#top" aria-label="Atelier home">atelier<span>®</span></a>
       <nav aria-label="Main navigation">
         <a href="#collection">Shop all</a><a href="#collection">New arrivals</a
         ><a href="#newsletter">Our story</a>
@@ -389,8 +389,8 @@
       <div class="nav-icons">
         <svg aria-label="Search" viewBox="0 0 20 20">
           <circle cx="8" cy="8" r="5.5" />
-          <path d="m12 12 5 5" /></svg
-        ><svg aria-label="Shopping bag" viewBox="0 0 20 20">
+          <path d="m12 12 5 5" />
+        </svg><svg aria-label="Shopping bag" viewBox="0 0 20 20">
           <path d="M4 6h12l1 12H3L4 6Z M7 7V5a3 3 0 0 1 6 0v2" />
         </svg>
       </div>
@@ -405,7 +405,8 @@
             quieter kind of beautiful.
           </p>
           <button id="shop-now" class="shop-button" type="button">
-            Explore the collection <svg viewBox="0 0 18 18"><path d="M2 9h13m-5-5 5 5-5 5" /></svg>
+            Explore the collection
+            <svg viewBox="0 0 18 18" aria-hidden="true"><path d="M2 9h13m-5-5 5 5-5 5" /></svg>
           </button>
         </div>
         <div
@@ -468,15 +469,17 @@
       </section>
       <div class="values">
         <span
-          ><svg viewBox="0 0 18 18"><path d="M4 15C0 6 8 2 15 2c0 9-4 14-11 13Zm0 0 7-8" /></svg>
+          ><svg viewBox="0 0 18 18" aria-hidden="true">
+            <path d="M4 15C0 6 8 2 15 2c0 9-4 14-11 13Zm0 0 7-8" />
+          </svg>
           Responsibly sourced</span
         ><span
-          ><svg viewBox="0 0 18 18">
+          ><svg viewBox="0 0 18 18" aria-hidden="true">
             <path d="m9 1 2.5 5 5.5 1-4 4 1 6-5-3-5 3 1-6-4-4 5.5-1Z" />
           </svg>
           Made to be kept</span
         ><span
-          ><svg viewBox="0 0 18 18">
+          ><svg viewBox="0 0 18 18" aria-hidden="true">
             <path d="M2 5h10v9H2zM12 8h3l2 3v3h-5" />
             <circle cx="5" cy="15" r="1.5" />
             <circle cx="14" cy="15" r="1.5" />
@@ -580,13 +583,9 @@
           <p>New objects, slow stories, and things we think you’ll love.</p>
         </div>
         <form>
-          <label hidden for="email">Email address</label
-          ><input id="email" type="email" placeholder="Your email address" required /><button
-            type="submit"
-            aria-label="Subscribe to the Atelier newsletter"
-          >
-            →
-          </button>
+          <label hidden for="email">Email address</label>
+          <input id="email" type="email" placeholder="Your email address" required />
+          <button type="submit" aria-label="Subscribe to the Atelier newsletter">→</button>
         </form>
       </section>
     </main>
@@ -595,7 +594,7 @@
       ><span>Good things, thoughtfully made. &nbsp; © 2026 Atelier</span>
     </footer>
     <script>
-      document.getElementById('shop-now').addEventListener('click', function () {
+      document.getElementById('shop-now').addEventListener('click', () => {
         document.getElementById('collection').scrollIntoView({ behavior: 'smooth' });
       });
       document.querySelector('#newsletter form').addEventListener('submit', function (event) {

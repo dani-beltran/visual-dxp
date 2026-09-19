@@ -406,9 +406,13 @@ export function createRuntime(workflow: Workflow, options: RuntimeOptions = {}):
     if (destroyed) return;
     destroyed = true;
     controller.abort();
-    cleanups.forEach((cleanup) => cleanup());
+    cleanups.forEach((cleanup) => {
+      cleanup();
+    });
     cleanups.clear();
-    popovers.forEach((dispose) => dispose());
+    popovers.forEach((dispose) => {
+      dispose();
+    });
     popovers.clear();
     options.signal?.removeEventListener('abort', destroy);
   }

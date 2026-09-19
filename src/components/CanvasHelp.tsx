@@ -1,5 +1,5 @@
-import { useId, useLayoutEffect, useRef, useState } from 'react';
 import { CircleHelp, Hand, MousePointer2, Plus, Workflow, X } from 'lucide-react';
+import { useId, useLayoutEffect, useRef, useState } from 'react';
 
 const instructions = [
   {
@@ -27,7 +27,10 @@ const instructions = [
 export function CanvasHelp({
   open: controlledOpen,
   onOpenChange,
-}: { open?: boolean; onOpenChange?: (open: boolean) => void } = {}) {
+}: {
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+} = {}) {
   const [internalOpen, setInternalOpen] = useState(false);
   const open = controlledOpen ?? internalOpen;
   const setOpen = onOpenChange ?? setInternalOpen;
@@ -86,6 +89,7 @@ export function CanvasHelp({
   }, [open, setOpen]);
 
   return (
+    // biome-ignore lint/a11y/noStaticElementInteractions: Bubbling blur closes the help panel when focus leaves its controls.
     <div
       className="dxp-canvas-tip"
       ref={root}
@@ -126,10 +130,10 @@ export function CanvasHelp({
               <X size={16} aria-hidden="true" />
             </button>
           </div>
-          <div
+          <section
             className="dxp-canvas-help-content"
+            // biome-ignore lint/a11y/noNoninteractiveTabindex: The scrollable instructions must be keyboard-focusable for scrolling.
             tabIndex={0}
-            role="region"
             aria-label="Canvas instructions"
           >
             {instructions.map(({ icon: Icon, title, text }) => (
@@ -161,7 +165,7 @@ export function CanvasHelp({
                 </dd>
               </div>
             </dl>
-          </div>
+          </section>
         </section>
       )}
     </div>

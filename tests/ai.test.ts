@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import type { AIChatRequest } from '../src/lib/ai';
 import {
   AI_LIMITS,
   applyWorkflowOperations,
@@ -7,7 +8,6 @@ import {
   requestAIChat,
   workflowFingerprint,
 } from '../src/lib/ai';
-import type { AIChatRequest } from '../src/lib/ai';
 import type { NodeKind, StepConfig, Workflow, WorkflowNode } from '../src/lib/types';
 
 function step(id: string, kind: NodeKind = 'delay', config: StepConfig = {}): WorkflowNode {

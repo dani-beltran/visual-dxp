@@ -1,4 +1,3 @@
-import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import {
   ArrowUp,
   Check,
@@ -9,6 +8,7 @@ import {
   Square,
   X,
 } from 'lucide-react';
+import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import type { AIChatMessage } from '../lib/ai';
 import '../styles/chat.css';
 
@@ -97,6 +97,7 @@ export function CanvasChat({
     };
   }, [open, configured]);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: Opening the panel and toggling its busy indicator change the transcript's scroll height.
   useEffect(() => {
     const element = transcript.current;
     if (element) element.scrollTop = messages.length || error ? element.scrollHeight : 0;
@@ -230,6 +231,7 @@ export function CanvasChat({
             role="log"
             aria-label="AI conversation"
             aria-live="polite"
+            // biome-ignore lint/a11y/noNoninteractiveTabindex: The scrollable transcript must be keyboard-focusable for scrolling.
             tabIndex={0}
           >
             {!messages.length && configured && (

@@ -1,18 +1,17 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import {
-  ReactFlow,
-  ReactFlowProvider,
+  addEdge,
+  applyEdgeChanges,
+  applyNodeChanges,
   Background,
   BackgroundVariant,
-  MiniMap,
-  Panel,
-  applyNodeChanges,
-  applyEdgeChanges,
-  addEdge,
-  useReactFlow,
   type Connection,
-  type NodeChange,
   type EdgeChange,
+  MiniMap,
+  type NodeChange,
+  Panel,
+  ReactFlow,
+  ReactFlowProvider,
+  useReactFlow,
 } from '@xyflow/react';
 import {
   ArrowDownToLine,
@@ -23,14 +22,17 @@ import {
   ChevronRight,
   CircleHelp,
   Code2,
+  Command,
   Copy,
   FileJson,
   Globe2,
   Layers2,
   Maximize,
   MousePointer2,
+  Play,
   Plus,
   Redo2,
+  RotateCcw,
   Sparkles,
   Undo2,
   Upload,
@@ -38,31 +40,30 @@ import {
   X,
   ZoomIn,
   ZoomOut,
-  Play,
-  RotateCcw,
-  Command,
 } from 'lucide-react';
-import { catalog, createNode, defaultWorkflow } from './lib/catalog';
-import { exportWorkflow, validateWorkflow } from './lib/export';
-import type { NodeKind, RunLog, StepData, Workflow, WorkflowNode } from './lib/types';
-import { WorkflowCard } from './components/WorkflowCard';
-import { NodeLibrary } from './components/NodeLibrary';
-import { CanvasHelp } from './components/CanvasHelp';
+import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CanvasChat } from './components/CanvasChat';
-import { NodeInspector } from './components/NodeInspector';
+import { CanvasHelp } from './components/CanvasHelp';
 import { ElementPicker } from './components/ElementPicker';
+import { NodeInspector } from './components/NodeInspector';
+import { NodeLibrary } from './components/NodeLibrary';
 import { Preview } from './components/Preview';
-import { isWorkflow } from './lib/serialization';
-import { useDialogFocus } from './lib/useDialogFocus';
+import { WorkflowCard } from './components/WorkflowCard';
 import {
+  type AIChatConfig,
+  type AIChatMessage,
   applyWorkflowOperations,
   requestAIChat,
   workflowFingerprint,
-  type AIChatConfig,
-  type AIChatMessage,
 } from './lib/ai';
+import { catalog, createNode, defaultWorkflow } from './lib/catalog';
+import { exportWorkflow, validateWorkflow } from './lib/export';
+import { isWorkflow } from './lib/serialization';
+import type { NodeKind, RunLog, StepData, Workflow, WorkflowNode } from './lib/types';
+import { useDialogFocus } from './lib/useDialogFocus';
 import '@xyflow/react/dist/style.css';
 import './styles/builder.css';
+
 const nodeTypes = { workflow: WorkflowCard };
 const edgeOptions = {
   type: 'smoothstep',
@@ -419,11 +420,10 @@ function Builder({
   return (
     <div className={`dxp-builder ${className}`} style={style}>
       <aside className="dxp-sidebar">
-        <a
+        <button
+          type="button"
           className="dxp-brand"
-          href="#"
-          onClick={(e) => {
-            e.preventDefault();
+          onClick={() => {
             void flow.fitView({ padding: 0.18, duration: 350 });
           }}
           aria-label="Forma home"
@@ -435,7 +435,7 @@ function Builder({
           </span>
           forma<span className="dxp-brand-period">.</span>
           <span className="dxp-brand-tag">DXP</span>
-        </a>
+        </button>
         <div className="dxp-workspace-label">
           <span className="dxp-workspace-icon">
             <Layers2 size={16} />
@@ -462,11 +462,11 @@ function Builder({
               Better experiences.
             </strong>
             <p>Connect your ideas. Bring your website to life.</p>
-            <button onClick={() => setModal('help')}>
+            <button type="button" onClick={() => setModal('help')}>
               A quick introduction <ArrowUpRight size={14} />
             </button>
           </div>
-          <button className="dxp-help-link" onClick={() => setModal('help')}>
+          <button type="button" className="dxp-help-link" onClick={() => setModal('help')}>
             <CircleHelp size={16} /> Help & resources <ArrowUpRight size={13} />
           </button>
           <div className="dxp-profile">
@@ -491,6 +491,7 @@ function Builder({
             <div className="dxp-header-right">
               <span className="dxp-local-indicator" /> Local workspace{' '}
               <button
+                type="button"
                 className="dxp-icon-button"
                 title="Help and keyboard shortcuts"
                 onClick={() => setModal('help')}
@@ -513,6 +514,7 @@ function Builder({
             </div>
             <div className="dxp-header-actions">
               <button
+                type="button"
                 className="dxp-button"
                 onClick={() => {
                   setStatuses({});
@@ -521,7 +523,11 @@ function Builder({
               >
                 <Play size={14} /> Test workflow
               </button>
-              <button className="dxp-button dxp-button-primary" onClick={() => setModal('export')}>
+              <button
+                type="button"
+                className="dxp-button dxp-button-primary"
+                onClick={() => setModal('export')}
+              >
                 <Code2 size={16} /> Export workflow <ArrowUpRight size={14} />
               </button>
             </div>
@@ -529,10 +535,11 @@ function Builder({
         </header>
         <div className="dxp-toolbar">
           <div className="dxp-view-tabs">
-            <button className="active" onClick={() => setModal(null)}>
+            <button type="button" className="active" onClick={() => setModal(null)}>
               <WorkflowIcon size={15} /> Canvas
             </button>
             <button
+              type="button"
               onClick={() => {
                 setExportTab('javascript');
                 setModal('export');
@@ -548,6 +555,7 @@ function Builder({
           </span>
           <div className="dxp-toolbar-spacer" />
           <button
+            type="button"
             className="dxp-website-button"
             aria-label="Change target website"
             onClick={() => {
@@ -566,6 +574,7 @@ function Builder({
           </button>
           <span className="dxp-toolbar-divider" />
           <button
+            type="button"
             className="dxp-icon-button"
             onClick={undo}
             disabled={!history.current.past.length}
@@ -574,6 +583,7 @@ function Builder({
             <Undo2 size={16} />
           </button>
           <button
+            type="button"
             className="dxp-icon-button"
             onClick={redo}
             disabled={!history.current.future.length}
@@ -583,6 +593,7 @@ function Builder({
           </button>
         </div>
         <div className="dxp-work-area">
+          {/* biome-ignore lint/a11y/noStaticElementInteractions: Dropping is an alternative to the keyboard-accessible node library buttons. */}
           <div
             className="dxp-canvas"
             ref={canvas}
@@ -626,6 +637,7 @@ function Builder({
               </Panel>
               <Panel position="top-right">
                 <button
+                  type="button"
                   className="dxp-import-button"
                   onClick={() => upload.current?.click()}
                   title="Import a workflow JSON file"
@@ -647,21 +659,31 @@ function Builder({
               )}
               <Panel position="bottom-left" className="dxp-canvas-dock nodrag nopan nowheel">
                 <div className="dxp-canvas-controls">
-                  <button onClick={() => void flow.zoomOut({ duration: 180 })} title="Zoom out">
+                  <button
+                    type="button"
+                    onClick={() => void flow.zoomOut({ duration: 180 })}
+                    title="Zoom out"
+                  >
                     <ZoomOut size={17} />
                   </button>
                   <span>{zoom}%</span>
-                  <button onClick={() => void flow.zoomIn({ duration: 180 })} title="Zoom in">
+                  <button
+                    type="button"
+                    onClick={() => void flow.zoomIn({ duration: 180 })}
+                    title="Zoom in"
+                  >
                     <ZoomIn size={17} />
                   </button>
                   <i />
                   <button
+                    type="button"
                     onClick={() => void flow.fitView({ padding: 0.18, duration: 300 })}
                     title="Fit all nodes"
                   >
                     <Maximize size={16} />
                   </button>
                   <button
+                    type="button"
                     className={showMinimap ? 'active' : ''}
                     onClick={() => setShowMinimap(!showMinimap)}
                     title="Toggle minimap"
@@ -688,7 +710,11 @@ function Builder({
                   </span>
                   <h2>Every experience starts somewhere.</h2>
                   <p>Add a trigger from the library to begin your journey.</p>
-                  <button className="dxp-button dxp-button-primary" onClick={() => add('trigger')}>
+                  <button
+                    type="button"
+                    className="dxp-button dxp-button-primary"
+                    onClick={() => add('trigger')}
+                  >
                     Add your first trigger
                   </button>
                 </Panel>
@@ -730,7 +756,7 @@ function Builder({
         <div className="dxp-toast" role="status">
           <Check size={16} />
           {toast}
-          <button onClick={() => setToast('')} aria-label="Dismiss notification">
+          <button type="button" onClick={() => setToast('')} aria-label="Dismiss notification">
             <X size={14} />
           </button>
         </div>
@@ -756,7 +782,10 @@ function Builder({
         />
       )}
       {modal && modal !== 'preview' && (
+        // biome-ignore lint/a11y/useKeyWithClickEvents: The close button and Escape key dismiss this dialog for keyboard users.
+        // biome-ignore lint/a11y/noStaticElementInteractions: Only the backdrop uses clicks to dismiss the dialog.
         <div className="dxp-modal-backdrop" onClick={() => setModal(null)}>
+          {/* biome-ignore lint/a11y/useKeyWithClickEvents: This handler only prevents dialog clicks from reaching the backdrop. */}
           <section
             ref={modalRef}
             className={`dxp-modal ${modal === 'export' ? 'dxp-export-modal' : ''}`}
@@ -789,6 +818,7 @@ function Builder({
                 </h2>
               </div>
               <button
+                type="button"
                 className="dxp-icon-button"
                 onClick={() => setModal(null)}
                 aria-label="Close dialog"
@@ -804,19 +834,21 @@ function Builder({
                 </p>
                 <div className="dxp-export-tabs">
                   <button
+                    type="button"
                     className={exportTab === 'javascript' ? 'active' : ''}
                     onClick={() => setExportTab('javascript')}
                   >
                     <Code2 size={15} /> JavaScript
                   </button>
                   <button
+                    type="button"
                     className={exportTab === 'json' ? 'active' : ''}
                     onClick={() => setExportTab('json')}
                   >
                     <FileJson size={15} /> Workflow JSON
                   </button>
                   <span />
-                  <button onClick={copyCode}>
+                  <button type="button" onClick={copyCode}>
                     <Copy size={14} /> Copy
                   </button>
                 </div>
@@ -824,6 +856,7 @@ function Builder({
                   <div className="dxp-validation">
                     <strong>Before you export</strong>
                     {issues.map((issue, i) => (
+                      // biome-ignore lint/suspicious/noArrayIndexKey: These stateless validation messages are rendered together without persistent row state.
                       <p key={i}>{issue.message}</p>
                     ))}
                   </div>
@@ -836,6 +869,7 @@ function Builder({
                     <Check size={14} /> Standalone. No dependencies.
                   </span>
                   <button
+                    type="button"
                     className="dxp-button dxp-button-primary"
                     disabled={exportTab === 'javascript' && issues.length > 0}
                     onClick={exportFile}
@@ -857,6 +891,7 @@ function Builder({
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') saveWebsite();
                     }}
+                    // biome-ignore lint/a11y/noAutofocus: The explicitly opened website dialog focuses its primary input and restores focus when closed.
                     autoFocus
                   />
                 </label>
@@ -869,16 +904,21 @@ function Builder({
                   </p>
                 </div>
                 <button
+                  type="button"
                   className="dxp-demo-link"
                   onClick={() => setWebsiteDraft('/demo-site.html')}
                 >
                   <RotateCcw size={13} /> Use the Atelier demo website
                 </button>
                 <div className="dxp-modal-footer">
-                  <button className="dxp-button" onClick={() => setModal(null)}>
+                  <button type="button" className="dxp-button" onClick={() => setModal(null)}>
                     Cancel
                   </button>
-                  <button className="dxp-button dxp-button-primary" onClick={saveWebsite}>
+                  <button
+                    type="button"
+                    className="dxp-button dxp-button-primary"
+                    onClick={saveWebsite}
+                  >
                     Save website <ArrowRight size={14} />
                   </button>
                 </div>
@@ -932,7 +972,11 @@ function Builder({
                     <kbd>Esc</kbd> Close panel
                   </span>
                 </div>
-                <button className="dxp-button dxp-button-primary" onClick={() => setModal(null)}>
+                <button
+                  type="button"
+                  className="dxp-button dxp-button-primary"
+                  onClick={() => setModal(null)}
+                >
                   Back to creating <ArrowRight size={14} />
                 </button>
               </div>

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { createRuntime } from '../src/lib/runtime';
 import { exportWorkflow, validateWorkflow } from '../src/lib/export';
+import { createRuntime } from '../src/lib/runtime';
 import type { NodeKind, RunLog, StepConfig, Workflow, WorkflowNode } from '../src/lib/types';
 
 function node(id: string, kind: NodeKind, config: StepConfig = {}): WorkflowNode {
@@ -30,7 +30,9 @@ function runtime(...args: Parameters<typeof createRuntime>) {
 }
 
 afterEach(() => {
-  runtimes.splice(0).forEach((instance) => instance.destroy());
+  runtimes.splice(0).forEach((instance) => {
+    instance.destroy();
+  });
   const exported = (window as Window & { FormaDXP?: ReturnType<typeof createRuntime> }).FormaDXP;
   exported?.destroy();
   delete (window as Window & { FormaDXP?: ReturnType<typeof createRuntime> }).FormaDXP;

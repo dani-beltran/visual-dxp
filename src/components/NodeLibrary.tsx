@@ -6,6 +6,7 @@ export function NodeLibrary({ onAdd }: { onAdd: (kind: NodeKind) => void }) {
   const [activeTooltip, setActiveTooltip] = useState<NodeKind | null>(null);
 
   return (
+    // biome-ignore lint/a11y/useSemanticElements: This group contains canvas actions rather than form inputs and retains its compact flex layout.
     <div
       className="dxp-node-library nodrag nopan nowheel"
       role="group"

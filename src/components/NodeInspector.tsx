@@ -1,4 +1,3 @@
-import { useEffect, useId, useState, type ReactNode, type SelectHTMLAttributes } from 'react';
 import {
   ArrowDown,
   Braces,
@@ -17,6 +16,7 @@ import {
   Trash2,
   X,
 } from 'lucide-react';
+import { type ReactNode, type SelectHTMLAttributes, useEffect, useId, useState } from 'react';
 import type { NodeKind, StepConfig, StepData, WorkflowNode } from '../lib/types';
 import '../styles/inspector.css';
 

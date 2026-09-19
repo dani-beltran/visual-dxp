@@ -4,14 +4,15 @@
  * The exact parent origin is mandatory. The site must separately permit framing.
  * This bridge never executes code received through postMessage.
  */
-(function () {
+(() => {
+  // biome-ignore lint/suspicious/noRedundantUseStrict: This bridge is loaded as a classic script by external sites.
   'use strict';
   var script = document.currentScript;
   var configuredOrigin = script && script.getAttribute('data-parent-origin');
   if (!configuredOrigin || window.parent === window) return;
   var parentOrigin;
   try {
-    var parsedOrigin = new URL(configuredOrigin);
+    const parsedOrigin = new URL(configuredOrigin);
     if (!/^https?:$/.test(parsedOrigin.protocol) || parsedOrigin.origin !== configuredOrigin)
       return;
     parentOrigin = parsedOrigin.origin;
@@ -28,10 +29,10 @@
       parentOrigin,
     );
   }
-  function escape(value) {
+  function escapeSelector(value) {
     if (window.CSS && window.CSS.escape) return window.CSS.escape(value);
     return Array.from(value)
-      .map(function (character, index) {
+      .map((character, index) => {
         var code = character.charCodeAt(0);
         if (code === 0) return '\uFFFD';
         if (
@@ -57,14 +58,14 @@
     var parts = [];
     var current = element;
     while (current) {
-      var tag = current.tagName.toLowerCase();
-      if (current.id && unique('#' + escape(current.id))) {
-        parts.unshift('#' + escape(current.id));
+      const tag = current.tagName.toLowerCase();
+      if (current.id && unique('#' + escapeSelector(current.id))) {
+        parts.unshift('#' + escapeSelector(current.id));
         break;
       }
-      var testId = current.getAttribute('data-testid');
+      const testId = current.getAttribute('data-testid');
       if (testId) {
-        var stable =
+        const stable =
           '[data-testid="' +
           testId.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\a ') +
           '"]';
@@ -73,11 +74,11 @@
           break;
         }
       }
-      var part = tag;
-      var siblings = current.parentElement
-        ? Array.from(current.parentElement.children).filter(function (child) {
-            return child.tagName === current.tagName;
-          })
+      let part = tag;
+      const siblings = current.parentElement
+        ? Array.from(current.parentElement.children).filter(
+            (child) => child.tagName === current.tagName,
+          )
         : [];
       if (siblings.length > 1) part += ':nth-of-type(' + (siblings.indexOf(current) + 1) + ')';
       parts.unshift(part);
@@ -167,7 +168,7 @@
     document.addEventListener('scroll', refresh, true);
     window.addEventListener('resize', refresh);
     return {
-      select: function (selector) {
+      select: (selector) => {
         try {
           selected = selector.trim() ? document.querySelector(selector) : null;
           refresh();
@@ -178,7 +179,7 @@
           return false;
         }
       },
-      destroy: function () {
+      destroy: () => {
         root.remove();
         document.removeEventListener('mousemove', move, true);
         document.removeEventListener('click', click, true);
@@ -188,7 +189,7 @@
       },
     };
   }
-  window.addEventListener('message', function (event) {
+  window.addEventListener('message', (event) => {
     if (event.source !== window.parent || event.origin !== parentOrigin) return;
     var data = event.data;
     if (

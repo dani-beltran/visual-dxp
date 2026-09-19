@@ -1,7 +1,7 @@
-import { Handle, Position, type NodeProps } from '@xyflow/react';
+import { Handle, type NodeProps, Position } from '@xyflow/react';
 import { Check, Circle, Ellipsis, LoaderCircle } from 'lucide-react';
-import type { WorkflowNode } from '../lib/types';
 import { catalog, stepSummary } from '../lib/catalog';
+import type { WorkflowNode } from '../lib/types';
 export function WorkflowCard({ data, selected }: NodeProps<WorkflowNode>) {
   const entry = catalog.find((x) => x.kind === data.kind)!;
   const Icon = entry.icon;

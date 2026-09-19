@@ -1,11 +1,11 @@
 import {
-  MousePointer2,
-  Globe2,
-  MousePointerClick,
-  Timer,
   GitFork,
-  Repeat2,
+  Globe2,
+  MousePointer2,
+  MousePointerClick,
   PanelTop,
+  Repeat2,
+  Timer,
 } from 'lucide-react';
 import type { NodeKind, StepConfig, Workflow, WorkflowNode } from './types';
 export const catalog: {

@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
 import { Check, CircleAlert, ExternalLink, LoaderCircle, Play, RotateCcw, X } from 'lucide-react';
-import type { RunLog, Workflow } from '../lib/types';
-import { createRuntime } from '../lib/runtime';
+import { useEffect, useRef, useState } from 'react';
 import { validateWorkflow } from '../lib/export';
+import { createRuntime } from '../lib/runtime';
+import type { RunLog, Workflow } from '../lib/types';
 import { useDialogFocus } from '../lib/useDialogFocus';
 export function Preview({
   workflow,
@@ -66,7 +66,10 @@ export function Preview({
     }
   }
   return (
+    // biome-ignore lint/a11y/useKeyWithClickEvents: The close button and the builder's Escape handler provide keyboard dismissal.
+    // biome-ignore lint/a11y/noStaticElementInteractions: Only the backdrop uses clicks to dismiss the dialog.
     <div className="dxp-modal-backdrop" onClick={onClose}>
+      {/* biome-ignore lint/a11y/useKeyWithClickEvents: This handler only prevents dialog clicks from reaching the backdrop. */}
       <section
         ref={modalRef}
         className="dxp-modal dxp-preview"
@@ -80,7 +83,12 @@ export function Preview({
             <span className="dxp-eyebrow">TEST YOUR EXPERIENCE</span>
             <h2>See your journey in action</h2>
           </div>
-          <button className="dxp-icon-button" onClick={onClose} aria-label="Close preview">
+          <button
+            type="button"
+            className="dxp-icon-button"
+            onClick={onClose}
+            aria-label="Close preview"
+          >
             <X size={20} />
           </button>
         </div>
@@ -90,6 +98,7 @@ export function Preview({
             {workflow.websiteUrl}
           </span>
           <button
+            type="button"
             className="dxp-button"
             onClick={() => {
               runtime.current?.destroy();
@@ -103,6 +112,7 @@ export function Preview({
             <RotateCcw size={14} />
           </button>
           <button
+            type="button"
             className="dxp-button dxp-button-primary"
             onClick={run}
             disabled={!ready || running}
@@ -131,6 +141,7 @@ export function Preview({
               </div>
             )}
             {logs.map((log, i) => (
+              // biome-ignore lint/suspicious/noArrayIndexKey: Log entries only append during a run and render stateless rows; a new run clears the list.
               <div className={`dxp-log-item ${log.status}`} key={i}>
                 {log.status === 'success' ? (
                   <Check size={14} />

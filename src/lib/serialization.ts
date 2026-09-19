@@ -1,4 +1,5 @@
 import type { Workflow } from './types';
+
 const kinds = new Set(['trigger', 'http', 'dom', 'delay', 'fork', 'loop', 'popover']);
 const strings = [
   'event',

@@ -1,7 +1,7 @@
-import { useEffect, useId, useRef, useState } from 'react';
 import { ArrowRight, Check, Globe2, Info, MousePointer2, RefreshCw, X } from 'lucide-react';
-import { attachElementPicker, normalizeWebsiteUrl, PICKER_PROTOCOL } from '../lib/picker';
+import { useEffect, useId, useRef, useState } from 'react';
 import type { PickedElement, PickerSession } from '../lib/picker';
+import { attachElementPicker, normalizeWebsiteUrl, PICKER_PROTOCOL } from '../lib/picker';
 import '../styles/picker.css';
 
 export interface ElementPickerProps {
@@ -52,6 +52,7 @@ export function ElementPicker({
     return () => prior?.focus();
   }, []);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: Reload replaces the iframe even when its URL stays unchanged, so its picker session must reconnect.
   useEffect(() => {
     if (!frameUrl) {
       setStatus('unavailable');
@@ -202,6 +203,7 @@ export function ElementPicker({
   const bridgeSnippet = `<script src="/picker-bridge.js" data-parent-origin="${typeof window !== 'undefined' ? window.location.origin : 'https://your-editor.example'}"></script>`;
 
   return (
+    // biome-ignore lint/a11y/noStaticElementInteractions: The backdrop offers pointer dismissal; dialog controls and Escape provide keyboard dismissal.
     <div
       className="dxp-picker-backdrop"
       onMouseDown={(event) => {
@@ -247,6 +249,7 @@ export function ElementPicker({
             <p>Point, click, and connect your experience.</p>
           </div>
           <button
+            type="button"
             className="dxp-picker-icon-button"
             aria-label="Close element picker"
             onClick={onClose}
@@ -289,7 +292,7 @@ export function ElementPicker({
           <span className="dxp-picker-hint">
             {hovered ? <code>{hovered.selector}</code> : 'Hover to inspect · Click to select'}
           </span>
-          <button onClick={() => setShowHelp(!showHelp)} aria-expanded={showHelp}>
+          <button type="button" onClick={() => setShowHelp(!showHelp)} aria-expanded={showHelp}>
             <Info size={14} /> Website setup
           </button>
         </div>
@@ -312,6 +315,7 @@ export function ElementPicker({
               can enter a CSS selector below or try the demo.
             </p>
             <button
+              type="button"
               onClick={() => {
                 const demo = new URL('/demo-site.html', window.location.href).href;
                 setUrlInput(demo);
@@ -375,10 +379,11 @@ export function ElementPicker({
                     : 'Your selector will be saved to this step.')}
             </span>
           </div>
-          <button className="dxp-picker-cancel" onClick={onClose}>
+          <button type="button" className="dxp-picker-cancel" onClick={onClose}>
             Cancel
           </button>
           <button
+            type="button"
             className="dxp-picker-confirm"
             disabled={!isValid}
             onClick={() => onSelect(selector.trim())}

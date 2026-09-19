@@ -8,12 +8,7 @@
   padding: 28px;
   background: #182c2459;
   backdrop-filter: blur(5px);
-  font-family:
-    Inter,
-    -apple-system,
-    BlinkMacSystemFont,
-    'Segoe UI',
-    sans-serif;
+  font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   color: #25362c;
 }
 .dxp-picker-dialog {
