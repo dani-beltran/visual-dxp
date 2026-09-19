@@ -578,16 +578,37 @@
   justify-content: space-between;
   gap: 12px;
   pointer-events: none;
+  container: dxp-canvas-dock / inline-size;
 }
 .dxp-canvas-dock > * {
   pointer-events: auto;
 }
-.dxp-node-library {
+.dxp-node-library-root {
   min-width: 0;
   width: max-content;
   max-width: 100%;
   margin-inline: auto;
   flex-shrink: 0;
+  z-index: 6;
+}
+.dxp-node-library-toggle {
+  display: none;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid #d4e4d9;
+  border-radius: 12px;
+  background: #fff;
+  color: var(--dxp-green);
+  box-shadow: 0 2px 6px #244b3208;
+}
+.dxp-node-library-toggle:hover,
+.dxp-node-library-toggle[aria-expanded='true'] {
+  background: #edf5ef;
+  border-color: #94b6a1;
+}
+.dxp-node-library {
   padding: 8px;
   display: flex;
   flex-wrap: wrap;
@@ -599,7 +620,6 @@
   box-shadow:
     0 8px 28px #244b3210,
     0 2px 6px #244b3208;
-  z-index: 6;
 }
 .dxp-node-library-button {
   position: relative;
@@ -943,21 +963,22 @@
   font: inherit;
   color: #6f8577;
 }
-@container (max-width: 760px) {
-  .dxp-builder .react-flow__panel.dxp-canvas-dock {
+@container dxp-canvas-dock (max-width: 700px) {
+  .dxp-node-library-toggle {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-  }
-  .dxp-canvas-controls {
-    justify-self: start;
   }
   .dxp-node-library {
-    grid-column: 1 / -1;
-    grid-row: 2;
+    display: none;
+    position: absolute;
+    bottom: calc(100% + 12px);
+    left: 50%;
+    transform: translateX(-50%);
+    width: max-content;
+    max-width: 100%;
+    z-index: 8;
   }
-  .dxp-canvas-assistants {
-    grid-column: 2;
-    grid-row: 1;
+  .dxp-node-library-root.is-open .dxp-node-library {
+    display: flex;
   }
 }
 .dxp-builder .react-flow__minimap {
@@ -1546,19 +1567,6 @@
 @media (min-width: 701px) and (max-width: 1150px) {
   .dxp-work-area:has(> .dxp-inspector) .react-flow__panel.dxp-canvas-dock {
     right: 338px;
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-  }
-  .dxp-work-area:has(> .dxp-inspector) .dxp-canvas-controls {
-    justify-self: start;
-  }
-  .dxp-work-area:has(> .dxp-inspector) .dxp-node-library {
-    grid-column: 1 / -1;
-    grid-row: 2;
-  }
-  .dxp-work-area:has(> .dxp-inspector) .dxp-canvas-assistants {
-    grid-column: 2;
-    grid-row: 1;
   }
 }
 @media (max-width: 800px) {
