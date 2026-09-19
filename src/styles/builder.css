@@ -584,6 +584,7 @@
   pointer-events: auto;
 }
 .dxp-node-library {
+  min-width: 0;
   width: max-content;
   max-width: 100%;
   margin-inline: auto;
@@ -847,16 +848,117 @@
 .dxp-builder .react-flow__panel.bottom.right {
   margin: 33px 29px;
 }
-.dxp-canvas-tip > span {
+.dxp-canvas-tip {
+  position: relative;
+  flex-shrink: 0;
+  z-index: 7;
+}
+.dxp-canvas-help-button {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #e4eae5;
+  border-radius: 7px;
+  background: #fff;
+  color: #6f8577;
+  box-shadow: 0 2px 3px #1c422006;
+}
+.dxp-canvas-help-button:hover,
+.dxp-canvas-help-button.active {
+  background: #eff5f0;
+  color: #397e54;
+}
+.dxp-canvas-help-panel {
+  position: absolute;
+  bottom: calc(100% + 12px);
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid #dfe8e1;
+  border-radius: 12px;
+  background: #fff;
+  color: #43584a;
+  box-shadow: 0 12px 36px #244b3220;
+}
+.dxp-canvas-help-header {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 14px;
+  border-bottom: 1px solid #e9edea;
+}
+.dxp-canvas-help-header h2 {
+  font-size: 13px;
+  font-weight: 650;
+}
+.dxp-canvas-help-content {
+  padding: 16px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.dxp-canvas-help-content:focus-visible {
+  outline: 2px solid #499875;
+  outline-offset: -3px;
+}
+.dxp-canvas-help-step {
+  display: flex;
+  gap: 11px;
+  margin-bottom: 18px;
+}
+.dxp-canvas-help-step > svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: #6f967e;
+}
+.dxp-canvas-help-step h3 {
+  font-size: 11px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.dxp-canvas-help-step p {
+  font-size: 11px;
+  line-height: 1.65;
+  color: #79877d;
+}
+.dxp-canvas-help-shortcuts {
+  margin: 0;
+  border-top: 1px solid #e9edea;
+  padding-top: 12px;
+  font-size: 10px;
+}
+.dxp-canvas-help-shortcuts > div {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 9px;
-  color: #a9b4ab;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 8px;
 }
-@container (max-width: 800px) {
+.dxp-canvas-help-shortcuts dd {
+  margin: 0;
+}
+.dxp-canvas-help-shortcuts kbd {
+  font: inherit;
+  color: #6f8577;
+}
+@container (max-width: 700px) {
+  .dxp-builder .react-flow__panel.dxp-canvas-dock {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .dxp-canvas-controls {
+    justify-self: start;
+  }
+  .dxp-node-library {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
   .dxp-canvas-tip {
-    display: none;
+    grid-column: 2;
+    grid-row: 1;
   }
 }
 .dxp-builder .react-flow__minimap {
@@ -1418,9 +1520,6 @@
   .dxp-footer-label {
     display: none;
   }
-  .dxp-canvas-tip {
-    display: none;
-  }
   .dxp-header-right {
     font-size: 8px;
   }
@@ -1448,6 +1547,19 @@
 @media (min-width: 701px) and (max-width: 1150px) {
   .dxp-work-area:has(> .dxp-inspector) .react-flow__panel.dxp-canvas-dock {
     right: 338px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .dxp-work-area:has(> .dxp-inspector) .dxp-canvas-controls {
+    justify-self: start;
+  }
+  .dxp-work-area:has(> .dxp-inspector) .dxp-node-library {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+  .dxp-work-area:has(> .dxp-inspector) .dxp-canvas-tip {
+    grid-column: 2;
+    grid-row: 1;
   }
 }
 @media (max-width: 800px) {

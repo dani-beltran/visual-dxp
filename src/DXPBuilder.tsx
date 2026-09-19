@@ -47,6 +47,7 @@ import { exportWorkflow, validateWorkflow } from './lib/export';
 import type { NodeKind, RunLog, StepData, Workflow, WorkflowNode } from './lib/types';
 import { WorkflowCard } from './components/WorkflowCard';
 import { NodeLibrary } from './components/NodeLibrary';
+import { CanvasHelp } from './components/CanvasHelp';
 import { NodeInspector } from './components/NodeInspector';
 import { ElementPicker } from './components/ElementPicker';
 import { Preview } from './components/Preview';
@@ -626,11 +627,7 @@ function Builder({
                   </button>
                 </div>
                 <NodeLibrary onAdd={add} />
-                <div className="dxp-canvas-tip">
-                  <span>
-                    <MousePointer2 size={12} /> Click a step to make it yours
-                  </span>
-                </div>
+                <CanvasHelp />
               </Panel>
               {workflow.nodes.length === 0 && (
                 <Panel position="top-center" className="dxp-empty-canvas">
