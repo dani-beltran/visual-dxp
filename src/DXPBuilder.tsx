@@ -48,11 +48,19 @@ import type { NodeKind, RunLog, StepData, Workflow, WorkflowNode } from './lib/t
 import { WorkflowCard } from './components/WorkflowCard';
 import { NodeLibrary } from './components/NodeLibrary';
 import { CanvasHelp } from './components/CanvasHelp';
+import { CanvasChat } from './components/CanvasChat';
 import { NodeInspector } from './components/NodeInspector';
 import { ElementPicker } from './components/ElementPicker';
 import { Preview } from './components/Preview';
 import { isWorkflow } from './lib/serialization';
 import { useDialogFocus } from './lib/useDialogFocus';
+import {
+  applyWorkflowOperations,
+  requestAIChat,
+  workflowFingerprint,
+  type AIChatConfig,
+  type AIChatMessage,
+} from './lib/ai';
 import '@xyflow/react/dist/style.css';
 import './styles/builder.css';
 const nodeTypes = { workflow: WorkflowCard };
@@ -71,6 +79,8 @@ export interface DXPBuilderProps {
   className?: string;
   style?: CSSProperties;
   persistenceKey?: string;
+  /** Connect to your authenticated server endpoint; never include provider keys. */
+  ai?: AIChatConfig;
 }
 function copyWorkflow(w: Workflow): Workflow {
   return structuredClone(w);
@@ -97,6 +107,7 @@ function Builder({
   className = '',
   style,
   persistenceKey,
+  ai,
 }: DXPBuilderProps) {
   const [workflow, setWorkflow] = useState<Workflow>(() => {
     if (persistenceKey)
@@ -113,6 +124,9 @@ function Builder({
   const history = useRef<{ past: Workflow[]; future: Workflow[] }>({ past: [], future: [] });
   const [, refreshHistory] = useState(0);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [canvasAssistant, setCanvasAssistant] = useState<'chat' | 'help' | null>(null);
+  const toggleChat = useCallback((open: boolean) => setCanvasAssistant(open ? 'chat' : null), []);
+  const toggleHelp = useCallback((open: boolean) => setCanvasAssistant(open ? 'help' : null), []);
   const [modal, setModal] = useState<'export' | 'preview' | 'help' | 'website' | null>(null);
   const [picking, setPicking] = useState(false);
   const [exportTab, setExportTab] = useState<'javascript' | 'json'>('javascript');
@@ -373,6 +387,35 @@ function Builder({
       setWebsiteError('Enter an http:// or https:// URL, or a relative website path.');
     }
   }
+  async function sendAIMessage(messages: AIChatMessage[], signal: AbortSignal) {
+    if (!ai?.endpoint) throw new Error('Connect the assistant service to start chatting.');
+    const snapshot = copyWorkflow(current.current);
+    const baseline = workflowFingerprint(snapshot);
+    const response = await requestAIChat(
+      ai,
+      {
+        messages,
+        workflow: snapshot,
+        selectedNodeIds: selectedId ? [selectedId] : [],
+      },
+      signal,
+    );
+    signal.throwIfAborted();
+    if (baseline !== workflowFingerprint(current.current)) {
+      throw new Error(
+        'The canvas changed while I was working. Send your message again to use the latest version.',
+      );
+    }
+    const updated = applyWorkflowOperations(current.current, response.operations);
+    const changed = workflowFingerprint(updated) !== baseline;
+    if (changed) {
+      commit(() => updated);
+      if (selectedId && !updated.nodes.some((node) => node.id === selectedId)) setSelectedId(null);
+      notify('AI updated your workflow. Use Undo to revert this change.');
+      requestAnimationFrame(() => void flow.fitView({ padding: 0.2, duration: 300 }));
+    }
+    return { message: response.message, changeCount: changed ? response.operations.length : 0 };
+  }
   return (
     <div className={`dxp-builder ${className}`} style={style}>
       <aside className="dxp-sidebar">
@@ -627,7 +670,16 @@ function Builder({
                   </button>
                 </div>
                 <NodeLibrary onAdd={add} />
-                <CanvasHelp />
+                <div className="dxp-canvas-assistants">
+                  <CanvasChat
+                    open={canvasAssistant === 'chat'}
+                    onOpenChange={toggleChat}
+                    configured={!!ai?.endpoint}
+                    selectedLabel={selected?.data.label}
+                    onSend={sendAIMessage}
+                  />
+                  <CanvasHelp open={canvasAssistant === 'help'} onOpenChange={toggleHelp} />
+                </div>
               </Panel>
               {workflow.nodes.length === 0 && (
                 <Panel position="top-center" className="dxp-empty-canvas">

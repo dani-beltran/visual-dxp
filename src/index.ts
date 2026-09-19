@@ -18,3 +18,17 @@ export type {
 export type { RuntimeOptions, WorkflowRuntime } from './lib/runtime';
 export type { ElementPickerProps } from './components/ElementPicker';
 export { isWorkflow } from './lib/serialization';
+export {
+  applyWorkflowOperations,
+  requestAIChat,
+  parseAIChatRequest,
+  parseAIChatResponse,
+  workflowFingerprint,
+} from './lib/ai';
+export type {
+  AIChatConfig,
+  AIChatMessage,
+  AIChatRequest,
+  AIChatResponse,
+  WorkflowOperation,
+} from './lib/ai';

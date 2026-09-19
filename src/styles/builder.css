@@ -944,7 +944,7 @@
   font: inherit;
   color: #6f8577;
 }
-@container (max-width: 700px) {
+@container (max-width: 760px) {
   .dxp-builder .react-flow__panel.dxp-canvas-dock {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
@@ -956,7 +956,7 @@
     grid-column: 1 / -1;
     grid-row: 2;
   }
-  .dxp-canvas-tip {
+  .dxp-canvas-assistants {
     grid-column: 2;
     grid-row: 1;
   }
@@ -1557,7 +1557,7 @@
     grid-column: 1 / -1;
     grid-row: 2;
   }
-  .dxp-work-area:has(> .dxp-inspector) .dxp-canvas-tip {
+  .dxp-work-area:has(> .dxp-inspector) .dxp-canvas-assistants {
     grid-column: 2;
     grid-row: 1;
   }

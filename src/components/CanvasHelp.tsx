@@ -24,8 +24,13 @@ const instructions = [
   },
 ];
 
-export function CanvasHelp() {
-  const [open, setOpen] = useState(false);
+export function CanvasHelp({
+  open: controlledOpen,
+  onOpenChange,
+}: { open?: boolean; onOpenChange?: (open: boolean) => void } = {}) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = controlledOpen ?? internalOpen;
+  const setOpen = onOpenChange ?? setInternalOpen;
   const [panelSize, setPanelSize] = useState({ width: 360, maxHeight: 460 });
   const id = useId();
   const root = useRef<HTMLDivElement>(null);
@@ -78,7 +83,7 @@ export function CanvasHelp() {
       document.removeEventListener('pointerdown', dismissOutside);
       document.removeEventListener('keydown', dismissEscape, true);
     };
-  }, [open]);
+  }, [open, setOpen]);
 
   return (
     <div

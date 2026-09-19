@@ -72,13 +72,14 @@ export function ExperienceEditor() {
 
 The builder includes its own `ReactFlowProvider`. It accepts `className` and `style`, uses scoped component styles, and does not require a router or backend. Render it on the client in SSR frameworks (for Next.js, use a client component; disable SSR for the editor if your environment requires it).
 
-| Prop                 | Behavior                                                                                                                                                    |
-| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `initialWorkflow`    | Initial workflow; defaults to the included welcome journey. Changes after mounting do not replace editor state; use a React `key` to open another workflow. |
-| `onChange`           | Receives edits to nodes, edges, configuration, name, and website URL. Persist this with your own API when needed.                                           |
-| `onExport`           | Receives the generated JavaScript and workflow when Download .js is selected.                                                                               |
-| `persistenceKey`     | Optional localStorage key. A valid saved workflow takes precedence over `initialWorkflow`. Omit to disable browser persistence.                             |
-| `className`, `style` | Customize the outer editor container. The parent must provide a height.                                                                                     |
+| Prop                 | Behavior                                                                                                                                                          |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `initialWorkflow`    | Initial workflow; defaults to the included welcome journey. Changes after mounting do not replace editor state; use a React `key` to open another workflow.       |
+| `onChange`           | Receives edits to nodes, edges, configuration, name, and website URL. Persist this with your own API when needed.                                                 |
+| `onExport`           | Receives the generated JavaScript and workflow when Download .js is selected.                                                                                     |
+| `persistenceKey`     | Optional localStorage key. A valid saved workflow takes precedence over `initialWorkflow`. Omit to disable browser persistence.                                   |
+| `ai`                 | Optional `{ endpoint, headers?, credentials? }` for your authenticated chat API. The AI button remains visible with setup guidance until an endpoint is provided. |
+| `className`, `style` | Customize the outer editor container. The parent must provide a height.                                                                                           |
 
 The default journey points to `/demo-site.html`. To use it in another application, copy `dist/demo-site.html` to the application's public assets, or provide your own `initialWorkflow.websiteUrl`.
 
@@ -97,6 +98,31 @@ The default journey points to `/demo-site.html`. To use it in another applicatio
 Connections from a step execute in order. An HTTP request currently performs the configured request; its response is not interpolated into later nodes. Branching is based on element existence, not arbitrary JavaScript expressions. An execution limit protects against excessive loops.
 
 The canvas includes a floating node library: hover or focus an icon to see its name, then click or drag it onto the canvas to add a step. It also supports dragging, connecting, node duplication/deletion, undo/redo, zoom, fit-to-view, minimap, and JSON import/export. Delete selects/removes nodes or connections; ⌘/Ctrl+Z undoes changes.
+
+## AI workflow assistant
+
+The **AI chat** button to the left of Canvas Help opens a conversation for creating, updating, removing, and connecting steps. It sends the current workflow and selected node with each message. Valid edits are applied together as one undoable change. If you edit the canvas while the assistant is working, its response is rejected so your changes are preserved. Chat history stays in memory and is not saved to browser storage.
+
+This repository contains the frontend only. The LangChain agent, HTTP API, tools, and LangSmith deployment configuration live in the separate `dlb-dxp-server` project. Configure your host application's authenticated endpoint:
+
+```tsx
+<DXPBuilder ai={{ endpoint: '/api/ai/chat' }} />
+```
+
+For the local demo, copy `.env.example` to `.env`; its only setting is the public `VITE_DXP_AI_ENDPOINT=http://127.0.0.1:8787/api/ai/chat`. Run `npm run dev` here and start the backend from the sibling project in another terminal:
+
+```sh
+cd ../dlb-dxp-server
+npm install
+cp .env.example .env
+# Set OPENAI_API_KEY in this backend .env file.
+# Set AI_ALLOWED_ORIGIN=http://127.0.0.1:5173 for the local frontend.
+npm run dev
+```
+
+Open `http://127.0.0.1:5173`. The frontend calls the backend directly, with no Vite proxy. The backend's `AI_ALLOWED_ORIGIN` must exactly match the frontend origin, including hostname and port. In production, use your API URL with its allowed frontend origin, or route a relative `/api/ai/chat` endpoint through your host's authenticated backend or reverse proxy. Keep model and LangSmith keys only in the backend's environment. Without an endpoint, the chat displays setup guidance; it does not simulate AI responses.
+
+See [frontend AI integration](docs/ai-integration.md) for the HTTP contract, authentication options, and hosting setup. Backend setup and LangChain platform configuration are documented in the separate project's `README.md` and `docs/langchain.md` (locally, `../dlb-dxp-server/docs/langchain.md`).
 
 ## Visual element selection
 
@@ -153,6 +179,8 @@ HTML and DOM actions are author-controlled content. Import workflows from truste
 - `src/lib/export.ts` — graph/configuration validation and JavaScript generation.
 - `src/lib/picker.ts` — selector generation and iframe highlighting.
 - `src/lib/types.ts` — public workflow schema.
+- `src/lib/ai.ts` — chat protocol, transport, and validated atomic workflow edits.
+- `docs/ai-integration.md` — connect the frontend to the separate AI backend.
 - `public/picker-bridge.js` — standalone bridge deployed on the target website.
 - `public/demo-site.html` — working sample website.
 
