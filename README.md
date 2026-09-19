@@ -96,7 +96,7 @@ The default journey points to `/demo-site.html`. To use it in another applicatio
 
 Connections from a step execute in order. An HTTP request currently performs the configured request; its response is not interpolated into later nodes. Branching is based on element existence, not arbitrary JavaScript expressions. An execution limit protects against excessive loops.
 
-The canvas supports dragging, connecting, node duplication/deletion, undo/redo, zoom, fit-to-view, minimap, node search, and JSON import/export. Delete selects/removes nodes or connections; ⌘/Ctrl+Z undoes changes.
+The canvas includes a floating node library: hover or focus an icon to see its name, then click or drag it onto the canvas to add a step. It also supports dragging, connecting, node duplication/deletion, undo/redo, zoom, fit-to-view, minimap, and JSON import/export. Delete selects/removes nodes or connections; ⌘/Ctrl+Z undoes changes.
 
 ## Visual element selection
 

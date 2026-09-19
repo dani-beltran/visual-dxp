@@ -26,13 +26,11 @@ import {
   Copy,
   FileJson,
   Globe2,
-  Grip,
   Layers2,
   Maximize,
   MousePointer2,
   Plus,
   Redo2,
-  Search,
   Sparkles,
   Undo2,
   Upload,
@@ -48,6 +46,7 @@ import { catalog, createNode, defaultWorkflow } from './lib/catalog';
 import { exportWorkflow, validateWorkflow } from './lib/export';
 import type { NodeKind, RunLog, StepData, Workflow, WorkflowNode } from './lib/types';
 import { WorkflowCard } from './components/WorkflowCard';
+import { NodeLibrary } from './components/NodeLibrary';
 import { NodeInspector } from './components/NodeInspector';
 import { ElementPicker } from './components/ElementPicker';
 import { Preview } from './components/Preview';
@@ -112,8 +111,6 @@ function Builder({
   current.current = workflow;
   const history = useRef<{ past: Workflow[]; future: Workflow[] }>({ past: [], future: [] });
   const [, refreshHistory] = useState(0);
-  const [query, setQuery] = useState('');
-  const [filter, setFilter] = useState('All');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [modal, setModal] = useState<'export' | 'preview' | 'help' | 'website' | null>(null);
   const [picking, setPicking] = useState(false);
@@ -375,11 +372,6 @@ function Builder({
       setWebsiteError('Enter an http:// or https:// URL, or a relative website path.');
     }
   }
-  const shown = catalog.filter(
-    (c) =>
-      (filter === 'All' || c.category === filter) &&
-      (c.label + ' ' + c.description).toLowerCase().includes(query.toLowerCase()),
-  );
   return (
     <div className={`dxp-builder ${className}`} style={style}>
       <aside className="dxp-sidebar">
@@ -414,66 +406,6 @@ function Builder({
           <div className="dxp-active-nav">
             <WorkflowIcon size={17} /> Experience builder <span>01</span>
           </div>
-        </div>
-        <div className="dxp-library-heading">
-          <h2>Node library</h2>
-          <span>{catalog.length}</span>
-        </div>
-        <label className="dxp-search">
-          <Search size={15} />
-          <input
-            placeholder="Find a node…"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            aria-label="Search nodes"
-          />
-          <kbd>⌕</kbd>
-        </label>
-        <div className="dxp-library-tabs">
-          {['All', 'Start', 'Action', 'Logic'].map((item) => (
-            <button
-              key={item}
-              className={filter === item ? 'active' : ''}
-              onClick={() => setFilter(item)}
-            >
-              {item}
-            </button>
-          ))}
-        </div>
-        <div className="dxp-library-list">
-          {shown.map(({ kind, label, description, color, icon: Icon }) => (
-            <button
-              className="dxp-library-node"
-              key={kind}
-              onClick={() => add(kind)}
-              draggable
-              onDragStart={(e) => {
-                e.dataTransfer.setData('application/forma-node', kind);
-                e.dataTransfer.effectAllowed = 'move';
-              }}
-              title={`Add ${label}`}
-            >
-              <span className={`dxp-library-icon dxp-color-${color}`}>
-                <Icon size={19} />
-              </span>
-              <span>
-                <strong>{label}</strong>
-                <small>{description}</small>
-              </span>
-              <Grip className="dxp-drag-grip" size={14} />
-            </button>
-          ))}
-          {shown.length === 0 && (
-            <p className="dxp-no-results">No nodes found. Try another search.</p>
-          )}
-        </div>
-        <div className="dxp-library-hint">
-          <MousePointer2 size={13} />
-          <span>
-            Drag a node onto the canvas
-            <br />
-            or click to add it.
-          </span>
         </div>
         <div className="dxp-sidebar-bottom">
           <div className="dxp-tip">
@@ -640,6 +572,7 @@ function Builder({
               deleteKeyCode={['Backspace', 'Delete']}
             >
               <Background variant={BackgroundVariant.Dots} gap={20} size={1.1} color="#d8e0dc" />
+              <NodeLibrary onAdd={add} />
               <Panel position="top-left" className="dxp-canvas-heading">
                 <div className="dxp-canvas-kicker">
                   <span /> YOUR EXPERIENCE, CONNECTED
