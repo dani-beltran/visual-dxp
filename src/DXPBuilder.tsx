@@ -100,6 +100,14 @@ export interface DXPBuilderProps {
   /** Connect to your authenticated server endpoint; never include provider keys. */
   ai?: AIChatConfig;
 }
+interface RecordedActivity {
+  entry: ActivityEntry;
+  store: ActivityStore;
+}
+interface HistoryEntry {
+  workflow: Workflow;
+  activity?: RecordedActivity;
+}
 function copyWorkflow(w: Workflow): Workflow {
   return structuredClone(w);
 }
@@ -155,8 +163,12 @@ function Builder({
   });
   const current = useRef(workflow);
   current.current = workflow;
-  const history = useRef<{ past: Workflow[]; future: Workflow[] }>({ past: [], future: [] });
+  const history = useRef<{ past: HistoryEntry[]; future: HistoryEntry[] }>({
+    past: [],
+    future: [],
+  });
   const dragStartPositions = useRef<Map<string, { x: number; y: number }> | null>(null);
+  const dragStartWorkflow = useRef<Workflow | null>(null);
   const [, refreshHistory] = useState(0);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [canvasAssistant, setCanvasAssistant] = useState<'chat' | 'help' | null>(null);
@@ -211,8 +223,7 @@ function Builder({
   const notify = useCallback((message: string) => setToast(message), []);
   const pendingActivity = useRef<{
     key: string;
-    entry: ActivityEntry;
-    store: ActivityStore;
+    activity: RecordedActivity;
     timer: ReturnType<typeof setTimeout>;
   } | null>(null);
   const appendActivity = useCallback(
@@ -230,32 +241,41 @@ function Builder({
     if (!pending) return;
     clearTimeout(pending.timer);
     pendingActivity.current = null;
-    appendActivity(pending.store, pending.entry);
+    appendActivity(pending.activity.store, pending.activity.entry);
   }, [appendActivity]);
   const recordActivity = useCallback(
     (action: string, key?: string) => {
       const pending = pendingActivity.current;
-      if (pending && pending.key === key && pending.store === store) {
-        clearTimeout(pending.timer);
+      const username = activityUser.trim() || 'You';
+      const coalesced =
+        pending?.key === key &&
+        pending?.activity.store === store &&
+        pending?.activity.entry.username === username
+          ? pending
+          : null;
+      if (coalesced) {
+        clearTimeout(coalesced.timer);
       } else {
         flushActivity();
       }
       const entry: ActivityEntry = {
-        id: crypto.randomUUID(),
-        username: activityUser.trim() || 'You',
+        id: coalesced?.activity.entry.id ?? crypto.randomUUID(),
+        username,
         action,
         timestamp: new Date().toISOString(),
       };
+      const recorded = coalesced?.activity ?? { entry, store };
+      recorded.entry = entry;
       if (key) {
         pendingActivity.current = {
           key,
-          entry,
-          store,
+          activity: recorded,
           timer: setTimeout(flushActivity, 600),
         };
       } else {
         appendActivity(store, entry);
       }
+      return recorded;
     },
     [store, activityUser, flushActivity, appendActivity],
   );
@@ -285,46 +305,80 @@ function Builder({
     }, 550);
     return () => clearTimeout(timer);
   }, [workflow, persistenceKey, notify]);
-  const remember = useCallback(() => {
-    history.current.past.push(copyWorkflow(current.current));
-    if (history.current.past.length > 60) history.current.past.shift();
-    history.current.future = [];
-    refreshHistory((x) => x + 1);
-  }, []);
+  const remember = useCallback(
+    (activityKey?: string, before: Workflow = current.current) => {
+      const pending = pendingActivity.current;
+      const last = history.current.past.at(-1);
+      // One coalesced edit has one history entry and one activity entry.
+      if (
+        activityKey &&
+        pending?.key === activityKey &&
+        pending.activity.store === store &&
+        pending.activity.entry.username === (activityUser.trim() || 'You') &&
+        last?.activity === pending.activity
+      )
+        return last;
+      const entry: HistoryEntry = { workflow: copyWorkflow(before) };
+      history.current.past.push(entry);
+      if (history.current.past.length > 60) history.current.past.shift();
+      history.current.future = [];
+      refreshHistory((x) => x + 1);
+      return entry;
+    },
+    [store, activityUser],
+  );
   const commit = useCallback(
     (update: (w: Workflow) => Workflow, action: string, activityKey?: string) => {
       const next = update(current.current);
       if (JSON.stringify(next) === JSON.stringify(current.current)) return;
-      remember();
+      const entry = remember(activityKey);
       current.current = next;
       setWorkflow(next);
       setStatuses({});
-      recordActivity(action, activityKey);
+      entry.activity = recordActivity(action, activityKey);
     },
     [remember, recordActivity],
   );
   const undo = useCallback(() => {
     const prev = history.current.past.pop();
     if (!prev) return;
-    history.current.future.push(copyWorkflow(current.current));
-    current.current = prev;
-    setWorkflow(prev);
+    const pending = pendingActivity.current;
+    const unpublished = pending && pending.activity === prev.activity;
+    if (unpublished) {
+      clearTimeout(pending.timer);
+      pendingActivity.current = null;
+    } else {
+      flushActivity();
+    }
+    history.current.future.push({
+      workflow: copyWorkflow(current.current),
+      activity: prev.activity,
+    });
+    current.current = prev.workflow;
+    setWorkflow(prev.workflow);
     setSelectedId(null);
     setStatuses({});
     refreshHistory((x) => x + 1);
-    recordActivity('Undid the last workflow change');
-  }, [recordActivity]);
+    if (prev.activity && !unpublished) {
+      try {
+        prev.activity.store.remove(prev.activity.entry.id);
+      } catch {
+        notify('The change was undone, but its activity entry could not be removed.');
+      }
+    }
+  }, [flushActivity, notify]);
   const redo = useCallback(() => {
     const next = history.current.future.pop();
     if (!next) return;
-    history.current.past.push(copyWorkflow(current.current));
-    current.current = next;
-    setWorkflow(next);
+    flushActivity();
+    history.current.past.push({ workflow: copyWorkflow(current.current), activity: next.activity });
+    current.current = next.workflow;
+    setWorkflow(next.workflow);
     setSelectedId(null);
     setStatuses({});
     refreshHistory((x) => x + 1);
-    recordActivity('Redid a workflow change');
-  }, [recordActivity]);
+    if (next.activity) appendActivity(next.activity.store, next.activity.entry);
+  }, [flushActivity, appendActivity]);
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (
@@ -366,22 +420,23 @@ function Builder({
         ),
       );
       const keyboardMove = moved.length > 0 && !dragStartPositions.current;
-      if (keyboardMove) remember();
+      const activityKey = `move:${moved
+        .map((node) => node.id)
+        .sort()
+        .join(',')}`;
+      const entry = keyboardMove ? remember(activityKey) : undefined;
       const next = {
         ...current.current,
         nodes: applyNodeChanges(meaningful, current.current.nodes),
       };
       current.current = next;
       setWorkflow(next);
-      if (keyboardMove) {
-        recordActivity(
+      if (entry) {
+        entry.activity = recordActivity(
           moved.length === 1
             ? `Moved “${moved[0].data.label}” on the canvas`
             : `Moved ${moved.length} steps on the canvas`,
-          `move:${moved
-            .map((node) => node.id)
-            .sort()
-            .join(',')}`,
+          activityKey,
         );
       }
     },
@@ -839,7 +894,8 @@ function Builder({
               onDelete={onDelete}
               onConnect={onConnect}
               onNodeDragStart={() => {
-                remember();
+                flushActivity();
+                dragStartWorkflow.current = copyWorkflow(current.current);
                 dragStartPositions.current = new Map(
                   current.current.nodes.map((node) => [node.id, { ...node.position }]),
                 );
@@ -850,12 +906,15 @@ function Builder({
                   return start && (start.x !== node.position.x || start.y !== node.position.y);
                 });
                 dragStartPositions.current = null;
-                if (moved.length)
-                  recordActivity(
+                if (moved.length && dragStartWorkflow.current) {
+                  const entry = remember(undefined, dragStartWorkflow.current);
+                  entry.activity = recordActivity(
                     moved.length === 1
                       ? `Moved “${moved[0].data.label}” on the canvas`
                       : `Moved ${moved.length} steps on the canvas`,
                   );
+                }
+                dragStartWorkflow.current = null;
               }}
               onNodeClick={(_, node) => setSelectedId(node.id)}
               onPaneClick={() => setSelectedId(null)}

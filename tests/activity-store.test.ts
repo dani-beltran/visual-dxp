@@ -60,4 +60,30 @@ describe('activity store', () => {
     store.replaceEntries([]);
     expect(store.getSnapshot()).toEqual([]);
   });
+
+  it('removes the matching activity by ID and only notifies when an entry is removed', () => {
+    const first = entry('first');
+    const second = entry('second');
+    const store = createActivityStore([first, second]);
+    const original = store.getSnapshot();
+    const listener = vi.fn(() => store.getSnapshot());
+    store.subscribe(listener);
+
+    store.remove(first.id);
+    const updated = store.getSnapshot();
+    expect(updated).toEqual([second]);
+    expect(original).toEqual([first, second]);
+    expect(listener).toHaveBeenCalledOnce();
+    expect(listener.mock.results[0].value).toBe(updated);
+
+    store.remove(first.id);
+    store.remove('unknown');
+    expect(store.getSnapshot()).toBe(updated);
+    expect(listener).toHaveBeenCalledOnce();
+
+    store.remove(second.id);
+    expect(store.getSnapshot()).toEqual([]);
+    expect(listener).toHaveBeenCalledTimes(2);
+    expect(listener.mock.results[1].value).toEqual([]);
+  });
 });

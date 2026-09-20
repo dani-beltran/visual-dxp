@@ -177,6 +177,10 @@ describe('builder activity', () => {
       true,
     );
 
+    await act(async () => store.remove(latest.id));
+    expect(host.textContent).not.toContain(latest.action);
+    expect(host.textContent).toContain(oldest.action);
+
     await act(async () => store.replaceEntries([]));
     expect(host.querySelector('time')).toBeNull();
     expect(host.textContent).toMatch(/no activity yet/i);
@@ -221,37 +225,44 @@ describe('builder activity', () => {
     expect(store.getSnapshot()).toEqual([]);
   });
 
-  it('logs each add, undo, and keyboard redo exactly once using the current username', async () => {
+  it('removes only each undone action and restores its original entry on redo', async () => {
     const store = createActivityStore();
-    await renderBuilder({ activityStore: store, activityUser: 'Ada' });
+    const onChange = vi.fn<(workflow: Workflow) => void>();
+    await renderBuilder({ activityStore: store, activityUser: 'Ada', onChange });
     await click(button('Add Delay'));
     expect(store.getSnapshot()).toHaveLength(1);
-    expect(store.getSnapshot()[0]).toMatchObject({
+    const first = store.getSnapshot()[0];
+    expect(first).toMatchObject({
       username: 'Ada',
       action: expect.stringMatching(/add/i),
     });
+    expect(Number.isFinite(Date.parse(first.timestamp))).toBe(true);
+    await click(button('Add Delay'));
+    const second = store.getSnapshot()[1];
+    expect(second.id).not.toBe(first.id);
+    const remote = remoteEntry('server', 'Lin', '2026-09-20T12:00:00.000Z');
+    await act(async () => store.append(remote));
 
-    await renderBuilder({ activityStore: store, activityUser: 'Grace' });
+    await renderBuilder({ activityStore: store, activityUser: 'Grace', onChange });
     await click(historyButton('Undo'));
-    expect(store.getSnapshot()).toHaveLength(2);
-    expect(store.getSnapshot()[1]).toMatchObject({
-      username: 'Grace',
-      action: expect.stringMatching(/undo|undid/i),
-    });
+    expect(store.getSnapshot()).toEqual([first, remote]);
+    expect(onChange.mock.lastCall?.[0].nodes).toHaveLength(2);
+    await click(historyButton('Undo'));
+    expect(store.getSnapshot()).toEqual([remote]);
+    expect(onChange.mock.lastCall?.[0].nodes).toHaveLength(1);
+    expect(historyButton('Undo').disabled).toBe(true);
+
     await act(async () => {
       host.dispatchEvent(
         new KeyboardEvent('keydown', { key: 'z', ctrlKey: true, shiftKey: true, bubbles: true }),
       );
     });
-    expect(store.getSnapshot()).toHaveLength(3);
-    expect(store.getSnapshot()[2]).toMatchObject({
-      username: 'Grace',
-      action: expect.stringMatching(/redo|redid/i),
-    });
-    expect(new Set(store.getSnapshot().map((entry) => entry.id)).size).toBe(3);
-    expect(store.getSnapshot().every((entry) => Number.isFinite(Date.parse(entry.timestamp)))).toBe(
-      true,
-    );
+    expect(store.getSnapshot()).toEqual([remote, first]);
+    expect(onChange.mock.lastCall?.[0].nodes).toHaveLength(2);
+    await click(historyButton('Redo'));
+    expect(store.getSnapshot()).toEqual([remote, first, second]);
+    expect(onChange.mock.lastCall?.[0].nodes).toHaveLength(3);
+    expect(historyButton('Redo').disabled).toBe(true);
   });
 
   it('records deleting a connected node once and restores the node and connection with one Undo', async () => {
@@ -273,8 +284,7 @@ describe('builder activity', () => {
     await click(historyButton('Undo'));
     expect(onChange.mock.lastCall?.[0].nodes.map((node) => node.id)).toEqual(['delay', 'start']);
     expect(onChange.mock.lastCall?.[0].edges).toEqual(workflow.edges);
-    expect(store.getSnapshot()).toHaveLength(2);
-    expect(store.getSnapshot()[1].action).toMatch(/undo|undid/i);
+    expect(store.getSnapshot()).toEqual([]);
     expect(historyButton('Undo').disabled).toBe(true);
   });
 
@@ -302,12 +312,11 @@ describe('builder activity', () => {
     expect(onChange.mock.lastCall?.[0].edges).toEqual([
       expect.objectContaining({ id: 'start-delay', source: 'start', target: 'delay' }),
     ]);
-    expect(store.getSnapshot()).toHaveLength(2);
-    expect(store.getSnapshot()[1].action).toMatch(/undo|undid/i);
+    expect(store.getSnapshot()).toEqual([]);
     expect(historyButton('Undo').disabled).toBe(true);
   });
 
-  it('logs moving a selected node with an arrow key and supports undoing that move', async () => {
+  it('coalesces arrow-key movement into one activity entry and one undo step', async () => {
     vi.useFakeTimers();
     const store = createActivityStore();
     const onChange = vi.fn<(workflow: Workflow) => void>();
@@ -319,9 +328,11 @@ describe('builder activity', () => {
     });
     const node = element<HTMLElement>('[data-id="delay"]');
     await click(node);
-    await act(async () => {
-      node.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
-    });
+    for (let index = 0; index < 3; index += 1) {
+      await act(async () => {
+        node.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+      });
+    }
     expect(
       onChange.mock.lastCall?.[0].nodes.find((entry) => entry.id === 'delay')?.position.x,
     ).toBeGreaterThan(0);
@@ -343,15 +354,15 @@ describe('builder activity', () => {
       x: 0,
       y: 0,
     });
-    expect(store.getSnapshot()).toHaveLength(2);
-    expect(store.getSnapshot()[1].action).toMatch(/undo|undid/i);
+    expect(store.getSnapshot()).toEqual([]);
     expect(historyButton('Undo').disabled).toBe(true);
   });
 
   it('coalesces typing and flushes the latest workflow name when opening Activity', async () => {
     vi.useFakeTimers();
     const store = createActivityStore();
-    await renderBuilder({ activityStore: store });
+    const onChange = vi.fn<(workflow: Workflow) => void>();
+    await renderBuilder({ activityStore: store, onChange });
     await renameWorkflow('Welcome');
     await renameWorkflow('Welcome back');
     expect(store.getSnapshot()).toEqual([]);
@@ -363,6 +374,14 @@ describe('builder activity', () => {
       username: 'You',
       action: expect.stringContaining('Welcome back'),
     });
+    const renamed = store.getSnapshot()[0];
+    await click(historyButton('Undo'));
+    expect(store.getSnapshot()).toEqual([]);
+    expect(onChange.mock.lastCall?.[0].name).toBe('Welcome journey');
+    expect(historyButton('Undo').disabled).toBe(true);
+    await click(historyButton('Redo'));
+    expect(store.getSnapshot()).toEqual([renamed]);
+    expect(onChange.mock.lastCall?.[0].name).toBe('Welcome back');
 
     await renameWorkflow('New visitor journey');
     await click(tab('Activity'));
@@ -373,22 +392,31 @@ describe('builder activity', () => {
     expect(store.getSnapshot()).toHaveLength(2);
   });
 
-  it('flushes pending edits before Undo and when the builder is unmounted', async () => {
+  it('cancels an undone pending edit and only flushes surviving edits on unmount', async () => {
     vi.useFakeTimers();
     const store = createActivityStore();
+    const append = vi.spyOn(store, 'append');
     await renderBuilder({ activityStore: store, activityUser: 'Ada' });
     await renameWorkflow('First edit');
+    await renameWorkflow('First edit continued');
     await click(historyButton('Undo'));
-    expect(store.getSnapshot()).toHaveLength(2);
-    expect(store.getSnapshot()[0].action).toContain('First edit');
-    expect(store.getSnapshot()[1].action).toMatch(/undo|undid/i);
+    expect(store.getSnapshot()).toEqual([]);
+    expect(append).not.toHaveBeenCalled();
+    expect(element<HTMLInputElement>('input[aria-label="Workflow name"]').value).toBe(
+      'Welcome journey',
+    );
+    await act(async () => vi.advanceTimersByTime(1000));
+    expect(append).not.toHaveBeenCalled();
+
     await renameWorkflow('Final edit');
     await act(async () => root.unmount());
     mounted = false;
-    expect(store.getSnapshot()).toHaveLength(3);
-    expect(store.getSnapshot()[2].action).toContain('Final edit');
+    expect(store.getSnapshot()).toHaveLength(1);
+    expect(store.getSnapshot()[0].action).toContain('Final edit');
+    expect(append).toHaveBeenCalledOnce();
     await act(async () => vi.advanceTimersByTime(1000));
-    expect(store.getSnapshot()).toHaveLength(3);
+    expect(store.getSnapshot()).toHaveLength(1);
+    expect(append).toHaveBeenCalledOnce();
   });
 
   it('preserves pending edit attribution when the host changes the store or username', async () => {
@@ -421,5 +449,19 @@ describe('builder activity', () => {
       action: expect.stringContaining('Lin’s draft'),
     });
     expect(first.getSnapshot()).toHaveLength(1);
+    const adaEntry = first.getSnapshot()[0];
+    const graceEntry = second.getSnapshot()[0];
+
+    await click(historyButton('Undo'));
+    expect(second.getSnapshot()).toEqual([graceEntry]);
+    await click(historyButton('Undo'));
+    expect(second.getSnapshot()).toEqual([]);
+    expect(first.getSnapshot()).toEqual([adaEntry]);
+    await click(historyButton('Undo'));
+    expect(first.getSnapshot()).toEqual([]);
+    expect(second.getSnapshot()).toEqual([]);
+    await click(historyButton('Redo'));
+    expect(first.getSnapshot()).toEqual([adaEntry]);
+    expect(second.getSnapshot()).toEqual([]);
   });
 });

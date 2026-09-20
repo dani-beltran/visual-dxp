@@ -112,7 +112,7 @@ The canvas includes a floating node library: hover or focus an icon to see its n
 
 ## Activity
 
-The **Activity** tab shows recent actions with the username, action, and time. It records workflow edits, undo/redo, imports, and exports. Typing is grouped into a single edit; selecting nodes, panning, and zooming do not add entries. JavaScript and JSON remain available through **Export workflow**.
+The **Activity** tab shows recent actions with the username, action, and time. It records workflow edits, imports, and exports. Undo removes the reverted edit's activity entry; Redo restores that original entry, including its username and timestamp. Typing and repeated keyboard moves are grouped into a single undoable edit and activity entry. Selecting nodes, panning, and zooming do not add entries. JavaScript and JSON remain available through **Export workflow**.
 
 Pass a stable store instance to connect the activity feed to your application. Create a separate store for each workflow so their histories remain separate:
 
@@ -137,10 +137,11 @@ interface ActivityStore {
   getSnapshot(): readonly ActivityEntry[];
   subscribe(listener: () => void): () => void;
   append(entry: ActivityEntry): void;
+  remove(id: string): void;
 }
 ```
 
-`getSnapshot` must return the same array reference until entries change. Publish a new immutable snapshot and notify subscribers when local or server updates arrive; `subscribe` returns an unsubscribe function. `append` should update the local snapshot synchronously. A production adapter can then persist that entry asynchronously through the host's API, handling retries and reconciling server updates by entry ID. The included `createActivityStore` supplies these in-memory operations plus `replaceEntries` to accept a complete updated history from the server.
+`getSnapshot` must return the same array reference until entries change. Publish a new immutable snapshot and notify subscribers when local or server updates arrive; `subscribe` returns an unsubscribe function. `append` and `remove` should update the local snapshot synchronously. A production adapter can then persist entries or their deletion asynchronously through the host's API, handling retries and reconciling server updates by entry ID. Undo targets the original entry's ID and store, leaving unrelated activity untouched. Edits undone before their activity is saved cancel the pending entry. The included `createActivityStore` supplies these in-memory operations plus `replaceEntries` to accept a complete updated history from the server.
 
 The builder does not contact an activity server or store activity in localStorage. The fake entries are supplied only by this project's demo; embedded builders start with an empty activity history unless the host supplies entries.
 

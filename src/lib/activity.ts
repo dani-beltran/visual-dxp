@@ -12,6 +12,8 @@ export interface ActivityStore {
   subscribe: (listener: () => void) => () => void;
   /** Update the local snapshot synchronously; the host can persist it asynchronously. */
   append: (entry: ActivityEntry) => void;
+  /** Remove the reverted action locally; the host can synchronize its deletion. */
+  remove: (id: string) => void;
 }
 
 /** In-memory store for demos, or as the local cache of a server-backed adapter. */
@@ -39,6 +41,10 @@ export function createActivityStore(
       };
     },
     append: (entry) => replaceEntries([...entries, entry]),
+    remove: (id) => {
+      if (entries.some((entry) => entry.id === id))
+        replaceEntries(entries.filter((entry) => entry.id !== id));
+    },
     replaceEntries,
   };
 }
