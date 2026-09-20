@@ -543,6 +543,9 @@
   min-height: 0;
   position: relative;
 }
+.dxp-work-area[hidden] {
+  display: none;
+}
 .dxp-canvas {
   flex: 1;
   min-width: 0;

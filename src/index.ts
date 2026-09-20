@@ -2,6 +2,8 @@ export type { ElementPickerProps } from './components/ElementPicker';
 export { ElementPicker } from './components/ElementPicker';
 export type { DXPBuilderProps } from './DXPBuilder';
 export { DXPBuilder } from './DXPBuilder';
+export type { ActivityEntry, ActivityStore } from './lib/activity';
+export { createActivityStore } from './lib/activity';
 export type {
   AIChatConfig,
   AIChatMessage,

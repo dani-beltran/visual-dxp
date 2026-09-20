@@ -26,6 +26,7 @@ import {
   Copy,
   FileJson,
   Globe2,
+  History,
   Layers2,
   Maximize,
   MousePointer2,
@@ -41,7 +42,17 @@ import {
   ZoomIn,
   ZoomOut,
 } from 'lucide-react';
-import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  type CSSProperties,
+  useCallback,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from 'react';
+import { ActivityPanel } from './components/ActivityPanel';
 import { CanvasChat } from './components/CanvasChat';
 import { CanvasHelp } from './components/CanvasHelp';
 import { ElementPicker } from './components/ElementPicker';
@@ -50,6 +61,7 @@ import { NodeLibrary } from './components/NodeLibrary';
 import { PopoverPreview } from './components/PopoverPreview';
 import { Preview } from './components/Preview';
 import { WorkflowCard } from './components/WorkflowCard';
+import { type ActivityEntry, type ActivityStore, createActivityStore } from './lib/activity';
 import {
   type AIChatConfig,
   type AIChatMessage,
@@ -60,7 +72,7 @@ import {
 import { catalog, createNode, defaultWorkflow } from './lib/catalog';
 import { exportWorkflow, validateWorkflow } from './lib/export';
 import { isWorkflow } from './lib/serialization';
-import type { NodeKind, RunLog, StepData, Workflow, WorkflowNode } from './lib/types';
+import type { NodeKind, RunLog, StepData, Workflow, WorkflowEdge, WorkflowNode } from './lib/types';
 import { useDialogFocus } from './lib/useDialogFocus';
 import '@xyflow/react/dist/style.css';
 import './styles/builder.css';
@@ -81,6 +93,10 @@ export interface DXPBuilderProps {
   className?: string;
   style?: CSSProperties;
   persistenceKey?: string;
+  /** One activity store per workflow; the host owns server synchronization. */
+  activityStore?: ActivityStore;
+  /** Username attached to actions taken in this builder. Defaults to "You". */
+  activityUser?: string;
   /** Connect to your authenticated server endpoint; never include provider keys. */
   ai?: AIChatConfig;
 }
@@ -109,8 +125,24 @@ function Builder({
   className = '',
   style,
   persistenceKey,
+  activityStore,
+  activityUser = 'You',
   ai,
 }: DXPBuilderProps) {
+  const [localActivityStore] = useState(() => createActivityStore());
+  const store = activityStore ?? localActivityStore;
+  const subscribeActivity = useCallback(
+    (listener: () => void) => store.subscribe(listener),
+    [store],
+  );
+  const getActivitySnapshot = useCallback(() => store.getSnapshot(), [store]);
+  const activity = useSyncExternalStore(
+    subscribeActivity,
+    getActivitySnapshot,
+    getActivitySnapshot,
+  );
+  const [view, setView] = useState<'canvas' | 'activity'>('canvas');
+  const viewId = useId();
   const [workflow, setWorkflow] = useState<Workflow>(() => {
     if (persistenceKey)
       try {
@@ -124,6 +156,7 @@ function Builder({
   const current = useRef(workflow);
   current.current = workflow;
   const history = useRef<{ past: Workflow[]; future: Workflow[] }>({ past: [], future: [] });
+  const dragStartPositions = useRef<Map<string, { x: number; y: number }> | null>(null);
   const [, refreshHistory] = useState(0);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [canvasAssistant, setCanvasAssistant] = useState<'chat' | 'help' | null>(null);
@@ -153,6 +186,7 @@ function Builder({
     let width = element.clientWidth;
     let timer: ReturnType<typeof setTimeout>;
     const observer = new ResizeObserver(() => {
+      if (element.clientWidth === 0) return;
       if (Math.abs(element.clientWidth - width) < 16) return;
       width = element.clientWidth;
       clearTimeout(timer);
@@ -175,6 +209,63 @@ function Builder({
     [workflow.nodes, selectedId, statuses],
   );
   const notify = useCallback((message: string) => setToast(message), []);
+  const pendingActivity = useRef<{
+    key: string;
+    entry: ActivityEntry;
+    store: ActivityStore;
+    timer: ReturnType<typeof setTimeout>;
+  } | null>(null);
+  const appendActivity = useCallback(
+    (targetStore: ActivityStore, entry: ActivityEntry) => {
+      try {
+        targetStore.append(entry);
+      } catch {
+        notify('The activity could not be saved. Your workflow edit is still applied.');
+      }
+    },
+    [notify],
+  );
+  const flushActivity = useCallback(() => {
+    const pending = pendingActivity.current;
+    if (!pending) return;
+    clearTimeout(pending.timer);
+    pendingActivity.current = null;
+    appendActivity(pending.store, pending.entry);
+  }, [appendActivity]);
+  const recordActivity = useCallback(
+    (action: string, key?: string) => {
+      const pending = pendingActivity.current;
+      if (pending && pending.key === key && pending.store === store) {
+        clearTimeout(pending.timer);
+      } else {
+        flushActivity();
+      }
+      const entry: ActivityEntry = {
+        id: crypto.randomUUID(),
+        username: activityUser.trim() || 'You',
+        action,
+        timestamp: new Date().toISOString(),
+      };
+      if (key) {
+        pendingActivity.current = {
+          key,
+          entry,
+          store,
+          timer: setTimeout(flushActivity, 600),
+        };
+      } else {
+        appendActivity(store, entry);
+      }
+    },
+    [store, activityUser, flushActivity, appendActivity],
+  );
+  // biome-ignore lint/correctness/useExhaustiveDependencies: Flush pending edits when the activity destination or author changes, as well as on unmount.
+  useEffect(() => flushActivity, [flushActivity, store, activityUser]);
+  function changeView(next: 'canvas' | 'activity') {
+    flushActivity();
+    setModal(null);
+    setView(next);
+  }
   useEffect(() => {
     if (!toast) return;
     const timeout = setTimeout(() => setToast(''), 3500);
@@ -201,31 +292,39 @@ function Builder({
     refreshHistory((x) => x + 1);
   }, []);
   const commit = useCallback(
-    (update: (w: Workflow) => Workflow) => {
+    (update: (w: Workflow) => Workflow, action: string, activityKey?: string) => {
+      const next = update(current.current);
+      if (JSON.stringify(next) === JSON.stringify(current.current)) return;
       remember();
-      setWorkflow((w) => update(w));
+      current.current = next;
+      setWorkflow(next);
       setStatuses({});
+      recordActivity(action, activityKey);
     },
-    [remember],
+    [remember, recordActivity],
   );
   const undo = useCallback(() => {
     const prev = history.current.past.pop();
     if (!prev) return;
     history.current.future.push(copyWorkflow(current.current));
+    current.current = prev;
     setWorkflow(prev);
     setSelectedId(null);
     setStatuses({});
     refreshHistory((x) => x + 1);
-  }, []);
+    recordActivity('Undid the last workflow change');
+  }, [recordActivity]);
   const redo = useCallback(() => {
     const next = history.current.future.pop();
     if (!next) return;
     history.current.past.push(copyWorkflow(current.current));
+    current.current = next;
     setWorkflow(next);
     setSelectedId(null);
     setStatuses({});
     refreshHistory((x) => x + 1);
-  }, []);
+    recordActivity('Redid a workflow change');
+  }, [recordActivity]);
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (
@@ -254,27 +353,74 @@ function Builder({
   }, []);
   const onNodesChange = useCallback(
     (changes: NodeChange<WorkflowNode>[]) => {
-      const meaningful = changes.filter((c) => c.type !== 'select');
+      // React Flow reports connected-edge and node removals separately. Handle both in onDelete.
+      const meaningful = changes.filter((c) => c.type !== 'select' && c.type !== 'remove');
       if (!meaningful.length) return;
-      if (changes.some((c) => c.type === 'remove')) remember();
-      setWorkflow((w) => ({
-        ...w,
-        nodes: applyNodeChanges(meaningful, w.nodes),
-        edges: w.edges.filter(
-          (e) =>
-            !changes.some((c) => c.type === 'remove' && (c.id === e.source || c.id === e.target)),
+      const moved = current.current.nodes.filter((node) =>
+        meaningful.some(
+          (change) =>
+            change.type === 'position' &&
+            change.id === node.id &&
+            change.position &&
+            (change.position.x !== node.position.x || change.position.y !== node.position.y),
         ),
-      }));
+      );
+      const keyboardMove = moved.length > 0 && !dragStartPositions.current;
+      if (keyboardMove) remember();
+      const next = {
+        ...current.current,
+        nodes: applyNodeChanges(meaningful, current.current.nodes),
+      };
+      current.current = next;
+      setWorkflow(next);
+      if (keyboardMove) {
+        recordActivity(
+          moved.length === 1
+            ? `Moved “${moved[0].data.label}” on the canvas`
+            : `Moved ${moved.length} steps on the canvas`,
+          `move:${moved
+            .map((node) => node.id)
+            .sort()
+            .join(',')}`,
+        );
+      }
     },
-    [remember],
+    [remember, recordActivity],
   );
-  const onEdgesChange = useCallback(
-    (changes: EdgeChange[]) => {
-      if (changes.some((c) => c.type === 'remove')) remember();
-      setWorkflow((w) => ({ ...w, edges: applyEdgeChanges(changes, w.edges) }));
-    },
-    [remember],
-  );
+  const onEdgesChange = useCallback((changes: EdgeChange[]) => {
+    const updates = changes.filter((change) => change.type !== 'remove');
+    if (!updates.length) return;
+    const next = {
+      ...current.current,
+      edges: applyEdgeChanges(updates, current.current.edges),
+    };
+    current.current = next;
+    setWorkflow(next);
+  }, []);
+  function onDelete({ nodes, edges }: { nodes: WorkflowNode[]; edges: WorkflowEdge[] }) {
+    const removedNodes = new Set(nodes.map((node) => node.id));
+    const removedEdges = new Set(edges.map((edge) => edge.id));
+    const label = (id: string) => current.current.nodes.find((node) => node.id === id)?.data.label;
+    const action = nodes.length
+      ? `${nodes.length === 1 ? `Deleted “${nodes[0].data.label}”` : `Deleted ${nodes.length} steps`}${edges.length ? ` and ${edges.length} ${edges.length === 1 ? 'connection' : 'connections'}` : ''}`
+      : edges.length === 1
+        ? `Disconnected “${label(edges[0].source) ?? 'step'}” from “${label(edges[0].target) ?? 'step'}”`
+        : `Removed ${edges.length} connections`;
+    commit(
+      (w) => ({
+        ...w,
+        nodes: w.nodes.filter((node) => !removedNodes.has(node.id)),
+        edges: w.edges.filter(
+          (edge) =>
+            !removedEdges.has(edge.id) &&
+            !removedNodes.has(edge.source) &&
+            !removedNodes.has(edge.target),
+        ),
+      }),
+      action,
+    );
+    if (selectedId && removedNodes.has(selectedId)) setSelectedId(null);
+  }
   const onConnect = useCallback(
     (connection: Connection) => {
       if (connection.source === connection.target) {
@@ -292,7 +438,11 @@ function Builder({
         notify(problem.message);
         return;
       }
-      commit((w) => ({ ...w, edges: addEdge({ ...connection, type: 'smoothstep' }, w.edges) }));
+      const source = current.current.nodes.find((n) => n.id === connection.source);
+      commit(
+        (w) => ({ ...w, edges: addEdge({ ...connection, type: 'smoothstep' }, w.edges) }),
+        `Connected “${source?.data.label ?? 'step'}” to “${target?.data.label ?? 'step'}”`,
+      );
     },
     [commit, notify],
   );
@@ -307,24 +457,35 @@ function Builder({
           })
         : { x: 200, y: 200 });
     const node = createNode(kind, point);
-    commit((w) => ({ ...w, nodes: [...w.nodes, node] }));
+    commit((w) => ({ ...w, nodes: [...w.nodes, node] }), `Added “${node.data.label}”`);
     setSelectedId(node.id);
     notify(`${catalog.find((c) => c.kind === kind)!.label} added`);
   }
   function patchNode(patch: Partial<StepData>) {
-    commit((w) => ({
-      ...w,
-      nodes: w.nodes.map((n) =>
-        n.id === selectedId ? { ...n, data: { ...n.data, ...patch } } : n,
-      ),
-    }));
+    if (!selected) return;
+    commit(
+      (w) => ({
+        ...w,
+        nodes: w.nodes.map((n) =>
+          n.id === selectedId ? { ...n, data: { ...n.data, ...patch } } : n,
+        ),
+      }),
+      patch.label !== undefined
+        ? `Renamed a step to “${patch.label}”`
+        : `Updated ${patch.description !== undefined ? 'the description of' : 'settings for'} “${selected.data.label}”`,
+      `node:${selected.id}:${Object.keys(patch).sort().join(',')}`,
+    );
   }
   function removeNode() {
-    commit((w) => ({
-      ...w,
-      nodes: w.nodes.filter((n) => n.id !== selectedId),
-      edges: w.edges.filter((e) => e.source !== selectedId && e.target !== selectedId),
-    }));
+    if (!selected) return;
+    commit(
+      (w) => ({
+        ...w,
+        nodes: w.nodes.filter((n) => n.id !== selectedId),
+        edges: w.edges.filter((e) => e.source !== selectedId && e.target !== selectedId),
+      }),
+      `Deleted “${selected.data.label}”`,
+    );
     setSelectedId(null);
   }
   function duplicate() {
@@ -335,7 +496,7 @@ function Builder({
       position: { x: selected.position.x + 40, y: selected.position.y + 190 },
       data: { ...selected.data, label: `${selected.data.label} copy` },
     };
-    commit((w) => ({ ...w, nodes: [...w.nodes, copy] }));
+    commit((w) => ({ ...w, nodes: [...w.nodes, copy] }), `Duplicated “${selected.data.label}”`);
     setSelectedId(copy.id);
   }
   const issues = useMemo(() => validateWorkflow(workflow), [workflow]);
@@ -350,6 +511,9 @@ function Builder({
   async function copyCode() {
     try {
       await navigator.clipboard.writeText(code);
+      recordActivity(
+        `Copied the workflow as ${exportTab === 'javascript' ? 'JavaScript' : 'JSON'}`,
+      );
       notify('Copied to clipboard');
     } catch {
       notify('Clipboard is unavailable. Use Download instead.');
@@ -363,6 +527,9 @@ function Builder({
       code,
       exportTab === 'javascript' ? 'text/javascript' : 'application/json',
     );
+    recordActivity(
+      `Exported the workflow as ${exportTab === 'javascript' ? 'JavaScript' : 'JSON'}`,
+    );
     if (exportTab === 'javascript') onExport?.(script, workflow);
     notify('Your workflow is ready to go');
   }
@@ -371,7 +538,7 @@ function Builder({
     try {
       const value: unknown = JSON.parse(await file.text());
       if (!isWorkflow(value)) throw new Error('Choose a valid Forma workflow JSON file.');
-      commit(() => value);
+      commit(() => value, `Imported workflow “${value.name}”`);
       setSelectedId(null);
       setTimeout(() => void flow.fitView({ padding: 0.2, duration: 300 }), 80);
       notify('Workflow imported');
@@ -384,7 +551,10 @@ function Builder({
     try {
       const url = new URL(websiteDraft, window.location.origin);
       if (!['http:', 'https:'].includes(url.protocol)) throw new Error();
-      commit((w) => ({ ...w, websiteUrl: websiteDraft.trim() }));
+      commit(
+        (w) => ({ ...w, websiteUrl: websiteDraft.trim() }),
+        `Changed the target website to “${websiteDraft.trim()}”`,
+      );
       setModal(null);
       notify('Target website updated');
     } catch {
@@ -413,7 +583,10 @@ function Builder({
     const updated = applyWorkflowOperations(current.current, response.operations);
     const changed = workflowFingerprint(updated) !== baseline;
     if (changed) {
-      commit(() => updated);
+      commit(
+        () => updated,
+        `Applied ${response.operations.length} ${response.operations.length === 1 ? 'edit' : 'edits'} with the AI assistant`,
+      );
       if (selectedId && !updated.nodes.some((node) => node.id === selectedId)) setSelectedId(null);
       notify('AI updated your workflow. Use Undo to revert this change.');
       requestAnimationFrame(() => void flow.fitView({ padding: 0.2, duration: 300 }));
@@ -509,7 +682,15 @@ function Builder({
                 <input
                   aria-label="Workflow name"
                   value={workflow.name}
-                  onChange={(e) => commit((w) => ({ ...w, name: e.target.value }))}
+                  onChange={(e) => {
+                    const name = e.target.value;
+                    commit(
+                      (w) => ({ ...w, name }),
+                      `Renamed the workflow to “${name}”`,
+                      'workflow:name',
+                    );
+                  }}
+                  onBlur={flushActivity}
                 />
                 <span className="dxp-draft-badge">DRAFT</span>
               </div>
@@ -522,6 +703,7 @@ function Builder({
                 onClick={() => {
                   setStatuses({});
                   setModal('preview');
+                  recordActivity(`Opened a test preview of “${workflow.name}”`);
                 }}
               >
                 <Play size={14} /> Test workflow
@@ -537,18 +719,48 @@ function Builder({
           </div>
         </header>
         <div className="dxp-toolbar">
-          <div className="dxp-view-tabs">
-            <button type="button" className="active" onClick={() => setModal(null)}>
+          <div
+            className="dxp-view-tabs"
+            role="tablist"
+            aria-label="Builder views"
+            onKeyDown={(event) => {
+              if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+              event.preventDefault();
+              const next =
+                event.key === 'Home'
+                  ? 'canvas'
+                  : event.key === 'End'
+                    ? 'activity'
+                    : view === 'canvas'
+                      ? 'activity'
+                      : 'canvas';
+              changeView(next);
+              document.getElementById(`${viewId}-${next}-tab`)?.focus();
+            }}
+          >
+            <button
+              type="button"
+              role="tab"
+              id={`${viewId}-canvas-tab`}
+              aria-selected={view === 'canvas'}
+              aria-controls={`${viewId}-canvas-panel`}
+              tabIndex={view === 'canvas' ? 0 : -1}
+              className={view === 'canvas' ? 'active' : ''}
+              onClick={() => changeView('canvas')}
+            >
               <WorkflowIcon size={15} /> Canvas
             </button>
             <button
               type="button"
-              onClick={() => {
-                setExportTab('javascript');
-                setModal('export');
-              }}
+              role="tab"
+              id={`${viewId}-activity-tab`}
+              aria-selected={view === 'activity'}
+              aria-controls={`${viewId}-activity-panel`}
+              tabIndex={view === 'activity' ? 0 : -1}
+              className={view === 'activity' ? 'active' : ''}
+              onClick={() => changeView('activity')}
             >
-              <Code2 size={15} /> JavaScript
+              <History size={15} /> Activity
             </button>
           </div>
           <span className="dxp-toolbar-divider" />
@@ -595,7 +807,13 @@ function Builder({
             <Redo2 size={16} />
           </button>
         </div>
-        <div className="dxp-work-area">
+        <div
+          className="dxp-work-area"
+          role="tabpanel"
+          id={`${viewId}-canvas-panel`}
+          aria-labelledby={`${viewId}-canvas-tab`}
+          hidden={view !== 'canvas'}
+        >
           {/* biome-ignore lint/a11y/noStaticElementInteractions: Dropping is an alternative to the keyboard-accessible node library buttons. */}
           <div
             className="dxp-canvas"
@@ -618,8 +836,27 @@ function Builder({
               defaultEdgeOptions={edgeOptions}
               onNodesChange={onNodesChange}
               onEdgesChange={onEdgesChange}
+              onDelete={onDelete}
               onConnect={onConnect}
-              onNodeDragStart={remember}
+              onNodeDragStart={() => {
+                remember();
+                dragStartPositions.current = new Map(
+                  current.current.nodes.map((node) => [node.id, { ...node.position }]),
+                );
+              }}
+              onNodeDragStop={(_, _node, draggedNodes) => {
+                const moved = draggedNodes.filter((node) => {
+                  const start = dragStartPositions.current?.get(node.id);
+                  return start && (start.x !== node.position.x || start.y !== node.position.y);
+                });
+                dragStartPositions.current = null;
+                if (moved.length)
+                  recordActivity(
+                    moved.length === 1
+                      ? `Moved “${moved[0].data.label}” on the canvas`
+                      : `Moved ${moved.length} steps on the canvas`,
+                  );
+              }}
               onNodeClick={(_, node) => setSelectedId(node.id)}
               onPaneClick={() => setSelectedId(null)}
               onMove={(_, viewport) => setZoom(Math.round(viewport.zoom * 100))}
@@ -627,7 +864,7 @@ function Builder({
               fitViewOptions={{ padding: 0.18, minZoom: 0.35, maxZoom: 1 }}
               minZoom={0.25}
               maxZoom={1.8}
-              deleteKeyCode={['Backspace', 'Delete']}
+              deleteKeyCode={view === 'canvas' ? ['Backspace', 'Delete'] : null}
               proOptions={{ hideAttribution: true }}
             >
               <Background variant={BackgroundVariant.Dots} gap={20} size={1.1} color="#d8e0dc" />
@@ -736,6 +973,15 @@ function Builder({
             />
           )}
         </div>
+        <div
+          className="dxp-work-area"
+          role="tabpanel"
+          id={`${viewId}-activity-panel`}
+          aria-labelledby={`${viewId}-activity-tab`}
+          hidden={view !== 'activity'}
+        >
+          {view === 'activity' && <ActivityPanel entries={activity} />}
+        </div>
         <footer className="dxp-footer">
           <span>
             <span className="dxp-status-dot" />
@@ -770,7 +1016,9 @@ function Builder({
           url={workflow.websiteUrl}
           initialSelector={selected.data.config.selector}
           onClose={() => setPicking(false)}
-          onUrlChange={(url) => commit((w) => ({ ...w, websiteUrl: url }))}
+          onUrlChange={(url) =>
+            commit((w) => ({ ...w, websiteUrl: url }), `Changed the target website to “${url}”`)
+          }
           onSelect={(selector) => {
             patchNode({ config: { ...selected.data.config, selector } });
             setPicking(false);

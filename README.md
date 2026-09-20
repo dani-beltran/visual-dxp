@@ -11,7 +11,7 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:5173. The included Atelier demo website supports the element picker and live workflow testing without additional setup. The demo saves changes in local browser storage.
+Open http://localhost:5173. The included Atelier demo website supports the element picker and live workflow testing without additional setup. The demo saves workflow changes in local browser storage. Its Activity tab starts with illustrative actions from several users; activity stays in memory and resets when the page reloads.
 
 ```sh
 npm test             # Runtime, export, picker bridge, and import boundary tests
@@ -87,6 +87,8 @@ The builder includes its own `ReactFlowProvider`. It accepts `className` and `st
 | `onChange`           | Receives edits to nodes, edges, configuration, name, and website URL. Persist this with your own API when needed.                                                 |
 | `onExport`           | Receives the generated JavaScript and workflow when Download .js is selected.                                                                                     |
 | `persistenceKey`     | Optional localStorage key. A valid saved workflow takes precedence over `initialWorkflow`. Omit to disable browser persistence.                                   |
+| `activityStore`      | Optional external activity store. Reads and subscribes to entries and appends new editor actions. Defaults to an empty in-memory store for this builder.         |
+| `activityUser`       | Username attached to new activity entries; defaults to `"You"`. Pass the current user's display name.                                                             |
 | `ai`                 | Optional `{ endpoint, headers?, credentials? }` for your authenticated chat API. The AI button remains visible with setup guidance until an endpoint is provided. |
 | `className`, `style` | Customize the outer editor container. The parent must provide a height.                                                                                           |
 
@@ -107,6 +109,40 @@ The default journey points to `/demo-site.html`. To use it in another applicatio
 Connections from a step execute in order. An HTTP request currently performs the configured request; its response is not interpolated into later nodes. Branching is based on element existence, not arbitrary JavaScript expressions. An execution limit protects against excessive loops.
 
 The canvas includes a floating node library: hover or focus an icon to see its name, then click or drag it onto the canvas to add a step. It also supports dragging, connecting, node duplication/deletion, undo/redo, zoom, fit-to-view, minimap, and JSON import/export. Delete selects/removes nodes or connections; ⌘/Ctrl+Z undoes changes.
+
+## Activity
+
+The **Activity** tab shows recent actions with the username, action, and time. It records workflow edits, undo/redo, imports, and exports. Typing is grouped into a single edit; selecting nodes, panning, and zooming do not add entries. JavaScript and JSON remain available through **Export workflow**.
+
+Pass a stable store instance to connect the activity feed to your application. Create a separate store for each workflow so their histories remain separate:
+
+```tsx
+import { createActivityStore, DXPBuilder, type ActivityEntry } from '@forma/dxp';
+
+const initialActivity: ActivityEntry[] = [];
+const activityStore = createActivityStore(initialActivity);
+
+export function ExperienceEditor() {
+  return <DXPBuilder activityStore={activityStore} activityUser="Daniel Beltrán" />;
+}
+
+// When the host receives the latest activity from its server:
+// activityStore.replaceEntries(serverEntries);
+```
+
+An `ActivityEntry` has `{ id: string, username: string, action: string, timestamp: string }`; `timestamp` is an ISO date string. The public `ActivityStore` contract is:
+
+```ts
+interface ActivityStore {
+  getSnapshot(): readonly ActivityEntry[];
+  subscribe(listener: () => void): () => void;
+  append(entry: ActivityEntry): void;
+}
+```
+
+`getSnapshot` must return the same array reference until entries change. Publish a new immutable snapshot and notify subscribers when local or server updates arrive; `subscribe` returns an unsubscribe function. `append` should update the local snapshot synchronously. A production adapter can then persist that entry asynchronously through the host's API, handling retries and reconciling server updates by entry ID. The included `createActivityStore` supplies these in-memory operations plus `replaceEntries` to accept a complete updated history from the server.
+
+The builder does not contact an activity server or store activity in localStorage. The fake entries are supplied only by this project's demo; embedded builders start with an empty activity history unless the host supplies entries.
 
 ## AI workflow assistant
 
@@ -189,6 +225,7 @@ HTML and DOM actions are author-controlled content. Import workflows from truste
 - `src/lib/picker.ts` — selector generation and iframe highlighting.
 - `src/lib/types.ts` — public workflow schema.
 - `src/lib/ai.ts` — chat protocol, transport, and validated atomic workflow edits.
+- `src/lib/activity.ts` — public activity entries and subscribable in-memory store.
 - `docs/ai-integration.md` — connect the frontend to the separate AI backend.
 - `public/picker-bridge.js` — standalone bridge deployed on the target website.
 - `public/demo-site.html` — working sample website.
