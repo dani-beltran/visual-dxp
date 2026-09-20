@@ -71,8 +71,18 @@ import {
 } from './lib/ai';
 import { catalog, createNode, defaultWorkflow } from './lib/catalog';
 import { exportWorkflow, validateWorkflow } from './lib/export';
+import { NoteEditingContext } from './lib/noteEditing';
+import { NoteSelectionProvider } from './lib/noteSelection';
 import { isWorkflow } from './lib/serialization';
-import type { NodeKind, RunLog, StepData, Workflow, WorkflowEdge, WorkflowNode } from './lib/types';
+import type {
+  NodeKind,
+  RunLog,
+  StepConfig,
+  StepData,
+  Workflow,
+  WorkflowEdge,
+  WorkflowNode,
+} from './lib/types';
 import { useDialogFocus } from './lib/useDialogFocus';
 import '@xyflow/react/dist/style.css';
 import './styles/builder.css';
@@ -122,7 +132,9 @@ function download(name: string, content: string, type: string) {
 export function DXPBuilder(props: DXPBuilderProps) {
   return (
     <ReactFlowProvider>
-      <Builder {...props} />
+      <NoteSelectionProvider>
+        <Builder {...props} />
+      </NoteSelectionProvider>
     </ReactFlowProvider>
   );
 }
@@ -339,6 +351,25 @@ function Builder({
     },
     [remember, recordActivity],
   );
+  const editNote = useCallback(
+    (id: string, patch: Partial<StepConfig>) => {
+      const note = current.current.nodes.find((node) => node.id === id);
+      if (note?.data.kind !== 'note') return;
+      commit(
+        (w) => ({
+          ...w,
+          nodes: w.nodes.map((node) =>
+            node.id === id
+              ? { ...node, data: { ...node.data, config: { ...node.data.config, ...patch } } }
+              : node,
+          ),
+        }),
+        `Updated settings for “${note.data.label}”`,
+        `node:${id}:config`,
+      );
+    },
+    [commit],
+  );
   const undo = useCallback(() => {
     const prev = history.current.past.pop();
     if (!prev) return;
@@ -384,7 +415,8 @@ function Builder({
       if (
         !(e.metaKey || e.ctrlKey) ||
         e.key.toLowerCase() !== 'z' ||
-        (e.target as HTMLElement).closest('input,textarea,[contenteditable]')
+        ((e.target as HTMLElement).closest('input,textarea,[contenteditable]') &&
+          !(e.target as HTMLElement).closest('.dxp-note-editor'))
       )
         return;
       e.preventDefault();
@@ -483,6 +515,11 @@ function Builder({
         return;
       }
       const target = current.current.nodes.find((n) => n.id === connection.target);
+      const source = current.current.nodes.find((n) => n.id === connection.source);
+      if (source?.data.kind === 'note' || target?.data.kind === 'note') {
+        notify('Notes are canvas annotations and cannot be connected.');
+        return;
+      }
       if (target?.data.kind === 'trigger') {
         notify('Triggers begin a journey and cannot receive connections.');
         return;
@@ -493,7 +530,6 @@ function Builder({
         notify(problem.message);
         return;
       }
-      const source = current.current.nodes.find((n) => n.id === connection.source);
       commit(
         (w) => ({ ...w, edges: addEdge({ ...connection, type: 'smoothstep' }, w.edges) }),
         `Connected “${source?.data.label ?? 'step'}” to “${target?.data.label ?? 'step'}”`,
@@ -884,141 +920,143 @@ function Builder({
                 add(kind, flow.screenToFlowPosition({ x: e.clientX, y: e.clientY }));
             }}
           >
-            <ReactFlow
-              nodes={nodes}
-              edges={workflow.edges}
-              nodeTypes={nodeTypes}
-              defaultEdgeOptions={edgeOptions}
-              onNodesChange={onNodesChange}
-              onEdgesChange={onEdgesChange}
-              onDelete={onDelete}
-              onConnect={onConnect}
-              onNodeDragStart={() => {
-                flushActivity();
-                dragStartWorkflow.current = copyWorkflow(current.current);
-                dragStartPositions.current = new Map(
-                  current.current.nodes.map((node) => [node.id, { ...node.position }]),
-                );
-              }}
-              onNodeDragStop={(_, _node, draggedNodes) => {
-                const moved = draggedNodes.filter((node) => {
-                  const start = dragStartPositions.current?.get(node.id);
-                  return start && (start.x !== node.position.x || start.y !== node.position.y);
-                });
-                dragStartPositions.current = null;
-                if (moved.length && dragStartWorkflow.current) {
-                  const entry = remember(undefined, dragStartWorkflow.current);
-                  entry.activity = recordActivity(
-                    moved.length === 1
-                      ? `Moved “${moved[0].data.label}” on the canvas`
-                      : `Moved ${moved.length} steps on the canvas`,
+            <NoteEditingContext.Provider value={editNote}>
+              <ReactFlow
+                nodes={nodes}
+                edges={workflow.edges}
+                nodeTypes={nodeTypes}
+                defaultEdgeOptions={edgeOptions}
+                onNodesChange={onNodesChange}
+                onEdgesChange={onEdgesChange}
+                onDelete={onDelete}
+                onConnect={onConnect}
+                onNodeDragStart={() => {
+                  flushActivity();
+                  dragStartWorkflow.current = copyWorkflow(current.current);
+                  dragStartPositions.current = new Map(
+                    current.current.nodes.map((node) => [node.id, { ...node.position }]),
                   );
-                }
-                dragStartWorkflow.current = null;
-              }}
-              onNodeClick={(_, node) => setSelectedId(node.id)}
-              onPaneClick={() => setSelectedId(null)}
-              onMove={(_, viewport) => setZoom(Math.round(viewport.zoom * 100))}
-              fitView
-              fitViewOptions={{ padding: 0.18, minZoom: 0.35, maxZoom: 1 }}
-              minZoom={0.25}
-              maxZoom={1.8}
-              deleteKeyCode={view === 'canvas' ? ['Backspace', 'Delete'] : null}
-              proOptions={{ hideAttribution: true }}
-            >
-              <Background variant={BackgroundVariant.Dots} gap={20} size={1.1} color="#d8e0dc" />
-              <Panel position="top-left" className="dxp-canvas-heading">
-                <div className="dxp-canvas-kicker">
-                  <span /> YOUR EXPERIENCE, CONNECTED
-                </div>
-                <h2>Make every visit feel personal.</h2>
-                <p>A few simple steps. A more memorable welcome.</p>
-              </Panel>
-              <Panel position="top-right">
-                <button
-                  type="button"
-                  className="dxp-import-button"
-                  onClick={() => upload.current?.click()}
-                  title="Import a workflow JSON file"
-                >
-                  <Upload size={14} /> Import
-                </button>
-              </Panel>
-              {showMinimap && (
-                <MiniMap
-                  nodeColor={(n) =>
-                    catalog.find((c) => c.kind === n.data.kind)?.color === 'green'
-                      ? '#c4e5d5'
-                      : '#dfebe6'
+                }}
+                onNodeDragStop={(_, _node, draggedNodes) => {
+                  const moved = draggedNodes.filter((node) => {
+                    const start = dragStartPositions.current?.get(node.id);
+                    return start && (start.x !== node.position.x || start.y !== node.position.y);
+                  });
+                  dragStartPositions.current = null;
+                  if (moved.length && dragStartWorkflow.current) {
+                    const entry = remember(undefined, dragStartWorkflow.current);
+                    entry.activity = recordActivity(
+                      moved.length === 1
+                        ? `Moved “${moved[0].data.label}” on the canvas`
+                        : `Moved ${moved.length} steps on the canvas`,
+                    );
                   }
-                  maskColor="rgba(241,246,243,.7)"
-                  zoomable
-                  pannable
-                />
-              )}
-              <Panel position="bottom-left" className="dxp-canvas-dock nodrag nopan nowheel">
-                <div className="dxp-canvas-controls">
+                  dragStartWorkflow.current = null;
+                }}
+                onNodeClick={(_, node) => setSelectedId(node.id)}
+                onPaneClick={() => setSelectedId(null)}
+                onMove={(_, viewport) => setZoom(Math.round(viewport.zoom * 100))}
+                fitView
+                fitViewOptions={{ padding: 0.18, minZoom: 0.35, maxZoom: 1 }}
+                minZoom={0.25}
+                maxZoom={1.8}
+                deleteKeyCode={view === 'canvas' ? ['Backspace', 'Delete'] : null}
+                proOptions={{ hideAttribution: true }}
+              >
+                <Background variant={BackgroundVariant.Dots} gap={20} size={1.1} color="#d8e0dc" />
+                <Panel position="top-left" className="dxp-canvas-heading">
+                  <div className="dxp-canvas-kicker">
+                    <span /> YOUR EXPERIENCE, CONNECTED
+                  </div>
+                  <h2>Make every visit feel personal.</h2>
+                  <p>A few simple steps. A more memorable welcome.</p>
+                </Panel>
+                <Panel position="top-right">
                   <button
                     type="button"
-                    onClick={() => void flow.zoomOut({ duration: 180 })}
-                    title="Zoom out"
+                    className="dxp-import-button"
+                    onClick={() => upload.current?.click()}
+                    title="Import a workflow JSON file"
                   >
-                    <ZoomOut size={17} />
-                  </button>
-                  <span>{zoom}%</span>
-                  <button
-                    type="button"
-                    onClick={() => void flow.zoomIn({ duration: 180 })}
-                    title="Zoom in"
-                  >
-                    <ZoomIn size={17} />
-                  </button>
-                  <i />
-                  <button
-                    type="button"
-                    onClick={() => void flow.fitView({ padding: 0.18, duration: 300 })}
-                    title="Fit all nodes"
-                  >
-                    <Maximize size={16} />
-                  </button>
-                  <button
-                    type="button"
-                    className={showMinimap ? 'active' : ''}
-                    onClick={() => setShowMinimap(!showMinimap)}
-                    title="Toggle minimap"
-                  >
-                    <Layers2 size={16} />
-                  </button>
-                </div>
-                <NodeLibrary onAdd={add} />
-                <div className="dxp-canvas-assistants">
-                  <CanvasChat
-                    open={canvasAssistant === 'chat'}
-                    onOpenChange={toggleChat}
-                    configured={!!ai?.endpoint}
-                    selectedLabel={selected?.data.label}
-                    onSend={sendAIMessage}
-                  />
-                  <CanvasHelp open={canvasAssistant === 'help'} onOpenChange={toggleHelp} />
-                </div>
-              </Panel>
-              {workflow.nodes.length === 0 && (
-                <Panel position="top-center" className="dxp-empty-canvas">
-                  <span>
-                    <Plus size={24} />
-                  </span>
-                  <h2>Every experience starts somewhere.</h2>
-                  <p>Add a trigger from the library to begin your journey.</p>
-                  <button
-                    type="button"
-                    className="dxp-button dxp-button-primary"
-                    onClick={() => add('trigger')}
-                  >
-                    Add your first trigger
+                    <Upload size={14} /> Import
                   </button>
                 </Panel>
-              )}
-            </ReactFlow>
+                {showMinimap && (
+                  <MiniMap
+                    nodeColor={(n) =>
+                      catalog.find((c) => c.kind === n.data.kind)?.color === 'green'
+                        ? '#c4e5d5'
+                        : '#dfebe6'
+                    }
+                    maskColor="rgba(241,246,243,.7)"
+                    zoomable
+                    pannable
+                  />
+                )}
+                <Panel position="bottom-left" className="dxp-canvas-dock nodrag nopan nowheel">
+                  <div className="dxp-canvas-controls">
+                    <button
+                      type="button"
+                      onClick={() => void flow.zoomOut({ duration: 180 })}
+                      title="Zoom out"
+                    >
+                      <ZoomOut size={17} />
+                    </button>
+                    <span>{zoom}%</span>
+                    <button
+                      type="button"
+                      onClick={() => void flow.zoomIn({ duration: 180 })}
+                      title="Zoom in"
+                    >
+                      <ZoomIn size={17} />
+                    </button>
+                    <i />
+                    <button
+                      type="button"
+                      onClick={() => void flow.fitView({ padding: 0.18, duration: 300 })}
+                      title="Fit all nodes"
+                    >
+                      <Maximize size={16} />
+                    </button>
+                    <button
+                      type="button"
+                      className={showMinimap ? 'active' : ''}
+                      onClick={() => setShowMinimap(!showMinimap)}
+                      title="Toggle minimap"
+                    >
+                      <Layers2 size={16} />
+                    </button>
+                  </div>
+                  <NodeLibrary onAdd={add} />
+                  <div className="dxp-canvas-assistants">
+                    <CanvasChat
+                      open={canvasAssistant === 'chat'}
+                      onOpenChange={toggleChat}
+                      configured={!!ai?.endpoint}
+                      selectedLabel={selected?.data.label}
+                      onSend={sendAIMessage}
+                    />
+                    <CanvasHelp open={canvasAssistant === 'help'} onOpenChange={toggleHelp} />
+                  </div>
+                </Panel>
+                {workflow.nodes.length === 0 && (
+                  <Panel position="top-center" className="dxp-empty-canvas">
+                    <span>
+                      <Plus size={24} />
+                    </span>
+                    <h2>Every experience starts somewhere.</h2>
+                    <p>Add a trigger from the library to begin your journey.</p>
+                    <button
+                      type="button"
+                      className="dxp-button dxp-button-primary"
+                      onClick={() => add('trigger')}
+                    >
+                      Add your first trigger
+                    </button>
+                  </Panel>
+                )}
+              </ReactFlow>
+            </NoteEditingContext.Provider>
           </div>
           {selected && (
             <NodeInspector

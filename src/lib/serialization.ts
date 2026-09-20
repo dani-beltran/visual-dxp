@@ -1,6 +1,7 @@
+import { isNoteMarks } from './noteText';
 import type { Workflow } from './types';
 
-const kinds = new Set(['trigger', 'http', 'dom', 'delay', 'fork', 'loop', 'popover']);
+const kinds = new Set(['trigger', 'http', 'dom', 'delay', 'fork', 'loop', 'popover', 'note']);
 const strings = [
   'event',
   'selector',
@@ -15,8 +16,11 @@ const strings = [
   'contentType',
   'content',
   'position',
+  'noteText',
+  'noteColor',
 ];
 const numbers = ['duration', 'iterations', 'width'];
+const booleans = ['noteBold', 'noteItalic', 'noteStrikethrough'];
 const object = (value: unknown): value is Record<string, unknown> =>
   !!value && typeof value === 'object' && !Array.isArray(value);
 /** Structural check for untrusted JSON; incomplete but editable configurations remain valid. */
@@ -54,7 +58,13 @@ export function isWorkflow(value: unknown): value is Workflow {
         (key) =>
           config[key] !== undefined &&
           (typeof config[key] !== 'number' || !Number.isFinite(config[key])),
-      )
+      ) ||
+      booleans.some((key) => config[key] !== undefined && typeof config[key] !== 'boolean') ||
+      (config.noteMarks !== undefined &&
+        !isNoteMarks(config.noteMarks, ((config.noteText as string | undefined) ?? '').length)) ||
+      (config.noteColor !== undefined &&
+        config.noteColor !== 'transparent' &&
+        !/^#[\da-f]{6}$/i.test(config.noteColor as string))
     )
       return false;
     nodeIds.add(node.id);

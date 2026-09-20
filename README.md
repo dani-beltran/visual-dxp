@@ -105,10 +105,13 @@ The default journey points to `/demo-site.html`. To use it in another applicatio
 | Condition      | Tests whether a CSS selector matches. The upper `true` output runs when found; the lower `false` output runs otherwise.                                                          |
 | Loop           | Executes the complete `body` path 1–1,000 times, then executes the `done` path once. Do not connect the body back to the loop; graph cycles are rejected.                        |
 | Popover        | Author-provided HTML or a sandboxed iframe, 240–960px wide, placed at screen center, any corner, or beneath a picked anchor. Anchored popovers reposition on scrolling/resizing. |
+| Note           | Editable canvas text with bold, italic, and strikethrough formatting, preset or custom background colors, and a transparent option. Notes have no connections and do not run. |
 
 Connections from a step execute in order. An HTTP request currently performs the configured request; its response is not interpolated into later nodes. Branching is based on element existence, not arbitrary JavaScript expressions. An execution limit protects against excessive loops.
 
 The canvas includes a floating node library: hover or focus an icon to see its name, then click or drag it onto the canvas to add a step. It also supports dragging, connecting, node duplication/deletion, undo/redo, zoom, fit-to-view, minimap, and JSON import/export. Delete selects/removes nodes or connections; ⌘/Ctrl+Z undoes changes.
+
+Add a **Note** from the library and type directly on it. Select text on the note or in its details panel, then choose bold, italic, or strikethrough to format just that selection. The details panel also controls the background color. Drag the note's header to move it. Notes are saved in workflow JSON, including mixed text formatting, but are excluded from exported JavaScript.
 
 ## Activity
 

@@ -1,4 +1,5 @@
 import { createRuntime } from './runtime';
+import { isNoteMarks } from './noteText';
 import type { ValidationIssue, Workflow } from './types';
 
 export function validateWorkflow(workflow: Workflow): ValidationIssue[] {
@@ -43,7 +44,16 @@ export function validateWorkflow(workflow: Workflow): ValidationIssue[] {
       { message: 'Every connection must have an ID, source, target, and valid output handle.' },
     ];
   }
-  const knownKinds = new Set(['trigger', 'http', 'dom', 'delay', 'fork', 'loop', 'popover']);
+  const knownKinds = new Set([
+    'trigger',
+    'http',
+    'dom',
+    'delay',
+    'fork',
+    'loop',
+    'popover',
+    'note',
+  ]);
   const ids = new Set<string>();
   const nodeMap = new Map(workflow.nodes.map((node) => [node.id, node]));
   const add = (message: string, nodeId?: string) =>
@@ -98,6 +108,8 @@ export function validateWorkflow(workflow: Workflow): ValidationIssue[] {
       'contentType',
       'content',
       'position',
+      'noteText',
+      'noteColor',
     ] as const;
     if (
       textFields.some((field) => config[field] !== undefined && typeof config[field] !== 'string')
@@ -105,7 +117,23 @@ export function validateWorkflow(workflow: Workflow): ValidationIssue[] {
       add('Step text parameters must contain strings.', node.id);
       continue;
     }
+    if (config.noteMarks !== undefined && !isNoteMarks(config.noteMarks, (config.noteText ?? '').length))
+      add('Note text formatting must use sorted, nonoverlapping ranges within the note text.', node.id);
     switch (node.data.kind) {
+      case 'note':
+        if (
+          (['noteBold', 'noteItalic', 'noteStrikethrough'] as const).some(
+            (field) => config[field] !== undefined && typeof config[field] !== 'boolean',
+          )
+        )
+          add('Note text formatting must contain boolean values.', node.id);
+        if (
+          config.noteColor !== undefined &&
+          config.noteColor !== 'transparent' &&
+          !/^#[\da-f]{6}$/i.test(config.noteColor)
+        )
+          add('Note colors must be a six-digit hex color or transparent.', node.id);
+        break;
       case 'trigger':
         if (
           config.event &&
@@ -202,6 +230,13 @@ export function validateWorkflow(workflow: Workflow): ValidationIssue[] {
       add('A connection refers to a missing step.');
       continue;
     }
+    if (source.data.kind === 'note' || target.data.kind === 'note') {
+      add(
+        'Notes cannot have workflow connections.',
+        source.data.kind === 'note' ? source.id : target.id,
+      );
+      continue;
+    }
     if (target.data.kind === 'trigger')
       add('Triggers cannot receive incoming connections.', target.id);
     if (source.data.kind === 'fork' && !['true', 'false'].includes(edge.sourceHandle ?? ''))
@@ -241,22 +276,29 @@ export function validateWorkflow(workflow: Workflow): ValidationIssue[] {
 export function exportWorkflow(workflow: Workflow): string {
   const issues = validateWorkflow(workflow);
   if (issues.length) throw new Error(issues.map((issue) => issue.message).join('\n'));
+  const notes = new Set(
+    workflow.nodes.filter((node) => node.data.kind === 'note').map((node) => node.id),
+  );
   // Export configuration only: editor positions, selection, and transient status
   // are unnecessary in a production snippet.
   const definition = {
     version: workflow.version,
     name: workflow.name,
     websiteUrl: workflow.websiteUrl,
-    nodes: workflow.nodes.map(({ id, data }) => ({
-      id,
-      data: { kind: data.kind, label: data.label, config: data.config },
-    })),
-    edges: workflow.edges.map(({ id, source, target, sourceHandle }) => ({
-      id,
-      source,
-      target,
-      sourceHandle,
-    })),
+    nodes: workflow.nodes
+      .filter((node) => node.data.kind !== 'note')
+      .map(({ id, data }) => ({
+        id,
+        data: { kind: data.kind, label: data.label, config: data.config },
+      })),
+    edges: workflow.edges
+      .filter((edge) => !notes.has(edge.source) && !notes.has(edge.target))
+      .map(({ id, source, target, sourceHandle }) => ({
+        id,
+        source,
+        target,
+        sourceHandle,
+      })),
   };
   const json = JSON.stringify(definition, null, 2)
     .replace(/</g, '\\u003c')

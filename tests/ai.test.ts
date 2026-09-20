@@ -41,6 +41,55 @@ afterEach(() => {
 });
 
 describe('atomic AI workflow edits', () => {
+  it('adds and updates notes while preserving explicit false formatting and unchanged fields', () => {
+    const config: StepConfig = {
+      noteText: 'Explain this journey',
+      noteColor: '#fff4b8',
+      noteBold: true,
+      noteItalic: false,
+      noteStrikethrough: true,
+    };
+    const added = applyWorkflowOperations(workflow(), [
+      { type: 'add_node', node: step('note', 'note', config) },
+    ]);
+    expect(added.nodes.at(-1)).toEqual(step('note', 'note', config));
+    const updated = applyWorkflowOperations(added, [
+      {
+        type: 'update_node',
+        id: 'note',
+        config: { noteText: 'Reviewed', noteColor: 'transparent', noteBold: false },
+      },
+    ]);
+    expect(updated.nodes.at(-1)?.data.config).toEqual({
+      ...config,
+      noteText: 'Reviewed',
+      noteColor: 'transparent',
+      noteBold: false,
+      noteItalic: false,
+      noteStrikethrough: false,
+      noteMarks: [],
+    });
+    expect(added.nodes.at(-1)?.data.config).toEqual(config);
+  });
+
+  it('rejects connecting notes from either direction, including updated connections', () => {
+    const original = workflow();
+    original.nodes.push(step('note', 'note'));
+    for (const edge of [
+      { id: 'annotation', source: 'start', target: 'note' },
+      { id: 'annotation', source: 'note', target: 'wait' },
+    ]) {
+      expect(() => applyWorkflowOperations(original, [{ type: 'add_edge', edge }])).toThrow(
+        'Notes cannot have workflow connections.',
+      );
+    }
+    expect(() =>
+      applyWorkflowOperations(original, [
+        { type: 'update_edge', id: 'start-wait', target: 'note' },
+      ]),
+    ).toThrow('Notes cannot have workflow connections.');
+  });
+
   it('adds, updates and connects nodes without mutating the original', () => {
     const original = workflow();
     const snapshot = JSON.stringify(original);
@@ -302,6 +351,79 @@ describe('atomic AI workflow edits', () => {
 });
 
 describe('AI protocol boundaries', () => {
+  it('retains selection formatting in requests, fingerprints, and merged mark-only updates', () => {
+    const input = request();
+    input.workflow.nodes.push(step('note', 'note', {
+      noteText: 'Hello world',
+      noteMarks: [{ start: 6, end: 11, bold: true, italic: false }],
+    }));
+    const parsed = parseAIChatRequest(input);
+    expect(parsed.workflow.nodes.at(-1)?.data.config.noteMarks).toEqual([{ start: 6, end: 11, bold: true, italic: false }]);
+    const modified = applyWorkflowOperations(input.workflow, [{ type: 'update_node', id: 'note', config: { noteMarks: [{ start: 0, end: 5, italic: true, untrusted: '<script>' }] } }]);
+    expect(modified.nodes.at(-1)?.data.config.noteMarks).toEqual([{ start: 0, end: 5, italic: true }]);
+    expect(workflowFingerprint(modified)).not.toBe(workflowFingerprint(input.workflow));
+    expect(() => applyWorkflowOperations(input.workflow, [{ type: 'update_node', id: 'note', config: { noteMarks: [{ start: 0, end: 12, bold: true }] } }])).toThrow(/ranges within the note text/);
+  });
+
+  it('clears stale selected and legacy formatting when AI replaces note text without marks', () => {
+    const original = workflow();
+    original.nodes.push(step('note', 'note', { noteText: 'Old explanation', noteBold: true, noteMarks: [{ start: 4, end: 15, italic: true }] }));
+    const replaced = applyWorkflowOperations(original, [{ type: 'update_node', id: 'note', config: { noteText: 'New' } }]);
+    expect(replaced.nodes.at(-1)?.data.config).toEqual({ noteText: 'New', noteMarks: [], noteBold: false, noteItalic: false, noteStrikethrough: false });
+    const styled = applyWorkflowOperations(original, [{ type: 'update_node', id: 'note', config: { noteText: 'New', noteMarks: [{ start: 0, end: 3, bold: true }] } }]);
+    expect(styled.nodes.at(-1)?.data.config.noteMarks).toEqual([{ start: 0, end: 3, bold: true }]);
+  });
+
+  it('retains note configuration in requests and fingerprints every editable note field', () => {
+    const input = request();
+    const config: StepConfig = {
+      noteText: 'Review before launch',
+      noteColor: 'transparent',
+      noteBold: false,
+      noteItalic: true,
+      noteStrikethrough: false,
+    };
+    input.workflow.nodes.push(step('note', 'note', config));
+    input.selectedNodeIds = ['note'];
+    const parsed = parseAIChatRequest(input);
+    expect(parsed.workflow.nodes.at(-1)?.data.config).toEqual(config);
+    expect(parsed.selectedNodeIds).toEqual(['note']);
+    for (const patch of [
+      { noteText: 'Changed' },
+      { noteColor: '#aabbcc' },
+      { noteBold: true },
+      { noteItalic: false },
+      { noteStrikethrough: true },
+    ]) {
+      const modified = structuredClone(input.workflow);
+      Object.assign(modified.nodes[modified.nodes.length - 1].data.config, patch);
+      expect(workflowFingerprint(modified)).not.toBe(workflowFingerprint(input.workflow));
+    }
+  });
+
+  it('rejects malformed note fields and connected annotations at the AI boundary', () => {
+    for (const config of [
+      { noteText: [] },
+      { noteColor: '#abc' },
+      { noteBold: 'false' },
+      { noteItalic: 1 },
+      { noteStrikethrough: null },
+      { noteMarks: [{ start: 0, end: 1, bold: 'true' }] },
+      { noteMarks: [{ start: 2, end: 4 }, { start: 1, end: 2 }] },
+    ]) {
+      expect(() =>
+        parseAIChatResponse({
+          message: 'Updated',
+          operations: [{ type: 'update_node', id: 'note', config }],
+        }),
+      ).toThrow();
+    }
+    const input = request();
+    input.workflow.nodes.push(step('note', 'note'));
+    input.workflow.edges.push({ id: 'annotation', source: 'note', target: 'wait' });
+    expect(() => parseAIChatRequest(input)).toThrow('Notes cannot have workflow connections.');
+  });
+
   it('validates operations and rejects oversized and malformed input', () => {
     for (const operations of [
       null,

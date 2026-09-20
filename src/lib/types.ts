@@ -1,5 +1,13 @@
 import type { Edge, Node } from '@xyflow/react';
-export type NodeKind = 'trigger' | 'http' | 'dom' | 'delay' | 'fork' | 'loop' | 'popover';
+export type NodeKind = 'trigger' | 'http' | 'dom' | 'delay' | 'fork' | 'loop' | 'popover' | 'note';
+/** A styled text range using UTF-16 offsets, sorted without overlapping other ranges. */
+export interface NoteMark {
+  start: number;
+  end: number;
+  bold?: boolean;
+  italic?: boolean;
+  strikethrough?: boolean;
+}
 export interface StepConfig {
   event?: 'page-load' | 'click' | 'mouseover' | 'submit' | 'change';
   selector?: string;
@@ -17,6 +25,15 @@ export interface StepConfig {
   content?: string;
   position?: 'center' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'anchor';
   width?: number;
+  /** Canvas annotation text; never executed or included in the exported script. */
+  noteText?: string;
+  /** Note background, as a six-digit hex color or 'transparent'. */
+  noteColor?: string;
+  noteMarks?: NoteMark[];
+  /** Legacy whole-note formatting, used only when noteMarks is absent. */
+  noteBold?: boolean;
+  noteItalic?: boolean;
+  noteStrikethrough?: boolean;
 }
 export type StepData = {
   kind: NodeKind;

@@ -201,6 +201,9 @@ export function createRuntime(workflow: Workflow, options: RuntimeOptions = {}):
     aborted();
     const node = nodes.get(nodeId);
     if (!node) throw new Error(`Step “${nodeId}” does not exist.`);
+    // Imported graphs can bypass validation. An annotation never executes or
+    // acts as a bridge to downstream steps, even if it has malformed connections.
+    if (node.data.kind === 'note') return;
     if (state.active.has(nodeId)) {
       const message = 'Circular connections are not supported. Use a Repeat step instead.';
       log(nodeId, 'error', message);

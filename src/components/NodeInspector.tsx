@@ -13,12 +13,15 @@ import {
   PanelTop,
   Repeat2,
   ScanLine,
+  StickyNote,
   Timer,
   Trash2,
   X,
 } from 'lucide-react';
 import { type ReactNode, type SelectHTMLAttributes, useEffect, useId, useState } from 'react';
 import type { NodeKind, StepConfig, StepData, WorkflowNode } from '../lib/types';
+import { NoteControls } from './NoteControls';
+import { NoteTextEditor } from './NoteTextEditor';
 import '../styles/inspector.css';
 
 interface NodeInspectorProps {
@@ -73,6 +76,12 @@ const details = {
     icon: PanelTop,
     summary: 'Bring a message or embedded page into the moment.',
     color: 'teal',
+  },
+  note: {
+    name: 'Note',
+    icon: StickyNote,
+    summary: 'Keep ideas, context, and reminders alongside your workflow.',
+    color: 'amber',
   },
 } satisfies Record<NodeKind, { name: string; icon: typeof Timer; summary: string; color: string }>;
 
@@ -161,6 +170,7 @@ export function NodeInspector({
   const prefix = useId();
   const config = node.data.config;
   const metadata = details[node.data.kind];
+  const isNote = node.data.kind === 'note';
   const Icon = metadata.icon;
   const id = (name: string) => `${prefix}-${name}`;
   const update = (patch: Partial<StepConfig>) => onChange({ config: { ...config, ...patch } });
@@ -202,12 +212,12 @@ export function NodeInspector({
   return (
     <aside className="dxp-inspector" aria-label={`${metadata.name} configuration`}>
       <header className="dxp-inspector-header">
-        <div className="dxp-inspector-eyebrow">STEP DETAILS</div>
+        <div className="dxp-inspector-eyebrow">{isNote ? 'NOTE DETAILS' : 'STEP DETAILS'}</div>
         <button
           type="button"
           className="dxp-inspector-icon-button"
-          title="Close step details"
-          aria-label="Close step details"
+          title={isNote ? 'Close note details' : 'Close step details'}
+          aria-label={isNote ? 'Close note details' : 'Close step details'}
           onClick={onClose}
         >
           <X size={17} />
@@ -220,11 +230,11 @@ export function NodeInspector({
           </div>
           <div>
             <h2>{metadata.name}</h2>
-            <span>Workflow step</span>
+            <span>{isNote ? 'Canvas annotation' : 'Workflow step'}</span>
           </div>
         </div>
         <p className="dxp-inspector-description">{metadata.summary}</p>
-        <Field label="Step name" htmlFor={id('name')}>
+        <Field label={isNote ? 'Note name' : 'Step name'} htmlFor={id('name')}>
           <input
             id={id('name')}
             value={node.data.label}
@@ -233,8 +243,34 @@ export function NodeInspector({
           />
         </Field>
         <div className="dxp-inspector-section-label">
-          <Braces size={14} /> Parameters
+          {isNote ? <StickyNote size={14} /> : <Braces size={14} />}
+          {isNote ? 'Text & appearance' : 'Parameters'}
         </div>
+
+        {isNote && (
+          <>
+            <Field
+              label="Note text"
+              htmlFor={id('note-text')}
+              hint="You can also edit this text directly on the canvas."
+            >
+              <NoteTextEditor
+                key={node.id}
+                id={id('note-text')}
+                noteId={node.id}
+                config={config}
+                ariaLabel="Note text"
+                className="dxp-note-inspector-editor"
+                onChange={update}
+              />
+            </Field>
+            <NoteControls noteId={node.id} config={config} onChange={update} />
+            <div className="dxp-inspector-note">
+              <Info size={15} />
+              <p>Notes stay on your canvas and are skipped when the workflow runs.</p>
+            </div>
+          </>
+        )}
 
         {node.data.kind === 'trigger' && (
           <>
@@ -584,14 +620,18 @@ export function NodeInspector({
         )}
       </div>
       <footer className="dxp-inspector-footer">
-        <button type="button" onClick={onDuplicate} title="Duplicate step">
+        <button
+          type="button"
+          onClick={onDuplicate}
+          title={isNote ? 'Duplicate note' : 'Duplicate step'}
+        >
           <Copy size={14} /> Duplicate
         </button>
         <button
           type="button"
           className="dxp-inspector-delete"
           onClick={onDelete}
-          title="Delete step"
+          title={isNote ? 'Delete note' : 'Delete step'}
         >
           <Trash2 size={14} /> Delete
         </button>

@@ -25,6 +25,7 @@ export { createRuntime, executeWorkflow } from './lib/runtime';
 export { isWorkflow } from './lib/serialization';
 export type {
   NodeKind,
+  NoteMark,
   RunLog,
   StepConfig,
   StepData,

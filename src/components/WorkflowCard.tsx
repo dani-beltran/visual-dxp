@@ -1,8 +1,15 @@
 import { Handle, type NodeProps, Position } from '@xyflow/react';
 import { Check, Circle, Ellipsis, LoaderCircle } from 'lucide-react';
+import { useContext } from 'react';
 import { catalog, stepSummary } from '../lib/catalog';
+import { NoteEditingContext } from '../lib/noteEditing';
 import type { WorkflowNode } from '../lib/types';
-export function WorkflowCard({ data, selected }: NodeProps<WorkflowNode>) {
+import { NoteCard } from './NoteCard';
+
+export function WorkflowCard({ id, data, selected }: NodeProps<WorkflowNode>) {
+  const editNote = useContext(NoteEditingContext);
+  if (data.kind === 'note')
+    return <NoteCard id={id} data={data} selected={selected} onChange={editNote} />;
   const entry = catalog.find((x) => x.kind === data.kind)!;
   const Icon = entry.icon;
   const split = data.kind === 'fork' || data.kind === 'loop';

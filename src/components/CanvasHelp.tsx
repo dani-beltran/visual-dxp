@@ -1,4 +1,4 @@
-import { CircleHelp, Hand, MousePointer2, Plus, Workflow, X } from 'lucide-react';
+import { CircleHelp, Hand, MousePointer2, Plus, StickyNote, Workflow, X } from 'lucide-react';
 import { useId, useLayoutEffect, useRef, useState } from 'react';
 
 const instructions = [
@@ -11,6 +11,11 @@ const instructions = [
     icon: MousePointer2,
     title: 'Arrange and configure',
     text: 'Drag nodes to move them. Click a node to open its settings, where you can also duplicate or delete it.',
+  },
+  {
+    icon: StickyNote,
+    title: 'Leave a note',
+    text: 'Add a Note and type directly on the canvas. Select text, then use its settings to make that selection bold, italic, or struck through. You can also change the background or choose transparency. Drag its header to move it.',
   },
   {
     icon: Workflow,

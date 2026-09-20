@@ -1,5 +1,6 @@
 import { validateWorkflow } from './export';
-import type { NodeKind, StepConfig, Workflow, WorkflowEdge, WorkflowNode } from './types';
+import { isNoteMarks } from './noteText';
+import type { NodeKind, NoteMark, StepConfig, Workflow, WorkflowEdge, WorkflowNode } from './types';
 
 export interface AIChatMessage {
   role: 'user' | 'assistant';
@@ -56,7 +57,16 @@ export const AI_LIMITS = {
   timeoutMs: 120000,
 } as const;
 
-const kinds = new Set<NodeKind>(['trigger', 'http', 'dom', 'delay', 'fork', 'loop', 'popover']);
+const kinds = new Set<NodeKind>([
+  'trigger',
+  'http',
+  'dom',
+  'delay',
+  'fork',
+  'loop',
+  'popover',
+  'note',
+]);
 const configStrings = [
   'event',
   'selector',
@@ -71,8 +81,11 @@ const configStrings = [
   'contentType',
   'content',
   'position',
+  'noteText',
+  'noteColor',
 ] as const;
 const configNumbers = ['duration', 'iterations', 'width'] as const;
+const configBooleans = ['noteBold', 'noteItalic', 'noteStrikethrough'] as const;
 const own = (value: object, key: string) => Object.hasOwn(value, key);
 
 function record(value: unknown, label: string): Record<string, unknown> {
@@ -111,9 +124,9 @@ function position(value: unknown): WorkflowNode['position'] {
   return { x: input.x, y: input.y };
 }
 
-function config(value: unknown): StepConfig {
+function config(value: unknown, complete = false): StepConfig {
   const input = record(value, 'Step configuration');
-  const output: Record<string, string | number> = {};
+  const output: Record<string, string | number | boolean | NoteMark[]> = {};
   for (const key of configStrings) {
     if (own(input, key) && input[key] !== undefined)
       output[key] = text(input[key], 'Step configuration text', 20000, true);
@@ -124,6 +137,30 @@ function config(value: unknown): StepConfig {
       throw new Error('Step configuration numbers must be finite.');
     output[key] = input[key];
   }
+  for (const key of configBooleans) {
+    if (!own(input, key) || input[key] === undefined) continue;
+    if (typeof input[key] !== 'boolean')
+      throw new Error('Note text formatting must contain boolean values.');
+    output[key] = input[key];
+  }
+  if (input.noteMarks !== undefined) {
+    const length = complete ? ((output.noteText as string | undefined) ?? '').length : Infinity;
+    if (!isNoteMarks(input.noteMarks, length))
+      throw new Error('Note text formatting must use sorted, nonoverlapping ranges within the note text.');
+    output.noteMarks = input.noteMarks.map((mark) => ({
+      start: mark.start,
+      end: mark.end,
+      ...(mark.bold !== undefined ? { bold: mark.bold } : {}),
+      ...(mark.italic !== undefined ? { italic: mark.italic } : {}),
+      ...(mark.strikethrough !== undefined ? { strikethrough: mark.strikethrough } : {}),
+    }));
+  }
+  if (
+    output.noteColor !== undefined &&
+    output.noteColor !== 'transparent' &&
+    !/^#[\da-f]{6}$/i.test(output.noteColor as string)
+  )
+    throw new Error('Note colors must be a six-digit hex color or transparent.');
   return output as StepConfig;
 }
 
@@ -143,7 +180,7 @@ function node(value: unknown): WorkflowNode {
       ...(data.description !== undefined
         ? { description: text(data.description, 'Step description', 2000, true) }
         : {}),
-      config: config(data.config),
+      config: config(data.config, true),
     },
   };
 }
@@ -255,6 +292,8 @@ function assertGraph(workflow: Workflow): void {
     const source = nodes.get(entry.source);
     const target = nodes.get(entry.target);
     if (!source || !target) throw new Error('A connection refers to a missing step.');
+    if (source.data.kind === 'note' || target.data.kind === 'note')
+      throw new Error('Notes cannot have workflow connections.');
     if (target.data.kind === 'trigger')
       throw new Error('Triggers cannot receive incoming connections.');
     const allowed =
@@ -317,7 +356,13 @@ export function applyWorkflowOperations(workflow: Workflow, value: unknown): Wor
             ...current.data,
             ...(change.label !== undefined ? { label: change.label } : {}),
             ...(change.description !== undefined ? { description: change.description } : {}),
-            config: { ...current.data.config, ...change.config },
+            config: {
+              ...current.data.config,
+              ...(current.data.kind === 'note' && change.config?.noteText !== undefined && change.config.noteMarks === undefined
+                ? { noteMarks: [], noteBold: false, noteItalic: false, noteStrikethrough: false }
+                : {}),
+              ...change.config,
+            },
           },
         };
         break;

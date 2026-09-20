@@ -42,6 +42,32 @@ afterEach(() => {
 });
 
 describe('workflow runtime', () => {
+  it('ignores connected notes without logs, step budget usage, or following their outputs', async () => {
+    document.body.innerHTML = '<p id="result">Waiting</p><p id="annotation-output">Unchanged</p>';
+    const logs: RunLog[] = [];
+    const instance = runtime(
+      workflow(
+        [
+          node('start', 'trigger'),
+          node('note', 'note', { noteText: 'Canvas only', selector: '#result', value: 'Wrong' }),
+          node('hidden', 'dom', { selector: '#annotation-output', value: 'Wrong' }),
+          node('update', 'dom', { selector: '#result', value: 'Done' }),
+        ],
+        [
+          ['start', 'note'],
+          ['note', 'hidden'],
+          ['note', 'note'],
+          ['start', 'update'],
+        ],
+      ),
+      { maxSteps: 2, onLog: (entry) => logs.push(entry) },
+    );
+    await expect(instance.run()).resolves.toBeUndefined();
+    expect(document.querySelector('#result')?.textContent).toBe('Done');
+    expect(document.querySelector('#annotation-output')?.textContent).toBe('Unchanged');
+    expect(logs.map((entry) => entry.nodeId)).toEqual(['start', 'start', 'update', 'update']);
+  });
+
   it('waits for DOM readiness and cancels a pending page-load trigger on destroy', async () => {
     vi.spyOn(document, 'readyState', 'get').mockReturnValue('loading');
     document.body.innerHTML = '<p id="result">Waiting</p>';
@@ -362,6 +388,62 @@ describe('workflow runtime', () => {
 });
 
 describe('workflow export', () => {
+  it('accepts blank annotations and omits all note content from executable scripts', async () => {
+    document.body.innerHTML = '<p id="result">Waiting</p>';
+    const graph = workflow(
+      [
+        node('start', 'trigger', { event: 'click', selector: '#result' }),
+        node('update', 'dom', { selector: '#result', value: 'Done' }),
+        node('private-note', 'note', { noteText: 'Annotation content only', noteBold: true }),
+        node('empty-note', 'note'),
+      ],
+      [['start', 'update']],
+    );
+    expect(validateWorkflow(graph)).toEqual([]);
+    const script = exportWorkflow(graph);
+    expect(script).not.toContain('private-note');
+    expect(script).not.toContain('empty-note');
+    expect(script).not.toContain('Annotation content only');
+    expect(script).not.toContain('noteBold');
+    new Function('window', 'document', script)(window, document);
+    (document.querySelector('#result') as HTMLElement).click();
+    await vi.waitFor(() => expect(document.querySelector('#result')?.textContent).toBe('Done'));
+  });
+
+  it('rejects connections to and from notes when validating or exporting', () => {
+    for (const connection of [
+      ['start', 'note'],
+      ['note', 'update'],
+    ] as [string, string][]) {
+      const graph = workflow(
+        [
+          node('start', 'trigger'),
+          node('note', 'note'),
+          node('update', 'dom', { selector: '#result', value: 'Done' }),
+        ],
+        [connection],
+      );
+      expect(validateWorkflow(graph)).toEqual([
+        { nodeId: 'note', message: 'Notes cannot have workflow connections.' },
+      ]);
+      expect(() => exportWorkflow(graph)).toThrow('Notes cannot have workflow connections.');
+    }
+  });
+
+  it('reports malformed note colors and formatting without requiring annotation text', () => {
+    const graph = workflow(
+      [
+        node('start', 'trigger'),
+        node('note', 'note', { noteColor: 'red', noteBold: 'true' as unknown as boolean }),
+      ],
+      [],
+    );
+    expect(validateWorkflow(graph)).toEqual([
+      { nodeId: 'note', message: 'Note text formatting must contain boolean values.' },
+      { nodeId: 'note', message: 'Note colors must be a six-digit hex color or transparent.' },
+    ]);
+  });
+
   it('produces an executable dependency-free script, escapes inline-script content, and replaces previous runtimes', async () => {
     document.body.innerHTML = '<p id="result">Waiting</p>';
     const graph = workflow(
