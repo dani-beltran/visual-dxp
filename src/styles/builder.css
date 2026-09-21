@@ -406,6 +406,14 @@
 .dxp-node-violet .react-flow__handle-right {
   border-color: #b09bc8;
 }
+.dxp-builder .react-flow__handle.source[data-handleid='true'] {
+  background: #76a367;
+  border-color: #76a367;
+}
+.dxp-builder .react-flow__handle.source[data-handleid='false'] {
+  background: #d4a778;
+  border-color: #d4a778;
+}
 .dxp-builder .react-flow__edge.selected path.react-flow__edge-path {
   stroke: #548864 !important;
   stroke-width: 2.5 !important;
