@@ -564,8 +564,14 @@
   font-size: 7px;
   opacity: 0.65;
 }
-.dxp-builder .react-flow__panel.top.left {
-  margin: 33px;
+.dxp-builder .react-flow__panel.dxp-node-library-panel {
+  top: 24px;
+  left: 28px;
+  margin: 0;
+  max-height: calc(100% - 148px);
+  display: flex;
+  flex-direction: column;
+  z-index: 6;
 }
 .dxp-builder .react-flow__panel.top.right {
   margin: 26px 28px;
@@ -587,35 +593,15 @@
   pointer-events: auto;
 }
 .dxp-node-library-root {
-  min-width: 0;
+  display: flex;
+  min-height: 0;
   width: max-content;
-  max-width: 100%;
-  margin-inline: auto;
-  flex-shrink: 0;
-  z-index: 6;
-}
-.dxp-node-library-toggle {
-  display: none;
-  place-items: center;
-  width: 44px;
-  height: 44px;
-  padding: 0;
-  border: 1px solid #d4e4d9;
-  border-radius: 12px;
-  background: #fff;
-  color: var(--dxp-green);
-  box-shadow: 0 2px 6px #244b3208;
-}
-.dxp-node-library-toggle:hover,
-.dxp-node-library-toggle[aria-expanded='true'] {
-  background: #edf5ef;
-  border-color: #94b6a1;
 }
 .dxp-node-library {
+  min-height: 0;
   padding: 8px;
   display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
+  flex-direction: column;
   gap: 4px;
   background: #fff;
   border: 1px solid #e2eae4;
@@ -628,9 +614,10 @@
   position: relative;
   display: grid;
   place-items: center;
-  flex: 0 0 44px;
+  flex: 0 1 44px;
   width: 44px;
   height: 44px;
+  min-height: 28px;
   padding: 0;
   border: 0;
   border-radius: 9px;
@@ -644,9 +631,9 @@
 }
 .dxp-node-library-tooltip {
   position: absolute;
-  bottom: calc(100% + 12px);
-  left: 50%;
-  transform: translateX(-50%);
+  top: 50%;
+  left: calc(100% + 16px);
+  transform: translateY(-50%);
   padding: 7px 9px;
   border-radius: 6px;
   background: #283a31;
@@ -658,15 +645,6 @@
   pointer-events: none;
   box-shadow: 0 3px 10px #203b2920;
   z-index: 1;
-}
-.dxp-node-library-button:first-child .dxp-node-library-tooltip {
-  left: 0;
-  transform: none;
-}
-.dxp-node-library-button:last-child .dxp-node-library-tooltip {
-  right: 0;
-  left: auto;
-  transform: none;
 }
 .dxp-canvas-kicker {
   font-size: 8px;
@@ -953,24 +931,6 @@
 .dxp-canvas-help-shortcuts kbd {
   font: inherit;
   color: #6f8577;
-}
-@container dxp-canvas-dock (max-width: 760px) {
-  .dxp-node-library-toggle {
-    display: grid;
-  }
-  .dxp-node-library {
-    display: none;
-    position: absolute;
-    bottom: calc(100% + 12px);
-    left: 50%;
-    transform: translateX(-50%);
-    width: max-content;
-    max-width: 100%;
-    z-index: 8;
-  }
-  .dxp-node-library-root.is-open .dxp-node-library {
-    display: flex;
-  }
 }
 .dxp-builder .react-flow__minimap {
   bottom: 42px !important;
@@ -1630,8 +1590,9 @@
   .dxp-toolbar > .dxp-icon-button {
     display: none;
   }
-  .dxp-builder .react-flow__panel.top.left {
-    margin: 25px 20px;
+  .dxp-builder .react-flow__panel.dxp-node-library-panel {
+    top: 20px;
+    left: 20px;
   }
   .dxp-canvas-kicker {
     font-size: 6px;
@@ -1736,6 +1697,9 @@
     right: 15px;
     left: 15px;
     margin: 0;
+  }
+  .dxp-builder .react-flow__panel.dxp-node-library-panel {
+    left: 15px;
   }
 }
 

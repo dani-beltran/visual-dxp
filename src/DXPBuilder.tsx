@@ -964,6 +964,9 @@ function Builder({
                 proOptions={{ hideAttribution: true }}
               >
                 <Background variant={BackgroundVariant.Dots} gap={20} size={1.1} color="#d8e0dc" />
+                <Panel position="top-left" className="dxp-node-library-panel">
+                  <NodeLibrary onAdd={add} />
+                </Panel>
                 <Panel position="top-right">
                   <button
                     type="button"
@@ -1020,7 +1023,6 @@ function Builder({
                       <Layers2 size={16} />
                     </button>
                   </div>
-                  <NodeLibrary onAdd={add} />
                   <div className="dxp-canvas-assistants">
                     <CanvasChat
                       open={canvasAssistant === 'chat'}
