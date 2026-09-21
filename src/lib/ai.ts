@@ -87,7 +87,18 @@ const configStrings = [
   'noteText',
   'noteColor',
 ] as const;
-const configNumbers = ['duration', 'iterations', 'width'] as const;
+const configNumbers = [
+  'duration',
+  'iterations',
+  'width',
+  'rageClickCount',
+  'rageClickWindow',
+  'rageClickRadius',
+  'scrollDirectionChanges',
+  'scrollThrashWindow',
+  'scrollMinDistance',
+  'scrollThreshold',
+] as const;
 const configBooleans = ['noteBold', 'noteItalic', 'noteStrikethrough'] as const;
 const own = (value: object, key: string) => Object.hasOwn(value, key);
 
@@ -149,7 +160,9 @@ function config(value: unknown, complete = false): StepConfig {
   if (input.noteMarks !== undefined) {
     const length = complete ? ((output.noteText as string | undefined) ?? '').length : Infinity;
     if (!isNoteMarks(input.noteMarks, length))
-      throw new Error('Note text formatting must use sorted, nonoverlapping ranges within the note text.');
+      throw new Error(
+        'Note text formatting must use sorted, nonoverlapping ranges within the note text.',
+      );
     output.noteMarks = input.noteMarks.map((mark) => ({
       start: mark.start,
       end: mark.end,
@@ -361,7 +374,9 @@ export function applyWorkflowOperations(workflow: Workflow, value: unknown): Wor
             ...(change.description !== undefined ? { description: change.description } : {}),
             config: {
               ...current.data.config,
-              ...(current.data.kind === 'note' && change.config?.noteText !== undefined && change.config.noteMarks === undefined
+              ...(current.data.kind === 'note' &&
+              change.config?.noteText !== undefined &&
+              change.config.noteMarks === undefined
                 ? { noteMarks: [], noteBold: false, noteItalic: false, noteStrikethrough: false }
                 : {}),
               ...change.config,

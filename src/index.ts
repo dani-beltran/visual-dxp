@@ -30,6 +30,7 @@ export type {
   RunLog,
   StepConfig,
   StepData,
+  TriggerEvent,
   ValidationIssue,
   Workflow,
   WorkflowEdge,

@@ -15,8 +15,33 @@ export type ConditionType =
   | 'referrer'
   | 'query-param'
   | 'cookie';
+export type TriggerEvent =
+  | 'page-load'
+  | 'click'
+  | 'mouseover'
+  | 'submit'
+  | 'change'
+  | 'exit-intent'
+  | 'rage-click'
+  | 'inactivity'
+  | 'scroll-thrashing'
+  | 'scroll-depth';
 export interface StepConfig {
-  event?: 'page-load' | 'click' | 'mouseover' | 'submit' | 'change';
+  event?: TriggerEvent;
+  /** Nearby primary clicks required for rage clicking. Defaults to 3. */
+  rageClickCount?: number;
+  /** Rage click time window in milliseconds. Defaults to 1,000. */
+  rageClickWindow?: number;
+  /** Maximum distance from the first click in CSS pixels. Defaults to 50. */
+  rageClickRadius?: number;
+  /** Scroll direction reversals required. Defaults to 4. */
+  scrollDirectionChanges?: number;
+  /** Scroll thrashing time window in milliseconds. Defaults to 2,000. */
+  scrollThrashWindow?: number;
+  /** Minimum travel before counting a scroll direction change, in CSS pixels. Defaults to 50. */
+  scrollMinDistance?: number;
+  /** Percentage of the page's scrollable distance. Defaults to 75. */
+  scrollThreshold?: number;
   selector?: string;
   url?: string;
   method?: string;
@@ -25,6 +50,7 @@ export interface StepConfig {
   action?: 'text' | 'html' | 'add-class' | 'remove-class' | 'hide' | 'show' | 'attribute';
   value?: string;
   attribute?: string;
+  /** Delay or inactivity duration in milliseconds. Inactivity defaults to 30,000. */
   duration?: number;
   /** Omitted in older workflows, which check CSS selector existence. */
   conditionType?: ConditionType;

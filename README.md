@@ -111,7 +111,7 @@ The default journey points to `/demo-site.html`. To use it in another applicatio
 
 | Node           | Configuration and behavior                                                                                                                                                       |
 | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Trigger        | Page ready, click, hover, submit, or input change. Element events use delegated listeners, so dynamically inserted elements work.                                                |
+| Trigger        | Page ready, click, hover, submit, input change, exit intention, rage clicking, inactivity, scroll thrashing, or scroll down threshold. Element events use delegated listeners. |
 | HTTP request   | HTTP method, URL, JSON headers, and raw body. Non-success responses stop that run and produce an error. The target API must allow the site's origin through CORS.                |
 | Update element | Change text/HTML, add/remove classes, hide/show, or set an attribute on all matching elements.                                                                                   |
 | Delay          | Wait 0–86,400,000 milliseconds.                                                                                                                                                  |
@@ -121,6 +121,18 @@ The default journey points to `/demo-site.html`. To use it in another applicatio
 | Note           | Editable canvas text with bold, italic, and strikethrough formatting, preset or custom background colors, and a transparent option. Notes have no connections and do not run. |
 
 Connections from a step execute in order. An HTTP request currently performs the configured request; its response is not interpolated into later nodes. Conditions compare the configured visitor or page data; they do not evaluate JavaScript expressions. An execution limit protects against excessive loops.
+
+Behavioral triggers are available in **Trigger → Start when** and watch the whole page without requiring an element selector:
+
+| Event | Default configuration | Detection and repeat behavior |
+| --- | --- | --- |
+| `exit-intent` | No additional settings | Mouse exits through the top of the viewport toward browser controls. Fires once per runtime; intended for mouse users. |
+| `rage-click` | `rageClickCount: 3`, `rageClickWindow: 1000` (ms), `rageClickRadius: 50` (px) | Rapid primary clicks within the time window and radius of the first click. Keyboard activation is ignored. Resets after each detected group. |
+| `inactivity` | `duration: 30000` (ms) | No pointer, keyboard, touch, click, wheel, or scroll activity for the configured duration. Fires once per idle period, then rearms on activity. Hidden tabs pause the timer; returning starts a fresh interval. |
+| `scroll-thrashing` | `scrollDirectionChanges: 4`, `scrollThrashWindow: 2000` (ms), `scrollMinDistance: 50` (px) | Rapid page scroll direction reversals within the time window. Movements below the minimum travel do not count as reversals. Resets after each detected group. |
+| `scroll-depth` | `scrollThreshold: 75` (%) | Fires once on downward page scrolling at or beyond this percentage of the scrollable distance. 100 means the bottom. Does not fire on startup, upward scrolling, or pages that cannot scroll. |
+
+All behavioral triggers ignore hidden-tab activity. Scroll thrashing and depth use the page scroll position, excluding nested scroll containers. These are browser-event heuristics; programmatic scrolling can also satisfy scroll triggers. `destroy()` removes their listeners and cancels inactivity timers. The editor, preview, exported JavaScript, and AI workflow tools use the same configuration. Counts accept integers from 2–100, time windows 100–60,000 ms, pixel distances 1–1,000 px, inactivity 1,000–86,400,000 ms, and scroll thresholds 1–100%.
 
 Condition configuration uses `conditionType` (omitted in older workflows means `selector`):
 

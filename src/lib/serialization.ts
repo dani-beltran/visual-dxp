@@ -22,7 +22,18 @@ const strings = [
   'noteText',
   'noteColor',
 ];
-const numbers = ['duration', 'iterations', 'width'];
+const numbers = [
+  'duration',
+  'iterations',
+  'width',
+  'rageClickCount',
+  'rageClickWindow',
+  'rageClickRadius',
+  'scrollDirectionChanges',
+  'scrollThrashWindow',
+  'scrollMinDistance',
+  'scrollThreshold',
+];
 const booleans = ['noteBold', 'noteItalic', 'noteStrikethrough'];
 const object = (value: unknown): value is Record<string, unknown> =>
   !!value && typeof value === 'object' && !Array.isArray(value);

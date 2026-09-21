@@ -19,6 +19,7 @@ import {
   X,
 } from 'lucide-react';
 import { type ReactNode, type SelectHTMLAttributes, useEffect, useId, useState } from 'react';
+import { elementTriggerEvents, triggerOptions } from '../lib/triggers';
 import type { ConditionType, NodeKind, StepConfig, StepData, WorkflowNode } from '../lib/types';
 import { NoteControls } from './NoteControls';
 import { NoteTextEditor } from './NoteTextEditor';
@@ -169,6 +170,9 @@ export function NodeInspector({
 }: NodeInspectorProps) {
   const prefix = useId();
   const config = node.data.config;
+  const trigger = Object.hasOwn(triggerOptions, config.event ?? 'page-load')
+    ? triggerOptions[config.event ?? 'page-load']
+    : undefined;
   const conditionType = config.conditionType ?? 'selector';
   const variableCondition = ['query-param', 'cookie'].includes(conditionType);
   const metadata = details[node.data.kind];
@@ -282,21 +286,30 @@ export function NodeInspector({
                 value={config.event ?? 'page-load'}
                 onChange={(event) => update({ event: event.target.value as StepConfig['event'] })}
               >
-                <option value="page-load">The page loads</option>
-                <option value="click">An element is clicked</option>
-                <option value="mouseover">An element is hovered</option>
-                <option value="submit">A form is submitted</option>
-                <option value="change">An input changes</option>
+                {Object.entries(triggerOptions).map(([value, option]) => (
+                  <option key={value} value={value}>
+                    {option.label}
+                  </option>
+                ))}
               </Select>
             </Field>
-            {(config.event ?? 'page-load') !== 'page-load' ? (
-              targetField()
-            ) : (
-              <div className="dxp-inspector-note">
-                <Info size={15} />
-                <p>This workflow starts once the page is ready.</p>
-              </div>
-            )}
+            {trigger?.settings.map(({ key, label, defaultValue, min, max }) => (
+              <Field key={key} label={label} htmlFor={id(key)}>
+                <NumberInput
+                  id={id(key)}
+                  value={config[key] ?? defaultValue}
+                  min={min}
+                  max={max}
+                  step={1}
+                  onChange={(value) => update({ [key]: value })}
+                />
+              </Field>
+            ))}
+            {elementTriggerEvents.includes(config.event ?? 'page-load') && targetField()}
+            <div className="dxp-inspector-note">
+              <Info size={15} />
+              <p>{trigger?.hint ?? 'Choose a supported trigger event.'}</p>
+            </div>
           </>
         )}
 

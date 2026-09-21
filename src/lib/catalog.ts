@@ -182,9 +182,22 @@ export const defaultWorkflow: Workflow = {
 export function stepSummary(kind: NodeKind, c: StepConfig): string {
   switch (kind) {
     case 'trigger':
-      return c.event === 'page-load'
-        ? 'When a visitor lands on your site'
-        : `${c.event ?? 'click'} · ${c.selector || 'Choose an element'}`;
+      switch (c.event ?? 'page-load') {
+        case 'page-load':
+          return 'When a visitor lands on your site';
+        case 'exit-intent':
+          return 'When a visitor intends to leave';
+        case 'rage-click':
+          return `${c.rageClickCount ?? 3} nearby clicks within ${(c.rageClickWindow ?? 1000) / 1000}s`;
+        case 'inactivity':
+          return `After ${(c.duration ?? 30000) / 1000}s of inactivity`;
+        case 'scroll-thrashing':
+          return `${c.scrollDirectionChanges ?? 4} scroll reversals within ${(c.scrollThrashWindow ?? 2000) / 1000}s`;
+        case 'scroll-depth':
+          return `Scroll down to ${c.scrollThreshold ?? 75}%`;
+        default:
+          return `${c.event} · ${c.selector || 'Choose an element'}`;
+      }
     case 'http':
       return `${c.method || 'GET'}  ${c.url ? c.url.replace(/^https?:\/\//, '') : 'Configure a URL'}`;
     case 'dom':

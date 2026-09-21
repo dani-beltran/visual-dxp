@@ -1,5 +1,6 @@
-import { createRuntime } from './runtime';
 import { isNoteMarks } from './noteText';
+import { createRuntime } from './runtime';
+import { elementTriggerEvents, validateTriggerConfig } from './triggers';
 import type { ValidationIssue, Workflow } from './types';
 
 export function validateWorkflow(workflow: Workflow): ValidationIssue[] {
@@ -120,8 +121,14 @@ export function validateWorkflow(workflow: Workflow): ValidationIssue[] {
       add('Step text parameters must contain strings.', node.id);
       continue;
     }
-    if (config.noteMarks !== undefined && !isNoteMarks(config.noteMarks, (config.noteText ?? '').length))
-      add('Note text formatting must use sorted, nonoverlapping ranges within the note text.', node.id);
+    if (
+      config.noteMarks !== undefined &&
+      !isNoteMarks(config.noteMarks, (config.noteText ?? '').length)
+    )
+      add(
+        'Note text formatting must use sorted, nonoverlapping ranges within the note text.',
+        node.id,
+      );
     switch (node.data.kind) {
       case 'note':
         if (
@@ -138,12 +145,8 @@ export function validateWorkflow(workflow: Workflow): ValidationIssue[] {
           add('Note colors must be a six-digit hex color or transparent.', node.id);
         break;
       case 'trigger':
-        if (
-          config.event &&
-          !['page-load', 'click', 'mouseover', 'submit', 'change'].includes(config.event)
-        )
-          add('Choose a supported trigger event.', node.id);
-        if (config.event && config.event !== 'page-load')
+        for (const message of validateTriggerConfig(config)) add(message, node.id);
+        if (elementTriggerEvents.includes(config.event ?? 'page-load'))
           selector(config.selector, node.id, 'Choose a target element for this trigger.');
         break;
       case 'http':
@@ -233,7 +236,10 @@ export function validateWorkflow(workflow: Workflow): ValidationIssue[] {
             if (!config.conditionKey?.trim())
               add('Enter a name for the condition variable.', node.id);
             if (config.conditionValue === undefined)
-              add('Enter an expected value for the condition (an empty string is allowed).', node.id);
+              add(
+                'Enter an expected value for the condition (an empty string is allowed).',
+                node.id,
+              );
             break;
           default:
             add('Choose a supported condition type.', node.id);
