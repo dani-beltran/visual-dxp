@@ -464,3 +464,129 @@ describe('builder activity', () => {
     expect(second.getSnapshot()).toEqual([]);
   });
 });
+
+describe('connection names', () => {
+  beforeEach(() => {
+    // jsdom does not measure SVG text used by React Flow's edge labels.
+    const createElementNS = document.createElementNS.bind(document);
+    vi.spyOn(document, 'createElementNS').mockImplementation((namespace, name, options) => {
+      const element = createElementNS(namespace, name, options);
+      if (name === 'text')
+        Object.assign(element, { getBBox: () => ({ x: 0, y: 0, width: 80, height: 14 }) });
+      return element;
+    });
+  });
+
+  async function selectEdge(id = 'start-delay', key?: string) {
+    const edge = host.querySelector<SVGGElement>(`[data-id="${id}"]`);
+    if (!edge) throw new Error('The connection should be rendered');
+    await act(async () => {
+      edge.dispatchEvent(
+        key
+          ? new KeyboardEvent('keydown', { key, bubbles: true })
+          : new MouseEvent('click', { bubbles: true }),
+      );
+    });
+    if (key)
+      await act(async () => {
+        edge.dispatchEvent(new KeyboardEvent('keyup', { key, bubbles: true }));
+      });
+  }
+
+  async function renameConnection(name: string) {
+    const input = element<HTMLInputElement>('[aria-label="Connection configuration"] input');
+    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
+    if (!setter) throw new Error('Missing input value setter');
+    await act(async () => {
+      setter.call(input, name);
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+  }
+
+  it('names an unlabeled connection on the canvas with coalesced history, undo, redo, and clearing', async () => {
+    vi.useFakeTimers();
+    const store = createActivityStore();
+    const onChange = vi.fn<(workflow: Workflow) => void>();
+    await renderBuilder({ initialWorkflow: connectedWorkflow(), activityStore: store, onChange });
+    await selectEdge();
+    expect(element('[aria-label="Connection configuration"]').textContent).toContain(
+      'Page loaded → Wait a second',
+    );
+    expect(element<HTMLInputElement>('.dxp-inspector input').value).toBe('');
+    expect(store.getSnapshot()).toEqual([]);
+    expect(historyButton('Undo').disabled).toBe(true);
+
+    await renameConnection('Continue');
+    await renameConnection('Continue to welcome');
+    expect(onChange.mock.lastCall?.[0].edges[0].label).toBe('Continue to welcome');
+    expect(element('.react-flow__edge-text').textContent).toBe('Continue to welcome');
+    await click(button('Close connection details'));
+    expect(store.getSnapshot()).toHaveLength(1);
+    expect(store.getSnapshot()[0].action).toContain('Continue to welcome');
+    expect(host.querySelector('.dxp-inspector')).toBeNull();
+
+    await click(historyButton('Undo'));
+    expect(onChange.mock.lastCall?.[0].edges[0].label).toBeUndefined();
+    expect(host.querySelector('.react-flow__edge-text')).toBeNull();
+    expect(store.getSnapshot()).toEqual([]);
+    expect(historyButton('Undo').disabled).toBe(true);
+    await click(historyButton('Redo'));
+    expect(element('.react-flow__edge-text').textContent).toBe('Continue to welcome');
+    expect(store.getSnapshot()).toHaveLength(1);
+
+    await selectEdge();
+    await renameConnection('');
+    expect(onChange.mock.lastCall?.[0].edges[0].label).toBe('');
+    expect(host.querySelector('.react-flow__edge-text')).toBeNull();
+    await click(historyButton('Undo'));
+    expect(onChange.mock.lastCall?.[0].edges[0].label).toBe('Continue to welcome');
+  });
+
+  it('edits only the selected branch name and switches or dismisses its inspector', async () => {
+    const onChange = vi.fn<(workflow: Workflow) => void>();
+    const workflow = connectedWorkflow();
+    const source = workflow.nodes.find((node) => node.id === 'start');
+    if (!source) throw new Error('Missing source node');
+    source.data = { kind: 'fork', label: 'Check visitor', config: { condition: '#visitor' } };
+    source.handles = [
+      { id: 'true', type: 'source', position: Position.Right, x: 220, y: 50 },
+      { id: 'false', type: 'source', position: Position.Right, x: 220, y: 90 },
+    ];
+    workflow.edges[0] = { ...workflow.edges[0], sourceHandle: 'true', label: 'Matches' };
+    workflow.edges.push({
+      id: 'otherwise',
+      source: 'start',
+      target: 'delay',
+      sourceHandle: 'false',
+      label: 'Otherwise',
+    });
+    await renderBuilder({ initialWorkflow: workflow, onChange });
+    await click(element('[data-id="delay"]'));
+    await selectEdge('start-delay', 'Enter');
+    expect(host.querySelector('[aria-label="Delay configuration"]')).toBeNull();
+    expect(element<HTMLInputElement>('.dxp-inspector input').value).toBe('Matches');
+    await renameConnection('Returning visitor');
+    expect(onChange.mock.lastCall?.[0].edges[0]).toEqual({
+      ...workflow.edges[0],
+      selected: true,
+      label: 'Returning visitor',
+    });
+    expect(onChange.mock.lastCall?.[0].edges[1]).toEqual(workflow.edges[1]);
+
+    await selectEdge('otherwise');
+    expect(element<HTMLInputElement>('.dxp-inspector input').value).toBe('Otherwise');
+    await click(element('.react-flow__pane'));
+    expect(host.querySelector('.dxp-inspector')).toBeNull();
+    await selectEdge();
+    await click(element('[data-id="delay"]'));
+    expect(host.querySelector('[aria-label="Connection configuration"]')).toBeNull();
+    expect(host.querySelector('[aria-label="Delay configuration"]')).not.toBeNull();
+    await selectEdge();
+    await selectEdge('start-delay', 'Escape');
+    expect(host.querySelector('.dxp-inspector')).toBeNull();
+    await selectEdge();
+    await pressDelete();
+    expect(host.querySelector('.dxp-inspector')).toBeNull();
+    expect(onChange.mock.lastCall?.[0].edges.map((edge) => edge.id)).toEqual(['otherwise']);
+  });
+});

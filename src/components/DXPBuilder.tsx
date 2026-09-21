@@ -68,6 +68,7 @@ import { useDialogFocus } from '../lib/useDialogFocus';
 import { ActivityPanel } from './ActivityPanel';
 import { CanvasChat } from './CanvasChat';
 import { CanvasHelp } from './CanvasHelp';
+import { EdgeInspector } from './EdgeInspector';
 import { ElementPicker } from './ElementPicker';
 import { NodeInspector } from './NodeInspector';
 import { NodeLibrary } from './NodeLibrary';
@@ -177,6 +178,7 @@ function Builder({
   const dragStartWorkflow = useRef<Workflow | null>(null);
   const [, refreshHistory] = useState(0);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
   const [canvasAssistant, setCanvasAssistant] = useState<'chat' | 'help' | null>(null);
   const toggleChat = useCallback((open: boolean) => setCanvasAssistant(open ? 'chat' : null), []);
   const toggleHelp = useCallback((open: boolean) => setCanvasAssistant(open ? 'help' : null), []);
@@ -214,6 +216,7 @@ function Builder({
     };
   }, [flow]);
   const selected = workflow.nodes.find((n) => n.id === selectedId);
+  const selectedEdge = workflow.edges.find((edge) => edge.id === selectedEdgeId);
   const nodes = useMemo(
     () =>
       workflow.nodes.map((n) => ({
@@ -401,6 +404,7 @@ function Builder({
     current.current = prev.workflow;
     setWorkflow(prev.workflow);
     setSelectedId(null);
+    setSelectedEdgeId(null);
     setStatuses({});
     refreshHistory((x) => x + 1);
     if (prev.activity && !unpublished) {
@@ -419,6 +423,7 @@ function Builder({
     current.current = next.workflow;
     setWorkflow(next.workflow);
     setSelectedId(null);
+    setSelectedEdgeId(null);
     setStatuses({});
     refreshHistory((x) => x + 1);
     if (next.activity) appendActivity(next.activity.store, next.activity.entry);
@@ -445,6 +450,7 @@ function Builder({
         setPicking(false);
         setModal(null);
         setSelectedId(null);
+        setSelectedEdgeId(null);
       }
     };
     window.addEventListener('keydown', close);
@@ -496,6 +502,15 @@ function Builder({
     };
     current.current = next;
     setWorkflow(next);
+    const selection = updates.find((change) => change.type === 'select' && change.selected);
+    if (selection?.type === 'select') {
+      setSelectedId(null);
+      setSelectedEdgeId(selection.id);
+    } else {
+      setSelectedEdgeId((id) =>
+        next.edges.some((edge) => edge.id === id && edge.selected) ? id : null,
+      );
+    }
   }, []);
   function onDelete({ nodes, edges }: { nodes: WorkflowNode[]; edges: WorkflowEdge[] }) {
     const removedNodes = new Set(nodes.map((node) => node.id));
@@ -520,6 +535,8 @@ function Builder({
       action,
     );
     if (selectedId && removedNodes.has(selectedId)) setSelectedId(null);
+    if (selectedEdge && !current.current.edges.some((edge) => edge.id === selectedEdge.id))
+      setSelectedEdgeId(null);
   }
   const onConnect = useCallback(
     (connection: Connection) => {
@@ -563,6 +580,7 @@ function Builder({
     const node = createNode(kind, point);
     commit((w) => ({ ...w, nodes: [...w.nodes, node] }), `Added “${node.data.label}”`);
     setSelectedId(node.id);
+    setSelectedEdgeId(null);
     notify(`${catalog.find((c) => c.kind === kind)!.label} added`);
   }
   function patchNode(patch: Partial<StepData>) {
@@ -578,6 +596,19 @@ function Builder({
         ? `Renamed a step to “${patch.label}”`
         : `Updated ${patch.description !== undefined ? 'the description of' : 'settings for'} “${selected.data.label}”`,
       `node:${selected.id}:${Object.keys(patch).sort().join(',')}`,
+    );
+  }
+  function renameEdge(label: string) {
+    if (!selectedEdge) return;
+    const nodeLabel = (id: string) => workflow.nodes.find((node) => node.id === id)?.data.label;
+    const connection = `the connection from “${nodeLabel(selectedEdge.source) ?? 'step'}” to “${nodeLabel(selectedEdge.target) ?? 'step'}”`;
+    commit(
+      (w) => ({
+        ...w,
+        edges: w.edges.map((edge) => (edge.id === selectedEdge.id ? { ...edge, label } : edge)),
+      }),
+      label ? `Renamed ${connection} to “${label}”` : `Removed the name of ${connection}`,
+      `edge:${selectedEdge.id}:label`,
     );
   }
   function removeNode() {
@@ -602,6 +633,7 @@ function Builder({
     };
     commit((w) => ({ ...w, nodes: [...w.nodes, copy] }), `Duplicated “${selected.data.label}”`);
     setSelectedId(copy.id);
+    setSelectedEdgeId(null);
   }
   async function importFile(file?: File) {
     if (!file) return;
@@ -610,6 +642,7 @@ function Builder({
       if (!isWorkflow(value)) throw new Error('Choose a valid Forma workflow JSON file.');
       commit(() => value, `Imported workflow “${value.name}”`);
       setSelectedId(null);
+      setSelectedEdgeId(null);
       setTimeout(() => void flow.fitView({ padding: 0.2, duration: 300 }), 80);
       notify('Workflow imported');
     } catch (e) {
@@ -658,6 +691,8 @@ function Builder({
         `Applied ${response.operations.length} ${response.operations.length === 1 ? 'edit' : 'edits'} with the AI assistant`,
       );
       if (selectedId && !updated.nodes.some((node) => node.id === selectedId)) setSelectedId(null);
+      if (selectedEdgeId && !updated.edges.some((edge) => edge.id === selectedEdgeId))
+        setSelectedEdgeId(null);
       notify('AI updated your workflow. Use Undo to revert this change.');
       requestAnimationFrame(() => void flow.fitView({ padding: 0.2, duration: 300 }));
     }
@@ -809,8 +844,18 @@ function Builder({
                 }
                 dragStartWorkflow.current = null;
               }}
-              onNodeClick={(_, node) => setSelectedId(node.id)}
-              onPaneClick={() => setSelectedId(null)}
+              onNodeClick={(_, node) => {
+                setSelectedId(node.id);
+                setSelectedEdgeId(null);
+              }}
+              onEdgeClick={(_, edge) => {
+                setSelectedId(null);
+                setSelectedEdgeId(edge.id);
+              }}
+              onPaneClick={() => {
+                setSelectedId(null);
+                setSelectedEdgeId(null);
+              }}
               onMove={(_, viewport) => setZoom(Math.round(viewport.zoom * 100))}
               fitView
               fitViewOptions={{ padding: 0.18, minZoom: 0.35, maxZoom: 1 }}
@@ -918,6 +963,24 @@ function Builder({
             onDelete={removeNode}
             onDuplicate={duplicate}
             onPreviewContent={() => setModal('popover-preview')}
+          />
+        )}
+        {selectedEdge && (
+          <EdgeInspector
+            edge={selectedEdge}
+            sourceLabel={
+              workflow.nodes.find((node) => node.id === selectedEdge.source)?.data.label ?? 'Step'
+            }
+            targetLabel={
+              workflow.nodes.find((node) => node.id === selectedEdge.target)?.data.label ?? 'Step'
+            }
+            onChange={renameEdge}
+            onBlur={flushActivity}
+            onDelete={() => onDelete({ nodes: [], edges: [selectedEdge] })}
+            onClose={() => {
+              flushActivity();
+              setSelectedEdgeId(null);
+            }}
           />
         )}
       </div>

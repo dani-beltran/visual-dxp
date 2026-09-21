@@ -20,7 +20,7 @@ const instructions = [
   {
     icon: Workflow,
     title: 'Connect your steps',
-    text: 'Drag from the circle on the right of one node to the circle on the left of another. A Condition uses its top output when the condition matches and its bottom output otherwise.',
+    text: 'Drag from the circle on the right of one node to the circle on the left of another. Click a connection to edit its name. A Condition uses its top output when the condition matches and its bottom output otherwise.',
   },
   {
     icon: Hand,

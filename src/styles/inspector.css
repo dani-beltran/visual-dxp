@@ -120,6 +120,9 @@
   color: #8a938b;
   margin: 16px 0 24px;
 }
+.dxp-inspector-connection-summary {
+  overflow-wrap: anywhere;
+}
 .dxp-inspector-field {
   display: flex;
   flex-direction: column;
