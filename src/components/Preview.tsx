@@ -1,5 +1,14 @@
-import { Check, CircleAlert, ExternalLink, LoaderCircle, Play, RotateCcw, X } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import {
+  Check,
+  CircleAlert,
+  ExternalLink,
+  LoaderCircle,
+  Play,
+  RotateCcw,
+  Square,
+  X,
+} from 'lucide-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { validateWorkflow } from '../lib/export';
 import { createRuntime } from '../lib/runtime';
 import type { RunLog, Workflow } from '../lib/types';
@@ -16,19 +25,65 @@ export function Preview({
   const modalRef = useDialogFocus(true);
   const frame = useRef<HTMLIFrameElement>(null);
   const runtime = useRef<ReturnType<typeof createRuntime> | null>(null);
-  const [ready, setReady] = useState(false);
+  const session = useRef(0);
+  const callbacks = useRef({ onClose, onLog });
+  callbacks.current = { onClose, onLog };
+  const [page, setPage] = useState<{ document: Document; url: string; key: number } | null>(null);
   const [running, setRunning] = useState(false);
   const [logs, setLogs] = useState<RunLog[]>([]);
   const [error, setError] = useState('');
   const [key, setKey] = useState(0);
-  useEffect(() => () => runtime.current?.destroy(), []);
-  function loaded() {
+  const ready = page?.url === workflow.websiteUrl && page.key === key;
+  const stop = useCallback(() => {
+    session.current += 1;
     runtime.current?.destroy();
+    runtime.current = null;
     setRunning(false);
-    setReady(false);
+  }, []);
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: Editing the workflow invalidates the active test and its logs.
+  useEffect(() => {
+    stop();
+    setLogs([]);
+    setError('');
+    return () => {
+      session.current += 1;
+      runtime.current?.destroy();
+      runtime.current = null;
+    };
+  }, [workflow, stop]);
+
+  useEffect(() => {
+    const win = page?.document.defaultView;
+    if (!win) return;
+    const leaving = () => {
+      stop();
+      setPage(null);
+    };
+    const close = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      event.preventDefault();
+      callbacks.current.onClose();
+    };
+    win.addEventListener('pagehide', leaving);
+    win.addEventListener('keydown', close);
+    return () => {
+      try {
+        win.removeEventListener('pagehide', leaving);
+        win.removeEventListener('keydown', close);
+      } catch {
+        // The website may have navigated to another origin before effect cleanup.
+      }
+    };
+  }, [page, stop]);
+
+  function loaded() {
+    stop();
+    setPage(null);
     try {
-      if (!frame.current?.contentDocument?.body) throw new Error();
-      setReady(true);
+      const doc = frame.current?.contentDocument;
+      if (!doc?.body || !doc.defaultView) throw new Error();
+      setPage({ document: doc, url: workflow.websiteUrl, key });
       setError('');
     } catch {
       setError(
@@ -36,33 +91,37 @@ export function Preview({
       );
     }
   }
-  async function run() {
+  function run() {
+    stop();
+    setLogs([]);
+    setError('');
     const issues = validateWorkflow(workflow);
     if (issues.length) {
       setError(issues.map((i) => i.message).join(' '));
       return;
     }
-    const doc = frame.current?.contentDocument;
-    const win = frame.current?.contentWindow;
-    if (!doc || !win) return;
-    runtime.current?.destroy();
-    setLogs([]);
-    setRunning(true);
-    setError('');
     try {
+      const doc = frame.current?.contentDocument;
+      const win = doc?.defaultView;
+      if (!ready || !doc?.body || !win || doc !== page?.document)
+        throw new Error('Wait for the website to load, then run the workflow again.');
+      const currentSession = session.current;
       runtime.current = createRuntime(workflow, {
         document: doc,
         window: win,
         onLog: (log) => {
+          if (session.current !== currentSession) return;
           setLogs((prev) => [...prev, log]);
-          onLog(log);
+          if (log.status === 'error') setError(log.message);
+          callbacks.current.onLog(log);
         },
       });
-      await runtime.current.run();
+      // Match the exported script: page-load runs now; other triggers listen to the website.
+      runtime.current.start();
+      setRunning(true);
     } catch (e) {
+      stop();
       setError(e instanceof Error ? e.message : 'The workflow could not run.');
-    } finally {
-      setRunning(false);
     }
   }
   return (
@@ -101,33 +160,44 @@ export function Preview({
             type="button"
             className="dxp-button"
             onClick={() => {
-              runtime.current?.destroy();
-              setRunning(false);
-              setReady(false);
+              stop();
+              setPage(null);
               setLogs([]);
+              setError('');
               setKey((x) => x + 1);
             }}
             title="Reload website"
+            aria-label="Reload website"
           >
             <RotateCcw size={14} />
           </button>
+          {running && (
+            <button type="button" className="dxp-button" onClick={stop}>
+              <Square size={14} /> Stop workflow
+            </button>
+          )}
           <button
             type="button"
             className="dxp-button dxp-button-primary"
             onClick={run}
-            disabled={!ready || running}
+            disabled={!ready}
           >
-            {running ? <LoaderCircle className="dxp-spin" size={15} /> : <Play size={14} />}{' '}
-            {running ? 'Running…' : 'Run workflow'}
+            {running ? <RotateCcw size={14} /> : <Play size={14} />}{' '}
+            {running ? 'Restart workflow' : 'Run workflow'}
           </button>
         </div>
         <div className="dxp-preview-body">
           <iframe
-            key={key}
+            key={`${workflow.websiteUrl}-${key}`}
             ref={frame}
             src={workflow.websiteUrl}
             title="Workflow preview website"
             onLoad={loaded}
+            onError={() => {
+              stop();
+              setPage(null);
+              setError('The website could not be loaded. Reload the website to try again.');
+            }}
           />
           <aside className="dxp-run-log">
             <h3>
@@ -136,8 +206,12 @@ export function Preview({
             {!logs.length && (
               <div className="dxp-log-empty">
                 <Play size={25} />
-                <p>Your journey, step by step.</p>
-                <small>Run the workflow to see each action happen on the page.</small>
+                <p>{running ? 'Listening for your triggers.' : 'Your journey, step by step.'}</p>
+                <small>
+                  {running
+                    ? 'Interact with the website to trigger your workflow.'
+                    : 'Run the workflow to see each action happen on the page.'}
+                </small>
               </div>
             )}
             {logs.map((log, i) => (
@@ -156,10 +230,14 @@ export function Preview({
                 </div>
               </div>
             ))}
-            {error && <p className="dxp-error">{error}</p>}
+            {error && (
+              <p className="dxp-error" role="alert">
+                {error}
+              </p>
+            )}
             <p className="dxp-log-note">
-              <ExternalLink size={13} /> Manual runs start immediately. Exported scripts listen for
-              your configured triggers.
+              <ExternalLink size={13} /> Page-load triggers run when you start. Other triggers
+              respond to this website, just like the exported script. Reload to reset page changes.
             </p>
           </aside>
         </div>

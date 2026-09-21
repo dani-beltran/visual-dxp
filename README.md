@@ -256,7 +256,7 @@ await runtime.run(); // Or manually run all triggers immediately.
 runtime.destroy(); // Abort pending work and remove listeners/popovers.
 ```
 
-Manual preview invokes `run()` to test the complete journey without waiting for its configured event. Closing preview aborts active work. DOM changes remain on the preview page until it is reloaded; `destroy()` does not revert page mutations or completed HTTP requests.
+**Run workflow** in the test preview installs the current workflow with `start()`, just like the exported script. Page-load triggers run immediately on the loaded page; clicks, form events, inactivity, and other behavioral triggers respond to interactions inside the preview website. The execution log shows the actions and branches that actually run. **Restart workflow** replaces the active runtime with a fresh run, and **Stop workflow** removes its listeners, cancels pending work, and closes its popovers. Editing the workflow, reloading or navigating the preview website, and closing the modal also stop the active runtime. DOM changes remain on the preview page until it is reloaded; `destroy()` does not revert page mutations or completed HTTP requests.
 
 HTML and DOM actions are author-controlled content. Import workflows from trusted sources, and do not put server secrets in client-side request headers. HTML previews are sandboxed; the exported runtime intentionally inserts authored HTML on your website. This project is a client-side editor/runtime, with application authentication, server persistence, and publishing supplied by the host project.
 

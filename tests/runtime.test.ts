@@ -120,6 +120,89 @@ describe('workflow runtime', () => {
     expect(document.querySelector('#result')!.textContent).toBe('Unchanged');
   });
 
+  it('installs triggers and applies effects only in the supplied website iframe', async () => {
+    document.body.innerHTML = '<button class="buy">Editor</button><p id="result">Editor</p>';
+    const frame = document.createElement('iframe');
+    document.body.appendChild(frame);
+    const website = frame.contentDocument;
+    const websiteWindow = frame.contentWindow;
+    if (!website || !websiteWindow) throw new Error('Expected an accessible website iframe.');
+    website.body.innerHTML =
+      '<button class="buy"><span>Buy</span></button><p id="result">Waiting</p>';
+    vi.spyOn(website, 'readyState', 'get').mockReturnValue('complete');
+    const instance = runtime(
+      workflow(
+        [
+          node('load', 'trigger', { event: 'page-load' }),
+          node('ready', 'dom', { selector: '#result', value: 'Ready' }),
+          node('click', 'trigger', { event: 'click', selector: '.buy' }),
+          node('update', 'dom', { selector: '#result', value: 'Purchased' }),
+          node('message', 'popover', { content: '<h2>Thank you</h2>' }),
+        ],
+        [
+          ['load', 'ready'],
+          ['click', 'update'],
+          ['update', 'message'],
+        ],
+      ),
+      { document: website, window: websiteWindow },
+    );
+
+    instance.start();
+    await vi.waitFor(() => expect(website.querySelector('#result')?.textContent).toBe('Ready'));
+    expect(website.querySelector('[data-forma-popover]')).toBeNull();
+    (document.querySelector('.buy') as HTMLButtonElement).click();
+    await Promise.resolve();
+    expect(website.querySelector('#result')?.textContent).toBe('Ready');
+
+    (website.querySelector('.buy span') as HTMLElement).click();
+    await vi.waitFor(() =>
+      expect(website.querySelector('[data-forma-popover] h2')?.textContent).toBe('Thank you'),
+    );
+    expect(website.querySelector('#result')?.textContent).toBe('Purchased');
+    expect(document.querySelector('#result')?.textContent).toBe('Editor');
+    expect(document.querySelector('[data-forma-popover]')).toBeNull();
+
+    instance.destroy();
+    expect(website.querySelector('[data-forma-popover]')).toBeNull();
+    const result = website.querySelector('#result');
+    if (!result) throw new Error('Expected the website result element.');
+    result.textContent = 'Stopped';
+    (website.querySelector('.buy') as HTMLButtonElement).click();
+    await Promise.resolve();
+    expect(result.textContent).toBe('Stopped');
+  });
+
+  it('resolves requests against the website document and calls its window fetch', async () => {
+    const frame = document.createElement('iframe');
+    document.body.appendChild(frame);
+    const website = frame.contentDocument;
+    const websiteWindow = frame.contentWindow;
+    if (!website || !websiteWindow) throw new Error('Expected an accessible website iframe.');
+    website.head.innerHTML = '<base href="https://shop.example.com/products/">';
+    const request = vi.fn<typeof fetch>().mockResolvedValue(new Response('ok'));
+    Object.defineProperty(websiteWindow, 'fetch', { configurable: true, value: request });
+    const instance = runtime(
+      workflow(
+        [
+          node('start', 'trigger'),
+          node('request', 'http', { url: './events', method: 'POST', body: 'purchased' }),
+        ],
+        [['start', 'request']],
+      ),
+      { document: website, window: websiteWindow },
+    );
+
+    await instance.run();
+    expect(request).toHaveBeenCalledWith(
+      'https://shop.example.com/products/events',
+      expect.objectContaining({ method: 'POST', body: 'purchased' }),
+    );
+    expect(request.mock.contexts).toEqual([websiteWindow]);
+    instance.destroy();
+    expect(request.mock.calls[0]?.[1]?.signal?.aborted).toBe(true);
+  });
+
   it.each([true, false])(
     'chooses exactly one branch based on selector existence: %s',
     async (matches) => {
