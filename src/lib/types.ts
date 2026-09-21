@@ -8,6 +8,13 @@ export interface NoteMark {
   italic?: boolean;
   strikethrough?: boolean;
 }
+export type ConditionType =
+  | 'selector'
+  | 'device'
+  | 'language'
+  | 'referrer'
+  | 'query-param'
+  | 'cookie';
 export interface StepConfig {
   event?: 'page-load' | 'click' | 'mouseover' | 'submit' | 'change';
   selector?: string;
@@ -19,7 +26,14 @@ export interface StepConfig {
   value?: string;
   attribute?: string;
   duration?: number;
+  /** Omitted in older workflows, which check CSS selector existence. */
+  conditionType?: ConditionType;
+  /** CSS selector used by selector conditions. */
   condition?: string;
+  /** Exact query parameter, cookie, local storage, or session storage key. */
+  conditionKey?: string;
+  /** Expected device, language, referrer domain, or stored string (including empty). */
+  conditionValue?: string;
   iterations?: number;
   contentType?: 'html' | 'iframe';
   content?: string;

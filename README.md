@@ -115,12 +115,27 @@ The default journey points to `/demo-site.html`. To use it in another applicatio
 | HTTP request   | HTTP method, URL, JSON headers, and raw body. Non-success responses stop that run and produce an error. The target API must allow the site's origin through CORS.                |
 | Update element | Change text/HTML, add/remove classes, hide/show, or set an attribute on all matching elements.                                                                                   |
 | Delay          | Wait 0–86,400,000 milliseconds.                                                                                                                                                  |
-| Condition      | Tests whether a CSS selector matches. The upper `true` output runs when found; the lower `false` output runs otherwise.                                                          |
+| Condition      | Tests element existence, device, language, referrer, URL parameters, or cookies (including local and session storage). The upper `true` output runs on a match; otherwise the lower `false` output runs.                                                          |
 | Loop           | Executes the complete `body` path 1–1,000 times, then executes the `done` path once. Do not connect the body back to the loop; graph cycles are rejected.                        |
 | Popover        | Author-provided HTML or a sandboxed iframe, 240–960px wide, placed at screen center, any corner, or beneath a picked anchor. Anchored popovers reposition on scrolling/resizing. |
 | Note           | Editable canvas text with bold, italic, and strikethrough formatting, preset or custom background colors, and a transparent option. Notes have no connections and do not run. |
 
-Connections from a step execute in order. An HTTP request currently performs the configured request; its response is not interpolated into later nodes. Branching is based on element existence, not arbitrary JavaScript expressions. An execution limit protects against excessive loops.
+Connections from a step execute in order. An HTTP request currently performs the configured request; its response is not interpolated into later nodes. Conditions compare the configured visitor or page data; they do not evaluate JavaScript expressions. An execution limit protects against excessive loops.
+
+Condition configuration uses `conditionType` (omitted in older workflows means `selector`):
+
+| Type | Configuration | Match behavior |
+| --- | --- | --- |
+| `selector` | `condition`: CSS selector | At least one matching element exists. |
+| `device` | `conditionValue`: `desktop` or `mobile` | Browser mobile hints when available; otherwise user agent detection, including touch-enabled iPads. Detection is best effort, independent of viewport width. |
+| `language` | `conditionValue`: language tag | Primary browser language, case-insensitive. `en` matches `en-US` and `en-GB`; `en-US` matches only that locale. |
+| `referrer` | `conditionValue`: domain, e.g. `example.com` | Exact, case-insensitive hostname equality. Protocol, port, path, query, and fragment are ignored; subdomains remain distinct. Existing HTTP(S) URL values are accepted and only their hostname is used. Missing referrers do not match. |
+| `query-param` | `conditionKey`, `conditionValue` | Current URL has a parameter with this exact name and decoded value. Any matching repeated value counts. |
+| `cookie` | `conditionKey`, `conditionValue` | **Cookies (including local and session storage):** matches if a readable cookie, localStorage entry, or sessionStorage entry has this exact name and value. Cookie names and values are percent-decoded; localStorage and sessionStorage strings are compared as stored. HttpOnly cookies are unavailable. |
+
+Named variables use case-sensitive string equality, including whitespace and empty values. An absent variable never matches an empty expected value. Missing referrers take the `false` path. The combined cookie condition takes `false` only when no source matches; access to each source is independent, so a blocked source does not prevent a match in another. Values are read each time the node runs. Preview uses the embedded page's context; exported scripts use the target page's context.
+
+Example: `{ "conditionType": "query-param", "conditionKey": "utm_source", "conditionValue": "newsletter" }` takes the `true` path on `?utm_source=newsletter`.
 
 The canvas includes a floating node library: hover or focus an icon to see its name, then click or drag it onto the canvas to add a step. It also supports dragging, connecting, node duplication/deletion, undo/redo, zoom, fit-to-view, minimap, and JSON import. The host handles export using the current workflow. Delete selects/removes nodes or connections; ⌘/Ctrl+Z undoes changes.
 

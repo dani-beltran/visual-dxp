@@ -24,6 +24,7 @@ export type { RuntimeOptions, WorkflowRuntime } from './lib/runtime';
 export { createRuntime, executeWorkflow } from './lib/runtime';
 export { isWorkflow } from './lib/serialization';
 export type {
+  ConditionType,
   NodeKind,
   NoteMark,
   RunLog,

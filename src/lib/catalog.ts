@@ -57,11 +57,11 @@ export const catalog: {
   {
     kind: 'fork',
     label: 'Condition',
-    description: 'Give your journey a fork',
+    description: 'Branch by visitor or page conditions',
     color: 'violet',
     icon: GitFork,
     category: 'Logic',
-    config: { condition: '#shop-now' },
+    config: { conditionType: 'selector', condition: '#shop-now' },
   },
   {
     kind: 'loop',
@@ -131,7 +131,11 @@ export const defaultWorkflow: Workflow = {
       id: 'check',
       type: 'workflow',
       position: { x: 640, y: 220 },
-      data: { kind: 'fork', label: 'Find the right moment', config: { condition: '#shop-now' } },
+      data: {
+        kind: 'fork',
+        label: 'Find the right moment',
+        config: { conditionType: 'selector', condition: '#shop-now' },
+      },
     },
     {
       id: 'offer',
@@ -187,8 +191,29 @@ export function stepSummary(kind: NodeKind, c: StepConfig): string {
       return `${c.action === 'text' ? 'Change text' : c.action || 'Update'} · ${c.selector || 'Choose an element'}`;
     case 'delay':
       return `Wait ${(c.duration ?? 1000) / 1000} seconds`;
-    case 'fork':
-      return `${c.condition || 'Choose a selector'} exists on the page`;
+    case 'fork': {
+      const conditionType = c.conditionType ?? 'selector';
+      switch (conditionType) {
+        case 'selector':
+          return `${c.condition || 'Choose a selector'} exists on the page`;
+        case 'device':
+          return `Device is ${c.conditionValue || '…'}`;
+        case 'language':
+          return `Language is ${c.conditionValue || '…'}`;
+        case 'referrer':
+          return `Referrer domain equals ${c.conditionValue || '…'}`;
+        case 'query-param':
+        case 'cookie': {
+          const source = {
+            'query-param': 'URL parameter',
+            cookie: 'Cookie or browser storage',
+          }[conditionType];
+          return `${source} ${c.conditionKey || '…'} = ${JSON.stringify(c.conditionValue ?? '')}`;
+        }
+        default:
+          return 'Choose a condition type';
+      }
+    }
     case 'loop':
       return `Repeat ${c.iterations ?? 3} times`;
     case 'popover':

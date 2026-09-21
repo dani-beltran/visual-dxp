@@ -105,6 +105,9 @@ export function validateWorkflow(workflow: Workflow): ValidationIssue[] {
       'value',
       'attribute',
       'condition',
+      'conditionType',
+      'conditionKey',
+      'conditionValue',
       'contentType',
       'content',
       'position',
@@ -187,7 +190,54 @@ export function validateWorkflow(workflow: Workflow): ValidationIssue[] {
           add('Delay must be between 0 and 86,400,000 milliseconds.', node.id);
         break;
       case 'fork':
-        selector(config.condition, node.id, 'Choose a CSS selector for the branch condition.');
+        switch (config.conditionType ?? 'selector') {
+          case 'selector':
+            selector(config.condition, node.id, 'Choose a CSS selector for the branch condition.');
+            break;
+          case 'device':
+            if (!['desktop', 'mobile'].includes(config.conditionValue ?? ''))
+              add('Choose desktop or mobile for the device condition.', node.id);
+            break;
+          case 'language':
+            try {
+              if (!config.conditionValue?.trim()) throw new Error();
+              Intl.getCanonicalLocales(config.conditionValue.trim());
+            } catch {
+              add('Enter a language code such as en, es, or en-US.', node.id);
+            }
+            break;
+          case 'referrer':
+            try {
+              const value = config.conditionValue?.trim() ?? '';
+              const isUrl = /^https?:\/\//i.test(value);
+              if (!value || (!isUrl && /[\s/\\?#@:]/.test(value))) throw new Error();
+              // Accept saved URL conditions, comparing only their hostname.
+              const parsed = new URL(isUrl ? value : `https://${value}`);
+              const domain = parsed.hostname.replace(/\.$/, '');
+              if (
+                parsed.username ||
+                parsed.password ||
+                !domain ||
+                domain.length > 253 ||
+                domain
+                  .split('.')
+                  .some((label) => !/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/i.test(label))
+              )
+                throw new Error();
+            } catch {
+              add('Enter a valid referrer domain such as example.com.', node.id);
+            }
+            break;
+          case 'query-param':
+          case 'cookie':
+            if (!config.conditionKey?.trim())
+              add('Enter a name for the condition variable.', node.id);
+            if (config.conditionValue === undefined)
+              add('Enter an expected value for the condition (an empty string is allowed).', node.id);
+            break;
+          default:
+            add('Choose a supported condition type.', node.id);
+        }
         break;
       case 'loop':
         if (

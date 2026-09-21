@@ -359,7 +359,7 @@ export function App({
                   {
                     icon: WorkflowIcon,
                     title: '2. Connect the moments',
-                    body: 'Drag between the circles on your nodes. Conditions follow the top path when an element exists, and the bottom path otherwise.',
+                    body: 'Drag between the circles on your nodes. Conditions follow the top path when the condition matches, and the bottom path otherwise.',
                   },
                   {
                     icon: MousePointer2,

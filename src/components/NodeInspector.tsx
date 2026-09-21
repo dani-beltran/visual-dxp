@@ -19,7 +19,7 @@ import {
   X,
 } from 'lucide-react';
 import { type ReactNode, type SelectHTMLAttributes, useEffect, useId, useState } from 'react';
-import type { NodeKind, StepConfig, StepData, WorkflowNode } from '../lib/types';
+import type { ConditionType, NodeKind, StepConfig, StepData, WorkflowNode } from '../lib/types';
 import { NoteControls } from './NoteControls';
 import { NoteTextEditor } from './NoteTextEditor';
 import '../styles/inspector.css';
@@ -62,7 +62,7 @@ const details = {
   fork: {
     name: 'Condition',
     icon: GitFork,
-    summary: 'Take a different path based on what is on the page.',
+    summary: 'Take a different path based on your visitor or page.',
     color: 'violet',
   },
   loop: {
@@ -169,6 +169,8 @@ export function NodeInspector({
 }: NodeInspectorProps) {
   const prefix = useId();
   const config = node.data.config;
+  const conditionType = config.conditionType ?? 'selector';
+  const variableCondition = ['query-param', 'cookie'].includes(conditionType);
   const metadata = details[node.data.kind];
   const isNote = node.data.kind === 'note';
   const Icon = metadata.icon;
@@ -448,30 +450,141 @@ export function NodeInspector({
 
         {node.data.kind === 'fork' && (
           <>
-            <Field
-              label="Element exists"
-              htmlFor={id('condition')}
-              hint="The condition is true when this CSS selector matches an element."
-            >
-              <input
-                id={id('condition')}
-                className="dxp-inspector-code"
-                value={config.condition ?? ''}
-                placeholder="e.g. .logged-in"
-                onChange={(event) => update({ condition: event.target.value })}
-                spellCheck={false}
-              />
+            <Field label="Condition type" htmlFor={id('condition-type')}>
+              <Select
+                id={id('condition-type')}
+                value={conditionType}
+                onChange={(event) => {
+                  const next = event.target.value as ConditionType;
+                  update({
+                    conditionType: next,
+                    conditionValue: next === 'device' ? 'desktop' : '',
+                  });
+                }}
+              >
+                <option value="selector">Element exists</option>
+                <option value="device">User device</option>
+                <option value="language">User language</option>
+                <option value="referrer">Referrer domain</option>
+                <option value="query-param">URL search parameter</option>
+                <option value="cookie">Cookies</option>
+              </Select>
             </Field>
+            {conditionType === 'selector' && (
+              <Field
+                label="Element exists"
+                htmlFor={id('condition')}
+                hint="True when this CSS selector matches an element."
+              >
+                <input
+                  id={id('condition')}
+                  className="dxp-inspector-code"
+                  value={config.condition ?? ''}
+                  placeholder="e.g. .logged-in"
+                  onChange={(event) => update({ condition: event.target.value })}
+                  spellCheck={false}
+                />
+              </Field>
+            )}
+            {conditionType === 'device' && (
+              <Field
+                label="Device is"
+                htmlFor={id('condition-value')}
+                hint="Uses the browser’s device information, with user agent detection as a fallback."
+              >
+                <Select
+                  id={id('condition-value')}
+                  value={config.conditionValue ?? ''}
+                  onChange={(event) => update({ conditionValue: event.target.value })}
+                >
+                  <option value="" disabled>
+                    Choose a device
+                  </option>
+                  <option value="desktop">Desktop</option>
+                  <option value="mobile">Mobile</option>
+                </Select>
+              </Field>
+            )}
+            {conditionType === 'language' && (
+              <Field
+                label="Language is"
+                htmlFor={id('condition-value')}
+                hint="Checks the primary browser language. Use en for any English variant, or en-US for an exact locale."
+              >
+                <input
+                  id={id('condition-value')}
+                  value={config.conditionValue ?? ''}
+                  placeholder="e.g. en, es, en-US"
+                  onChange={(event) => update({ conditionValue: event.target.value })}
+                  spellCheck={false}
+                />
+              </Field>
+            )}
+            {conditionType === 'referrer' && (
+              <Field
+                label="Referrer domain equals"
+                htmlFor={id('condition-value')}
+                hint="Matches the exact domain, ignoring protocol, port and path. Subdomains are distinct: example.com does not match www.example.com. A missing referrer takes the False path."
+              >
+                <input
+                  id={id('condition-value')}
+                  type="text"
+                  value={config.conditionValue ?? ''}
+                  placeholder="example.com"
+                  onChange={(event) => update({ conditionValue: event.target.value })}
+                  spellCheck={false}
+                />
+              </Field>
+            )}
+            {variableCondition && (
+              <>
+                <Field
+                  label={
+                    conditionType === 'query-param' ? 'Parameter name' : 'Cookie or storage key'
+                  }
+                  htmlFor={id('condition-key')}
+                >
+                  <input
+                    id={id('condition-key')}
+                    className="dxp-inspector-code"
+                    value={config.conditionKey ?? ''}
+                    placeholder={
+                      conditionType === 'query-param' ? 'e.g. utm_source' : 'e.g. audience'
+                    }
+                    onChange={(event) => update({ conditionKey: event.target.value })}
+                    spellCheck={false}
+                  />
+                </Field>
+                <Field
+                  label="Value equals"
+                  htmlFor={id('condition-value')}
+                  hint="Exact, case-sensitive match. An empty value matches only a present, empty variable."
+                >
+                  <input
+                    id={id('condition-value')}
+                    value={config.conditionValue ?? ''}
+                    placeholder="e.g. newsletter"
+                    onChange={(event) => update({ conditionValue: event.target.value })}
+                    spellCheck={false}
+                  />
+                </Field>
+                <p className="dxp-inspector-hint">
+                  {conditionType === 'query-param'
+                    ? 'Checks the current page URL. Any matching value in a repeated parameter counts.'
+                    : 'Checks cookies, localStorage and sessionStorage on this website. True if any source contains the name and value. Cookie names and values are URL-decoded. If none match, the False path runs.'}
+                </p>
+              </>
+            )}
             <div className="dxp-inspector-branches">
               <div>
                 <i className="dxp-inspector-dot-true" />
                 <strong>True</strong>
-                <span>Element found</span>
+                <span>Condition matches</span>
               </div>
               <div>
                 <i className="dxp-inspector-dot-false" />
                 <strong>False</strong>
-                <span>No matching element</span>
+                <span>Condition does not match</span>
               </div>
             </div>
             <p className="dxp-inspector-hint">
