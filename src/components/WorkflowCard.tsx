@@ -51,12 +51,14 @@ export function WorkflowCard({ id, data, selected }: NodeProps<WorkflowNode>) {
           <Handle
             type="source"
             id={data.kind === 'fork' ? 'true' : 'body'}
+            title={data.kind === 'fork' ? 'True' : 'Body'}
             position={Position.Right}
             style={{ top: '37%' }}
           />
           <Handle
             type="source"
             id={data.kind === 'fork' ? 'false' : 'done'}
+            title={data.kind === 'fork' ? 'False' : 'Done'}
             position={Position.Right}
             style={{ top: '73%' }}
           />
