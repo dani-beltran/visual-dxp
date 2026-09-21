@@ -683,19 +683,7 @@
   border: 1px solid #82a78b;
   transform: rotate(45deg);
 }
-.dxp-canvas-heading h2 {
-  font-family: Manrope, sans-serif;
-  font-size: 19px;
-  font-weight: 500;
-  color: #6b7d70;
-  letter-spacing: -0.5px;
-  margin-top: 10px;
-}
-.dxp-canvas-heading p {
-  font-size: 10px;
-  color: #aab3ac;
-  margin-top: 7px;
-}
+
 .dxp-import-button {
   border: 1px solid #e5ebe6;
   background: #ffffffab;
@@ -1534,12 +1522,6 @@
   .dxp-toolbar {
     padding: 0 22px;
   }
-  .dxp-canvas-heading h2 {
-    font-size: 16px;
-  }
-  .dxp-canvas-heading p {
-    font-size: 9px;
-  }
   .dxp-footer-label {
     display: none;
   }
@@ -1650,14 +1632,6 @@
   }
   .dxp-builder .react-flow__panel.top.left {
     margin: 25px 20px;
-  }
-  .dxp-canvas-heading h2 {
-    font-size: 14px;
-    max-width: 180px;
-  }
-  .dxp-canvas-heading p {
-    max-width: 180px;
-    line-height: 1.8;
   }
   .dxp-canvas-kicker {
     font-size: 6px;

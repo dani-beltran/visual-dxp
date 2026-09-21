@@ -964,13 +964,6 @@ function Builder({
                 proOptions={{ hideAttribution: true }}
               >
                 <Background variant={BackgroundVariant.Dots} gap={20} size={1.1} color="#d8e0dc" />
-                <Panel position="top-left" className="dxp-canvas-heading">
-                  <div className="dxp-canvas-kicker">
-                    <span /> YOUR EXPERIENCE, CONNECTED
-                  </div>
-                  <h2>Make every visit feel personal.</h2>
-                  <p>A few simple steps. A more memorable welcome.</p>
-                </Panel>
                 <Panel position="top-right">
                   <button
                     type="button"
