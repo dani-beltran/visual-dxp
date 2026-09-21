@@ -1,5 +1,5 @@
 import { isNoteMarks } from './noteText';
-import { createRuntime } from './runtime';
+import { getRuntimeSource } from './runtime';
 import { elementTriggerEvents, validateTriggerConfig } from './triggers';
 import type { ValidationIssue, Workflow } from './types';
 
@@ -362,5 +362,5 @@ export function exportWorkflow(workflow: Workflow): string {
     .replace(/&/g, '\\u0026')
     .replace(/\u2028/g, '\\u2028')
     .replace(/\u2029/g, '\\u2029');
-  return `/* Forma DXP — generated workflow. Load this script on your target website. */\n(() => {\n  "use strict";\n  const workflow = ${json};\n  const createRuntime = ${createRuntime.toString()};\n  if (window.FormaDXP && typeof window.FormaDXP.destroy === "function") window.FormaDXP.destroy();\n  window.FormaDXP = createRuntime(workflow);\n  window.FormaDXP.start();\n})();\n`;
+  return `/* Forma DXP — generated workflow. Load this script on your target website. */\n(() => {\n  "use strict";\n  const workflow = ${json};\n  const createRuntime = ${getRuntimeSource()};\n  if (window.FormaDXP && typeof window.FormaDXP.destroy === "function") window.FormaDXP.destroy();\n  window.FormaDXP = createRuntime(workflow);\n  window.FormaDXP.start();\n})();\n`;
 }

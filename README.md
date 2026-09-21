@@ -271,7 +271,7 @@ HTML and DOM actions are author-controlled content. Import workflows from truste
 - `src/app.tsx` — demo host page, sidebar/header, test trigger, and export dialog.
 - `src/components/DXPBuilder.tsx` — independent editor, state/history, import, persistence, and test preview.
 - `src/components/` — workflow cards, node inspector, picker, and live preview.
-- `src/lib/runtime.ts` — self-contained workflow execution engine.
+- `src/lib/runtime/` — workflow execution, conditions, popovers, and trigger modules; `index.ts` exposes the runtime API.
 - `src/lib/export.ts` — graph/configuration validation and JavaScript generation.
 - `src/lib/picker.ts` — selector generation and iframe highlighting.
 - `src/lib/types.ts` — public workflow schema.

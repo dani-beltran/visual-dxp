@@ -550,6 +550,52 @@ describe('workflow export', () => {
     );
   });
 
+  it('exports connected runtime modules with shared cancellation and popover cleanup', async () => {
+    vi.useFakeTimers();
+    document.body.innerHTML = '<button id="start">Run</button><p id="result">Waiting</p>';
+    const request = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('ok'));
+    const graph = workflow(
+      [
+        node('start', 'trigger', { event: 'click', selector: '#start' }),
+        node('wait', 'delay', { duration: 100 }),
+        node('branch', 'fork', { condition: '#result' }),
+        node('repeat', 'loop', { iterations: 2 }),
+        node('request', 'http', { url: 'https://example.com/event' }),
+        node('update', 'dom', { selector: '#result', value: 'Done' }),
+        node('message', 'popover', { content: '<h2>Finished</h2>' }),
+      ],
+      [
+        ['start', 'wait'],
+        ['wait', 'branch'],
+        ['branch', 'repeat', 'true'],
+        ['repeat', 'request', 'body'],
+        ['repeat', 'update', 'done'],
+        ['update', 'message'],
+      ],
+    );
+
+    new Function('window', 'document', exportWorkflow(graph))(window, document);
+    const exported = (window as Window & { FormaDXP?: ReturnType<typeof createRuntime> }).FormaDXP;
+    if (!exported) throw new Error('Expected the exported runtime to be installed.');
+    const running = exported.run();
+    expect(request).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(100);
+    await running;
+    expect(request).toHaveBeenCalledTimes(2);
+    expect(document.querySelector('#result')?.textContent).toBe('Done');
+    expect(document.querySelector('[data-forma-popover] h2')?.textContent).toBe('Finished');
+
+    const cancelled = exported.run();
+    exported.destroy();
+    await cancelled;
+    expect(request.mock.calls[0]?.[1]?.signal?.aborted).toBe(true);
+    expect(document.querySelector('[data-forma-popover]')).toBeNull();
+    (document.querySelector('#start') as HTMLElement).click();
+    await vi.advanceTimersByTimeAsync(100);
+    expect(request).toHaveBeenCalledTimes(2);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
   it('rejects cycles, invalid branch connections, unsafe URLs, and malformed headers', () => {
     const graph = workflow(
       [
