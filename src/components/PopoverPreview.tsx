@@ -133,7 +133,7 @@ export function PopoverPreview({ node, onClose }: { node: WorkflowNode; onClose:
       </header>
       <div className="dxp-popover-preview-bar">
         <span>
-          <Globe2 size={14} /> Atelier demo website
+          <Globe2 size={14} /> Demo website
         </span>
         <span>
           {positions[config.position ?? 'bottom-right']} · {config.width ?? 360} px

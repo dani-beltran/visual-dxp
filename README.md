@@ -11,7 +11,7 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:5173. The included Atelier demo website supports the element picker and live workflow testing without additional setup. The demo saves workflow changes in local browser storage. Its Activity tab starts with illustrative actions from several users; activity stays in memory and resets when the page reloads.
+Open http://localhost:5173. The included demo website supports the element picker and live workflow testing without additional setup. The demo saves workflow changes in local browser storage. Its Activity tab starts with illustrative actions from several users; activity stays in memory and resets when the page reloads.
 
 ```sh
 npm test             # Runtime, export, picker bridge, and import boundary tests

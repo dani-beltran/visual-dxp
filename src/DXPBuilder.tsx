@@ -873,7 +873,7 @@ function Builder({
             <Globe2 size={14} />
             <span>
               {workflow.websiteUrl === '/demo-site.html'
-                ? 'Atelier · Demo website'
+                ? 'Demo website'
                 : workflow.websiteUrl.replace(/^https?:\/\//, '')}
             </span>
             <ChevronDown size={12} />
@@ -1255,7 +1255,7 @@ function Builder({
                   className="dxp-demo-link"
                   onClick={() => setWebsiteDraft('/demo-site.html')}
                 >
-                  <RotateCcw size={13} /> Use the Atelier demo website
+                  <RotateCcw size={13} /> Use the demo website
                 </button>
                 <div className="dxp-modal-footer">
                   <button type="button" className="dxp-button" onClick={() => setModal(null)}>
