@@ -21,6 +21,7 @@ export type TriggerEvent =
   | 'mouseover'
   | 'submit'
   | 'change'
+  | 'zoom-in'
   | 'exit-intent'
   | 'rage-click'
   | 'inactivity'

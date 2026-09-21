@@ -23,6 +23,7 @@ export const elementTriggerEvents: readonly TriggerEvent[] = [
   'mouseover',
   'submit',
   'change',
+  'zoom-in',
 ];
 
 export const triggerOptions: Record<
@@ -52,6 +53,11 @@ export const triggerOptions: Record<
   change: {
     label: 'An input changes',
     hint: 'Starts when a visitor commits a change to the selected field, such as choosing an option, toggling a checkbox, or leaving a text field after editing it.',
+    settings: [],
+  },
+  'zoom-in': {
+    label: 'An element is zoomed into',
+    hint: 'Starts once per pinch or Ctrl+wheel zoom-in gesture over the selected element or anything inside it. Ordinary scrolling and zooming out are ignored.',
     settings: [],
   },
   'exit-intent': {

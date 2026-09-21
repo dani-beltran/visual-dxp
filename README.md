@@ -111,7 +111,7 @@ The default journey points to `/demo-site.html`. To use it in another applicatio
 
 | Node           | Configuration and behavior                                                                                                                                                       |
 | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Trigger        | Page ready, click, hover, submit, input change, exit intention, rage clicking, inactivity, scroll thrashing, or scroll down threshold. Element events use delegated listeners. |
+| Trigger        | Page ready, click, hover, submit, input change, element zoom-in, exit intention, rage clicking, inactivity, scroll thrashing, or scroll down threshold. Element events use delegated listeners. |
 | HTTP request   | HTTP method, URL, JSON headers, and raw body. Non-success responses stop that run and produce an error. The target API must allow the site's origin through CORS.                |
 | Update element | Change text/HTML, add/remove classes, hide/show, or set an attribute on all matching elements.                                                                                   |
 | Delay          | Wait 0–86,400,000 milliseconds.                                                                                                                                                  |
@@ -121,6 +121,10 @@ The default journey points to `/demo-site.html`. To use it in another applicatio
 | Note           | Editable canvas text with bold, italic, and strikethrough formatting, preset or custom background colors, and a transparent option. Notes have no connections and do not run. |
 
 Connections from a step execute in order. An HTTP request currently performs the configured request; its response is not interpolated into later nodes. Conditions compare the configured visitor or page data; they do not evaluate JavaScript expressions. An execution limit protects against excessive loops.
+
+Choose **Trigger → Start when → An element is zoomed into** and pick a **Target element** to detect zoom-in gestures over that element or its descendants (`event: 'zoom-in'`, `selector: '#product-image'`). Outward two-finger pinches and Safari scale gestures fire after a small 5% movement threshold; Ctrl+wheel zoom-in (including trackpad pinch where the browser emits it) fires once per wheel burst, rearming after a 300 ms pause. Pinches use their starting midpoint to identify the target. Native visual viewport scale changes can also complete an active pinch. Each gesture fires at most once, ordinary scrolling and zoom-out gestures are ignored, and dynamic target elements are supported.
+
+Zoom detection observes browser gestures without preventing native zoom. It detects intent even if the host page prevents magnification; keyboard/menu zoom and application-specific zoom buttons or CSS transforms are not detected. Hidden tabs reset gesture tracking, and stopping the runtime removes all gesture and viewport listeners. The same detection runs in preview and exported JavaScript. Browser event behavior is described in the [wheel event](https://developer.mozilla.org/en-US/docs/Web/API/Element/wheel_event), [GestureEvent](https://developer.mozilla.org/en-US/docs/Web/API/GestureEvent), and [VisualViewport.scale](https://developer.mozilla.org/en-US/docs/Web/API/VisualViewport/scale) references.
 
 Behavioral triggers are available in **Trigger → Start when** and watch the whole page without requiring an element selector:
 

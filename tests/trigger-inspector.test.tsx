@@ -10,8 +10,10 @@ import type { StepConfig, TriggerEvent, WorkflowNode } from '../src/lib/types';
 let root: Root;
 let host: HTMLDivElement;
 let current: StepConfig;
+const pickElement = vi.fn();
 beforeEach(async () => {
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
+  pickElement.mockClear();
   host = document.createElement('div');
   document.body.appendChild(host);
   root = createRoot(host);
@@ -28,7 +30,7 @@ beforeEach(async () => {
         node={node}
         onChange={(patch) => setNode({ ...node, data: { ...node.data, ...patch } })}
         onClose={() => {}}
-        onPickElement={() => {}}
+        onPickElement={pickElement}
         onDelete={() => {}}
         onDuplicate={() => {}}
         onPreviewContent={() => {}}
@@ -65,7 +67,7 @@ async function change(label: string, value: string) {
 
 it('edits every behavioral trigger with defaults, relevant controls, and readable canvas summaries', async () => {
   expect(field('Target element').value).toBe('#legacy');
-  expect(field('Start when').querySelectorAll('option')).toHaveLength(10);
+  expect(field('Start when').querySelectorAll('option')).toHaveLength(11);
   const summaries: Partial<Record<TriggerEvent, string>> = {
     'exit-intent': 'When a visitor intends to leave',
     'rage-click': '3 nearby clicks within 1s',
@@ -93,4 +95,33 @@ it('edits every behavioral trigger with defaults, relevant controls, and readabl
   await change('Start when', 'page-load');
   expect(host.textContent).toContain('once the page is ready');
   expect(stepSummary('trigger', {})).toBe('When a visitor lands on your site');
+});
+
+it('selects a zoom-in target and preserves it when switching triggers', async () => {
+  const option = field('Start when').querySelector('option[value="zoom-in"]');
+  expect(option?.textContent).toBe('An element is zoomed into');
+  await change('Start when', 'zoom-in');
+  expect(current.event).toBe('zoom-in');
+  expect(field('Target element').value).toBe('#legacy');
+  expect(host.textContent).toContain(triggerOptions['zoom-in'].hint);
+  expect(triggerOptions['zoom-in'].settings).toEqual([]);
+  expect(host.querySelector('input[type="number"]')).toBeNull();
+
+  const picker = [...host.querySelectorAll('button')].find((button) =>
+    button.textContent?.includes('Select on website'),
+  );
+  expect(picker).toBeDefined();
+  await act(async () => picker?.click());
+  expect(pickElement).toHaveBeenCalledOnce();
+
+  await change('Target element', '.product-image');
+  expect(current.selector).toBe('.product-image');
+  expect(stepSummary('trigger', current)).toBe('Zoom in · .product-image');
+  await change('Start when', 'inactivity');
+  expect(host.textContent).not.toContain('Target element');
+  await change('Start when', 'zoom-in');
+  expect(field('Target element').value).toBe('.product-image');
+  expect(stepSummary('trigger', current)).toBe('Zoom in · .product-image');
+  await change('Target element', '');
+  expect(stepSummary('trigger', current)).toBe('Zoom in · Choose an element');
 });
