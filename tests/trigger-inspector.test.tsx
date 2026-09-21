@@ -67,7 +67,7 @@ async function change(label: string, value: string) {
 
 it('edits every behavioral trigger with defaults, relevant controls, and readable canvas summaries', async () => {
   expect(field('Target element').value).toBe('#legacy');
-  expect(field('Start when').querySelectorAll('option')).toHaveLength(11);
+  expect(field('Start when').querySelectorAll('option')).toHaveLength(12);
   const summaries: Partial<Record<TriggerEvent, string>> = {
     'exit-intent': 'When a visitor intends to leave',
     'rage-click': '3 nearby clicks within 1s',
@@ -97,31 +97,37 @@ it('edits every behavioral trigger with defaults, relevant controls, and readabl
   expect(stepSummary('trigger', {})).toBe('When a visitor lands on your site');
 });
 
-it('selects a zoom-in target and preserves it when switching triggers', async () => {
-  const option = field('Start when').querySelector('option[value="zoom-in"]');
-  expect(option?.textContent).toBe('An element is zoomed into');
-  await change('Start when', 'zoom-in');
-  expect(current.event).toBe('zoom-in');
-  expect(field('Target element').value).toBe('#legacy');
-  expect(host.textContent).toContain(triggerOptions['zoom-in'].hint);
-  expect(triggerOptions['zoom-in'].settings).toEqual([]);
-  expect(host.querySelector('input[type="number"]')).toBeNull();
+it.each([
+  ['zoom-in', 'An element is zoomed into', 'Zoom in'],
+  ['swipe', 'An element is swiped', 'Swipe'],
+] as const)(
+  'selects a %s target and preserves it when switching triggers',
+  async (event, label, summary) => {
+    const option = field('Start when').querySelector(`option[value="${event}"]`);
+    expect(option?.textContent).toBe(label);
+    await change('Start when', event);
+    expect(current.event).toBe(event);
+    expect(field('Target element').value).toBe('#legacy');
+    expect(host.textContent).toContain(triggerOptions[event].hint);
+    expect(triggerOptions[event].settings).toEqual([]);
+    expect(host.querySelector('input[type="number"]')).toBeNull();
 
-  const picker = [...host.querySelectorAll('button')].find((button) =>
-    button.textContent?.includes('Select on website'),
-  );
-  expect(picker).toBeDefined();
-  await act(async () => picker?.click());
-  expect(pickElement).toHaveBeenCalledOnce();
+    const picker = [...host.querySelectorAll('button')].find((button) =>
+      button.textContent?.includes('Select on website'),
+    );
+    expect(picker).toBeDefined();
+    await act(async () => picker?.click());
+    expect(pickElement).toHaveBeenCalledOnce();
 
-  await change('Target element', '.product-image');
-  expect(current.selector).toBe('.product-image');
-  expect(stepSummary('trigger', current)).toBe('Zoom in · .product-image');
-  await change('Start when', 'inactivity');
-  expect(host.textContent).not.toContain('Target element');
-  await change('Start when', 'zoom-in');
-  expect(field('Target element').value).toBe('.product-image');
-  expect(stepSummary('trigger', current)).toBe('Zoom in · .product-image');
-  await change('Target element', '');
-  expect(stepSummary('trigger', current)).toBe('Zoom in · Choose an element');
-});
+    await change('Target element', '.product-image');
+    expect(current.selector).toBe('.product-image');
+    expect(stepSummary('trigger', current)).toBe(`${summary} · .product-image`);
+    await change('Start when', 'inactivity');
+    expect(host.textContent).not.toContain('Target element');
+    await change('Start when', event);
+    expect(field('Target element').value).toBe('.product-image');
+    expect(stepSummary('trigger', current)).toBe(`${summary} · .product-image`);
+    await change('Target element', '');
+    expect(stepSummary('trigger', current)).toBe(`${summary} · Choose an element`);
+  },
+);

@@ -187,6 +187,8 @@ export function stepSummary(kind: NodeKind, c: StepConfig): string {
           return 'When a visitor lands on your site';
         case 'zoom-in':
           return `Zoom in · ${c.selector || 'Choose an element'}`;
+        case 'swipe':
+          return `Swipe · ${c.selector || 'Choose an element'}`;
         case 'exit-intent':
           return 'When a visitor intends to leave';
         case 'rage-click':

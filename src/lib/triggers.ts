@@ -24,6 +24,7 @@ export const elementTriggerEvents: readonly TriggerEvent[] = [
   'submit',
   'change',
   'zoom-in',
+  'swipe',
 ];
 
 export const triggerOptions: Record<
@@ -58,6 +59,11 @@ export const triggerOptions: Record<
   'zoom-in': {
     label: 'An element is zoomed into',
     hint: 'Starts once per pinch or Ctrl+wheel zoom-in gesture over the selected element or anything inside it. Ordinary scrolling and zooming out are ignored.',
+    settings: [],
+  },
+  swipe: {
+    label: 'An element is swiped',
+    hint: 'Starts once when a finger or pen swipe begins on the selected element or anything inside it and finishes at least 50 px away within one second, in any direction. Taps, slow drags, pinches, and cancelled gestures are ignored.',
     settings: [],
   },
   'exit-intent': {

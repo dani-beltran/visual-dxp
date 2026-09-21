@@ -22,6 +22,7 @@ export type TriggerEvent =
   | 'submit'
   | 'change'
   | 'zoom-in'
+  | 'swipe'
   | 'exit-intent'
   | 'rage-click'
   | 'inactivity'
