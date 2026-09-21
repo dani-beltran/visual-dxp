@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { DXPBuilder } from './DXPBuilder';
+import { App } from './app';
 import { createActivityStore } from './lib/activity';
 import './styles/demo.css';
 
@@ -47,7 +47,7 @@ const activityStore = createActivityStore([
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <DXPBuilder
+    <App
       activityStore={activityStore}
       activityUser="Daniel Beltrán"
       persistenceKey="forma-dxp-workflow-v1"

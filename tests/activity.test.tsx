@@ -4,13 +4,17 @@ import { Position } from '@xyflow/react';
 import { act, StrictMode } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { DXPBuilder, type DXPBuilderProps } from '../src/DXPBuilder';
+import { DXPBuilder, type DXPBuilderApi, type DXPBuilderProps } from '../src/components/DXPBuilder';
 import { type ActivityEntry, type ActivityStore, createActivityStore } from '../src/lib/activity';
 import type { Workflow } from '../src/lib/types';
 
 let host: HTMLDivElement;
 let root: Root;
 let mounted: boolean;
+let builderApi: DXPBuilderApi | null;
+const onReady = (api: DXPBuilderApi | null) => {
+  builderApi = api;
+};
 
 beforeEach(() => {
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
@@ -26,6 +30,7 @@ beforeEach(() => {
   document.body.appendChild(host);
   root = createRoot(host);
   mounted = true;
+  builderApi = null;
 });
 
 afterEach(async () => {
@@ -79,7 +84,7 @@ async function renderBuilder(props: Partial<DXPBuilderProps> = {}) {
   await act(async () => {
     root.render(
       <StrictMode>
-        <DXPBuilder initialWorkflow={initialWorkflow()} {...props} />
+        <DXPBuilder initialWorkflow={initialWorkflow()} onReady={onReady} {...props} />
       </StrictMode>,
     );
   });
@@ -121,13 +126,8 @@ async function pressDelete() {
 }
 
 async function renameWorkflow(value: string) {
-  const input = element<HTMLInputElement>('input[aria-label="Workflow name"]');
-  const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
-  if (!setter) throw new Error('Input value setter should exist');
-  await act(async () => {
-    setter.call(input, value);
-    input.dispatchEvent(new Event('input', { bubbles: true }));
-  });
+  if (!builderApi) throw new Error('Builder API should be ready');
+  await act(async () => builderApi?.renameWorkflow(value));
 }
 
 function remoteEntry(id: string, username: string, timestamp: string): ActivityEntry {
@@ -396,15 +396,14 @@ describe('builder activity', () => {
     vi.useFakeTimers();
     const store = createActivityStore();
     const append = vi.spyOn(store, 'append');
-    await renderBuilder({ activityStore: store, activityUser: 'Ada' });
+    const onChange = vi.fn<(workflow: Workflow) => void>();
+    await renderBuilder({ activityStore: store, activityUser: 'Ada', onChange });
     await renameWorkflow('First edit');
     await renameWorkflow('First edit continued');
     await click(historyButton('Undo'));
     expect(store.getSnapshot()).toEqual([]);
     expect(append).not.toHaveBeenCalled();
-    expect(element<HTMLInputElement>('input[aria-label="Workflow name"]').value).toBe(
-      'Welcome journey',
-    );
+    expect(onChange.mock.lastCall?.[0].name).toBe('Welcome journey');
     await act(async () => vi.advanceTimersByTime(1000));
     expect(append).not.toHaveBeenCalled();
 

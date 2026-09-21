@@ -4,7 +4,7 @@ import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { CanvasChat, type CanvasChatProps } from '../src/components/CanvasChat';
-import { DXPBuilder } from '../src/DXPBuilder';
+import { DXPBuilder, type DXPBuilderApi } from '../src/components/DXPBuilder';
 import type { Workflow } from '../src/lib/types';
 
 let host: HTMLDivElement;
@@ -118,6 +118,7 @@ function undoButton() {
 }
 
 async function renderConnectedBuilder() {
+  const onReady = vi.fn<(api: DXPBuilderApi | null) => void>();
   const onChange = vi.fn<(workflow: Workflow) => void>();
   await act(async () => {
     root.render(
@@ -125,12 +126,15 @@ async function renderConnectedBuilder() {
         initialWorkflow={initialWorkflow()}
         ai={{ endpoint: '/api/ai/chat' }}
         onChange={onChange}
+        onReady={onReady}
       />,
     );
   });
   const baseline = structuredClone(onChange.mock.lastCall![0]);
   await click(button('AI chat'));
-  return { onChange, baseline };
+  const api = onReady.mock.lastCall?.[0];
+  if (!api) throw new Error('Builder API should be ready');
+  return { onChange, baseline, api };
 }
 
 function responseWithOperations(operations: unknown[]) {
@@ -371,18 +375,11 @@ describe('AI workflow integration', () => {
       }),
     );
     vi.stubGlobal('fetch', fetchMock);
-    const { onChange, baseline } = await renderConnectedBuilder();
+    const { onChange, baseline, api } = await renderConnectedBuilder();
     await typeMessage('Rename the delay');
     await click(button('Send message'));
     expect(fetchMock).toHaveBeenCalledOnce();
-    const name = host.querySelector<HTMLInputElement>('input[aria-label="Workflow name"]')!;
-    await act(async () => {
-      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(
-        name,
-        'My manual title',
-      );
-      name.dispatchEvent(new Event('input', { bubbles: true }));
-    });
+    await act(async () => api.renameWorkflow('My manual title'));
     const callsBeforeResponse = onChange.mock.calls.length;
     await act(async () =>
       resolve(

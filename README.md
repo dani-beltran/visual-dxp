@@ -43,7 +43,8 @@ npm install /absolute/path/to/forma-dxp-0.1.0.tgz
 React and React DOM 19 are peer dependencies. React Flow and icons are included in the built library.
 
 ```tsx
-import { DXPBuilder, type Workflow } from '@forma/dxp';
+import { useState } from 'react';
+import { DXPBuilder, type DXPBuilderApi, type Workflow } from '@forma/dxp';
 import '@forma/dxp/styles.css';
 
 const initialWorkflow: Workflow = {
@@ -66,31 +67,43 @@ const initialWorkflow: Workflow = {
 };
 
 export function ExperienceEditor() {
+  const [builder, setBuilder] = useState<DXPBuilderApi | null>(null);
+  const [workflow, setWorkflow] = useState(initialWorkflow);
+
   return (
-    <div style={{ height: '100vh', minHeight: 660 }}>
-      <DXPBuilder
-        initialWorkflow={initialWorkflow}
-        onChange={(workflow) => console.log('Workflow updated', workflow)}
-        onExport={(javascript, workflow) => console.log(workflow.name, javascript)}
-        persistenceKey="my-experience"
-      />
-    </div>
+    <>
+      <button disabled={!builder} onClick={() => builder?.testWorkflow()}>
+        Test workflow
+      </button>
+      {/* Use workflow in your own export dialog; JSON.stringify(workflow) produces JSON. */}
+      <span>{workflow.name}</span>
+      <div style={{ height: 600 }}>
+        <DXPBuilder
+          initialWorkflow={initialWorkflow}
+          onReady={setBuilder}
+          onChange={setWorkflow}
+          persistenceKey="my-experience"
+        />
+      </div>
+    </>
   );
 }
 ```
 
-The builder includes its own `ReactFlowProvider`. It accepts `className` and `style`, uses scoped component styles, and does not require a router or backend. Render it on the client in SSR frameworks (for Next.js, use a client component; disable SSR for the editor if your environment requires it).
+The builder owns the toolbar, canvas, inspector, activity view, footer, element picker, and test preview, including its own `ReactFlowProvider`. The hosting page owns its sidebar, header, test button, and export dialog. `src/app.tsx` demonstrates this split. It accepts `className` and `style`, uses scoped component styles, and does not require a router or backend. Render it on the client in SSR frameworks (for Next.js, use a client component; disable SSR for the editor if your environment requires it).
 
 | Prop                 | Behavior                                                                                                                                                          |
 | -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `initialWorkflow`    | Initial workflow; defaults to the included welcome journey. Changes after mounting do not replace editor state; use a React `key` to open another workflow.       |
-| `onChange`           | Receives edits to nodes, edges, configuration, name, and website URL. Persist this with your own API when needed.                                                 |
-| `onExport`           | Receives the generated JavaScript and workflow when Download .js is selected.                                                                                     |
+| `onChange`           | Receives the initial or restored workflow and all subsequent edits as a JSON-serializable `Workflow` object. Use it for persistence or your own export dialog.                                                 |
+| `onReady`            | Receives a `DXPBuilderApi` with `testWorkflow()`, `renameWorkflow(name)`, `fitView()`, and `flushActivity()`. Receives `null` on cleanup; use a stable callback such as a state setter.                                                                                     |
 | `persistenceKey`     | Optional localStorage key. A valid saved workflow takes precedence over `initialWorkflow`. Omit to disable browser persistence.                                   |
 | `activityStore`      | Optional external activity store. Reads and subscribes to entries and appends new editor actions. Defaults to an empty in-memory store for this builder.         |
 | `activityUser`       | Username attached to new activity entries; defaults to `"You"`. Pass the current user's display name.                                                             |
 | `ai`                 | Optional `{ endpoint, headers?, credentials? }` for your authenticated chat API. The AI button remains visible with setup guidance until an endpoint is provided. |
 | `className`, `style` | Customize the outer editor container. The parent must provide a height.                                                                                           |
+
+Call `builder.testWorkflow()` from your own button to open the built-in preview. Use `exportWorkflow(workflow)` to generate JavaScript in your host, or `JSON.stringify(workflow, null, 2)` for JSON. Export UI and the `onExport` callback now belong to the demo `App`, not `DXPBuilder`. `renameWorkflow(name)` participates in undo/redo and activity; `flushActivity()` publishes pending edits when a host input loses focus.
 
 The default journey points to `/demo-site.html`. To use it in another application, copy `dist/demo-site.html` to the application's public assets, or provide your own `initialWorkflow.websiteUrl`.
 
@@ -109,13 +122,13 @@ The default journey points to `/demo-site.html`. To use it in another applicatio
 
 Connections from a step execute in order. An HTTP request currently performs the configured request; its response is not interpolated into later nodes. Branching is based on element existence, not arbitrary JavaScript expressions. An execution limit protects against excessive loops.
 
-The canvas includes a floating node library: hover or focus an icon to see its name, then click or drag it onto the canvas to add a step. It also supports dragging, connecting, node duplication/deletion, undo/redo, zoom, fit-to-view, minimap, and JSON import/export. Delete selects/removes nodes or connections; ⌘/Ctrl+Z undoes changes.
+The canvas includes a floating node library: hover or focus an icon to see its name, then click or drag it onto the canvas to add a step. It also supports dragging, connecting, node duplication/deletion, undo/redo, zoom, fit-to-view, minimap, and JSON import. The host handles export using the current workflow. Delete selects/removes nodes or connections; ⌘/Ctrl+Z undoes changes.
 
 Add a **Note** from the library and type directly on it. Select text on the note or in its details panel, then choose bold, italic, or strikethrough to format just that selection. The details panel also controls the background color. Drag the note's header to move it. Notes are saved in workflow JSON, including mixed text formatting, but are excluded from exported JavaScript.
 
 ## Activity
 
-The **Activity** tab shows recent actions with the username, action, and time. It records workflow edits, imports, and exports. Undo removes the reverted edit's activity entry; Redo restores that original entry, including its username and timestamp. Typing and repeated keyboard moves are grouped into a single undoable edit and activity entry. Selecting nodes, panning, and zooming do not add entries. JavaScript and JSON remain available through **Export workflow**.
+The **Activity** tab shows recent actions with the username, action, and time. The builder records workflow edits, imports, and test previews. The demo host records exports in the same activity store. Undo removes the reverted edit's activity entry; Redo restores that original entry, including its username and timestamp. Typing and repeated keyboard moves are grouped into a single undoable edit and activity entry. Selecting nodes, panning, and zooming do not add entries. JavaScript and JSON remain available through **Export workflow**.
 
 Pass a stable store instance to connect the activity feed to your application. Create a separate store for each workflow so their histories remain separate:
 
@@ -222,7 +235,8 @@ HTML and DOM actions are author-controlled content. Import workflows from truste
 
 ## Source layout
 
-- `src/DXPBuilder.tsx` — editor composition, state/history, import/export, persistence.
+- `src/app.tsx` — demo host page, sidebar/header, test trigger, and export dialog.
+- `src/components/DXPBuilder.tsx` — independent editor, state/history, import, persistence, and test preview.
 - `src/components/` — workflow cards, node inspector, picker, and live preview.
 - `src/lib/runtime.ts` — self-contained workflow execution engine.
 - `src/lib/export.ts` — graph/configuration validation and JavaScript generation.
