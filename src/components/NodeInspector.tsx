@@ -65,7 +65,7 @@ const details = {
     name: 'Set cookie',
     icon: Cookie,
     summary: 'Save a value for later visits or steps in your workflow.',
-    color: 'amber',
+    color: 'brown',
   },
   fork: {
     name: 'Condition',

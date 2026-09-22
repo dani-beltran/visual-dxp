@@ -92,7 +92,7 @@ export const catalog: {
     kind: 'cookie',
     label: 'Set cookie',
     description: 'Remember a value on this website',
-    color: 'amber',
+    color: 'brown',
     icon: Cookie,
     category: 'Action',
     config: { cookieName: 'audience', cookieValue: 'returning', cookieDays: 0 },
