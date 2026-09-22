@@ -13,9 +13,9 @@ export default defineConfig({
   build: {
     lib: {
       entry: 'src/index.ts',
-      name: 'MrDXP',
-      fileName: 'mr-dxp',
-      cssFileName: 'mr-dxp',
+      name: 'dlbDXP',
+      fileName: 'dlb-dxp',
+      cssFileName: 'dlb-dxp',
     },
     rollupOptions: {
       external: ['react', 'react-dom', 'react/jsx-runtime'],

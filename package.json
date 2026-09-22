@@ -1,5 +1,5 @@
 {
-  "name": "mr-dxp",
+  "name": "dlb-dxp",
   "version": "0.1.0",
   "private": false,
   "type": "module",
@@ -7,20 +7,20 @@
   "files": [
     "dist"
   ],
-  "main": "./dist/mr-dxp.umd.cjs",
-  "module": "./dist/mr-dxp.js",
+  "main": "./dist/dlb-dxp.umd.cjs",
+  "module": "./dist/dlb-dxp.js",
   "types": "./dist/index.d.ts",
-  "style": "./dist/mr-dxp.css",
+  "style": "./dist/dlb-dxp.css",
   "sideEffects": [
     "**/*.css"
   ],
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/mr-dxp.js",
-      "require": "./dist/mr-dxp.umd.cjs"
+      "import": "./dist/dlb-dxp.js",
+      "require": "./dist/dlb-dxp.umd.cjs"
     },
-    "./styles.css": "./dist/mr-dxp.css",
+    "./styles.css": "./dist/dlb-dxp.css",
     "./picker-bridge": "./dist/picker-bridge.js"
   },
   "scripts": {

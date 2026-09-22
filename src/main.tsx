@@ -50,7 +50,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     <App
       activityStore={activityStore}
       activityUser="Daniel Beltrán"
-      persistenceKey="mr-dxp-workflow-v1"
+      persistenceKey="dlb-dxp-workflow-v1"
       ai={
         import.meta.env.VITE_DXP_AI_ENDPOINT
           ? { endpoint: import.meta.env.VITE_DXP_AI_ENDPOINT }

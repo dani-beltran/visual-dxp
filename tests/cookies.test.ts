@@ -39,7 +39,7 @@ function graph(config: StepConfig): Workflow {
   };
 }
 const runtimes: ReturnType<typeof createRuntime>[] = [];
-const exported = window as Window & { MrDXP?: ReturnType<typeof createRuntime> };
+const exported = window as Window & { dlbDXP?: ReturnType<typeof createRuntime> };
 const valid: StepConfig[] = [
   { cookieName: 'audience', cookieValue: 'returning' },
   { cookieName: 'audience', cookieValue: '', cookieDays: 0 },
@@ -62,8 +62,8 @@ beforeEach(() => {
 });
 afterEach(() => {
   for (const runtime of runtimes.splice(0)) runtime.destroy();
-  exported.MrDXP?.destroy();
-  delete exported.MrDXP;
+  exported.dlbDXP?.destroy();
+  delete exported.dlbDXP;
   vi.restoreAllMocks();
   clearCookies();
   document.body.innerHTML = '';
@@ -85,7 +85,7 @@ it.each(valid)(
     clearCookies();
     document.querySelector('#result')?.replaceChildren('waiting');
     new Function('window', 'document', exportWorkflow(graph(config)))(window, document);
-    await exported.MrDXP?.run();
+    await exported.dlbDXP?.run();
     expect(document.querySelector('#result')?.textContent).toBe('yes');
     expect(document.cookie).toBe(cookie);
   },

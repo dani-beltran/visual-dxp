@@ -88,7 +88,7 @@ const edgeOptions = {
   labelBgPadding: [7, 5] as [number, number],
   labelBgBorderRadius: 4,
 };
-export interface DXPBuilderApi {
+export interface VisualDXPBuilderApi {
   /** Open the built-in test preview using the current workflow. */
   testWorkflow: () => void;
   /** Rename the workflow through the editor's undo and activity history. */
@@ -98,12 +98,12 @@ export interface DXPBuilderApi {
   /** Publish any coalesced activity, for example when a host input loses focus. */
   flushActivity: () => void;
 }
-export interface DXPBuilderProps {
+export interface VisualDXPBuilderProps {
   initialWorkflow?: Workflow;
   /** Receives the initial/restored workflow and every edit as a JSON-serializable object. */
   onChange?: (workflow: Workflow) => void;
   /** Exposes editor actions to the host; receives null when detached. Use a stable callback. */
-  onReady?: (api: DXPBuilderApi | null) => void;
+  onReady?: (api: VisualDXPBuilderApi | null) => void;
   className?: string;
   style?: CSSProperties;
   persistenceKey?: string;
@@ -125,7 +125,7 @@ interface HistoryEntry {
 function copyWorkflow(w: Workflow): Workflow {
   return structuredClone(w);
 }
-export function DXPBuilder(props: DXPBuilderProps) {
+export function VisualDXPBuilder(props: VisualDXPBuilderProps) {
   return (
     <ReactFlowProvider>
       <NoteSelectionProvider>
@@ -144,7 +144,7 @@ function Builder({
   activityStore,
   activityUser = 'You',
   ai,
-}: DXPBuilderProps) {
+}: VisualDXPBuilderProps) {
   const [localActivityStore] = useState(() => createActivityStore());
   const store = activityStore ?? localActivityStore;
   const subscribeActivity = useCallback(
@@ -355,7 +355,7 @@ function Builder({
     },
     [remember, recordActivity],
   );
-  const api = useMemo<DXPBuilderApi>(
+  const api = useMemo<VisualDXPBuilderApi>(
     () => ({
       testWorkflow: () => {
         setStatuses({});
@@ -687,7 +687,7 @@ function Builder({
     if (!file) return;
     try {
       const value: unknown = JSON.parse(await file.text());
-      if (!isWorkflow(value)) throw new Error('Choose a valid Mr. DXP workflow JSON file.');
+      if (!isWorkflow(value)) throw new Error('Choose a valid Visual DXP workflow JSON file.');
       commit(() => value, `Imported workflow “${value.name}”`);
       setSelectedId(null);
       setSelectedEdgeId(null);
@@ -854,7 +854,7 @@ function Builder({
           }}
           onDrop={(e) => {
             e.preventDefault();
-            const kind = e.dataTransfer.getData('application/mr-dxp-node') as NodeKind;
+            const kind = e.dataTransfer.getData('application/dlb-dxp-node') as NodeKind;
             if (catalog.some((c) => c.kind === kind))
               add(kind, flow.screenToFlowPosition({ x: e.clientX, y: e.clientY }));
           }}

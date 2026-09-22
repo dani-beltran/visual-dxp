@@ -271,7 +271,7 @@ export function CanvasChat({
             {messages.map((message) => (
               <article key={message.id} className={`dxp-ai-message dxp-ai-message-${message.role}`}>
                 <span className="dxp-ai-message-author">
-                  {message.role === 'user' ? 'You' : 'Mr. DXP AI'}
+                  {message.role === 'user' ? 'You' : 'Visual DXP AI'}
                 </span>
                 <p>{message.content}</p>
                 {!!message.changeCount && (

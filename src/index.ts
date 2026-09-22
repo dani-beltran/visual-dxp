@@ -1,7 +1,7 @@
-export type { DXPBuilderApi, DXPBuilderProps } from './components/DXPBuilder';
-export { DXPBuilder, DXPBuilder as default } from './components/DXPBuilder';
 export type { ElementPickerProps } from './components/ElementPicker';
 export { ElementPicker } from './components/ElementPicker';
+export type { VisualDXPBuilderApi, VisualDXPBuilderProps } from './components/VisualDXPBuilder';
+export { VisualDXPBuilder, VisualDXPBuilder as default } from './components/VisualDXPBuilder';
 export type { ActivityEntry, ActivityStore } from './lib/activity';
 export { createActivityStore } from './lib/activity';
 export type {

@@ -7,7 +7,7 @@ export function showPopover(node: WorkflowNode, context: RuntimeContext): void {
   const anchor = config.position === 'anchor' ? selectorElements(config.selector)[0] : null;
   popovers.get(node.id)?.();
   const panel = doc.createElement('section');
-  panel.dataset.mrDxpPopover = node.id;
+  panel.dataset.dlbDxpPopover = node.id;
   panel.setAttribute('role', 'dialog');
   panel.setAttribute('aria-label', node.data.label || 'Experience');
   const width = Math.max(240, Math.min(960, config.width ?? 360));

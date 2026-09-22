@@ -1,5 +1,5 @@
 /**
- * Mr. DXP element-picker bridge. Host this file on the website being inspected.
+ * Visual DXP element-picker bridge. Host this file on the website being inspected.
  * <script src="/picker-bridge.js" data-parent-origin="https://your-editor.example"></script>
  * The exact parent origin is mandatory. The site must separately permit framing.
  * This bridge never executes code received through postMessage.
@@ -20,7 +20,7 @@
     return;
   }
 
-  const protocol = 'mr-dxp:element-picker';
+  const protocol = 'dlb-dxp:element-picker';
   let activeChannel = null;
   let session = null;
   function send(type, values) {
@@ -89,7 +89,7 @@
   }
   function attach() {
     const root = document.createElement('div');
-    root.setAttribute('data-mr-dxp-picker', 'overlay');
+    root.setAttribute('data-dlb-dxp-picker', 'overlay');
     root.setAttribute('aria-hidden', 'true');
     root.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:2147483647;';
     function outline(selected) {
@@ -140,7 +140,7 @@
     }
     function valid(target) {
       return (
-        target && typeof target.closest === 'function' && !target.closest('[data-mr-dxp-picker]')
+        target && typeof target.closest === 'function' && !target.closest('[data-dlb-dxp-picker]')
       );
     }
     function move(event) {

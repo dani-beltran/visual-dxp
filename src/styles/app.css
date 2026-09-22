@@ -39,10 +39,6 @@
   letter-spacing: -1.8px;
   gap: 10px;
 }
-.dxp-brand-period {
-  margin-left: -12px;
-  color: #82ae8e;
-}
 .dxp-brand-tag {
   font-family: 'DM Sans', sans-serif;
   font-size: 9px;
@@ -551,7 +547,6 @@
     font-size: 0;
     justify-content: center;
   }
-  .dxp-brand-period,
   .dxp-brand-tag,
   .dxp-workspace-label,
   .dxp-sidebar-section,

@@ -40,9 +40,9 @@ beforeEach(() => {
 });
 afterEach(() => {
   for (const runtime of runtimes.splice(0)) runtime.destroy();
-  const exported = window as Window & { MrDXP?: ReturnType<typeof createRuntime> };
-  exported.MrDXP?.destroy();
-  delete exported.MrDXP;
+  const exported = window as Window & { dlbDXP?: ReturnType<typeof createRuntime> };
+  exported.dlbDXP?.destroy();
+  delete exported.dlbDXP;
   document.body.innerHTML = '';
   vi.restoreAllMocks();
   vi.useRealTimers();

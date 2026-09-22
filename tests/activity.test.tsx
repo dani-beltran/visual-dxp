@@ -4,15 +4,19 @@ import { Position } from '@xyflow/react';
 import { act, StrictMode } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { DXPBuilder, type DXPBuilderApi, type DXPBuilderProps } from '../src/components/DXPBuilder';
+import {
+  VisualDXPBuilder,
+  type VisualDXPBuilderApi,
+  type VisualDXPBuilderProps,
+} from '../src/components/VisualDXPBuilder';
 import { type ActivityEntry, type ActivityStore, createActivityStore } from '../src/lib/activity';
 import type { Workflow } from '../src/lib/types';
 
 let host: HTMLDivElement;
 let root: Root;
 let mounted: boolean;
-let builderApi: DXPBuilderApi | null;
-const onReady = (api: DXPBuilderApi | null) => {
+let builderApi: VisualDXPBuilderApi | null;
+const onReady = (api: VisualDXPBuilderApi | null) => {
   builderApi = api;
 };
 
@@ -80,11 +84,11 @@ function connectedWorkflow(): Workflow {
   return workflow;
 }
 
-async function renderBuilder(props: Partial<DXPBuilderProps> = {}) {
+async function renderBuilder(props: Partial<VisualDXPBuilderProps> = {}) {
   await act(async () => {
     root.render(
       <StrictMode>
-        <DXPBuilder initialWorkflow={initialWorkflow()} onReady={onReady} {...props} />
+        <VisualDXPBuilder initialWorkflow={initialWorkflow()} onReady={onReady} {...props} />
       </StrictMode>,
     );
   });

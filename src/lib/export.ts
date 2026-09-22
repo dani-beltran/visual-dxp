@@ -416,5 +416,5 @@ export function exportWorkflow(workflow: Workflow): string {
     .replace(/&/g, '\\u0026')
     .replace(/\u2028/g, '\\u2028')
     .replace(/\u2029/g, '\\u2029');
-  return `/* Mr. DXP — generated workflow. Load this script on your target website. */\n(() => {\n  "use strict";\n  const workflow = ${json};\n  const createRuntime = ${getRuntimeSource()};\n  if (window.MrDXP && typeof window.MrDXP.destroy === "function") window.MrDXP.destroy();\n  window.MrDXP = createRuntime(workflow);\n  window.MrDXP.start();\n})();\n`;
+  return `/* Visual DXP — generated workflow. Load this script on your target website. */\n(() => {\n  "use strict";\n  const workflow = ${json};\n  const createRuntime = ${getRuntimeSource()};\n  if (window.dlbDXP && typeof window.dlbDXP.destroy === "function") window.dlbDXP.destroy();\n  window.dlbDXP = createRuntime(workflow);\n  window.dlbDXP.start();\n})();\n`;
 }

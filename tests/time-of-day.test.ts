@@ -31,15 +31,15 @@ function graph(config: StepConfig): Workflow {
   };
 }
 const runtimes: ReturnType<typeof createRuntime>[] = [];
-const exported = window as Window & { MrDXP?: ReturnType<typeof createRuntime> };
+const exported = window as Window & { dlbDXP?: ReturnType<typeof createRuntime> };
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ['Date'] });
   document.body.innerHTML = '<p id="result">waiting</p>';
 });
 afterEach(() => {
   for (const runtime of runtimes.splice(0)) runtime.destroy();
-  exported.MrDXP?.destroy();
-  delete exported.MrDXP;
+  exported.dlbDXP?.destroy();
+  delete exported.dlbDXP;
   vi.useRealTimers();
   document.body.innerHTML = '';
 });
@@ -51,7 +51,7 @@ async function expectBranches(config: StepConfig, matches: boolean) {
   expect(document.querySelector('#result')?.textContent).toBe(matches ? 'yes' : 'no');
   document.querySelector('#result')?.replaceChildren('waiting');
   new Function('window', 'document', exportWorkflow(graph(config)))(window, document);
-  await exported.MrDXP?.run();
+  await exported.dlbDXP?.run();
   expect(document.querySelector('#result')?.textContent).toBe(matches ? 'yes' : 'no');
 }
 

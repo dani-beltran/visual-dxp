@@ -38,7 +38,7 @@ Open the frontend at `http://127.0.0.1:5173`. It calls the separate backend dire
 Configure the endpoint through the builder's `ai` prop:
 
 ```tsx
-<DXPBuilder
+<VisualDXPBuilder
   ai={{
     endpoint: '/api/ai/chat',
     credentials: 'same-origin',
@@ -54,10 +54,10 @@ The demo's environment variable configures only the demo. Applications embedding
 
 ## HTTP contract
 
-The client sends `POST` to the configured endpoint with JSON and expects a JSON response. Public TypeScript types are exported from `mr-dxp`:
+The client sends `POST` to the configured endpoint with JSON and expects a JSON response. Public TypeScript types are exported from `dlb-dxp`:
 
 ```ts
-import type { AIChatRequest, AIChatResponse } from 'mr-dxp';
+import type { AIChatRequest, AIChatResponse } from 'dlb-dxp';
 ```
 
 The request contains:

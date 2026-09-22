@@ -3,7 +3,7 @@
 import { act, StrictMode } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { DXPBuilder } from '../src/components/DXPBuilder';
+import { VisualDXPBuilder } from '../src/components/VisualDXPBuilder';
 import { createActivityStore } from '../src/lib/activity';
 import { createNode } from '../src/lib/catalog';
 import type { Workflow } from '../src/lib/types';
@@ -104,7 +104,7 @@ async function renderBuilder(workflow = initialWorkflow(), persist = false) {
   await act(async () =>
     root.render(
       <StrictMode>
-        <DXPBuilder
+        <VisualDXPBuilder
           initialWorkflow={workflow}
           onChange={onChange}
           activityStore={activityStore}

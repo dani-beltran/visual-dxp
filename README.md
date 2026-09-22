@@ -1,4 +1,4 @@
-# Mr. DXP
+# Visual DXP
 
 An embeddable React 19 workflow editor powered by React Flow. Build website experiences visually, pick elements inside an iframe, test the journey, and export a standalone JavaScript file.
 
@@ -37,15 +37,15 @@ npm run build
 npm pack
 
 # In your application, using the archive produced above
-npm install /absolute/path/to/mr-dxp-0.1.0.tgz
+npm install /absolute/path/to/dlb-dxp-0.1.0.tgz
 ```
 
 React and React DOM 19 are peer dependencies. React Flow and icons are included in the built library.
 
 ```tsx
 import { useState } from 'react';
-import DXPBuilder, { type DXPBuilderApi, type Workflow } from 'mr-dxp';
-import 'mr-dxp/styles.css';
+import VisualDXPBuilder, { type VisualDXPBuilderApi, type Workflow } from 'dlb-dxp';
+import 'dlb-dxp/styles.css';
 
 const initialWorkflow: Workflow = {
   version: 1,
@@ -67,7 +67,7 @@ const initialWorkflow: Workflow = {
 };
 
 export function ExperienceEditor() {
-  const [builder, setBuilder] = useState<DXPBuilderApi | null>(null);
+  const [builder, setBuilder] = useState<VisualDXPBuilderApi | null>(null);
   const [workflow, setWorkflow] = useState(initialWorkflow);
 
   return (
@@ -78,7 +78,7 @@ export function ExperienceEditor() {
       {/* Use workflow in your own export dialog; JSON.stringify(workflow) produces JSON. */}
       <span>{workflow.name}</span>
       <div style={{ height: 600 }}>
-        <DXPBuilder
+        <VisualDXPBuilder
           initialWorkflow={initialWorkflow}
           onReady={setBuilder}
           onChange={setWorkflow}
@@ -96,14 +96,14 @@ The builder owns the toolbar, canvas, inspector, activity view, footer, element 
 | -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `initialWorkflow`    | Initial workflow; defaults to the included welcome journey. Changes after mounting do not replace editor state; use a React `key` to open another workflow.       |
 | `onChange`           | Receives the initial or restored workflow and all subsequent edits as a JSON-serializable `Workflow` object. Use it for persistence or your own export dialog.                                                 |
-| `onReady`            | Receives a `DXPBuilderApi` with `testWorkflow()`, `renameWorkflow(name)`, `fitView()`, and `flushActivity()`. Receives `null` on cleanup; use a stable callback such as a state setter.                                                                                     |
+| `onReady`            | Receives a `VisualDXPBuilderApi` with `testWorkflow()`, `renameWorkflow(name)`, `fitView()`, and `flushActivity()`. Receives `null` on cleanup; use a stable callback such as a state setter.                                                                                     |
 | `persistenceKey`     | Optional localStorage key. A valid saved workflow takes precedence over `initialWorkflow`. Omit to disable browser persistence.                                   |
 | `activityStore`      | Optional external activity store. Reads and subscribes to entries and appends new editor actions. Defaults to an empty in-memory store for this builder.         |
 | `activityUser`       | Username attached to new activity entries; defaults to `"You"`. Pass the current user's display name.                                                             |
 | `ai`                 | Optional `{ endpoint, headers?, credentials? }` for your authenticated chat API. The AI button remains visible with setup guidance until an endpoint is provided. |
 | `className`, `style` | Customize the outer editor container. The parent must provide a height.                                                                                           |
 
-`DXPBuilder` is both the default and a named package export. Import `mr-dxp/styles.css` once in your application; it includes React Flow and all builder, inspector, dialog, picker, and activity styles. The package exposes the same stylesheet through its `style` field and marks CSS as a side effect so bundlers retain the import.
+`VisualDXPBuilder` is both the default and a named package export. Import `dlb-dxp/styles.css` once in your application; it includes React Flow and all builder, inspector, dialog, picker, and activity styles. The package exposes the same stylesheet through its `style` field and marks CSS as a side effect so bundlers retain the import.
 
 ### Brand colors with theme.css
 
@@ -118,15 +118,15 @@ Create a `theme.css` file in your application and define the three CSS custom pr
 }
 ```
 
-Import your theme after the package stylesheet in your application's entry point or global stylesheet entry. No color props are needed on `DXPBuilder`:
+Import your theme after the package stylesheet in your application's entry point or global stylesheet entry. No color props are needed on `VisualDXPBuilder`:
 
 ```tsx
-import DXPBuilder from 'mr-dxp';
-import 'mr-dxp/styles.css';
+import VisualDXPBuilder from 'dlb-dxp';
+import 'dlb-dxp/styles.css';
 import './theme.css';
 
 export function ExperienceEditor() {
-  return <DXPBuilder style={{ height: 600 }} />;
+  return <VisualDXPBuilder style={{ height: 600 }} />;
 }
 ```
 
@@ -150,7 +150,7 @@ To give part of your application a different palette, add a wrapper class to the
 
 ```tsx
 <div className="campaign-theme" style={{ height: 600 }}>
-  <DXPBuilder />
+  <VisualDXPBuilder />
 </div>
 ```
 
@@ -158,7 +158,7 @@ Builders inherit the closest theme, including their dialogs and picker. Changing
 
 The palette derives hover colors, borders, backgrounds, shadows, and canvas colors with CSS `color-mix()`. Use brand colors with sufficient contrast for text on light surfaces. Solid primary buttons use white text by default; set `--dxp-on-primary` in your `theme.css` when your primary color needs a different foreground. Status indicators retain semantic success/warning/error colors. User-authored note colors, popover content, and preview websites remain part of the workflow rather than the editor theme.
 
-Call `builder.testWorkflow()` from your own button to open the built-in preview. Use `exportWorkflow(workflow)` to generate JavaScript in your host, or `JSON.stringify(workflow, null, 2)` for JSON. Export UI and the `onExport` callback now belong to the demo `App`, not `DXPBuilder`. `renameWorkflow(name)` participates in undo/redo and activity; `flushActivity()` publishes pending edits when a host input loses focus.
+Call `builder.testWorkflow()` from your own button to open the built-in preview. Use `exportWorkflow(workflow)` to generate JavaScript in your host, or `JSON.stringify(workflow, null, 2)` for JSON. Export UI and the `onExport` callback now belong to the demo `App`, not `VisualDXPBuilder`. `renameWorkflow(name)` participates in undo/redo and activity; `flushActivity()` publishes pending edits when a host input loses focus.
 
 The default journey points to `/demo-site.html`. To use it in another application, copy `dist/demo-site.html` to the application's public assets, or provide your own `initialWorkflow.websiteUrl`.
 
@@ -234,13 +234,13 @@ The **Activity** tab shows recent actions with the username, action, and time. T
 Pass a stable store instance to connect the activity feed to your application. Create a separate store for each workflow so their histories remain separate:
 
 ```tsx
-import { createActivityStore, DXPBuilder, type ActivityEntry } from 'mr-dxp';
+import { createActivityStore, VisualDXPBuilder, type ActivityEntry } from 'dlb-dxp';
 
 const initialActivity: ActivityEntry[] = [];
 const activityStore = createActivityStore(initialActivity);
 
 export function ExperienceEditor() {
-  return <DXPBuilder activityStore={activityStore} activityUser="Daniel Beltrán" />;
+  return <VisualDXPBuilder activityStore={activityStore} activityUser="Daniel Beltrán" />;
 }
 
 // When the host receives the latest activity from its server:
@@ -269,7 +269,7 @@ The **AI chat** button to the left of Canvas Help opens a conversation for creat
 This repository contains the frontend only. The LangChain agent, HTTP API, tools, and LangSmith deployment configuration live in the separate `dlb-dxp-server` project. Configure your host application's authenticated endpoint:
 
 ```tsx
-<DXPBuilder ai={{ endpoint: '/api/ai/chat' }} />
+<VisualDXPBuilder ai={{ endpoint: '/api/ai/chat' }} />
 ```
 
 For the local demo, copy `.env.example` to `.env`; its only setting is the public `VITE_DXP_AI_ENDPOINT=http://127.0.0.1:8787/api/ai/chat`. Run `npm run dev` here and start the backend from the sibling project in another terminal:
@@ -313,12 +313,12 @@ Export produces a dependency-free script. Host the downloaded file and load it o
 <script src="/welcome-journey.js" defer></script>
 ```
 
-It registers triggers, executes actions, and exposes `window.MrDXP`. Reinjecting an exported script first disposes of the previous Mr. DXP runtime. Stop it with `window.MrDXP.destroy()`.
+It registers triggers, executes actions, and exposes `window.dlbDXP`. Reinjecting an exported script first disposes of the previous Visual DXP runtime. Stop it with `window.dlbDXP.destroy()`.
 
 You can also use the runtime directly:
 
 ```ts
-import { createRuntime, exportWorkflow, validateWorkflow } from 'mr-dxp';
+import { createRuntime, exportWorkflow, validateWorkflow } from 'dlb-dxp';
 
 const issues = validateWorkflow(workflow);
 if (issues.length) throw new Error(issues.map((issue) => issue.message).join('\n'));
@@ -337,7 +337,7 @@ HTML and DOM actions are author-controlled content. Import workflows from truste
 ## Source layout
 
 - `src/app.tsx` — demo host page, sidebar/header, test trigger, and export dialog.
-- `src/components/DXPBuilder.tsx` — independent editor, state/history, import, persistence, and test preview.
+- `src/components/VisualDXPBuilder.tsx` — independent editor, state/history, import, persistence, and test preview.
 - `src/components/` — workflow cards, node inspector, picker, and live preview.
 - `src/lib/runtime/` — workflow execution, conditions, popovers, and trigger modules; `index.ts` exposes the runtime API.
 - `src/lib/export.ts` — graph/configuration validation and JavaScript generation.

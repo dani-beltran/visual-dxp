@@ -3,7 +3,11 @@
 import { act, StrictMode } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import DXPBuilder, { createActivityStore, type DXPBuilderApi, type Workflow } from '../src';
+import VisualDXPBuilder, {
+  createActivityStore,
+  type VisualDXPBuilderApi,
+  type Workflow,
+} from '../src';
 import { App } from '../src/app';
 import { createNode } from '../src/lib/catalog';
 
@@ -68,7 +72,7 @@ describe('builder and host boundary', () => {
   it('adds a resizable frame from the library and saves its editable name with undo', async () => {
     const onChange = vi.fn<(workflow: Workflow) => void>();
     await act(async () =>
-      root.render(<DXPBuilder initialWorkflow={initialWorkflow()} onChange={onChange} />),
+      root.render(<VisualDXPBuilder initialWorkflow={initialWorkflow()} onChange={onChange} />),
     );
     await click(element('button[aria-label="Add Frame"]'));
     const frame = onChange.mock.lastCall?.[0].nodes[0];
@@ -110,7 +114,7 @@ describe('builder and host boundary', () => {
     };
     const onChange = vi.fn<(workflow: Workflow) => void>();
     await act(async () =>
-      root.render(<DXPBuilder initialWorkflow={workflow} onChange={onChange} />),
+      root.render(<VisualDXPBuilder initialWorkflow={workflow} onChange={onChange} />),
     );
     const before = element('[data-id="child"]').style.transform;
     const frame = element('[data-id="frame"]');
@@ -150,13 +154,13 @@ describe('builder and host boundary', () => {
   });
 
   it('runs independently, exposes current JSON and preview actions, and detaches its API', async () => {
-    const onReady = vi.fn<(api: DXPBuilderApi | null) => void>();
+    const onReady = vi.fn<(api: VisualDXPBuilderApi | null) => void>();
     const onChange = vi.fn<(workflow: Workflow) => void>();
     const activityStore = createActivityStore();
     await act(async () =>
       root.render(
         <StrictMode>
-          <DXPBuilder
+          <VisualDXPBuilder
             initialWorkflow={initialWorkflow()}
             onReady={onReady}
             onChange={onChange}
@@ -204,7 +208,7 @@ describe('builder and host boundary', () => {
     const onChange = vi.fn<(workflow: Workflow) => void>();
     await act(async () =>
       root.render(
-        <DXPBuilder
+        <VisualDXPBuilder
           initialWorkflow={initialWorkflow()}
           persistenceKey={persistenceKey}
           onChange={onChange}

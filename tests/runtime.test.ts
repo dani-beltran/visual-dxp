@@ -33,9 +33,9 @@ afterEach(() => {
   runtimes.splice(0).forEach((instance) => {
     instance.destroy();
   });
-  const exported = (window as Window & { MrDXP?: ReturnType<typeof createRuntime> }).MrDXP;
+  const exported = (window as Window & { dlbDXP?: ReturnType<typeof createRuntime> }).dlbDXP;
   exported?.destroy();
-  delete (window as Window & { MrDXP?: ReturnType<typeof createRuntime> }).MrDXP;
+  delete (window as Window & { dlbDXP?: ReturnType<typeof createRuntime> }).dlbDXP;
   document.body.innerHTML = '';
   vi.useRealTimers();
   vi.restoreAllMocks();
@@ -153,21 +153,21 @@ describe('workflow runtime', () => {
 
     instance.start();
     await vi.waitFor(() => expect(website.querySelector('#result')?.textContent).toBe('Ready'));
-    expect(website.querySelector('[data-mr-dxp-popover]')).toBeNull();
+    expect(website.querySelector('[data-dlb-dxp-popover]')).toBeNull();
     (document.querySelector('.buy') as HTMLButtonElement).click();
     await Promise.resolve();
     expect(website.querySelector('#result')?.textContent).toBe('Ready');
 
     (website.querySelector('.buy span') as HTMLElement).click();
     await vi.waitFor(() =>
-      expect(website.querySelector('[data-mr-dxp-popover] h2')?.textContent).toBe('Thank you'),
+      expect(website.querySelector('[data-dlb-dxp-popover] h2')?.textContent).toBe('Thank you'),
     );
     expect(website.querySelector('#result')?.textContent).toBe('Purchased');
     expect(document.querySelector('#result')?.textContent).toBe('Editor');
-    expect(document.querySelector('[data-mr-dxp-popover]')).toBeNull();
+    expect(document.querySelector('[data-dlb-dxp-popover]')).toBeNull();
 
     instance.destroy();
-    expect(website.querySelector('[data-mr-dxp-popover]')).toBeNull();
+    expect(website.querySelector('[data-dlb-dxp-popover]')).toBeNull();
     const result = website.querySelector('#result');
     if (!result) throw new Error('Expected the website result element.');
     result.textContent = 'Stopped';
@@ -367,7 +367,7 @@ describe('workflow runtime', () => {
     expect(request).toHaveBeenCalledOnce();
     external.abort();
     await expect(pending).resolves.toBeUndefined();
-    expect(document.querySelector('[data-mr-dxp-popover]')).toBeNull();
+    expect(document.querySelector('[data-dlb-dxp-popover]')).toBeNull();
     expect(logs.some((entry) => entry.status === 'error')).toBe(false);
     expect((request.mock.calls[0][1]!.signal as AbortSignal).aborted).toBe(true);
   });
@@ -429,15 +429,15 @@ describe('workflow runtime', () => {
       ),
     );
     await instance.run();
-    expect(document.querySelector('[data-mr-dxp-popover="html"] h2')!.textContent).toBe('Welcome');
-    const frame = document.querySelector('[data-mr-dxp-popover="frame"] iframe')!;
+    expect(document.querySelector('[data-dlb-dxp-popover="html"] h2')!.textContent).toBe('Welcome');
+    const frame = document.querySelector('[data-dlb-dxp-popover="frame"] iframe')!;
     expect(frame.getAttribute('src')).toBe('https://example.com/embed');
     expect(frame.getAttribute('sandbox')).toContain('allow-scripts');
     expect(frame.getAttribute('sandbox')).not.toContain('allow-same-origin');
-    (document.querySelector('[data-mr-dxp-popover="html"] button') as HTMLButtonElement).click();
-    expect(document.querySelectorAll('[data-mr-dxp-popover]')).toHaveLength(1);
+    (document.querySelector('[data-dlb-dxp-popover="html"] button') as HTMLButtonElement).click();
+    expect(document.querySelectorAll('[data-dlb-dxp-popover]')).toHaveLength(1);
     instance.destroy();
-    expect(document.querySelectorAll('[data-mr-dxp-popover]')).toHaveLength(0);
+    expect(document.querySelectorAll('[data-dlb-dxp-popover]')).toHaveLength(0);
   });
 
   it('rejects circular connections even when validation is bypassed', async () => {
@@ -544,7 +544,7 @@ describe('workflow export', () => {
     expect(script).toContain('\\u003c/script\\u003e');
     expect(script).not.toContain('import ');
     const previous = { destroy: vi.fn() };
-    Object.assign(window, { MrDXP: previous });
+    Object.assign(window, { dlbDXP: previous });
     new Function('window', 'document', script)(window, document);
     expect(previous.destroy).toHaveBeenCalledOnce();
     (document.querySelector('#result') as HTMLElement).click();
@@ -578,7 +578,7 @@ describe('workflow export', () => {
     );
 
     new Function('window', 'document', exportWorkflow(graph))(window, document);
-    const exported = (window as Window & { MrDXP?: ReturnType<typeof createRuntime> }).MrDXP;
+    const exported = (window as Window & { dlbDXP?: ReturnType<typeof createRuntime> }).dlbDXP;
     if (!exported) throw new Error('Expected the exported runtime to be installed.');
     const running = exported.run();
     expect(request).not.toHaveBeenCalled();
@@ -586,13 +586,13 @@ describe('workflow export', () => {
     await running;
     expect(request).toHaveBeenCalledTimes(2);
     expect(document.querySelector('#result')?.textContent).toBe('Done');
-    expect(document.querySelector('[data-mr-dxp-popover] h2')?.textContent).toBe('Finished');
+    expect(document.querySelector('[data-dlb-dxp-popover] h2')?.textContent).toBe('Finished');
 
     const cancelled = exported.run();
     exported.destroy();
     await cancelled;
     expect(request.mock.calls[0]?.[1]?.signal?.aborted).toBe(true);
-    expect(document.querySelector('[data-mr-dxp-popover]')).toBeNull();
+    expect(document.querySelector('[data-dlb-dxp-popover]')).toBeNull();
     (document.querySelector('#start') as HTMLElement).click();
     await vi.advanceTimersByTimeAsync(100);
     expect(request).toHaveBeenCalledTimes(2);

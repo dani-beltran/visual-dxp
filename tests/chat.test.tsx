@@ -4,7 +4,7 @@ import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { CanvasChat, type CanvasChatProps } from '../src/components/CanvasChat';
-import { DXPBuilder, type DXPBuilderApi } from '../src/components/DXPBuilder';
+import { VisualDXPBuilder, type VisualDXPBuilderApi } from '../src/components/VisualDXPBuilder';
 import type { Workflow } from '../src/lib/types';
 
 let host: HTMLDivElement;
@@ -118,11 +118,11 @@ function undoButton() {
 }
 
 async function renderConnectedBuilder() {
-  const onReady = vi.fn<(api: DXPBuilderApi | null) => void>();
+  const onReady = vi.fn<(api: VisualDXPBuilderApi | null) => void>();
   const onChange = vi.fn<(workflow: Workflow) => void>();
   await act(async () => {
     root.render(
-      <DXPBuilder
+      <VisualDXPBuilder
         initialWorkflow={initialWorkflow()}
         ai={{ endpoint: '/api/ai/chat' }}
         onChange={onChange}
@@ -147,7 +147,7 @@ describe('canvas AI chat', () => {
   it('places the AI chat trigger immediately before Canvas help in the builder', async () => {
     await act(async () => {
       root.render(
-        <DXPBuilder
+        <VisualDXPBuilder
           initialWorkflow={{ version: 1, name: 'Empty', websiteUrl: '', nodes: [], edges: [] }}
         />,
       );

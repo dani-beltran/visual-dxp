@@ -552,7 +552,7 @@ export async function requestAIChat(
   signal?: AbortSignal,
 ): Promise<AIChatResponse> {
   const endpoint = text(settings.endpoint, 'AI endpoint', 4000);
-  const url = new URL(endpoint, 'https://mr-dxp.invalid');
+  const url = new URL(endpoint, 'https://dlb-dxp.invalid');
   if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password)
     throw new Error('Configure an HTTP or HTTPS AI endpoint.');
   const body = JSON.stringify(parseAIChatRequest(request));

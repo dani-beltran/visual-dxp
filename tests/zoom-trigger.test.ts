@@ -52,9 +52,9 @@ beforeEach(() => {
 
 afterEach(() => {
   for (const instance of runtimes.splice(0)) instance.destroy();
-  const exported = window as Window & { MrDXP?: ReturnType<typeof createRuntime> };
-  exported.MrDXP?.destroy();
-  delete exported.MrDXP;
+  const exported = window as Window & { dlbDXP?: ReturnType<typeof createRuntime> };
+  exported.dlbDXP?.destroy();
+  delete exported.dlbDXP;
   document.body.innerHTML = '';
   if (originalElementFromPoint)
     Object.defineProperty(document, 'elementFromPoint', originalElementFromPoint);

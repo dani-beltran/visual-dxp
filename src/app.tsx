@@ -17,7 +17,11 @@ import {
   X,
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { DXPBuilder, type DXPBuilderApi, type DXPBuilderProps } from './components/DXPBuilder';
+import {
+  VisualDXPBuilder,
+  type VisualDXPBuilderApi,
+  type VisualDXPBuilderProps,
+} from './components/VisualDXPBuilder';
 import { createActivityStore } from './lib/activity';
 import { defaultWorkflow } from './lib/catalog';
 import { exportWorkflow, validateWorkflow } from './lib/export';
@@ -25,7 +29,7 @@ import type { Workflow } from './lib/types';
 import { useDialogFocus } from './lib/useDialogFocus';
 import './styles/app.css';
 
-export interface AppProps extends Omit<DXPBuilderProps, 'onReady'> {
+export interface AppProps extends Omit<VisualDXPBuilderProps, 'onReady'> {
   onExport?: (script: string, workflow: Workflow) => void;
 }
 
@@ -50,7 +54,7 @@ export function App({
   const [localActivityStore] = useState(() => createActivityStore());
   const store = activityStore ?? localActivityStore;
   const [workflow, setWorkflow] = useState(initialWorkflow);
-  const [builder, setBuilder] = useState<DXPBuilderApi | null>(null);
+  const [builder, setBuilder] = useState<VisualDXPBuilderApi | null>(null);
   const [modal, setModal] = useState<'export' | 'help' | null>(null);
   const [exportTab, setExportTab] = useState<'javascript' | 'json'>('javascript');
   const [toast, setToast] = useState('');
@@ -131,14 +135,14 @@ export function App({
           onClick={() => {
             builder?.fitView();
           }}
-          aria-label="Mr. DXP home"
+          aria-label="Visual DXP home"
         >
           <span className="dxp-brand-mark">
             <span />
             <span />
             <span />
           </span>
-          Mr<span className="dxp-brand-period">.</span>
+          Visual
           <span className="dxp-brand-tag">DXP</span>
         </button>
         <div className="dxp-workspace-label">
@@ -240,7 +244,7 @@ export function App({
             </div>
           </div>
         </header>
-        <DXPBuilder
+        <VisualDXPBuilder
           {...builderProps}
           initialWorkflow={initialWorkflow}
           activityStore={store}
@@ -268,7 +272,7 @@ export function App({
             className={`dxp-modal ${modal === 'export' ? 'dxp-export-modal' : ''}`}
             role="dialog"
             aria-modal="true"
-            aria-label={modal === 'export' ? 'Export workflow' : 'About Mr. DXP'}
+            aria-label={modal === 'export' ? 'Export workflow' : 'About Visual DXP'}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="dxp-modal-header">
@@ -347,7 +351,7 @@ export function App({
             ) : (
               <div className="dxp-help-content">
                 <p>
-                  Mr. DXP turns little ideas into thoughtful digital experiences. Start with a
+                  Visual DXP turns little ideas into thoughtful digital experiences. Start with a
                   trigger, connect your steps, and make the journey your own.
                 </p>
                 {[

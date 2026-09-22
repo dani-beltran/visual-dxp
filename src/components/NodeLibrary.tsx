@@ -41,7 +41,7 @@ export function NodeLibrary({ onAdd }: { onAdd: (kind: NodeKind) => void }) {
             draggable
             onDragStart={(event) => {
               setActiveTooltip(null);
-              event.dataTransfer.setData('application/mr-dxp-node', kind);
+              event.dataTransfer.setData('application/dlb-dxp-node', kind);
               event.dataTransfer.effectAllowed = 'move';
             }}
           >

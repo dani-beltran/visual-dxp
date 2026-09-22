@@ -59,9 +59,9 @@ beforeEach(() => {
 
 afterEach(() => {
   for (const instance of runtimes.splice(0)) instance.destroy();
-  const global = window as Window & { MrDXP?: ReturnType<typeof createRuntime> };
-  global.MrDXP?.destroy();
-  delete global.MrDXP;
+  const global = window as Window & { dlbDXP?: ReturnType<typeof createRuntime> };
+  global.dlbDXP?.destroy();
+  delete global.dlbDXP;
   document.body.innerHTML = '';
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
