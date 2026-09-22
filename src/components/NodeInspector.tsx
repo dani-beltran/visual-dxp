@@ -546,6 +546,7 @@ export function NodeInspector({
                 <option value="language">User language</option>
                 <option value="referrer">Referrer domain</option>
                 <option value="date-range">Within date range</option>
+                <option value="time-of-day">Time of day</option>
                 <option value="query-param">URL search parameter</option>
                 <option value="cookie">Cookies</option>
               </Select>
@@ -616,22 +617,29 @@ export function NodeInspector({
                 />
               </Field>
             )}
+            {(conditionType === 'date-range' || conditionType === 'time-of-day') && (
+              <Field
+                label={conditionType === 'date-range' ? 'Date based on' : 'Time based on'}
+                htmlFor={id('condition-time-zone')}
+              >
+                <Select
+                  id={id('condition-time-zone')}
+                  value={config.conditionTimeZone ?? 'local'}
+                  onChange={(event) =>
+                    update({
+                      conditionTimeZone: event.target.value as StepConfig['conditionTimeZone'],
+                    })
+                  }
+                >
+                  <option value="local">
+                    {conditionType === 'date-range' ? 'Visitor local date' : 'Visitor local time'}
+                  </option>
+                  <option value="utc">UTC</option>
+                </Select>
+              </Field>
+            )}
             {conditionType === 'date-range' && (
               <>
-                <Field label="Date based on" htmlFor={id('condition-time-zone')}>
-                  <Select
-                    id={id('condition-time-zone')}
-                    value={config.conditionTimeZone ?? 'local'}
-                    onChange={(event) =>
-                      update({
-                        conditionTimeZone: event.target.value as StepConfig['conditionTimeZone'],
-                      })
-                    }
-                  >
-                    <option value="local">Visitor local date</option>
-                    <option value="utc">UTC</option>
-                  </Select>
-                </Field>
                 <Field label="Start date" htmlFor={id('condition-start-date')}>
                   <input
                     id={id('condition-start-date')}
@@ -655,6 +663,34 @@ export function NodeInspector({
                 <p className="dxp-inspector-hint">
                   True when the current date is within this range. Both dates are included, using{' '}
                   {config.conditionTimeZone === 'utc' ? 'UTC' : 'the visitor’s local time zone'}.
+                </p>
+              </>
+            )}
+            {conditionType === 'time-of-day' && (
+              <>
+                <Field label="Start time" htmlFor={id('condition-start-time')}>
+                  <input
+                    id={id('condition-start-time')}
+                    type="time"
+                    step={60}
+                    value={config.conditionStartTime ?? ''}
+                    onChange={(event) => update({ conditionStartTime: event.target.value })}
+                  />
+                </Field>
+                <Field label="End time" htmlFor={id('condition-end-time')}>
+                  <input
+                    id={id('condition-end-time')}
+                    type="time"
+                    step={60}
+                    value={config.conditionEndTime ?? ''}
+                    onChange={(event) => update({ conditionEndTime: event.target.value })}
+                  />
+                </Field>
+                <p className="dxp-inspector-hint">
+                  Checks the current time using{' '}
+                  {config.conditionTimeZone === 'utc' ? 'UTC' : 'the visitor’s local time zone'}.
+                  Both selected minutes are included. An earlier end time crosses midnight; equal
+                  times match only that minute.
                 </p>
               </>
             )}

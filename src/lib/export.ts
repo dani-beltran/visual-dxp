@@ -2,6 +2,7 @@ import { buildCookie } from './cookies';
 import { getDateRange } from './dateRange';
 import { isNoteMarks } from './noteText';
 import { getRuntimeSource } from './runtime';
+import { getTimeRange } from './timeRange';
 import { elementTriggerEvents, validateTriggerConfig } from './triggers';
 import type { ValidationIssue, Workflow } from './types';
 
@@ -116,6 +117,8 @@ export function validateWorkflow(workflow: Workflow): ValidationIssue[] {
       'conditionValue',
       'conditionStartDate',
       'conditionEndDate',
+      'conditionStartTime',
+      'conditionEndTime',
       'conditionTimeZone',
       'contentType',
       'content',
@@ -209,6 +212,13 @@ export function validateWorkflow(workflow: Workflow): ValidationIssue[] {
         break;
       case 'fork':
         switch (config.conditionType ?? 'selector') {
+          case 'time-of-day':
+            try {
+              getTimeRange(config);
+            } catch (error) {
+              add((error as Error).message, node.id);
+            }
+            break;
           case 'date-range':
             try {
               getDateRange(config);

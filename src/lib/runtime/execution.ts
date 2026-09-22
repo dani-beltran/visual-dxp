@@ -1,5 +1,6 @@
 import type { buildCookie } from '../cookies';
 import type { getDateRange } from '../dateRange';
+import type { getTimeRange } from '../timeRange';
 import type { Workflow } from '../types';
 import type { matchesCondition } from './conditions';
 import type { RuntimeContext } from './context';
@@ -10,13 +11,14 @@ interface ExecutionModules {
   buildCookie: typeof buildCookie;
   matchesCondition: typeof matchesCondition;
   getDateRange: typeof getDateRange;
+  getTimeRange: typeof getTimeRange;
   showPopover: typeof showPopover;
 }
 
 export function createExecution(
   workflow: Workflow,
   context: RuntimeContext,
-  { buildCookie, matchesCondition, getDateRange, showPopover }: ExecutionModules,
+  { buildCookie, matchesCondition, getDateRange, getTimeRange, showPopover }: ExecutionModules,
 ): WorkflowRuntime['run'] {
   const { doc, win, signal, nodes, fetcher, maxSteps, aborted, log, wait, selectorElements } =
     context;
@@ -147,7 +149,9 @@ export function createExecution(
             break;
           }
           case 'fork':
-            selectedHandle = matchesCondition(config, context, getDateRange) ? 'true' : 'false';
+            selectedHandle = matchesCondition(config, context, { getDateRange, getTimeRange })
+              ? 'true'
+              : 'false';
             break;
           case 'loop':
             loopIterations = config.iterations ?? 3;

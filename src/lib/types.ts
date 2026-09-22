@@ -23,6 +23,7 @@ export type ConditionType =
   | 'language'
   | 'referrer'
   | 'date-range'
+  | 'time-of-day'
   | 'query-param'
   | 'cookie';
 export type TriggerEvent =
@@ -82,7 +83,11 @@ export interface StepConfig {
   conditionStartDate?: string;
   /** Inclusive end date in YYYY-MM-DD format, using conditionTimeZone. */
   conditionEndDate?: string;
-  /** Calendar used by date-range conditions. Defaults to the visitor's local time zone. */
+  /** Inclusive start minute in 24-hour HH:MM format, using conditionTimeZone. */
+  conditionStartTime?: string;
+  /** Inclusive end minute in HH:MM format. Earlier times wrap past midnight. */
+  conditionEndTime?: string;
+  /** Time zone used by date and time conditions. Defaults to the visitor's local time zone. */
   conditionTimeZone?: 'local' | 'utc';
   iterations?: number;
   contentType?: 'html' | 'iframe';

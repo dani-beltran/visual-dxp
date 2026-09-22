@@ -64,7 +64,7 @@ async function change(label: string, value: string) {
 it('edits each condition type with the corresponding fields and preserves legacy selectors', async () => {
   expect(field('Condition type').value).toBe('selector');
   expect(field('Element exists').value).toBe('#legacy');
-  expect([...field('Condition type').querySelectorAll('option')]).toHaveLength(7);
+  expect([...field('Condition type').querySelectorAll('option')]).toHaveLength(8);
   await change('Condition type', 'device');
   expect(field('Device is').value).toBe('desktop');
   await change('Device is', 'mobile');
@@ -146,4 +146,45 @@ it('edits inclusive date ranges and keeps the dates when switching condition typ
   await change('End date', '');
   expect(current.conditionEndDate).toBe('');
   expect(stepSummary('fork', current)).toBe('Within 2026-09-01 to … · Visitor local');
+});
+
+it('edits time-of-day ranges and keeps their time zone and times when switching types', async () => {
+  await change('Condition type', 'time-of-day');
+  expect(field('Condition type').textContent).toContain('Time of day');
+  expect(field('Time based on').value).toBe('local');
+  expect(field('Start time').type).toBe('time');
+  expect(field('End time').type).toBe('time');
+  expect(field('Start time').value).toBe('');
+  expect(field('End time').value).toBe('');
+  expect(stepSummary('fork', current)).toBe('Time …–… · Visitor local');
+  expect(host.textContent).not.toContain('Start date');
+  await change('Start time', '22:00');
+  await change('End time', '06:00');
+  await change('Time based on', 'utc');
+  expect(current).toMatchObject({
+    conditionType: 'time-of-day',
+    conditionStartTime: '22:00',
+    conditionEndTime: '06:00',
+    conditionTimeZone: 'utc',
+  });
+  expect(stepSummary('fork', current)).toBe('Time 22:00–06:00 · UTC');
+  expect(host.textContent).toContain('current time using UTC');
+  expect(host.textContent).toContain('Both selected minutes are included');
+  expect(host.textContent).toContain('earlier end time crosses midnight');
+  expect(field('End time').hasAttribute('min')).toBe(false);
+  await change('Condition type', 'date-range');
+  expect(field('Date based on').value).toBe('utc');
+  await change('Start date', '2026-09-01');
+  await change('End date', '2026-09-30');
+  await change('Condition type', 'time-of-day');
+  expect(field('Time based on').value).toBe('utc');
+  expect(field('Start time').value).toBe('22:00');
+  expect(field('End time').value).toBe('06:00');
+  expect(current.conditionStartDate).toBe('2026-09-01');
+  expect(current.conditionEndDate).toBe('2026-09-30');
+  await change('Time based on', 'local');
+  await change('End time', '');
+  expect(current.conditionTimeZone).toBe('local');
+  expect(current.conditionEndTime).toBe('');
+  expect(stepSummary('fork', current)).toBe('Time 22:00–… · Visitor local');
 });

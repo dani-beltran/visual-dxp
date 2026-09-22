@@ -30,6 +30,8 @@ const strings = [
   'conditionValue',
   'conditionStartDate',
   'conditionEndDate',
+  'conditionStartTime',
+  'conditionEndTime',
   'conditionTimeZone',
   'contentType',
   'content',

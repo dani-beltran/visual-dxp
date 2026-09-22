@@ -223,6 +223,8 @@ export function stepSummary(kind: NodeKind, c: StepConfig): string {
     case 'fork': {
       const conditionType = c.conditionType ?? 'selector';
       switch (conditionType) {
+        case 'time-of-day':
+          return `Time ${c.conditionStartTime || '…'}–${c.conditionEndTime || '…'} · ${c.conditionTimeZone === 'utc' ? 'UTC' : 'Visitor local'}`;
         case 'date-range':
           return `Within ${c.conditionStartDate || '…'} to ${c.conditionEndDate || '…'} · ${c.conditionTimeZone === 'utc' ? 'UTC' : 'Visitor local'}`;
         case 'selector':

@@ -86,6 +86,8 @@ const configStrings = [
   'conditionValue',
   'conditionStartDate',
   'conditionEndDate',
+  'conditionStartTime',
+  'conditionEndTime',
   'conditionTimeZone',
   'contentType',
   'content',

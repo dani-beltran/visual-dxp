@@ -1,16 +1,31 @@
 import type { getDateRange } from '../dateRange';
+import type { getTimeRange } from '../timeRange';
 import type { StepConfig } from '../types';
 import type { RuntimeContext } from './context';
+
+interface ConditionModules {
+  getDateRange: typeof getDateRange;
+  getTimeRange: typeof getTimeRange;
+}
 
 export function matchesCondition(
   config: StepConfig,
   context: RuntimeContext,
-  dateRange: typeof getDateRange,
+  { getDateRange, getTimeRange }: ConditionModules,
 ): boolean {
   const { doc, win } = context;
   const type = config.conditionType ?? 'selector';
+  if (type === 'time-of-day') {
+    const [start, end] = getTimeRange(config);
+    const now = new Date();
+    const minutes =
+      config.conditionTimeZone === 'utc'
+        ? now.getUTCHours() * 60 + now.getUTCMinutes()
+        : now.getHours() * 60 + now.getMinutes();
+    return start <= end ? minutes >= start && minutes <= end : minutes >= start || minutes <= end;
+  }
   if (type === 'date-range') {
-    const [start, end] = dateRange(config);
+    const [start, end] = getDateRange(config);
     const now = new Date();
     const today =
       config.conditionTimeZone === 'utc'

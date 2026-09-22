@@ -1,5 +1,6 @@
 import { buildCookie } from '../cookies';
 import { getDateRange } from '../dateRange';
+import { getTimeRange } from '../timeRange';
 import type { Workflow } from '../types';
 import { startBehaviorTrigger } from './behavior-triggers';
 import { matchesCondition } from './conditions';
@@ -20,6 +21,7 @@ const runtimeModules = {
   createExecution,
   matchesCondition,
   getDateRange,
+  getTimeRange,
   showPopover,
   startTriggers,
   startBehaviorTrigger,
