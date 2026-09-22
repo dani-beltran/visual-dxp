@@ -1,3 +1,4 @@
+import type { buildCookie } from '../cookies';
 import type { getDateRange } from '../dateRange';
 import type { Workflow } from '../types';
 import type { matchesCondition } from './conditions';
@@ -6,6 +7,7 @@ import type { showPopover } from './popovers';
 import type { WorkflowRuntime } from './types';
 
 interface ExecutionModules {
+  buildCookie: typeof buildCookie;
   matchesCondition: typeof matchesCondition;
   getDateRange: typeof getDateRange;
   showPopover: typeof showPopover;
@@ -14,7 +16,7 @@ interface ExecutionModules {
 export function createExecution(
   workflow: Workflow,
   context: RuntimeContext,
-  { matchesCondition, getDateRange, showPopover }: ExecutionModules,
+  { buildCookie, matchesCondition, getDateRange, showPopover }: ExecutionModules,
 ): WorkflowRuntime['run'] {
   const { doc, win, signal, nodes, fetcher, maxSteps, aborted, log, wait, selectorElements } =
     context;
@@ -53,6 +55,19 @@ export function createExecution(
       log(nodeId, 'running', 'Running step');
       try {
         switch (node.data.kind) {
+          case 'cookie': {
+            const cookie = buildCookie(config);
+            try {
+              doc.cookie = cookie + (win.location.protocol === 'https:' ? '; Secure' : '');
+              const pair = cookie.split(';', 1)[0];
+              if (!doc.cookie.split(';').some((entry) => entry.trim() === pair)) throw new Error();
+            } catch {
+              throw new Error(
+                'The browser could not save this cookie. Check the website’s cookie settings.',
+              );
+            }
+            break;
+          }
           case 'trigger':
             break;
           case 'delay': {

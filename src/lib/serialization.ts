@@ -1,7 +1,17 @@
 import { isNoteMarks } from './noteText';
 import type { Workflow } from './types';
 
-const kinds = new Set(['trigger', 'http', 'dom', 'delay', 'fork', 'loop', 'popover', 'note']);
+const kinds = new Set([
+  'trigger',
+  'http',
+  'dom',
+  'cookie',
+  'delay',
+  'fork',
+  'loop',
+  'popover',
+  'note',
+]);
 const strings = [
   'event',
   'selector',
@@ -12,6 +22,8 @@ const strings = [
   'action',
   'value',
   'attribute',
+  'cookieName',
+  'cookieValue',
   'condition',
   'conditionType',
   'conditionKey',
@@ -26,6 +38,7 @@ const strings = [
   'noteColor',
 ];
 const numbers = [
+  'cookieDays',
   'duration',
   'iterations',
   'width',

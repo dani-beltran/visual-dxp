@@ -1,3 +1,4 @@
+import { buildCookie } from '../cookies';
 import { getDateRange } from '../dateRange';
 import type { Workflow } from '../types';
 import { startBehaviorTrigger } from './behavior-triggers';
@@ -14,6 +15,7 @@ import { startZoomTrigger } from './zoom-trigger';
 // functions free of module-scope references so their compiled source can also
 // power exported workflows, including after bundling and minification.
 const runtimeModules = {
+  buildCookie,
   createRuntimeContext,
   createExecution,
   matchesCondition,

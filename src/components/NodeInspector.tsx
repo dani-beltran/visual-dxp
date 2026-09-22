@@ -3,6 +3,7 @@ import {
   Braces,
   ChevronDown,
   Clock3,
+  Cookie,
   Copy,
   GitFork,
   Globe2,
@@ -58,6 +59,12 @@ const details = {
     name: 'Delay',
     icon: Timer,
     summary: 'Give your experience a little breathing room.',
+    color: 'amber',
+  },
+  cookie: {
+    name: 'Set cookie',
+    icon: Cookie,
+    summary: 'Save a value for later visits or steps in your workflow.',
     color: 'amber',
   },
   fork: {
@@ -431,6 +438,65 @@ export function NodeInspector({
                 />
               </Field>
             )}
+          </>
+        )}
+
+        {node.data.kind === 'cookie' && (
+          <>
+            <Field label="Cookie name" htmlFor={id('cookie-name')}>
+              <input
+                id={id('cookie-name')}
+                value={config.cookieName ?? ''}
+                placeholder="e.g. audience"
+                onChange={(event) => update({ cookieName: event.target.value })}
+                spellCheck={false}
+              />
+            </Field>
+            <Field
+              label="Cookie value"
+              htmlFor={id('cookie-value')}
+              hint="An empty value is allowed."
+            >
+              <input
+                id={id('cookie-value')}
+                value={config.cookieValue ?? ''}
+                placeholder="e.g. returning"
+                onChange={(event) => update({ cookieValue: event.target.value })}
+                spellCheck={false}
+              />
+            </Field>
+            <Field label="Expiration" htmlFor={id('cookie-expiration')}>
+              <Select
+                id={id('cookie-expiration')}
+                value={config.cookieDays ? 'days' : 'session'}
+                onChange={(event) =>
+                  update({ cookieDays: event.target.value === 'session' ? 0 : 30 })
+                }
+              >
+                <option value="session">Browser session</option>
+                <option value="days">After a number of days</option>
+              </Select>
+            </Field>
+            {!!config.cookieDays && (
+              <Field label="Expires after" htmlFor={id('cookie-days')} hint="From 1 to 400 days.">
+                <div className="dxp-inspector-unit-field">
+                  <NumberInput
+                    key={node.id}
+                    id={id('cookie-days')}
+                    min={1}
+                    max={400}
+                    step={1}
+                    value={config.cookieDays}
+                    onChange={(cookieDays) => update({ cookieDays })}
+                  />
+                  <span>days</span>
+                </div>
+              </Field>
+            )}
+            <p className="dxp-inspector-hint">
+              Saves the cookie for all pages on this website. A later Condition can check its name
+              and value. Browser cookie settings may prevent it from being saved.
+            </p>
           </>
         )}
 

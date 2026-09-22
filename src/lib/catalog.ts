@@ -1,4 +1,5 @@
 import {
+  Cookie,
   GitFork,
   Globe2,
   MousePointer2,
@@ -86,6 +87,15 @@ export const catalog: {
       position: 'bottom-right',
       width: 360,
     },
+  },
+  {
+    kind: 'cookie',
+    label: 'Set cookie',
+    description: 'Remember a value on this website',
+    color: 'amber',
+    icon: Cookie,
+    category: 'Action',
+    config: { cookieName: 'audience', cookieValue: 'returning', cookieDays: 0 },
   },
   {
     kind: 'note',
@@ -206,6 +216,8 @@ export function stepSummary(kind: NodeKind, c: StepConfig): string {
       return `${c.method || 'GET'}  ${c.url ? c.url.replace(/^https?:\/\//, '') : 'Configure a URL'}`;
     case 'dom':
       return `${c.action === 'text' ? 'Change text' : c.action || 'Update'} · ${c.selector || 'Choose an element'}`;
+    case 'cookie':
+      return `${c.cookieName || 'Choose a cookie name'} = ${JSON.stringify(c.cookieValue ?? '')} · ${c.cookieDays ? `${c.cookieDays} days` : 'Session'}`;
     case 'delay':
       return `Wait ${(c.duration ?? 1000) / 1000} seconds`;
     case 'fork': {

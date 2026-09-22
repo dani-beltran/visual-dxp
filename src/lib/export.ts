@@ -1,3 +1,4 @@
+import { buildCookie } from './cookies';
 import { getDateRange } from './dateRange';
 import { isNoteMarks } from './noteText';
 import { getRuntimeSource } from './runtime';
@@ -50,6 +51,7 @@ export function validateWorkflow(workflow: Workflow): ValidationIssue[] {
     'trigger',
     'http',
     'dom',
+    'cookie',
     'delay',
     'fork',
     'loop',
@@ -106,6 +108,8 @@ export function validateWorkflow(workflow: Workflow): ValidationIssue[] {
       'action',
       'value',
       'attribute',
+      'cookieName',
+      'cookieValue',
       'condition',
       'conditionType',
       'conditionKey',
@@ -134,6 +138,13 @@ export function validateWorkflow(workflow: Workflow): ValidationIssue[] {
         node.id,
       );
     switch (node.data.kind) {
+      case 'cookie':
+        try {
+          buildCookie(config);
+        } catch (error) {
+          add((error as Error).message, node.id);
+        }
+        break;
       case 'note':
         if (
           (['noteBold', 'noteItalic', 'noteStrikethrough'] as const).some(

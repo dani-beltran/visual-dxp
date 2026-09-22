@@ -1,5 +1,14 @@
 import type { Edge, Node } from '@xyflow/react';
-export type NodeKind = 'trigger' | 'http' | 'dom' | 'delay' | 'fork' | 'loop' | 'popover' | 'note';
+export type NodeKind =
+  | 'trigger'
+  | 'http'
+  | 'dom'
+  | 'cookie'
+  | 'delay'
+  | 'fork'
+  | 'loop'
+  | 'popover'
+  | 'note';
 /** A styled text range using UTF-16 offsets, sorted without overlapping other ranges. */
 export interface NoteMark {
   start: number;
@@ -53,6 +62,12 @@ export interface StepConfig {
   action?: 'text' | 'html' | 'add-class' | 'remove-class' | 'hide' | 'show' | 'attribute';
   value?: string;
   attribute?: string;
+  /** Name of the cookie to create or overwrite on the current host. */
+  cookieName?: string;
+  /** Cookie value, encoded when written. An empty string is allowed. */
+  cookieValue?: string;
+  /** Lifetime in whole days, from 0 (browser session, default) to 400. */
+  cookieDays?: number;
   /** Delay or inactivity duration in milliseconds. Inactivity defaults to 30,000. */
   duration?: number;
   /** Omitted in older workflows, which check CSS selector existence. */

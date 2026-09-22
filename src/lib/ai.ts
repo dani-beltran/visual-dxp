@@ -61,6 +61,7 @@ const kinds = new Set<NodeKind>([
   'trigger',
   'http',
   'dom',
+  'cookie',
   'delay',
   'fork',
   'loop',
@@ -77,6 +78,8 @@ const configStrings = [
   'action',
   'value',
   'attribute',
+  'cookieName',
+  'cookieValue',
   'condition',
   'conditionType',
   'conditionKey',
@@ -91,6 +94,7 @@ const configStrings = [
   'noteColor',
 ] as const;
 const configNumbers = [
+  'cookieDays',
   'duration',
   'iterations',
   'width',
