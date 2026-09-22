@@ -44,7 +44,7 @@ React and React DOM 19 are peer dependencies. React Flow and icons are included 
 
 ```tsx
 import { useState } from 'react';
-import { DXPBuilder, type DXPBuilderApi, type Workflow } from '@forma/dxp';
+import DXPBuilder, { type DXPBuilderApi, type Workflow } from '@forma/dxp';
 import '@forma/dxp/styles.css';
 
 const initialWorkflow: Workflow = {
@@ -102,6 +102,61 @@ The builder owns the toolbar, canvas, inspector, activity view, footer, element 
 | `activityUser`       | Username attached to new activity entries; defaults to `"You"`. Pass the current user's display name.                                                             |
 | `ai`                 | Optional `{ endpoint, headers?, credentials? }` for your authenticated chat API. The AI button remains visible with setup guidance until an endpoint is provided. |
 | `className`, `style` | Customize the outer editor container. The parent must provide a height.                                                                                           |
+
+`DXPBuilder` is both the default and a named package export. Import `@forma/dxp/styles.css` once in your application; it includes React Flow and all builder, inspector, dialog, picker, and activity styles. The package exposes the same stylesheet through its `style` field and marks CSS as a side effect so bundlers retain the import.
+
+### Brand colors with theme.css
+
+Create a `theme.css` file in your application and define the three CSS custom properties below. Setting them on `:root` applies your brand to every builder on the page:
+
+```css
+/* theme.css */
+:root {
+  --dxp-primary: #2457a7;
+  --dxp-secondary: #167d8d;
+  --dxp-tertiary: #a34b85;
+}
+```
+
+Import your theme after the package stylesheet in your application's entry point or global stylesheet entry. No color props are needed on `DXPBuilder`:
+
+```tsx
+import DXPBuilder from '@forma/dxp';
+import '@forma/dxp/styles.css';
+import './theme.css';
+
+export function ExperienceEditor() {
+  return <DXPBuilder style={{ height: 600 }} />;
+}
+```
+
+| CSS custom property | Default | Applies to |
+| --- | --- | --- |
+| `--dxp-primary` | `#247252` | Editor actions, focus, and surface tints |
+| `--dxp-secondary` | `#648bc4` | Supporting activity avatar accents |
+| `--dxp-tertiary` | `#9d80c5` | Additional activity avatar accents |
+
+Values can be any valid CSS color, including references to your existing design tokens such as `var(--brand-primary)`. Omit a property to use its inherited value or the default above. The package already includes its derived theme styles; only your application's `theme.css` needs customization.
+
+To give part of your application a different palette, add a wrapper class to the same `theme.css`:
+
+```css
+.campaign-theme {
+  --dxp-primary: #a32a56;
+  --dxp-secondary: #a16616;
+  --dxp-tertiary: #6b4ba8;
+}
+```
+
+```tsx
+<div className="campaign-theme" style={{ height: 600 }}>
+  <DXPBuilder />
+</div>
+```
+
+Builders inherit the closest theme, including their dialogs and picker. Changing the CSS variables or wrapper class updates the colors without resetting the workflow. Node library icons, node cards, connection handles, notes, and frames retain their original colors regardless of the brand palette.
+
+The palette derives hover colors, borders, backgrounds, shadows, and canvas colors with CSS `color-mix()`. Use brand colors with sufficient contrast for text on light surfaces. Solid primary buttons use white text by default; set `--dxp-on-primary` in your `theme.css` when your primary color needs a different foreground. Status indicators retain semantic success/warning/error colors. User-authored note colors, popover content, and preview websites remain part of the workflow rather than the editor theme.
 
 Call `builder.testWorkflow()` from your own button to open the built-in preview. Use `exportWorkflow(workflow)` to generate JavaScript in your host, or `JSON.stringify(workflow, null, 2)` for JSON. Export UI and the `onExport` callback now belong to the demo `App`, not `DXPBuilder`. `renameWorkflow(name)` participates in undo/redo and activity; `flushActivity()` publishes pending edits when a host input loses focus.
 

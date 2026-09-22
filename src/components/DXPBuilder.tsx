@@ -82,9 +82,9 @@ import '../styles/builder.css';
 const nodeTypes = { workflow: WorkflowCard };
 const edgeOptions = {
   type: 'smoothstep',
-  style: { stroke: '#a5b9af', strokeWidth: 1.6 },
-  labelStyle: { fill: '#7c8982', fontSize: 11 },
-  labelBgStyle: { fill: '#f8faf9' },
+  style: { stroke: 'var(--dxp-edge)', strokeWidth: 1.6 },
+  labelStyle: { fill: 'var(--dxp-muted)', fontSize: 11 },
+  labelBgStyle: { fill: 'var(--dxp-canvas)' },
   labelBgPadding: [7, 5] as [number, number],
   labelBgBorderRadius: 4,
 };
@@ -932,7 +932,12 @@ function Builder({
               deleteKeyCode={view === 'canvas' ? ['Backspace', 'Delete'] : null}
               proOptions={{ hideAttribution: true }}
             >
-              <Background variant={BackgroundVariant.Dots} gap={20} size={1.1} color="#d8e0dc" />
+              <Background
+                variant={BackgroundVariant.Dots}
+                gap={20}
+                size={1.1}
+                color="var(--dxp-grid)"
+              />
               <Panel position="top-left" className="dxp-node-library-panel">
                 <NodeLibrary onAdd={add} />
               </Panel>
@@ -953,7 +958,7 @@ function Builder({
                       ? '#c4e5d5'
                       : '#dfebe6'
                   }
-                  maskColor="rgba(241,246,243,.7)"
+                  maskColor="var(--dxp-minimap-mask)"
                   zoomable
                   pannable
                 />

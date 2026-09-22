@@ -3,7 +3,7 @@
 import { act, StrictMode } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createActivityStore, DXPBuilder, type DXPBuilderApi, type Workflow } from '../src';
+import DXPBuilder, { createActivityStore, type DXPBuilderApi, type Workflow } from '../src';
 import { App } from '../src/app';
 import { createNode } from '../src/lib/catalog';
 

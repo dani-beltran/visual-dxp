@@ -10,6 +10,10 @@
   "main": "./dist/forma-dxp.umd.cjs",
   "module": "./dist/forma-dxp.js",
   "types": "./dist/index.d.ts",
+  "style": "./dist/forma-dxp.css",
+  "sideEffects": [
+    "**/*.css"
+  ],
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",

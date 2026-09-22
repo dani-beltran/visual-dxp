@@ -4,7 +4,7 @@
   min-width: 0;
   min-height: 0;
   container-type: inline-size;
-  background: #f8faf9;
+  background: var(--dxp-canvas);
 }
 .dxp-activity-scroll {
   flex: 1;
@@ -14,7 +14,7 @@
   scrollbar-width: thin;
 }
 .dxp-activity-scroll:focus-visible {
-  outline: 2px solid #499875;
+  outline: 2px solid var(--dxp-focus);
   outline-offset: -3px;
 }
 .dxp-activity-content {
@@ -34,10 +34,10 @@
   flex-shrink: 0;
   width: 44px;
   height: 44px;
-  border: 1px solid #dce8df;
+  border: 1px solid var(--dxp-line);
   border-radius: 13px;
-  background: #edf5ef;
-  color: #38795a;
+  background: var(--dxp-surface-muted);
+  color: var(--dxp-primary-color);
 }
 .dxp-activity-heading {
   flex: 1;
@@ -51,17 +51,17 @@
 }
 .dxp-activity-heading p {
   margin-top: 4px;
-  color: #75847a;
+  color: var(--dxp-muted);
   font-size: 12px;
   line-height: 1.6;
 }
 .dxp-activity-count {
   flex-shrink: 0;
   padding: 5px 9px;
-  border: 1px solid #e2e9e4;
+  border: 1px solid var(--dxp-line);
   border-radius: 6px;
-  background: #fff;
-  color: #667c6e;
+  background: var(--dxp-surface);
+  color: var(--dxp-muted);
   font-size: 10px;
   font-variant-numeric: tabular-nums;
 }
@@ -73,7 +73,7 @@
   align-items: center;
   gap: 14px;
   margin-bottom: 14px;
-  color: #738378;
+  color: var(--dxp-muted);
   font-size: 10px;
   font-weight: 600;
 }
@@ -81,16 +81,16 @@
   content: '';
   flex: 1;
   height: 1px;
-  background: #e5ece7;
+  background: var(--dxp-primary-soft);
 }
 .dxp-activity-list {
   margin: 0;
   padding: 0;
   list-style: none;
-  border: 1px solid #e2eae4;
+  border: 1px solid var(--dxp-line);
   border-radius: 12px;
-  background: #fff;
-  box-shadow: 0 2px 4px #244b3203;
+  background: var(--dxp-surface);
+  box-shadow: 0 2px 4px var(--dxp-shadow-soft);
 }
 .dxp-activity-entry {
   position: relative;
@@ -101,34 +101,34 @@
   padding: 20px;
 }
 .dxp-activity-entry + .dxp-activity-entry {
-  border-top: 1px solid #f0f3f1;
+  border-top: 1px solid var(--dxp-line);
 }
 .dxp-activity-avatar {
   display: grid;
   place-items: center;
   width: 35px;
   height: 35px;
-  border: 1px solid #00000005;
+  border: 1px solid var(--dxp-primary-border);
   border-radius: 50%;
   font-size: 11px;
   font-weight: 600;
   letter-spacing: -0.3px;
 }
 .dxp-activity-avatar-0 {
-  background: #eaf3ed;
-  color: #38795a;
+  background: var(--dxp-primary-soft);
+  color: var(--dxp-primary-color);
 }
 .dxp-activity-avatar-1 {
-  background: #edf1f8;
-  color: #5a769e;
+  background: var(--dxp-secondary-soft);
+  color: var(--dxp-secondary-color);
 }
 .dxp-activity-avatar-2 {
-  background: #f7eee7;
-  color: #9e775d;
+  background: var(--dxp-tertiary-soft);
+  color: var(--dxp-tertiary-color);
 }
 .dxp-activity-avatar-3 {
-  background: #f0edf7;
-  color: #85729e;
+  background: var(--dxp-accent-blend-soft);
+  color: var(--dxp-accent-blend);
 }
 .dxp-activity-details {
   min-width: 0;
@@ -137,13 +137,13 @@
 .dxp-activity-details strong {
   display: block;
   margin-top: 1px;
-  color: #354d3e;
+  color: var(--dxp-text-secondary);
   font-size: 12px;
   font-weight: 600;
 }
 .dxp-activity-details p {
   margin-top: 4px;
-  color: #748278;
+  color: var(--dxp-muted);
   font-size: 12px;
   line-height: 1.65;
   white-space: pre-wrap;
@@ -153,17 +153,17 @@
   align-items: center;
   gap: 5px;
   padding-top: 3px;
-  color: #7b8a80;
+  color: var(--dxp-muted);
   font-size: 10px;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 .dxp-activity-time svg {
-  color: #99a69d;
+  color: var(--dxp-subtle);
 }
 .dxp-activity-end {
   margin-top: 26px;
-  color: #89968d;
+  color: var(--dxp-muted);
   text-align: center;
   font-size: 10px;
 }
@@ -172,9 +172,9 @@
   flex-direction: column;
   align-items: center;
   padding: 70px 20px;
-  border: 1px dashed #dce7df;
+  border: 1px dashed var(--dxp-line);
   border-radius: 12px;
-  background: #ffffff80;
+  background: color-mix(in srgb, var(--dxp-surface) 50%, transparent);
   text-align: center;
 }
 .dxp-activity-empty-icon {
@@ -183,19 +183,19 @@
   width: 60px;
   height: 60px;
   margin-bottom: 18px;
-  border: 1px solid #e2ebe5;
+  border: 1px solid var(--dxp-line);
   border-radius: 18px;
-  background: #f0f6f2;
-  color: #739581;
+  background: var(--dxp-surface-muted);
+  color: var(--dxp-muted);
 }
 .dxp-activity-empty h3 {
-  color: #435e4d;
+  color: var(--dxp-text-secondary);
   font-size: 15px;
   font-weight: 550;
 }
 .dxp-activity-empty p {
   margin-top: 7px;
-  color: #7d8d82;
+  color: var(--dxp-muted);
   font-size: 12px;
   line-height: 1.65;
 }

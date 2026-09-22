@@ -86,16 +86,16 @@
   max-height: 280px;
   overflow-y: auto;
   padding: 10px 11px;
-  border: 1px solid #dfe5dc;
+  border: 1px solid var(--dxp-line);
   border-radius: 6px;
-  background: #fff;
-  color: #354838;
+  background: var(--dxp-surface);
+  color: var(--dxp-text);
   line-height: 1.65;
   font-size: 12px;
   cursor: text;
 }
 .dxp-note-inspector-editor:focus {
-  outline: 2px solid #6fa58d;
+  outline: 2px solid var(--dxp-focus);
   outline-offset: 1px;
 }
 .dxp-builder .dxp-note-card .dxp-note-text:focus {
@@ -112,16 +112,16 @@
   padding: 0;
   font-size: 11px;
   font-weight: 600;
-  color: #59685e;
+  color: var(--dxp-text-secondary);
 }
 .dxp-note-format-buttons {
   display: inline-flex;
   gap: 4px;
   padding: 4px;
   margin-bottom: 8px;
-  border: 1px solid #e0e7dc;
+  border: 1px solid var(--dxp-line);
   border-radius: 7px;
-  background: #f8faf6;
+  background: var(--dxp-canvas);
 }
 .dxp-note-format-buttons button {
   display: grid;
@@ -130,18 +130,18 @@
   height: 30px;
   border: 1px solid transparent;
   border-radius: 4px;
-  color: #72806c;
+  color: var(--dxp-muted);
   background: transparent;
 }
 .dxp-note-format-buttons button:hover {
-  color: #3f6649;
-  background: #edf2e8;
+  color: var(--dxp-primary-color);
+  background: var(--dxp-primary-soft);
 }
 .dxp-note-format-buttons button[aria-pressed='true'] {
-  border-color: #c8d8c2;
-  background: #e6efdf;
-  color: #355e3b;
-  box-shadow: 0 1px 2px #244b3208;
+  border-color: var(--dxp-line-strong);
+  background: var(--dxp-primary-soft);
+  color: var(--dxp-primary-color);
+  box-shadow: 0 1px 2px var(--dxp-shadow-soft);
 }
 .dxp-note-color-palette {
   display: flex;
@@ -155,28 +155,33 @@
   padding: 0;
   display: grid;
   place-items: center;
-  border: 1px solid #324b3126;
+  border: 1px solid var(--dxp-primary-border);
   border-radius: 50%;
-  color: #405945;
+  color: var(--dxp-text-secondary);
 }
 .dxp-note-color-swatch:hover {
-  box-shadow: 0 0 0 3px #72986b14;
+  box-shadow: 0 0 0 3px var(--dxp-shadow);
 }
 .dxp-note-color-swatch[aria-pressed='true'] {
-  border-color: #708769;
+  border-color: var(--dxp-primary-border);
   box-shadow:
-    0 0 0 2px #fff,
-    0 0 0 3px #98af8e;
+    0 0 0 2px var(--dxp-surface),
+    0 0 0 3px var(--dxp-shadow-strong);
 }
 .dxp-note-color-swatch.is-transparent {
-  background-image: conic-gradient(#e3e9e1 25%, #fff 0 50%, #e3e9e1 0 75%, #fff 0);
+  background-image: conic-gradient(
+    var(--dxp-line) 25%,
+    var(--dxp-surface) 0 50%,
+    var(--dxp-line) 0 75%,
+    var(--dxp-surface) 0
+  );
   background-size: 8px 8px;
 }
 .dxp-note-custom-color {
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #7d8d76;
+  color: var(--dxp-muted);
   font-size: 10.5px;
   cursor: pointer;
 }
@@ -201,6 +206,6 @@
 }
 .dxp-note-color-value {
   margin-left: auto;
-  color: #98a290;
+  color: var(--dxp-muted);
   font-size: 9px;
 }

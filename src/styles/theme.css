@@ -1,0 +1,43 @@
+/* Public inputs intentionally use fallbacks so colors can inherit from a host container.
+   Resolve derived tokens on each editor (and standalone picker), never on :root. */
+:where(.dxp-builder, .dxp-app, .dxp-picker-backdrop) {
+  --dxp-primary-color: var(--dxp-primary, #247252);
+  --dxp-secondary-color: var(--dxp-secondary, #648bc4);
+  --dxp-tertiary-color: var(--dxp-tertiary, #9d80c5);
+  --dxp-primary-hover: color-mix(in srgb, var(--dxp-primary-color) 85%, black);
+  --dxp-primary-soft: color-mix(in srgb, var(--dxp-primary-color) 9%, white);
+  --dxp-primary-tint: color-mix(in srgb, var(--dxp-primary-color) 16%, white);
+  --dxp-primary-border: color-mix(in srgb, var(--dxp-primary-color) 32%, white);
+  --dxp-secondary-soft: color-mix(in srgb, var(--dxp-secondary-color) 12%, white);
+  --dxp-tertiary-soft: color-mix(in srgb, var(--dxp-tertiary-color) 12%, white);
+  --dxp-accent-blend: color-mix(in srgb, var(--dxp-secondary-color), var(--dxp-tertiary-color));
+  --dxp-accent-blend-soft: color-mix(in srgb, var(--dxp-accent-blend) 12%, white);
+
+  --dxp-surface: white;
+  --dxp-canvas: color-mix(in srgb, var(--dxp-primary-color) 3%, white);
+  --dxp-surface-muted: color-mix(in srgb, var(--dxp-primary-color) 5%, white);
+  --dxp-text: color-mix(in srgb, var(--dxp-primary-color) 18%, #292d32);
+  --dxp-text-secondary: color-mix(in srgb, var(--dxp-text) 80%, white);
+  --dxp-muted: color-mix(in srgb, var(--dxp-text) 65%, white);
+  --dxp-subtle: color-mix(in srgb, var(--dxp-text) 52%, white);
+  --dxp-line: color-mix(in srgb, var(--dxp-primary-color) 12%, #f4f4f4);
+  --dxp-line-strong: color-mix(in srgb, var(--dxp-primary-color) 23%, #eeeeee);
+  --dxp-grid: color-mix(in srgb, var(--dxp-primary-color) 15%, #eeeeee);
+  --dxp-edge: color-mix(in srgb, var(--dxp-primary-color) 35%, #dedede);
+  --dxp-focus: var(--dxp-primary-color);
+  --dxp-focus-ring: color-mix(in srgb, var(--dxp-primary-color) 16%, transparent);
+  --dxp-shadow: color-mix(in srgb, var(--dxp-text) 10%, transparent);
+  --dxp-shadow-soft: color-mix(in srgb, var(--dxp-text) 4%, transparent);
+  --dxp-shadow-strong: color-mix(in srgb, var(--dxp-text) 22%, transparent);
+  --dxp-overlay: color-mix(in srgb, var(--dxp-text) 32%, transparent);
+  --dxp-minimap-mask: color-mix(in srgb, var(--dxp-canvas) 70%, transparent);
+
+  /* Status colors describe workflow outcomes independently of the brand. */
+  --dxp-success: #39804e;
+  --dxp-warning: #98712f;
+  --dxp-warning-soft: #fdf7e9;
+  --dxp-warning-border: #eee1c2;
+  --dxp-danger: #ad5144;
+  --dxp-danger-soft: #fcf3ef;
+  --dxp-danger-border: #efd9d1;
+}
