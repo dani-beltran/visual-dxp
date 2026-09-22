@@ -1,5 +1,6 @@
 import {
   Cookie,
+  Frame,
   GitFork,
   Globe2,
   MousePointer2,
@@ -9,6 +10,7 @@ import {
   StickyNote,
   Timer,
 } from 'lucide-react';
+import { FRAME_HEIGHT, FRAME_WIDTH } from './frames';
 import type { NodeKind, StepConfig, Workflow, WorkflowNode } from './types';
 export const catalog: {
   kind: NodeKind;
@@ -110,6 +112,15 @@ export const catalog: {
       noteMarks: [],
     },
   },
+  {
+    kind: 'frame',
+    label: 'Frame',
+    description: 'Group nodes and move them together',
+    color: 'blue',
+    icon: Frame,
+    category: 'Annotation',
+    config: {},
+  },
 ];
 export function createNode(kind: NodeKind, position = { x: 200, y: 200 }): WorkflowNode {
   const entry = catalog.find((x) => x.kind === kind)!;
@@ -117,6 +128,7 @@ export function createNode(kind: NodeKind, position = { x: 200, y: 200 }): Workf
     id: `${kind}-${crypto.randomUUID()}`,
     type: 'workflow',
     position,
+    ...(kind === 'frame' ? { width: FRAME_WIDTH, height: FRAME_HEIGHT } : {}),
     data: { kind, label: entry.label, config: { ...entry.config } },
   };
 }
@@ -253,5 +265,7 @@ export function stepSummary(kind: NodeKind, c: StepConfig): string {
       return `${c.contentType === 'iframe' ? 'Embedded page' : 'Custom HTML'} · ${(c.position || 'center').replaceAll('-', ' ')}`;
     case 'note':
       return c.noteText || 'Write a note…';
+    case 'frame':
+      return 'Move grouped nodes together';
   }
 }

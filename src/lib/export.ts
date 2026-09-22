@@ -58,6 +58,7 @@ export function validateWorkflow(workflow: Workflow): ValidationIssue[] {
     'loop',
     'popover',
     'note',
+    'frame',
   ]);
   const ids = new Set<string>();
   const nodeMap = new Map(workflow.nodes.map((node) => [node.id, node]));
@@ -99,6 +100,18 @@ export function validateWorkflow(workflow: Workflow): ValidationIssue[] {
     if (!node.id || ids.has(node.id)) add('Every step must have a unique ID.', node.id);
     ids.add(node.id);
     if (!knownKinds.has(node.data.kind)) add('Unknown step type.', node.id);
+    if (
+      node.parentId !== undefined &&
+      (node.data.kind === 'frame' || nodeMap.get(node.parentId)?.data.kind !== 'frame')
+    )
+      add('Nodes must belong to an existing top-level frame.', node.id);
+    if (
+      node.data.kind === 'frame' &&
+      [node.width, node.height].some(
+        (size) => size !== undefined && (!Number.isFinite(size) || size <= 0),
+      )
+    )
+      add('Frame dimensions must be positive numbers.', node.id);
     const textFields = [
       'event',
       'selector',
@@ -325,6 +338,13 @@ export function validateWorkflow(workflow: Workflow): ValidationIssue[] {
       );
       continue;
     }
+    if (source.data.kind === 'frame' || target.data.kind === 'frame') {
+      add(
+        'Frames cannot have workflow connections.',
+        source.data.kind === 'frame' ? source.id : target.id,
+      );
+      continue;
+    }
     if (target.data.kind === 'trigger')
       add('Triggers cannot receive incoming connections.', target.id);
     if (source.data.kind === 'fork' && !['true', 'false'].includes(edge.sourceHandle ?? ''))
@@ -364,8 +384,10 @@ export function validateWorkflow(workflow: Workflow): ValidationIssue[] {
 export function exportWorkflow(workflow: Workflow): string {
   const issues = validateWorkflow(workflow);
   if (issues.length) throw new Error(issues.map((issue) => issue.message).join('\n'));
-  const notes = new Set(
-    workflow.nodes.filter((node) => node.data.kind === 'note').map((node) => node.id),
+  const annotations = new Set(
+    workflow.nodes
+      .filter((node) => node.data.kind === 'note' || node.data.kind === 'frame')
+      .map((node) => node.id),
   );
   // Export configuration only: editor positions, selection, and transient status
   // are unnecessary in a production snippet.
@@ -374,13 +396,13 @@ export function exportWorkflow(workflow: Workflow): string {
     name: workflow.name,
     websiteUrl: workflow.websiteUrl,
     nodes: workflow.nodes
-      .filter((node) => node.data.kind !== 'note')
+      .filter((node) => !annotations.has(node.id))
       .map(({ id, data }) => ({
         id,
         data: { kind: data.kind, label: data.label, config: data.config },
       })),
     edges: workflow.edges
-      .filter((edge) => !notes.has(edge.source) && !notes.has(edge.target))
+      .filter((edge) => !annotations.has(edge.source) && !annotations.has(edge.target))
       .map(({ id, source, target, sourceHandle }) => ({
         id,
         source,

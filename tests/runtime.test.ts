@@ -42,31 +42,34 @@ afterEach(() => {
 });
 
 describe('workflow runtime', () => {
-  it('ignores connected notes without logs, step budget usage, or following their outputs', async () => {
-    document.body.innerHTML = '<p id="result">Waiting</p><p id="annotation-output">Unchanged</p>';
-    const logs: RunLog[] = [];
-    const instance = runtime(
-      workflow(
-        [
-          node('start', 'trigger'),
-          node('note', 'note', { noteText: 'Canvas only', selector: '#result', value: 'Wrong' }),
-          node('hidden', 'dom', { selector: '#annotation-output', value: 'Wrong' }),
-          node('update', 'dom', { selector: '#result', value: 'Done' }),
-        ],
-        [
-          ['start', 'note'],
-          ['note', 'hidden'],
-          ['note', 'note'],
-          ['start', 'update'],
-        ],
-      ),
-      { maxSteps: 2, onLog: (entry) => logs.push(entry) },
-    );
-    await expect(instance.run()).resolves.toBeUndefined();
-    expect(document.querySelector('#result')?.textContent).toBe('Done');
-    expect(document.querySelector('#annotation-output')?.textContent).toBe('Unchanged');
-    expect(logs.map((entry) => entry.nodeId)).toEqual(['start', 'start', 'update', 'update']);
-  });
+  it.each(['note', 'frame'] as const)(
+    'ignores connected %s annotations without logs, step budget usage, or following their outputs',
+    async (kind) => {
+      document.body.innerHTML = '<p id="result">Waiting</p><p id="annotation-output">Unchanged</p>';
+      const logs: RunLog[] = [];
+      const instance = runtime(
+        workflow(
+          [
+            node('start', 'trigger'),
+            node('note', kind, { noteText: 'Canvas only', selector: '#result', value: 'Wrong' }),
+            node('hidden', 'dom', { selector: '#annotation-output', value: 'Wrong' }),
+            node('update', 'dom', { selector: '#result', value: 'Done' }),
+          ],
+          [
+            ['start', 'note'],
+            ['note', 'hidden'],
+            ['note', 'note'],
+            ['start', 'update'],
+          ],
+        ),
+        { maxSteps: 2, onLog: (entry) => logs.push(entry) },
+      );
+      await expect(instance.run()).resolves.toBeUndefined();
+      expect(document.querySelector('#result')?.textContent).toBe('Done');
+      expect(document.querySelector('#annotation-output')?.textContent).toBe('Unchanged');
+      expect(logs.map((entry) => entry.nodeId)).toEqual(['start', 'start', 'update', 'update']);
+    },
+  );
 
   it('waits for DOM readiness and cancels a pending page-load trigger on destroy', async () => {
     vi.spyOn(document, 'readyState', 'get').mockReturnValue('loading');

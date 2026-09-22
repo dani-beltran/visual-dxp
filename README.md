@@ -170,6 +170,8 @@ The canvas includes a floating node library: hover or focus an icon to see its n
 
 Add a **Note** from the library and type directly on it. Select text on the note or in its details panel, then choose bold, italic, or strikethrough to format just that selection. The details panel also controls the background color. Drag the note's header to move it. Notes are saved in workflow JSON, including mixed text formatting, but are excluded from exported JavaScript.
 
+Add a **Frame** to group related nodes. Set its name in the details panel, drop nodes fully inside it, or resize its edges around existing nodes. Drag the frame's header to move all its contents together. Drag a node outside to ungroup it. Deleting a frame keeps its nodes and connections; duplicating it copies its contents and internal connections. Frames and membership are saved in workflow JSON and support undo/redo. Frames are top-level canvas containers and are excluded from exported JavaScript.
+
 ## Activity
 
 The **Activity** tab shows recent actions with the username, action, and time. The builder records workflow edits, imports, and test previews. The demo host records exports in the same activity store. Undo removes the reverted edit's activity entry; Redo restores that original entry, including its username and timestamp. Typing and repeated keyboard moves are grouped into a single undoable edit and activity entry. Selecting nodes, panning, and zooming do not add entries. JavaScript and JSON remain available through **Export workflow**.

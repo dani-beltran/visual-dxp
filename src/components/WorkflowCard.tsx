@@ -4,10 +4,12 @@ import { useContext } from 'react';
 import { catalog, stepSummary } from '../lib/catalog';
 import { NoteEditingContext } from '../lib/noteEditing';
 import type { WorkflowNode } from '../lib/types';
+import { FrameCard } from './FrameCard';
 import { NoteCard } from './NoteCard';
 
 export function WorkflowCard({ id, data, selected }: NodeProps<WorkflowNode>) {
   const editNote = useContext(NoteEditingContext);
+  if (data.kind === 'frame') return <FrameCard data={data} selected={selected} />;
   if (data.kind === 'note')
     return <NoteCard id={id} data={data} selected={selected} onChange={editNote} />;
   const entry = catalog.find((x) => x.kind === data.kind)!;

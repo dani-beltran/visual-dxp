@@ -8,7 +8,8 @@ export type NodeKind =
   | 'fork'
   | 'loop'
   | 'popover'
-  | 'note';
+  | 'note'
+  | 'frame';
 /** A styled text range using UTF-16 offsets, sorted without overlapping other ranges. */
 export interface NoteMark {
   start: number;

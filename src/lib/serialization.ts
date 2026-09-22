@@ -11,6 +11,7 @@ const kinds = new Set([
   'loop',
   'popover',
   'note',
+  'frame',
 ]);
 const strings = [
   'event',
@@ -100,6 +101,27 @@ export function isWorkflow(value: unknown): value is Workflow {
     )
       return false;
     nodeIds.add(node.id);
+  }
+  for (const node of value.nodes) {
+    if (node.parentId !== undefined) {
+      const parent = value.nodes.find((entry) => entry.id === node.parentId);
+      if (
+        typeof node.parentId !== 'string' ||
+        !parent ||
+        parent.data.kind !== 'frame' ||
+        node.data.kind === 'frame'
+      )
+        return false;
+    }
+    if (
+      node.data.kind === 'frame' &&
+      ['width', 'height'].some(
+        (key) =>
+          node[key] !== undefined &&
+          (typeof node[key] !== 'number' || !Number.isFinite(node[key]) || node[key] <= 0),
+      )
+    )
+      return false;
   }
   const edgeIds = new Set<string>();
   for (const edge of value.edges) {

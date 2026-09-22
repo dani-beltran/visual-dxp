@@ -52,6 +52,7 @@ import {
 } from '../lib/ai';
 import { catalog, createNode, defaultWorkflow } from '../lib/catalog';
 import { validateWorkflow } from '../lib/export';
+import { duplicateNode, framesFirst, groupNodes, nodeSize, removeNodes } from '../lib/frames';
 import { NoteEditingContext } from '../lib/noteEditing';
 import { NoteSelectionProvider } from '../lib/noteSelection';
 import { isWorkflow } from '../lib/serialization';
@@ -176,6 +177,7 @@ function Builder({
   });
   const dragStartPositions = useRef<Map<string, { x: number; y: number }> | null>(null);
   const dragStartWorkflow = useRef<Workflow | null>(null);
+  const resizeStartWorkflow = useRef<Workflow | null>(null);
   const [, refreshHistory] = useState(0);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
@@ -219,8 +221,16 @@ function Builder({
   const selectedEdge = workflow.edges.find((edge) => edge.id === selectedEdgeId);
   const nodes = useMemo(
     () =>
-      workflow.nodes.map((n) => ({
+      framesFirst(workflow.nodes).map((n) => ({
         ...n,
+        ...(n.data.kind === 'frame'
+          ? {
+              ...nodeSize(n),
+              style: { ...n.style, ...nodeSize(n) },
+              zIndex: -1,
+              dragHandle: '.dxp-frame-header',
+            }
+          : {}),
         selected: n.id === selectedId,
         data: { ...n.data, status: statuses[n.id] || 'idle' },
       })),
@@ -461,6 +471,13 @@ function Builder({
       // React Flow reports connected-edge and node removals separately. Handle both in onDelete.
       const meaningful = changes.filter((c) => c.type !== 'select' && c.type !== 'remove');
       if (!meaningful.length) return;
+      const resize = meaningful.find(
+        (change) => change.type === 'dimensions' && change.resizing !== undefined,
+      );
+      if (resize?.type === 'dimensions' && resize.resizing && !resizeStartWorkflow.current) {
+        flushActivity();
+        resizeStartWorkflow.current = copyWorkflow(current.current);
+      }
       const moved = current.current.nodes.filter((node) =>
         meaningful.some(
           (change) =>
@@ -470,7 +487,8 @@ function Builder({
             (change.position.x !== node.position.x || change.position.y !== node.position.y),
         ),
       );
-      const keyboardMove = moved.length > 0 && !dragStartPositions.current;
+      const keyboardMove =
+        moved.length > 0 && !dragStartPositions.current && !resizeStartWorkflow.current;
       const activityKey = `move:${moved
         .map((node) => node.id)
         .sort()
@@ -480,6 +498,23 @@ function Builder({
         ...current.current,
         nodes: applyNodeChanges(meaningful, current.current.nodes),
       };
+      if (keyboardMove) next.nodes = groupNodes(next.nodes, new Set(moved.map((node) => node.id)));
+      if (resize?.type === 'dimensions' && !resize.resizing && resizeStartWorkflow.current) {
+        next.nodes = groupNodes(
+          next.nodes,
+          new Set(
+            next.nodes
+              .filter((node) => !node.parentId || node.parentId === resize.id)
+              .map((node) => node.id),
+          ),
+          resize.id,
+        );
+        const entry = remember(undefined, resizeStartWorkflow.current);
+        entry.activity = recordActivity(
+          `Resized “${next.nodes.find((node) => node.id === resize.id)?.data.label ?? 'Frame'}”`,
+        );
+        resizeStartWorkflow.current = null;
+      }
       current.current = next;
       setWorkflow(next);
       if (entry) {
@@ -491,7 +526,7 @@ function Builder({
         );
       }
     },
-    [remember, recordActivity],
+    [remember, recordActivity, flushActivity],
   );
   const onEdgesChange = useCallback((changes: EdgeChange[]) => {
     const updates = changes.filter((change) => change.type !== 'remove');
@@ -524,7 +559,7 @@ function Builder({
     commit(
       (w) => ({
         ...w,
-        nodes: w.nodes.filter((node) => !removedNodes.has(node.id)),
+        nodes: removeNodes(w.nodes, removedNodes),
         edges: w.edges.filter(
           (edge) =>
             !removedEdges.has(edge.id) &&
@@ -548,6 +583,10 @@ function Builder({
       const source = current.current.nodes.find((n) => n.id === connection.source);
       if (source?.data.kind === 'note' || target?.data.kind === 'note') {
         notify('Notes are canvas annotations and cannot be connected.');
+        return;
+      }
+      if (source?.data.kind === 'frame' || target?.data.kind === 'frame') {
+        notify('Connect the steps inside a frame to build your workflow.');
         return;
       }
       if (target?.data.kind === 'trigger') {
@@ -578,7 +617,21 @@ function Builder({
           })
         : { x: 200, y: 200 });
     const node = createNode(kind, point);
-    commit((w) => ({ ...w, nodes: [...w.nodes, node] }), `Added “${node.data.label}”`);
+    commit(
+      (w) => ({
+        ...w,
+        nodes: groupNodes(
+          [...w.nodes, node],
+          new Set(
+            kind === 'frame'
+              ? w.nodes.filter((entry) => !entry.parentId).map((entry) => entry.id)
+              : [node.id],
+          ),
+          kind === 'frame' ? node.id : undefined,
+        ),
+      }),
+      `Added “${node.data.label}”`,
+    );
     setSelectedId(node.id);
     setSelectedEdgeId(null);
     notify(`${catalog.find((c) => c.kind === kind)!.label} added`);
@@ -593,7 +646,7 @@ function Builder({
         ),
       }),
       patch.label !== undefined
-        ? `Renamed a step to “${patch.label}”`
+        ? `Renamed a ${selected.data.kind === 'frame' ? 'frame' : 'step'} to “${patch.label}”`
         : `Updated ${patch.description !== undefined ? 'the description of' : 'settings for'} “${selected.data.label}”`,
       `node:${selected.id}:${Object.keys(patch).sort().join(',')}`,
     );
@@ -616,7 +669,7 @@ function Builder({
     commit(
       (w) => ({
         ...w,
-        nodes: w.nodes.filter((n) => n.id !== selectedId),
+        nodes: removeNodes(w.nodes, new Set([selected.id])),
         edges: w.edges.filter((e) => e.source !== selectedId && e.target !== selectedId),
       }),
       `Deleted “${selected.data.label}”`,
@@ -625,14 +678,9 @@ function Builder({
   }
   function duplicate() {
     if (!selected) return;
-    const copy = {
-      ...copyWorkflow(workflow).nodes.find((n) => n.id === selected.id)!,
-      id: crypto.randomUUID(),
-      position: { x: selected.position.x + 40, y: selected.position.y + 190 },
-      data: { ...selected.data, label: `${selected.data.label} copy` },
-    };
-    commit((w) => ({ ...w, nodes: [...w.nodes, copy] }), `Duplicated “${selected.data.label}”`);
-    setSelectedId(copy.id);
+    const copy = duplicateNode(current.current, selected);
+    commit(() => copy.workflow, `Duplicated “${selected.data.label}”`);
+    setSelectedId(copy.selectedId);
     setSelectedEdgeId(null);
   }
   async function importFile(file?: File) {
@@ -820,6 +868,19 @@ function Builder({
               onNodesChange={onNodesChange}
               onEdgesChange={onEdgesChange}
               onDelete={onDelete}
+              onBeforeDelete={async ({ nodes, edges }) => {
+                const candidates = new Set(nodes.map((node) => node.id));
+                const removed = nodes.filter(
+                  (node) => node.selected || !node.parentId || !candidates.has(node.parentId),
+                );
+                const ids = new Set(removed.map((node) => node.id));
+                return {
+                  nodes: removed,
+                  edges: edges.filter(
+                    (edge) => edge.selected || ids.has(edge.source) || ids.has(edge.target),
+                  ),
+                };
+              }}
               onConnect={onConnect}
               onNodeDragStart={() => {
                 flushActivity();
@@ -833,6 +894,12 @@ function Builder({
                   const start = dragStartPositions.current?.get(node.id);
                   return start && (start.x !== node.position.x || start.y !== node.position.y);
                 });
+                const next = {
+                  ...current.current,
+                  nodes: groupNodes(current.current.nodes, new Set(moved.map((node) => node.id))),
+                };
+                current.current = next;
+                setWorkflow(next);
                 dragStartPositions.current = null;
                 if (moved.length && dragStartWorkflow.current) {
                   const entry = remember(undefined, dragStartWorkflow.current);
@@ -861,6 +928,7 @@ function Builder({
               fitViewOptions={{ padding: 0.18, minZoom: 0.35, maxZoom: 1 }}
               minZoom={0.25}
               maxZoom={1.8}
+              elevateNodesOnSelect={false}
               deleteKeyCode={view === 'canvas' ? ['Backspace', 'Delete'] : null}
               proOptions={{ hideAttribution: true }}
             >

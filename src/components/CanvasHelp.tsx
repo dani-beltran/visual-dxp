@@ -1,4 +1,13 @@
-import { CircleHelp, Hand, MousePointer2, Plus, StickyNote, Workflow, X } from 'lucide-react';
+import {
+  CircleHelp,
+  Frame,
+  Hand,
+  MousePointer2,
+  Plus,
+  StickyNote,
+  Workflow,
+  X,
+} from 'lucide-react';
 import { useId, useLayoutEffect, useRef, useState } from 'react';
 
 const instructions = [
@@ -16,6 +25,11 @@ const instructions = [
     icon: StickyNote,
     title: 'Leave a note',
     text: 'Add a Note and type directly on the canvas. Select text, then use its settings to make that selection bold, italic, or struck through. You can also change the background or choose transparency. Drag its header to move it.',
+  },
+  {
+    icon: Frame,
+    title: 'Group nodes in a frame',
+    text: 'Add a Frame and give it a name in its settings. Drop nodes fully inside, or resize the frame around them. Drag its header to move the whole group. Drag a node outside to remove it from the group; deleting a frame keeps its nodes.',
   },
   {
     icon: Workflow,

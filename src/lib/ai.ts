@@ -1,4 +1,5 @@
 import { validateWorkflow } from './export';
+import { framesFirst, removeNodes } from './frames';
 import { isNoteMarks } from './noteText';
 import type { NodeKind, NoteMark, StepConfig, Workflow, WorkflowEdge, WorkflowNode } from './types';
 
@@ -67,6 +68,7 @@ const kinds = new Set<NodeKind>([
   'loop',
   'popover',
   'note',
+  'frame',
 ]);
 const configStrings = [
   'event',
@@ -195,10 +197,21 @@ function node(value: unknown): WorkflowNode {
   const data = record(input.data, 'Step data');
   if (input.type !== 'workflow' || !kinds.has(data.kind as NodeKind))
     throw new Error('Choose a supported workflow step type.');
+  const dimensions: { width?: number; height?: number } = {};
+  if (data.kind === 'frame') {
+    for (const key of ['width', 'height'] as const) {
+      if (input[key] === undefined) continue;
+      if (typeof input[key] !== 'number' || !Number.isFinite(input[key]) || input[key] <= 0)
+        throw new Error('Frame dimensions must be positive numbers.');
+      dimensions[key] = input[key];
+    }
+  }
   return {
     id: id(input.id),
     type: 'workflow',
     position: position(input.position),
+    ...dimensions,
+    ...(input.parentId !== undefined ? { parentId: id(input.parentId) } : {}),
     data: {
       kind: data.kind as NodeKind,
       label: text(data.label, 'Step label', 200, true),
@@ -307,6 +320,13 @@ function workflowShape(value: unknown): Workflow {
 function assertGraph(workflow: Workflow): void {
   const nodes = new Map(workflow.nodes.map((entry) => [entry.id, entry]));
   if (nodes.size !== workflow.nodes.length) throw new Error('Every step must have a unique ID.');
+  for (const entry of workflow.nodes) {
+    if (
+      entry.parentId !== undefined &&
+      (entry.data.kind === 'frame' || nodes.get(entry.parentId)?.data.kind !== 'frame')
+    )
+      throw new Error('Nodes must belong to an existing top-level frame.');
+  }
   const edgeIds = new Set<string>();
   const connections = new Set<string>();
   const incoming = new Map(workflow.nodes.map((entry) => [entry.id, 0]));
@@ -319,6 +339,8 @@ function assertGraph(workflow: Workflow): void {
     if (!source || !target) throw new Error('A connection refers to a missing step.');
     if (source.data.kind === 'note' || target.data.kind === 'note')
       throw new Error('Notes cannot have workflow connections.');
+    if (source.data.kind === 'frame' || target.data.kind === 'frame')
+      throw new Error('Frames cannot have workflow connections.');
     if (target.data.kind === 'trigger')
       throw new Error('Triggers cannot receive incoming connections.');
     const allowed =
@@ -397,7 +419,7 @@ export function applyWorkflowOperations(workflow: Workflow, value: unknown): Wor
       case 'remove_node':
         if (!nodes.some((entry) => entry.id === change.id))
           throw new Error('The step to remove does not exist.');
-        nodes = nodes.filter((entry) => entry.id !== change.id);
+        nodes = removeNodes(nodes, new Set([change.id]));
         edges = edges.filter((entry) => entry.source !== change.id && entry.target !== change.id);
         break;
       case 'add_edge':
@@ -419,7 +441,7 @@ export function applyWorkflowOperations(workflow: Workflow, value: unknown): Wor
         break;
     }
   }
-  const result = { ...workflow, nodes, edges };
+  const result = { ...workflow, nodes: framesFirst(nodes), edges };
   const validated = workflowShape(result);
   assertGraph(validated);
   // An editor may contain an empty or triggerless draft. Completeness notices

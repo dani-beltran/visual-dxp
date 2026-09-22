@@ -37,7 +37,7 @@ export function createExecution(
     if (!node) throw new Error(`Step “${nodeId}” does not exist.`);
     // Imported graphs can bypass validation. An annotation never executes or
     // acts as a bridge to downstream steps, even if it has malformed connections.
-    if (node.data.kind === 'note') return;
+    if (node.data.kind === 'note' || node.data.kind === 'frame') return;
     if (state.active.has(nodeId)) {
       const message = 'Circular connections are not supported. Use a Repeat step instead.';
       log(nodeId, 'error', message);

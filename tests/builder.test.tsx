@@ -5,6 +5,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createActivityStore, DXPBuilder, type DXPBuilderApi, type Workflow } from '../src';
 import { App } from '../src/app';
+import { createNode } from '../src/lib/catalog';
 
 let host: HTMLDivElement;
 let root: Root;
@@ -64,6 +65,90 @@ async function click(target: HTMLElement) {
 }
 
 describe('builder and host boundary', () => {
+  it('adds a resizable frame from the library and saves its editable name with undo', async () => {
+    const onChange = vi.fn<(workflow: Workflow) => void>();
+    await act(async () =>
+      root.render(<DXPBuilder initialWorkflow={initialWorkflow()} onChange={onChange} />),
+    );
+    await click(element('button[aria-label="Add Frame"]'));
+    const frame = onChange.mock.lastCall?.[0].nodes[0];
+    expect(frame).toMatchObject({
+      data: { kind: 'frame', label: 'Frame' },
+      width: 560,
+      height: 360,
+    });
+    expect(host.querySelector('.dxp-frame-card .react-flow__resize-control')).not.toBeNull();
+    expect(host.querySelector('.dxp-frame-card .react-flow__handle')).toBeNull();
+    const input = element<HTMLInputElement>('[aria-label="Frame configuration"] input');
+    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
+    if (!setter) throw new Error('Missing input value setter');
+    await act(async () => {
+      setter.call(input, 'Onboarding');
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    expect(element('.dxp-frame-header strong').textContent).toBe('Onboarding');
+    expect(onChange.mock.lastCall?.[0].nodes[0].data.label).toBe('Onboarding');
+    await click(element('button[title^="Undo"]'));
+    expect(element('.dxp-frame-header strong').textContent).toBe('Frame');
+  });
+
+  it('moves frame members together, undoes the move, and preserves members when deleting the frame', async () => {
+    const workflow: Workflow = {
+      ...initialWorkflow(),
+      nodes: [
+        { ...createNode('frame', { x: 100, y: 100 }), id: 'frame' },
+        {
+          ...createNode('delay', { x: 30, y: 70 }),
+          id: 'child',
+          parentId: 'frame',
+          width: 220,
+          height: 140,
+        },
+        { ...createNode('trigger', { x: -300, y: 100 }), id: 'outside', width: 220, height: 140 },
+      ],
+      edges: [{ id: 'edge', source: 'outside', target: 'child' }],
+    };
+    const onChange = vi.fn<(workflow: Workflow) => void>();
+    await act(async () =>
+      root.render(<DXPBuilder initialWorkflow={workflow} onChange={onChange} />),
+    );
+    const before = element('[data-id="child"]').style.transform;
+    const frame = element('[data-id="frame"]');
+    await click(frame);
+    await act(async () =>
+      frame.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true })),
+    );
+    await act(async () =>
+      frame.dispatchEvent(new KeyboardEvent('keyup', { key: 'ArrowRight', bubbles: true })),
+    );
+    const moved = onChange.mock.lastCall?.[0];
+    expect(moved?.nodes[0].position.x).toBeGreaterThan(100);
+    expect(moved?.nodes[1].position).toEqual({ x: 30, y: 70 });
+    expect(element('[data-id="child"]').style.transform).not.toBe(before);
+    expect(moved?.nodes[2].position).toEqual({ x: -300, y: 100 });
+    await click(element('button[title^="Undo"]'));
+    expect(element('[data-id="child"]').style.transform).toBe(before);
+
+    await click(frame);
+    await act(async () =>
+      frame.dispatchEvent(new KeyboardEvent('keydown', { key: 'Delete', bubbles: true })),
+    );
+    await act(async () =>
+      host.dispatchEvent(new KeyboardEvent('keyup', { key: 'Delete', bubbles: true })),
+    );
+    const deleted = onChange.mock.lastCall?.[0];
+    expect(deleted?.nodes.map((node) => node.id)).toEqual(['child', 'outside']);
+    expect(deleted?.nodes[0]).toMatchObject({ position: { x: 130, y: 170 } });
+    expect(deleted?.nodes[0].parentId).toBeUndefined();
+    expect(deleted?.edges).toHaveLength(1);
+    await click(element('button[title^="Undo"]'));
+    expect(onChange.mock.lastCall?.[0].nodes[1].parentId).toBe('frame');
+    await click(element('[data-id="frame"]'));
+    await click(element('button[title="Delete frame"]'));
+    expect(onChange.mock.lastCall?.[0].nodes.map((node) => node.id)).toEqual(['child', 'outside']);
+    expect(onChange.mock.lastCall?.[0].edges).toHaveLength(1);
+  });
+
   it('runs independently, exposes current JSON and preview actions, and detaches its API', async () => {
     const onReady = vi.fn<(api: DXPBuilderApi | null) => void>();
     const onChange = vi.fn<(workflow: Workflow) => void>();

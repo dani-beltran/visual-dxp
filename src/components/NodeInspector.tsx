@@ -5,6 +5,7 @@ import {
   Clock3,
   Cookie,
   Copy,
+  Frame,
   GitFork,
   Globe2,
   Info,
@@ -90,6 +91,12 @@ const details = {
     icon: StickyNote,
     summary: 'Keep ideas, context, and reminders alongside your workflow.',
     color: 'amber',
+  },
+  frame: {
+    name: 'Frame',
+    icon: Frame,
+    summary: 'Keep related nodes together and move them as a group.',
+    color: 'blue',
   },
 } satisfies Record<NodeKind, { name: string; icon: typeof Timer; summary: string; color: string }>;
 
@@ -184,6 +191,8 @@ export function NodeInspector({
   const variableCondition = ['query-param', 'cookie'].includes(conditionType);
   const metadata = details[node.data.kind];
   const isNote = node.data.kind === 'note';
+  const isFrame = node.data.kind === 'frame';
+  const itemName = isFrame ? 'frame' : isNote ? 'note' : 'step';
   const Icon = metadata.icon;
   const id = (name: string) => `${prefix}-${name}`;
   const update = (patch: Partial<StepConfig>) => onChange({ config: { ...config, ...patch } });
@@ -225,12 +234,12 @@ export function NodeInspector({
   return (
     <aside className="dxp-inspector" aria-label={`${metadata.name} configuration`}>
       <header className="dxp-inspector-header">
-        <div className="dxp-inspector-eyebrow">{isNote ? 'NOTE DETAILS' : 'STEP DETAILS'}</div>
+        <div className="dxp-inspector-eyebrow">{itemName.toUpperCase()} DETAILS</div>
         <button
           type="button"
           className="dxp-inspector-icon-button"
-          title={isNote ? 'Close note details' : 'Close step details'}
-          aria-label={isNote ? 'Close note details' : 'Close step details'}
+          title={`Close ${itemName} details`}
+          aria-label={`Close ${itemName} details`}
           onClick={onClose}
         >
           <X size={17} />
@@ -243,11 +252,14 @@ export function NodeInspector({
           </div>
           <div>
             <h2>{metadata.name}</h2>
-            <span>{isNote ? 'Canvas annotation' : 'Workflow step'}</span>
+            <span>{isFrame ? 'Canvas group' : isNote ? 'Canvas annotation' : 'Workflow step'}</span>
           </div>
         </div>
         <p className="dxp-inspector-description">{metadata.summary}</p>
-        <Field label={isNote ? 'Note name' : 'Step name'} htmlFor={id('name')}>
+        <Field
+          label={isFrame ? 'Frame name' : isNote ? 'Note name' : 'Step name'}
+          htmlFor={id('name')}
+        >
           <input
             id={id('name')}
             value={node.data.label}
@@ -256,9 +268,20 @@ export function NodeInspector({
           />
         </Field>
         <div className="dxp-inspector-section-label">
-          {isNote ? <StickyNote size={14} /> : <Braces size={14} />}
-          {isNote ? 'Text & appearance' : 'Parameters'}
+          {isFrame ? <Frame size={14} /> : isNote ? <StickyNote size={14} /> : <Braces size={14} />}
+          {isFrame ? 'Grouping nodes' : isNote ? 'Text & appearance' : 'Parameters'}
         </div>
+
+        {isFrame && (
+          <div className="dxp-inspector-note">
+            <Info size={15} />
+            <p>
+              Drop nodes fully inside this frame to group them. Drag its header to move the group,
+              or resize its edges to surround existing nodes. Drag a node outside to release it.
+              Deleting the frame keeps its nodes and connections.
+            </p>
+          </div>
+        )}
 
         {isNote && (
           <>
@@ -891,18 +914,14 @@ export function NodeInspector({
         )}
       </div>
       <footer className="dxp-inspector-footer">
-        <button
-          type="button"
-          onClick={onDuplicate}
-          title={isNote ? 'Duplicate note' : 'Duplicate step'}
-        >
+        <button type="button" onClick={onDuplicate} title={`Duplicate ${itemName}`}>
           <Copy size={14} /> Duplicate
         </button>
         <button
           type="button"
           className="dxp-inspector-delete"
           onClick={onDelete}
-          title={isNote ? 'Delete note' : 'Delete step'}
+          title={`Delete ${itemName}`}
         >
           <Trash2 size={14} /> Delete
         </button>
