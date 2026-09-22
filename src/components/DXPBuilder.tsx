@@ -687,7 +687,7 @@ function Builder({
     if (!file) return;
     try {
       const value: unknown = JSON.parse(await file.text());
-      if (!isWorkflow(value)) throw new Error('Choose a valid Forma workflow JSON file.');
+      if (!isWorkflow(value)) throw new Error('Choose a valid Mr. DXP workflow JSON file.');
       commit(() => value, `Imported workflow “${value.name}”`);
       setSelectedId(null);
       setSelectedEdgeId(null);
@@ -854,7 +854,7 @@ function Builder({
           }}
           onDrop={(e) => {
             e.preventDefault();
-            const kind = e.dataTransfer.getData('application/forma-node') as NodeKind;
+            const kind = e.dataTransfer.getData('application/mr-dxp-node') as NodeKind;
             if (catalog.some((c) => c.kind === kind))
               add(kind, flow.screenToFlowPosition({ x: e.clientX, y: e.clientY }));
           }}

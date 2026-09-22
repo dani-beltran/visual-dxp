@@ -1,5 +1,5 @@
 {
-  "name": "@forma/dxp",
+  "name": "mr-dxp",
   "version": "0.1.0",
   "private": false,
   "type": "module",
@@ -7,20 +7,20 @@
   "files": [
     "dist"
   ],
-  "main": "./dist/forma-dxp.umd.cjs",
-  "module": "./dist/forma-dxp.js",
+  "main": "./dist/mr-dxp.umd.cjs",
+  "module": "./dist/mr-dxp.js",
   "types": "./dist/index.d.ts",
-  "style": "./dist/forma-dxp.css",
+  "style": "./dist/mr-dxp.css",
   "sideEffects": [
     "**/*.css"
   ],
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/forma-dxp.js",
-      "require": "./dist/forma-dxp.umd.cjs"
+      "import": "./dist/mr-dxp.js",
+      "require": "./dist/mr-dxp.umd.cjs"
     },
-    "./styles.css": "./dist/forma-dxp.css",
+    "./styles.css": "./dist/mr-dxp.css",
     "./picker-bridge": "./dist/picker-bridge.js"
   },
   "scripts": {

@@ -54,10 +54,10 @@ The demo's environment variable configures only the demo. Applications embedding
 
 ## HTTP contract
 
-The client sends `POST` to the configured endpoint with JSON and expects a JSON response. Public TypeScript types are exported from `@forma/dxp`:
+The client sends `POST` to the configured endpoint with JSON and expects a JSON response. Public TypeScript types are exported from `mr-dxp`:
 
 ```ts
-import type { AIChatRequest, AIChatResponse } from '@forma/dxp';
+import type { AIChatRequest, AIChatResponse } from 'mr-dxp';
 ```
 
 The request contains:

@@ -6,4 +6,5 @@ demo-dist
 .env
 .env.*
 !.env.example
+mr-dxp-0.1.0.tgz
 todo.md

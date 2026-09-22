@@ -60,7 +60,7 @@ describe('website element selection', () => {
     expect(session.select('[')).toBe(false);
     expect(session.select('#shop-now')).toBe(true);
     session.destroy();
-    expect(document.querySelector('[data-forma-picker]')).toBeNull();
+    expect(document.querySelector('[data-mr-dxp-picker]')).toBeNull();
     target.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
     expect(navigate).toHaveBeenCalledOnce();
   });
@@ -86,7 +86,7 @@ describe('website element selection', () => {
     );
     const session = attachElementPicker(document, vi.fn(), vi.fn());
     session.select('#target');
-    const outline = document.querySelector<HTMLElement>('[data-forma-picker] > div:last-child')!;
+    const outline = document.querySelector<HTMLElement>('[data-mr-dxp-picker] > div:last-child')!;
     expect(outline.style.top).toBe('120px');
     expect(outline.style.display).toBe('block');
     top = 55;
@@ -132,22 +132,22 @@ describe('website element selection', () => {
     await act(async () => {
       preview.dispatchEvent(new Event('load'));
     });
-    expect(oldDoc.querySelector('[data-forma-picker]')).not.toBeNull();
+    expect(oldDoc.querySelector('[data-mr-dxp-picker]')).not.toBeNull();
     expect(host.textContent).toContain('Selection mode is on');
     documentGetter.mockReturnValue(nextDoc);
     await act(async () => {
       preview.dispatchEvent(new Event('load'));
     });
-    expect(oldDoc.querySelector('[data-forma-picker]')).toBeNull();
-    expect(nextDoc.querySelector('[data-forma-picker]')).not.toBeNull();
+    expect(oldDoc.querySelector('[data-mr-dxp-picker]')).toBeNull();
+    expect(nextDoc.querySelector('[data-mr-dxp-picker]')).not.toBeNull();
     expect(
-      nextDoc.querySelector<HTMLElement>('[data-forma-picker] > div:last-child')!.style.display,
+      nextDoc.querySelector<HTMLElement>('[data-mr-dxp-picker] > div:last-child')!.style.display,
     ).toBe('block');
     documentGetter.mockReturnValue(null);
     await act(async () => {
       preview.dispatchEvent(new Event('load'));
     });
-    expect(nextDoc.querySelector('[data-forma-picker]')).toBeNull();
+    expect(nextDoc.querySelector('[data-mr-dxp-picker]')).toBeNull();
     expect(host.textContent).toContain('Connecting to website');
     await act(async () => {
       vi.advanceTimersByTime(8000);
@@ -156,7 +156,7 @@ describe('website element selection', () => {
     await act(async () => {
       root.unmount();
     });
-    expect(nextDoc.querySelector('[data-forma-picker]')).toBeNull();
+    expect(nextDoc.querySelector('[data-mr-dxp-picker]')).toBeNull();
   });
 });
 
@@ -177,24 +177,24 @@ describe('cross-origin picker bridge', () => {
     };
     const source = readFileSync('public/picker-bridge.js', 'utf8');
     new Function('window', 'document', 'URL', source)(bridgeWindow, document, URL);
-    const init = { protocol: 'forma:element-picker', channel: 'editor-session', type: 'init' };
+    const init = { protocol: 'mr-dxp:element-picker', channel: 'editor-session', type: 'init' };
     receive({ origin: 'https://untrusted.example', source: parent, data: init });
     receive({ origin: 'https://editor.example', source: {}, data: init });
     expect(parent.postMessage).not.toHaveBeenCalled();
-    expect(document.querySelector('[data-forma-picker]')).toBeNull();
+    expect(document.querySelector('[data-mr-dxp-picker]')).toBeNull();
 
     receive({ origin: 'https://editor.example', source: parent, data: init });
     expect(parent.postMessage).toHaveBeenCalledWith(
-      { protocol: 'forma:element-picker', channel: 'editor-session', type: 'ready' },
+      { protocol: 'mr-dxp:element-picker', channel: 'editor-session', type: 'ready' },
       'https://editor.example',
     );
-    expect(document.querySelector('[data-forma-picker]')).not.toBeNull();
+    expect(document.querySelector('[data-mr-dxp-picker]')).not.toBeNull();
     document
       .querySelector('button')!
       .dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
     expect(parent.postMessage).toHaveBeenLastCalledWith(
       {
-        protocol: 'forma:element-picker',
+        protocol: 'mr-dxp:element-picker',
         channel: 'editor-session',
         type: 'select',
         element: { selector: '#shop-now', tagName: 'button', text: 'Shop now' },
@@ -220,7 +220,7 @@ describe('cross-origin picker bridge', () => {
       () => ({ left: 20, top, width: 80, height: 25 }) as DOMRect,
     );
     document.dispatchEvent(new Event('scroll'));
-    const outline = document.querySelector<HTMLElement>('[data-forma-picker] > div:last-child')!;
+    const outline = document.querySelector<HTMLElement>('[data-mr-dxp-picker] > div:last-child')!;
     expect(outline.style.top).toBe('180px');
     top = 70;
     document.dispatchEvent(new Event('scroll'));
@@ -238,8 +238,8 @@ describe('cross-origin picker bridge', () => {
       source: parent,
       data: { ...init, type: 'stop', channel: 'another-session' },
     });
-    expect(document.querySelector('[data-forma-picker]')).not.toBeNull();
+    expect(document.querySelector('[data-mr-dxp-picker]')).not.toBeNull();
     receive({ origin: 'https://editor.example', source: parent, data: { ...init, type: 'stop' } });
-    expect(document.querySelector('[data-forma-picker]')).toBeNull();
+    expect(document.querySelector('[data-mr-dxp-picker]')).toBeNull();
   });
 });

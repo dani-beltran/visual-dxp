@@ -1,4 +1,4 @@
-# Forma DXP
+# Mr. DXP
 
 An embeddable React 19 workflow editor powered by React Flow. Build website experiences visually, pick elements inside an iframe, test the journey, and export a standalone JavaScript file.
 
@@ -37,15 +37,15 @@ npm run build
 npm pack
 
 # In your application, using the archive produced above
-npm install /absolute/path/to/forma-dxp-0.1.0.tgz
+npm install /absolute/path/to/mr-dxp-0.1.0.tgz
 ```
 
 React and React DOM 19 are peer dependencies. React Flow and icons are included in the built library.
 
 ```tsx
 import { useState } from 'react';
-import DXPBuilder, { type DXPBuilderApi, type Workflow } from '@forma/dxp';
-import '@forma/dxp/styles.css';
+import DXPBuilder, { type DXPBuilderApi, type Workflow } from 'mr-dxp';
+import 'mr-dxp/styles.css';
 
 const initialWorkflow: Workflow = {
   version: 1,
@@ -103,7 +103,7 @@ The builder owns the toolbar, canvas, inspector, activity view, footer, element 
 | `ai`                 | Optional `{ endpoint, headers?, credentials? }` for your authenticated chat API. The AI button remains visible with setup guidance until an endpoint is provided. |
 | `className`, `style` | Customize the outer editor container. The parent must provide a height.                                                                                           |
 
-`DXPBuilder` is both the default and a named package export. Import `@forma/dxp/styles.css` once in your application; it includes React Flow and all builder, inspector, dialog, picker, and activity styles. The package exposes the same stylesheet through its `style` field and marks CSS as a side effect so bundlers retain the import.
+`DXPBuilder` is both the default and a named package export. Import `mr-dxp/styles.css` once in your application; it includes React Flow and all builder, inspector, dialog, picker, and activity styles. The package exposes the same stylesheet through its `style` field and marks CSS as a side effect so bundlers retain the import.
 
 ### Brand colors with theme.css
 
@@ -121,8 +121,8 @@ Create a `theme.css` file in your application and define the three CSS custom pr
 Import your theme after the package stylesheet in your application's entry point or global stylesheet entry. No color props are needed on `DXPBuilder`:
 
 ```tsx
-import DXPBuilder from '@forma/dxp';
-import '@forma/dxp/styles.css';
+import DXPBuilder from 'mr-dxp';
+import 'mr-dxp/styles.css';
 import './theme.css';
 
 export function ExperienceEditor() {
@@ -234,7 +234,7 @@ The **Activity** tab shows recent actions with the username, action, and time. T
 Pass a stable store instance to connect the activity feed to your application. Create a separate store for each workflow so their histories remain separate:
 
 ```tsx
-import { createActivityStore, DXPBuilder, type ActivityEntry } from '@forma/dxp';
+import { createActivityStore, DXPBuilder, type ActivityEntry } from 'mr-dxp';
 
 const initialActivity: ActivityEntry[] = [];
 const activityStore = createActivityStore(initialActivity);
@@ -313,12 +313,12 @@ Export produces a dependency-free script. Host the downloaded file and load it o
 <script src="/welcome-journey.js" defer></script>
 ```
 
-It registers triggers, executes actions, and exposes `window.FormaDXP`. Reinjecting an exported script first disposes of the previous Forma runtime. Stop it with `window.FormaDXP.destroy()`.
+It registers triggers, executes actions, and exposes `window.MrDXP`. Reinjecting an exported script first disposes of the previous Mr. DXP runtime. Stop it with `window.MrDXP.destroy()`.
 
 You can also use the runtime directly:
 
 ```ts
-import { createRuntime, exportWorkflow, validateWorkflow } from '@forma/dxp';
+import { createRuntime, exportWorkflow, validateWorkflow } from 'mr-dxp';
 
 const issues = validateWorkflow(workflow);
 if (issues.length) throw new Error(issues.map((issue) => issue.message).join('\n'));

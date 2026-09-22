@@ -131,14 +131,14 @@ export function App({
           onClick={() => {
             builder?.fitView();
           }}
-          aria-label="Forma home"
+          aria-label="Mr. DXP home"
         >
           <span className="dxp-brand-mark">
             <span />
             <span />
             <span />
           </span>
-          forma<span className="dxp-brand-period">.</span>
+          Mr<span className="dxp-brand-period">.</span>
           <span className="dxp-brand-tag">DXP</span>
         </button>
         <div className="dxp-workspace-label">
@@ -268,7 +268,7 @@ export function App({
             className={`dxp-modal ${modal === 'export' ? 'dxp-export-modal' : ''}`}
             role="dialog"
             aria-modal="true"
-            aria-label={modal === 'export' ? 'Export workflow' : 'About Forma'}
+            aria-label={modal === 'export' ? 'Export workflow' : 'About Mr. DXP'}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="dxp-modal-header">
@@ -347,7 +347,7 @@ export function App({
             ) : (
               <div className="dxp-help-content">
                 <p>
-                  Forma turns little ideas into thoughtful digital experiences. Start with a
+                  Mr. DXP turns little ideas into thoughtful digital experiences. Start with a
                   trigger, connect your steps, and make the journey your own.
                 </p>
                 {[

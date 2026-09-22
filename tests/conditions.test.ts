@@ -35,7 +35,7 @@ function graph(config: StepConfig): Workflow {
   };
 }
 const runtimes: ReturnType<typeof createRuntime>[] = [];
-const exportWindow = window as Window & { FormaDXP?: ReturnType<typeof createRuntime> };
+const exportWindow = window as Window & { MrDXP?: ReturnType<typeof createRuntime> };
 const originalUrl = window.location.href;
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ['Date'] });
@@ -60,8 +60,8 @@ beforeEach(() => {
 });
 afterEach(() => {
   for (const instance of runtimes.splice(0)) instance.destroy();
-  exportWindow.FormaDXP?.destroy();
-  delete exportWindow.FormaDXP;
+  exportWindow.MrDXP?.destroy();
+  delete exportWindow.MrDXP;
   vi.restoreAllMocks();
   vi.useRealTimers();
   window.localStorage.clear();
@@ -300,7 +300,7 @@ describe('condition branching in preview and exported scripts', () => {
     vi.spyOn(document, 'readyState', 'get').mockReturnValue('complete');
     new Function('window', 'document', exportWorkflow(graph(config)))(window, document);
     // Await execution directly: waitFor advances fake time across the midnight boundary.
-    await exportWindow.FormaDXP?.run();
+    await exportWindow.MrDXP?.run();
     expect(document.querySelector('#result')?.textContent).toBe(matches ? 'yes' : 'no');
   });
 
@@ -321,7 +321,7 @@ describe('condition branching in preview and exported scripts', () => {
     document.querySelector('#result')?.replaceChildren('waiting');
     vi.spyOn(document, 'readyState', 'get').mockReturnValue('complete');
     new Function('window', 'document', exportWorkflow(graph(config)))(window, document);
-    await exportWindow.FormaDXP?.run();
+    await exportWindow.MrDXP?.run();
     expect(document.querySelector('#result')?.textContent).toBe(matches ? 'yes' : 'no');
   });
 
@@ -341,7 +341,7 @@ describe('condition branching in preview and exported scripts', () => {
         document.querySelector('#result')?.replaceChildren('waiting');
         vi.spyOn(document, 'readyState', 'get').mockReturnValue('complete');
         new Function('window', 'document', exportWorkflow(graph(config)))(window, document);
-        await exportWindow.FormaDXP?.run();
+        await exportWindow.MrDXP?.run();
         expect(document.querySelector('#result')?.textContent).toBe(expected);
       }
     },

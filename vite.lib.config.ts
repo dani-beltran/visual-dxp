@@ -13,9 +13,9 @@ export default defineConfig({
   build: {
     lib: {
       entry: 'src/index.ts',
-      name: 'FormaDXP',
-      fileName: 'forma-dxp',
-      cssFileName: 'forma-dxp',
+      name: 'MrDXP',
+      fileName: 'mr-dxp',
+      cssFileName: 'mr-dxp',
     },
     rollupOptions: {
       external: ['react', 'react-dom', 'react/jsx-runtime'],

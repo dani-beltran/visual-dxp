@@ -62,7 +62,7 @@ export function createRuntimeContext(workflow: Workflow, options: RuntimeOptions
   }
 
   function reportFailure(error: unknown): void {
-    if (!signal.aborted) console.error('[Forma DXP]', error);
+    if (!signal.aborted) console.error('[Mr. DXP]', error);
   }
 
   function listen(
