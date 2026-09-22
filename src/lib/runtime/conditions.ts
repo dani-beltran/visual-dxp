@@ -1,9 +1,23 @@
+import type { getDateRange } from '../dateRange';
 import type { StepConfig } from '../types';
 import type { RuntimeContext } from './context';
 
-export function matchesCondition(config: StepConfig, context: RuntimeContext): boolean {
+export function matchesCondition(
+  config: StepConfig,
+  context: RuntimeContext,
+  dateRange: typeof getDateRange,
+): boolean {
   const { doc, win } = context;
   const type = config.conditionType ?? 'selector';
+  if (type === 'date-range') {
+    const [start, end] = dateRange(config);
+    const now = new Date();
+    const today =
+      config.conditionTimeZone === 'utc'
+        ? now.toISOString().slice(0, 10)
+        : `${String(now.getFullYear()).padStart(4, '0')}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    return today >= start && today <= end;
+  }
   if (type === 'selector') {
     if (!config.condition?.trim())
       throw new Error('Enter a CSS selector for the branch condition.');

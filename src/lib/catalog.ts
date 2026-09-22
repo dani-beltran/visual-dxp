@@ -211,6 +211,8 @@ export function stepSummary(kind: NodeKind, c: StepConfig): string {
     case 'fork': {
       const conditionType = c.conditionType ?? 'selector';
       switch (conditionType) {
+        case 'date-range':
+          return `Within ${c.conditionStartDate || '…'} to ${c.conditionEndDate || '…'} · ${c.conditionTimeZone === 'utc' ? 'UTC' : 'Visitor local'}`;
         case 'selector':
           return `${c.condition || 'Choose a selector'} exists on the page`;
         case 'device':

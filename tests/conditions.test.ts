@@ -38,6 +38,8 @@ const runtimes: ReturnType<typeof createRuntime>[] = [];
 const exportWindow = window as Window & { FormaDXP?: ReturnType<typeof createRuntime> };
 const originalUrl = window.location.href;
 beforeEach(() => {
+  vi.useFakeTimers({ toFake: ['Date'] });
+  vi.setSystemTime(new Date(2026, 8, 22, 12));
   document.body.innerHTML = '<p id="result">waiting</p>';
   window.history.replaceState(null, '', '?campaign=other&campaign=summer+sale&empty=&token=a%3Db');
   vi.spyOn(window.navigator, 'language', 'get').mockReturnValue('en-US');
@@ -61,6 +63,7 @@ afterEach(() => {
   exportWindow.FormaDXP?.destroy();
   delete exportWindow.FormaDXP;
   vi.restoreAllMocks();
+  vi.useRealTimers();
   window.localStorage.clear();
   window.sessionStorage.clear();
   window.history.replaceState(null, '', originalUrl);
@@ -68,6 +71,62 @@ afterEach(() => {
 });
 
 const cases: [string, StepConfig, boolean][] = [
+  [
+    'explicit local date range',
+    {
+      conditionType: 'date-range',
+      conditionStartDate: '2026-09-01',
+      conditionEndDate: '2026-09-30',
+      conditionTimeZone: 'local',
+    },
+    true,
+  ],
+  [
+    'UTC date range',
+    {
+      conditionType: 'date-range',
+      conditionStartDate: '2026-09-01',
+      conditionEndDate: '2026-09-30',
+      conditionTimeZone: 'utc',
+    },
+    true,
+  ],
+  [
+    'within date range',
+    {
+      conditionType: 'date-range',
+      conditionStartDate: '2026-09-01',
+      conditionEndDate: '2026-09-30',
+    },
+    true,
+  ],
+  [
+    'single-day date range',
+    {
+      conditionType: 'date-range',
+      conditionStartDate: '2026-09-22',
+      conditionEndDate: '2026-09-22',
+    },
+    true,
+  ],
+  [
+    'before date range',
+    {
+      conditionType: 'date-range',
+      conditionStartDate: '2026-09-23',
+      conditionEndDate: '2026-09-30',
+    },
+    false,
+  ],
+  [
+    'after date range',
+    {
+      conditionType: 'date-range',
+      conditionStartDate: '2026-09-01',
+      conditionEndDate: '2026-09-21',
+    },
+    false,
+  ],
   ['legacy selector', { condition: '#result' }, true],
   ['selector', { conditionType: 'selector', condition: '#missing' }, false],
   ['mobile', { conditionType: 'device', conditionValue: 'mobile' }, true],
@@ -224,6 +283,91 @@ describe('condition branching in preview and exported scripts', () => {
     );
   });
 
+  it.each([
+    [new Date(2026, 8, 21, 23, 59, 59, 999), false],
+    [new Date(2026, 8, 22, 0, 0, 0, 0), true],
+    [new Date(2026, 8, 30, 23, 59, 59, 999), true],
+    [new Date(2026, 9, 1, 0, 0, 0, 0), false],
+  ])('includes both local date boundaries at %s: %s', async (now, matches) => {
+    vi.setSystemTime(now);
+    const config: StepConfig = {
+      conditionType: 'date-range',
+      conditionStartDate: '2026-09-22',
+      conditionEndDate: '2026-09-30',
+    };
+    expect(await run(config)).toBe(matches ? 'yes' : 'no');
+    document.querySelector('#result')?.replaceChildren('waiting');
+    vi.spyOn(document, 'readyState', 'get').mockReturnValue('complete');
+    new Function('window', 'document', exportWorkflow(graph(config)))(window, document);
+    // Await execution directly: waitFor advances fake time across the midnight boundary.
+    await exportWindow.FormaDXP?.run();
+    expect(document.querySelector('#result')?.textContent).toBe(matches ? 'yes' : 'no');
+  });
+
+  it.each([
+    ['2026-09-21T23:59:59.999Z', false],
+    ['2026-09-22T00:00:00.000Z', true],
+    ['2026-09-30T23:59:59.999Z', true],
+    ['2026-10-01T00:00:00.000Z', false],
+  ] as const)('includes both UTC date boundaries at %s: %s', async (now, matches) => {
+    vi.setSystemTime(new Date(now));
+    const config: StepConfig = {
+      conditionType: 'date-range',
+      conditionStartDate: '2026-09-22',
+      conditionEndDate: '2026-09-30',
+      conditionTimeZone: 'utc',
+    };
+    expect(await run(config)).toBe(matches ? 'yes' : 'no');
+    document.querySelector('#result')?.replaceChildren('waiting');
+    vi.spyOn(document, 'readyState', 'get').mockReturnValue('complete');
+    new Function('window', 'document', exportWorkflow(graph(config)))(window, document);
+    await exportWindow.FormaDXP?.run();
+    expect(document.querySelector('#result')?.textContent).toBe(matches ? 'yes' : 'no');
+  });
+
+  it.each([new Date(2026, 8, 22, 0), new Date(2026, 8, 22, 23, 59, 59, 999)])(
+    'uses the selected calendar for a single-day range at local time %s',
+    async (now) => {
+      vi.setSystemTime(now);
+      for (const conditionTimeZone of [undefined, 'local', 'utc'] as const) {
+        const config: StepConfig = {
+          conditionType: 'date-range',
+          conditionStartDate: '2026-09-22',
+          conditionEndDate: '2026-09-22',
+          ...(conditionTimeZone ? { conditionTimeZone } : {}),
+        };
+        const expected = conditionTimeZone !== 'utc' || now.getUTCDate() === 22 ? 'yes' : 'no';
+        expect(await run(config)).toBe(expected);
+        document.querySelector('#result')?.replaceChildren('waiting');
+        vi.spyOn(document, 'readyState', 'get').mockReturnValue('complete');
+        new Function('window', 'document', exportWorkflow(graph(config)))(window, document);
+        await exportWindow.FormaDXP?.run();
+        expect(document.querySelector('#result')?.textContent).toBe(expected);
+      }
+    },
+  );
+
+  it('checks the date again on every run, including a leap day', async () => {
+    const instance = createRuntime(
+      graph({
+        conditionType: 'date-range',
+        conditionStartDate: '2028-02-29',
+        conditionEndDate: '2028-02-29',
+      }),
+    );
+    runtimes.push(instance);
+    for (const [now, expected] of [
+      [new Date(2028, 1, 28, 23, 59, 59, 999), 'no'],
+      [new Date(2028, 1, 29, 0), 'yes'],
+      [new Date(2028, 1, 29, 23, 59, 59, 999), 'yes'],
+      [new Date(2028, 2, 1, 0), 'no'],
+    ] as const) {
+      vi.setSystemTime(now);
+      await instance.run();
+      expect(document.querySelector('#result')?.textContent).toBe(expected);
+    }
+  });
+
   it('uses browser mobile hints when available, including explicit false', async () => {
     for (const mobile of [false, true]) {
       Object.defineProperty(window.navigator, 'userAgentData', {
@@ -357,6 +501,64 @@ describe('condition branching in preview and exported scripts', () => {
 });
 
 describe('condition persistence and validation', () => {
+  it.each(['UTC', 'Europe/Madrid', '', 42, null])(
+    'rejects unsupported date-range time zone %j',
+    async (conditionTimeZone) => {
+      const config = {
+        conditionType: 'date-range',
+        conditionStartDate: '2026-09-01',
+        conditionEndDate: '2026-09-30',
+        conditionTimeZone,
+      } as StepConfig;
+      expect(validateWorkflow(graph(config))).toHaveLength(1);
+      expect(() => exportWorkflow(graph(config))).toThrow();
+      await expect(run(config)).rejects.toThrow('Choose visitor local time or UTC');
+      expect(document.querySelector('#result')?.textContent).toBe('waiting');
+    },
+  );
+  it.each([
+    {},
+    { conditionStartDate: '2026-09-01' },
+    { conditionEndDate: '2026-09-30' },
+    { conditionStartDate: '', conditionEndDate: '' },
+    { conditionStartDate: '2026-09-30', conditionEndDate: '2026-09-01' },
+    { conditionStartDate: '2026-02-29', conditionEndDate: '2026-03-01' },
+    { conditionStartDate: '1900-02-29', conditionEndDate: '1900-03-01' },
+    { conditionStartDate: '2026-04-31', conditionEndDate: '2026-05-01' },
+    { conditionStartDate: '2026-01-01', conditionEndDate: '2026-02-30' },
+    { conditionStartDate: '2026-13-01', conditionEndDate: '2027-01-01' },
+    { conditionStartDate: '2026-09-00', conditionEndDate: '2026-09-30' },
+    { conditionStartDate: '2026-9-1', conditionEndDate: '2026-09-30' },
+    { conditionStartDate: '2026-09-01T00:00:00Z', conditionEndDate: '2026-09-30' },
+    { conditionStartDate: ' 2026-09-01', conditionEndDate: '2026-09-30' },
+    { conditionStartDate: '0000-01-01', conditionEndDate: '2026-09-30' },
+    { conditionStartDate: '2026-09-01', conditionEndDate: '10000-01-01' },
+    { conditionStartDate: 42, conditionEndDate: '2026-09-30' },
+    { conditionStartDate: '2026-09-01', conditionEndDate: null },
+  ])('rejects invalid date ranges at export and runtime: %j', async (dates) => {
+    const config = { conditionType: 'date-range', ...dates } as StepConfig;
+    expect(validateWorkflow(graph(config))).toEqual([
+      { nodeId: 'condition', message: expect.any(String) },
+    ]);
+    expect(() => exportWorkflow(graph(config))).toThrow();
+    await expect(run(config)).rejects.toThrow();
+    expect(document.querySelector('#result')?.textContent).toBe('waiting');
+  });
+
+  it.each(['0001-01-01', '2000-02-29', '2028-02-29', '9999-12-31'])(
+    'accepts valid calendar date %s',
+    (date) => {
+      expect(
+        validateWorkflow(
+          graph({
+            conditionType: 'date-range',
+            conditionStartDate: date,
+            conditionEndDate: date,
+          }),
+        ),
+      ).toEqual([]);
+    },
+  );
   it.each(cases)('preserves %s through JSON and AI operations', (_label, config) => {
     const workflow = JSON.parse(JSON.stringify(graph(config)));
     expect(isWorkflow(workflow)).toBe(true);
@@ -398,10 +600,14 @@ describe('condition persistence and validation', () => {
     expect(() => exportWorkflow(graph(config as StepConfig))).toThrow();
   });
 
-  it.each(['conditionType', 'conditionKey', 'conditionValue'])(
-    'rejects non-string %s on import',
-    (field) => {
-      expect(isWorkflow(graph({ [field]: 42 }))).toBe(false);
-    },
-  );
+  it.each([
+    'conditionType',
+    'conditionKey',
+    'conditionValue',
+    'conditionStartDate',
+    'conditionEndDate',
+    'conditionTimeZone',
+  ])('rejects non-string %s on import', (field) => {
+    expect(isWorkflow(graph({ [field]: 42 }))).toBe(false);
+  });
 });

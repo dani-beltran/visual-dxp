@@ -1,3 +1,4 @@
+import { getDateRange } from './dateRange';
 import { isNoteMarks } from './noteText';
 import { getRuntimeSource } from './runtime';
 import { elementTriggerEvents, validateTriggerConfig } from './triggers';
@@ -109,6 +110,9 @@ export function validateWorkflow(workflow: Workflow): ValidationIssue[] {
       'conditionType',
       'conditionKey',
       'conditionValue',
+      'conditionStartDate',
+      'conditionEndDate',
+      'conditionTimeZone',
       'contentType',
       'content',
       'position',
@@ -194,6 +198,13 @@ export function validateWorkflow(workflow: Workflow): ValidationIssue[] {
         break;
       case 'fork':
         switch (config.conditionType ?? 'selector') {
+          case 'date-range':
+            try {
+              getDateRange(config);
+            } catch (error) {
+              add((error as Error).message, node.id);
+            }
+            break;
           case 'selector':
             selector(config.condition, node.id, 'Choose a CSS selector for the branch condition.');
             break;

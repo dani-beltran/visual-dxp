@@ -1,3 +1,4 @@
+import { getDateRange } from '../dateRange';
 import type { Workflow } from '../types';
 import { startBehaviorTrigger } from './behavior-triggers';
 import { matchesCondition } from './conditions';
@@ -16,6 +17,7 @@ const runtimeModules = {
   createRuntimeContext,
   createExecution,
   matchesCondition,
+  getDateRange,
   showPopover,
   startTriggers,
   startBehaviorTrigger,

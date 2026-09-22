@@ -479,6 +479,7 @@ export function NodeInspector({
                 <option value="device">User device</option>
                 <option value="language">User language</option>
                 <option value="referrer">Referrer domain</option>
+                <option value="date-range">Within date range</option>
                 <option value="query-param">URL search parameter</option>
                 <option value="cookie">Cookies</option>
               </Select>
@@ -548,6 +549,48 @@ export function NodeInspector({
                   spellCheck={false}
                 />
               </Field>
+            )}
+            {conditionType === 'date-range' && (
+              <>
+                <Field label="Date based on" htmlFor={id('condition-time-zone')}>
+                  <Select
+                    id={id('condition-time-zone')}
+                    value={config.conditionTimeZone ?? 'local'}
+                    onChange={(event) =>
+                      update({
+                        conditionTimeZone: event.target.value as StepConfig['conditionTimeZone'],
+                      })
+                    }
+                  >
+                    <option value="local">Visitor local date</option>
+                    <option value="utc">UTC</option>
+                  </Select>
+                </Field>
+                <Field label="Start date" htmlFor={id('condition-start-date')}>
+                  <input
+                    id={id('condition-start-date')}
+                    type="date"
+                    min="0001-01-01"
+                    max={config.conditionEndDate || '9999-12-31'}
+                    value={config.conditionStartDate ?? ''}
+                    onChange={(event) => update({ conditionStartDate: event.target.value })}
+                  />
+                </Field>
+                <Field label="End date" htmlFor={id('condition-end-date')}>
+                  <input
+                    id={id('condition-end-date')}
+                    type="date"
+                    min={config.conditionStartDate || '0001-01-01'}
+                    max="9999-12-31"
+                    value={config.conditionEndDate ?? ''}
+                    onChange={(event) => update({ conditionEndDate: event.target.value })}
+                  />
+                </Field>
+                <p className="dxp-inspector-hint">
+                  True when the current date is within this range. Both dates are included, using{' '}
+                  {config.conditionTimeZone === 'utc' ? 'UTC' : 'the visitor’s local time zone'}.
+                </p>
+              </>
             )}
             {variableCondition && (
               <>

@@ -1,3 +1,4 @@
+import type { getDateRange } from '../dateRange';
 import type { Workflow } from '../types';
 import type { matchesCondition } from './conditions';
 import type { RuntimeContext } from './context';
@@ -6,13 +7,14 @@ import type { WorkflowRuntime } from './types';
 
 interface ExecutionModules {
   matchesCondition: typeof matchesCondition;
+  getDateRange: typeof getDateRange;
   showPopover: typeof showPopover;
 }
 
 export function createExecution(
   workflow: Workflow,
   context: RuntimeContext,
-  { matchesCondition, showPopover }: ExecutionModules,
+  { matchesCondition, getDateRange, showPopover }: ExecutionModules,
 ): WorkflowRuntime['run'] {
   const { doc, win, signal, nodes, fetcher, maxSteps, aborted, log, wait, selectorElements } =
     context;
@@ -130,7 +132,7 @@ export function createExecution(
             break;
           }
           case 'fork':
-            selectedHandle = matchesCondition(config, context) ? 'true' : 'false';
+            selectedHandle = matchesCondition(config, context, getDateRange) ? 'true' : 'false';
             break;
           case 'loop':
             loopIterations = config.iterations ?? 3;

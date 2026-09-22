@@ -13,6 +13,7 @@ export type ConditionType =
   | 'device'
   | 'language'
   | 'referrer'
+  | 'date-range'
   | 'query-param'
   | 'cookie';
 export type TriggerEvent =
@@ -62,6 +63,12 @@ export interface StepConfig {
   conditionKey?: string;
   /** Expected device, language, referrer domain, or stored string (including empty). */
   conditionValue?: string;
+  /** Inclusive start date in YYYY-MM-DD format, using conditionTimeZone. */
+  conditionStartDate?: string;
+  /** Inclusive end date in YYYY-MM-DD format, using conditionTimeZone. */
+  conditionEndDate?: string;
+  /** Calendar used by date-range conditions. Defaults to the visitor's local time zone. */
+  conditionTimeZone?: 'local' | 'utc';
   iterations?: number;
   contentType?: 'html' | 'iframe';
   content?: string;

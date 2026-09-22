@@ -64,7 +64,7 @@ async function change(label: string, value: string) {
 it('edits each condition type with the corresponding fields and preserves legacy selectors', async () => {
   expect(field('Condition type').value).toBe('selector');
   expect(field('Element exists').value).toBe('#legacy');
-  expect([...field('Condition type').querySelectorAll('option')]).toHaveLength(6);
+  expect([...field('Condition type').querySelectorAll('option')]).toHaveLength(7);
   await change('Condition type', 'device');
   expect(field('Device is').value).toBe('desktop');
   await change('Device is', 'mobile');
@@ -103,4 +103,47 @@ it('edits each condition type with the corresponding fields and preserves legacy
   expect(field('Element exists').value).toBe('#legacy');
   await change('Element exists', '#new');
   expect(current.condition).toBe('#new');
+});
+
+it('edits inclusive date ranges and keeps the dates when switching condition types', async () => {
+  await change('Condition type', 'date-range');
+  expect(field('Condition type').textContent).toContain('Within date range');
+  expect(field('Date based on').value).toBe('local');
+  expect(field('Start date').type).toBe('date');
+  expect(field('End date').type).toBe('date');
+  expect(field('Start date').value).toBe('');
+  expect(field('End date').value).toBe('');
+  expect(stepSummary('fork', current)).toBe('Within … to … · Visitor local');
+  expect(host.textContent).not.toContain('Value equals');
+  await change('Start date', '2026-09-01');
+  await change('End date', '2026-09-30');
+  expect(current).toMatchObject({
+    conditionType: 'date-range',
+    conditionStartDate: '2026-09-01',
+    conditionEndDate: '2026-09-30',
+  });
+  expect(field('Start date').getAttribute('max')).toBe('2026-09-30');
+  expect(field('End date').getAttribute('min')).toBe('2026-09-01');
+  expect(stepSummary('fork', current)).toBe('Within 2026-09-01 to 2026-09-30 · Visitor local');
+  expect(host.textContent).toContain('Both dates are included');
+  expect(host.textContent).toContain('visitor’s local time zone');
+  await change('Date based on', 'utc');
+  expect(current).toMatchObject({
+    conditionTimeZone: 'utc',
+    conditionStartDate: '2026-09-01',
+    conditionEndDate: '2026-09-30',
+  });
+  expect(stepSummary('fork', current)).toBe('Within 2026-09-01 to 2026-09-30 · UTC');
+  expect(host.textContent).toContain('Both dates are included, using UTC.');
+  await change('Condition type', 'selector');
+  expect(field('Element exists').value).toBe('#legacy');
+  await change('Condition type', 'date-range');
+  expect(field('Date based on').value).toBe('utc');
+  expect(field('Start date').value).toBe('2026-09-01');
+  expect(field('End date').value).toBe('2026-09-30');
+  await change('Date based on', 'local');
+  expect(current.conditionTimeZone).toBe('local');
+  await change('End date', '');
+  expect(current.conditionEndDate).toBe('');
+  expect(stepSummary('fork', current)).toBe('Within 2026-09-01 to … · Visitor local');
 });
