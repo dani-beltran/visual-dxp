@@ -277,17 +277,36 @@ The demo configures the reusable builder with the same-origin endpoint:
 <VisualDXPBuilder ai={{ endpoint: '/api/ai/chat', credentials: 'same-origin' }} />
 ```
 
-Set `OPENAI_API_KEY` in `.env.local` to use the integrated local LangChain agent. `OPENAI_MODEL` defaults to `gpt-6-luna`. Alternatively set `LANGGRAPH_API_URL`, `LANGGRAPH_ASSISTANT_ID` (default `workflow_editor`), and `LANGSMITH_API_KEY` for a remote deployment. The remote graph needs its own `OPENAI_API_KEY`; the Next.js proxy does not. Optional `LANGSMITH_TRACING`, `LANGSMITH_PROJECT`, `LANGSMITH_ENDPOINT`, and `LANGSMITH_WORKSPACE_ID` configure tracing. All provider settings stay server-side; none belong in `NEXT_PUBLIC_*`, `VITE_*`, client props, or browser request headers.
+AI is enabled **only** by an explicitly supplied, nonempty `ai.endpoint`. There is no implicit endpoint or environment-based opt-in. Omit `ai`, or pass an empty endpoint, to hide both the assistant and AI Settings; saved browser settings do not enable either feature.
 
-`GET /api/ai/health` reports `{ configured, mode }` based on configuration presence, not verified credentials. Without configuration the editor still works and chat returns a safe 503 error. No AI responses are simulated by the app. This migration does not read or copy secrets from the original backend.
+```tsx
+// Assistant and AI Settings tab (default when endpoint is supplied).
+<VisualDXPBuilder ai={{ endpoint: '/api/ai/chat', credentials: 'same-origin' }} />
 
-The application rejects browser requests from other origins. This is an origin protection, not authentication: neither original project supplies login or workflow authorization. Keep private deployments behind your host's existing access controls and quotas. The development and start scripts bind to loopback; when required, use `npm start -- --hostname 0.0.0.0` behind your hosting access controls. See [AI integration](docs/ai-integration.md), [LangChain/deployment setup](docs/langchain.md), and [migration verification](docs/migration.md).
+// Assistant only. Existing settings stay saved; unlock/lock/remove remain in chat.
+<VisualDXPBuilder ai={{ endpoint: 'https://builder.example/api/ai/chat', showSettings: false }} />
+
+// No AI UI or AI requests, even if encrypted browser settings already exist.
+<VisualDXPBuilder />
+```
+
+AI Settings includes a masked key field, reveal toggle, model ID, encryption passphrase, save/unlock/lock/remove controls, active configuration status, and the configured server origin. The tab follows Canvas and Activity and supports Left/Right, Home/End, and roving tab focus.
+
+Browser overrides require HTTPS, an authenticated application request, and a complete key/model pair. Keys are encrypted with AES-256-GCM and PBKDF2-SHA-256 (600,000 iterations) using a fresh random salt and IV. Only the encrypted key, model, and destination binding are stored under `dlb-dxp-ai-settings-v1`, separately from workflow/activity data. Reload requires unlocking; locking clears in-memory references and aborts active AI requests. Changing server origins requires explicit confirmation for the unlocked session. Removing settings restores server behavior; hiding the tab does not remove them.
+
+> Your API key is stored encrypted in this browser’s localStorage. When you use the AI assistant, it is sent over HTTPS to the configured AI server, which uses it to contact OpenAI without saving it. It is never included in your published site or workflow exports.
+
+Origin isolation prevents ordinary access by other origins, but cannot protect an unlocked key from malicious scripts within the builder or privileged browser extensions. JavaScript strings cannot be reliably zeroed; locking drops references, and garbage collection controls reclamation. Use a strong, unique passphrase and trusted builder scripts.
+
+Without a browser override, `OPENAI_API_KEY`/`OPENAI_MODEL` and optional `LANGGRAPH_API_URL` retain their existing behavior. Browser overrides always run through the local server-side OpenAI tool loop, never remote LangGraph. They do not enter LangChain tracing, agent state, or checkpoints. They take effect on the next request without editing `.env.local` or restarting. Locked, damaged, or incomplete settings block AI rather than falling back. `ai.headers` is for application authentication/CSRF only; the reserved provider header is populated exclusively from unlocked settings.
+
+The repository has no existing account or workflow authorization system. The integrated route fails closed for browser overrides and production requests unless the host supplies authorization. Integrate your session and workflow permissions through `AIAccessPolicy`, or use the documented trusted gateway token. An OpenAI key and CORS are never application authentication. See [AI integration and deployment requirements](docs/ai-integration.md) and [server execution modes](docs/langchain.md).
 
 ## Visual element selection
 
 Trigger events, Update element, and anchored Popover nodes expose **Select on website**. Enter a URL, hover to highlight elements, click to retain the selection, and choose **Use element**. You can also enter a CSS selector manually.
 
-Browsers only permit direct iframe DOM access for same-origin pages. For websites on another origin, copy `dist/picker-bridge.js` to that website and include:
+The builder uses opaque sandbox origins for all untrusted previews, including same-origin URLs. It never accesses their DOM directly. For external websites, copy `dist/picker-bridge.js` to that website and include:
 
 ```html
 <script src="/picker-bridge.js" data-parent-origin="https://your-editor.example"></script>
@@ -299,7 +318,14 @@ The target website must permit embedding via its `Content-Security-Policy: frame
 
 See [MDN: iframe contentDocument](https://developer.mozilla.org/en-US/docs/Web/API/HTMLIFrameElement/contentDocument) and [MDN: postMessage](https://developer.mozilla.org/en-US/docs/Web/API/Window/postMessage) for the browser model.
 
-**Live workflow preview requires a same-origin website.** The cross-origin bridge enables selection only. To execute on another origin, export the workflow and install the script on that target website.
+**Live previews run in an isolated sandbox origin.** The included demo works automatically. On an external preview website, install the runtime bridge in that website's bundle:
+
+```ts
+import { installPreviewBridge } from 'dlb-dxp';
+installPreviewBridge('https://your-editor.example');
+```
+
+The bridge accepts workflow run/stop commands only from the exact parent origin. Parent messages validate the iframe source, sandbox origin (`null`), protocol and random channel; they carry no settings or credentials. Sandboxing disables access to cookies/localStorage and some integrations, so storage conditions take their unavailable-data branch. Test those integrations on a dedicated preview origin outside the builder. Serve published sites on a different origin from the builder; paths and storage prefixes do not isolate browser storage. Never install the builder or its settings code into a published site.
 
 ## JavaScript export and runtime
 

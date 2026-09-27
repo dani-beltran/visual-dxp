@@ -79,6 +79,7 @@ async function startNext(remoteUrl) {
       env: {
         ...process.env,
         OPENAI_API_KEY: '',
+        AI_APPLICATION_TOKEN: 'smoke-application-token',
         LANGGRAPH_API_URL: remoteUrl,
         LANGGRAPH_ASSISTANT_ID: 'workflow_editor',
         LANGSMITH_API_KEY: 'smoke-only-placeholder',
@@ -137,7 +138,12 @@ const input = {
 const post = (base, body = JSON.stringify(input), headers = {}, extra = {}) =>
   fetch(`${base}/api/ai/chat`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', Origin: base, ...headers },
+    headers: {
+      'Content-Type': 'application/json',
+      Origin: base,
+      Authorization: 'Bearer smoke-application-token',
+      ...headers,
+    },
     body,
     ...extra,
   });

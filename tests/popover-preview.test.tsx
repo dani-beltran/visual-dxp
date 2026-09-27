@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { NodeInspector } from '../src/components/NodeInspector';
 import { PopoverPreview } from '../src/components/PopoverPreview';
 import type { StepConfig, WorkflowNode } from '../src/lib/types';
+import { connectPreview, mockDemoFetch } from './helpers/preview';
 
 let host: HTMLDivElement;
 let root: Root;
@@ -13,6 +14,7 @@ let mounted: boolean;
 
 beforeEach(() => {
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
+  mockDemoFetch();
   host = document.createElement('div');
   document.body.appendChild(host);
   root = createRoot(host);
@@ -65,6 +67,7 @@ async function loadWebsite(html = '<main><h1>Atelier</h1></main>') {
   if (!doc.documentElement) doc.appendChild(doc.createElement('html'));
   if (!doc.body) doc.documentElement.appendChild(doc.createElement('body'));
   doc.body.innerHTML = html;
+  connectPreview(frame);
   await act(async () => frame.dispatchEvent(new Event('load')));
   return { frame, doc };
 }
@@ -118,7 +121,7 @@ describe('fullscreen popover preview', () => {
       expect(
         document.querySelector('[role="dialog"][aria-label="Fullscreen popover preview"]'),
       ).not.toBeNull();
-      expect(websiteFrame().getAttribute('src')).toBe('/demo-site.html');
+      expect(websiteFrame().getAttribute('sandbox')).toBe('allow-scripts');
 
       const { doc } = await loadWebsite();
       expect(doc.querySelector('main h1')?.textContent).toBe('Atelier');
@@ -162,6 +165,7 @@ describe('fullscreen popover preview', () => {
     }));
     anchor.scrollIntoView = vi.fn();
 
+    connectPreview(frame);
     await act(async () => frame.dispatchEvent(new Event('load')));
     expect(panel(doc).style.left).toBe('180px');
     expect(panel(doc).style.top).toBe('192px');

@@ -99,64 +99,55 @@ describe('website element selection', () => {
     session.destroy();
   });
 
-  it('reattaches on same-origin iframe navigation and cleans the previous document', async () => {
+  it('isolates even same-origin pages and validates the bridge source, origin and fresh navigation channel', async () => {
     vi.useFakeTimers();
     Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
     const host = document.createElement('div');
     document.body.appendChild(host);
     const root = createRoot(host);
-    const oldPage = document.createElement('iframe');
-    document.body.appendChild(oldPage);
-    const nextPage = document.createElement('iframe');
-    document.body.appendChild(nextPage);
-    const oldDoc = oldPage.contentDocument!;
-    const nextDoc = nextPage.contentDocument!;
-    oldDoc.body.innerHTML = '<button id="target">Old page</button>';
-    nextDoc.body.innerHTML = '<button id="target">Next page</button>';
-    await act(async () => {
+    await act(async () =>
       root.render(
         createElement(ElementPicker, {
-          url: '/demo-site.html',
-          initialSelector: '#target',
+          url: 'https://preview.test',
           onSelect: vi.fn(),
           onClose: vi.fn(),
         }),
-      );
-    });
+      ),
+    );
     const preview = host.querySelector('iframe')!;
-    const documentGetter = vi.spyOn(preview, 'contentDocument', 'get').mockReturnValue(oldDoc);
-    vi.spyOn(preview, 'contentWindow', 'get').mockReturnValue({
-      location: { href: 'http://localhost/demo-site.html' },
-      postMessage: vi.fn(),
-    } as unknown as Window);
-    await act(async () => {
-      preview.dispatchEvent(new Event('load'));
-    });
-    expect(oldDoc.querySelector('[data-dlb-dxp-picker]')).not.toBeNull();
-    expect(host.textContent).toContain('Selection mode is on');
-    documentGetter.mockReturnValue(nextDoc);
-    await act(async () => {
-      preview.dispatchEvent(new Event('load'));
-    });
-    expect(oldDoc.querySelector('[data-dlb-dxp-picker]')).toBeNull();
-    expect(nextDoc.querySelector('[data-dlb-dxp-picker]')).not.toBeNull();
-    expect(
-      nextDoc.querySelector<HTMLElement>('[data-dlb-dxp-picker] > div:last-child')!.style.display,
-    ).toBe('block');
-    documentGetter.mockReturnValue(null);
-    await act(async () => {
-      preview.dispatchEvent(new Event('load'));
-    });
-    expect(nextDoc.querySelector('[data-dlb-dxp-picker]')).toBeNull();
+    const post = vi.spyOn(preview.contentWindow!, 'postMessage').mockImplementation(() => {});
+    const access = vi.spyOn(preview, 'contentDocument', 'get');
+    await act(async () => preview.dispatchEvent(new Event('load')));
+    expect(preview.getAttribute('sandbox')).toBe('allow-scripts');
+    expect(access).not.toHaveBeenCalled();
+    const first = post.mock.calls.at(-1)![0];
+    const receive = async (origin: string, source: Window | null, channel = first.channel) =>
+      act(async () =>
+        window.dispatchEvent(
+          new MessageEvent('message', {
+            origin,
+            source,
+            data: { protocol: first.protocol, channel, type: 'ready' },
+          }),
+        ),
+      );
+    await receive('https://preview.test', preview.contentWindow);
     expect(host.textContent).toContain('Connecting to website');
-    await act(async () => {
-      vi.advanceTimersByTime(8000);
-    });
+    await receive('null', window);
+    expect(host.textContent).toContain('Connecting to website');
+    await receive('null', preview.contentWindow, 'wrong');
+    expect(host.textContent).toContain('Connecting to website');
+    await receive('null', preview.contentWindow);
+    expect(host.textContent).toContain('Selection mode is on');
+    await act(async () => preview.dispatchEvent(new Event('load')));
+    expect(post.mock.calls.at(-1)![0].channel).not.toBe(first.channel);
+    await receive('null', preview.contentWindow);
+    expect(host.textContent).toContain('Connecting to website');
+    await act(async () => vi.advanceTimersByTime(8000));
     expect(host.textContent).toContain('Connection required');
-    await act(async () => {
-      root.unmount();
-    });
-    expect(nextDoc.querySelector('[data-dlb-dxp-picker]')).toBeNull();
+    await act(async () => root.unmount());
+    expect(post.mock.calls.at(-1)![0].type).toBe('stop');
+    host.remove();
   });
 });
 

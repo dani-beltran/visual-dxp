@@ -20,6 +20,7 @@ import {
   Command,
   Globe2,
   History,
+  KeyRound,
   Layers2,
   Maximize,
   Plus,
@@ -50,6 +51,7 @@ import {
   requestAIChat,
   workflowFingerprint,
 } from '../lib/ai';
+import { AISettingsStore } from '../lib/aiSettings';
 import { catalog, createNode, defaultWorkflow } from '../lib/catalog';
 import { validateWorkflow } from '../lib/export';
 import { duplicateNode, framesFirst, groupNodes, nodeSize, removeNodes } from '../lib/frames';
@@ -67,6 +69,7 @@ import type {
 } from '../lib/types';
 import { useDialogFocus } from '../lib/useDialogFocus';
 import { ActivityPanel } from './ActivityPanel';
+import { AISettings } from './AISettings';
 import { CanvasChat } from './CanvasChat';
 import { CanvasHelp } from './CanvasHelp';
 import { EdgeInspector } from './EdgeInspector';
@@ -157,7 +160,27 @@ function Builder({
     getActivitySnapshot,
     getActivitySnapshot,
   );
-  const [view, setView] = useState<'canvas' | 'activity'>('canvas');
+  const [view, setView] = useState<'canvas' | 'activity' | 'settings'>('canvas');
+  const aiEnabled = Boolean(ai?.endpoint?.trim());
+  const showAISettings = aiEnabled && ai?.showSettings !== false;
+  const [aiSettings] = useState(() => new AISettingsStore());
+  useEffect(() => {
+    if (!aiEnabled) {
+      aiSettings.lock();
+      return;
+    }
+    aiSettings.refresh();
+    window.addEventListener('storage', aiSettings.refresh);
+    window.addEventListener('pagehide', aiSettings.lock);
+    return () => {
+      aiSettings.lock();
+      window.removeEventListener('storage', aiSettings.refresh);
+      window.removeEventListener('pagehide', aiSettings.lock);
+    };
+  }, [aiEnabled, aiSettings]);
+  useEffect(() => {
+    if (!showAISettings && view === 'settings') setView('canvas');
+  }, [showAISettings, view]);
   const viewId = useId();
   const [workflow, setWorkflow] = useState<Workflow>(() => {
     if (persistenceKey)
@@ -297,7 +320,7 @@ function Builder({
   );
   // biome-ignore lint/correctness/useExhaustiveDependencies: Flush pending edits when the activity destination or author changes, as well as on unmount.
   useEffect(() => flushActivity, [flushActivity, store, activityUser]);
-  function changeView(next: 'canvas' | 'activity') {
+  function changeView(next: 'canvas' | 'activity' | 'settings') {
     flushActivity();
     setModal(null);
     setView(next);
@@ -713,9 +736,11 @@ function Builder({
     }
   }
   async function sendAIMessage(messages: AIChatMessage[], signal: AbortSignal) {
-    if (!ai?.endpoint) throw new Error('Connect the assistant service to start chatting.');
+    if (!aiEnabled || !ai) throw new Error('Connect the assistant service to start chatting.');
     const snapshot = copyWorkflow(current.current);
     const baseline = workflowFingerprint(snapshot);
+    const controller = new AbortController();
+    const override = aiSettings.forRequest(ai.endpoint, controller);
     const response = await requestAIChat(
       ai,
       {
@@ -723,8 +748,9 @@ function Builder({
         workflow: snapshot,
         selectedNodeIds: selectedId ? [selectedId] : [],
       },
-      signal,
-    );
+      AbortSignal.any([signal, controller.signal]),
+      override,
+    ).finally(() => aiSettings.finishRequest(controller));
     signal.throwIfAborted();
     if (baseline !== workflowFingerprint(current.current)) {
       throw new Error(
@@ -756,14 +782,18 @@ function Builder({
           onKeyDown={(event) => {
             if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
             event.preventDefault();
+            const tabs = showAISettings
+              ? (['canvas', 'activity', 'settings'] as const)
+              : (['canvas', 'activity'] as const);
+            const index = tabs.indexOf(view as 'canvas' | 'activity');
             const next =
               event.key === 'Home'
-                ? 'canvas'
+                ? tabs[0]
                 : event.key === 'End'
-                  ? 'activity'
-                  : view === 'canvas'
-                    ? 'activity'
-                    : 'canvas';
+                  ? tabs[tabs.length - 1]
+                  : tabs[
+                      (index + (event.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length
+                    ];
             changeView(next);
             document.getElementById(`${viewId}-${next}-tab`)?.focus();
           }}
@@ -792,6 +822,20 @@ function Builder({
           >
             <History size={15} /> Activity
           </button>
+          {showAISettings && (
+            <button
+              type="button"
+              role="tab"
+              id={`${viewId}-settings-tab`}
+              aria-selected={view === 'settings'}
+              aria-controls={`${viewId}-settings-panel`}
+              tabIndex={view === 'settings' ? 0 : -1}
+              className={view === 'settings' ? 'active' : ''}
+              onClick={() => changeView('settings')}
+            >
+              <KeyRound size={15} /> AI Settings
+            </button>
+          )}
         </div>
         <span className="dxp-toolbar-divider" />
         <span className="dxp-save-state">
@@ -998,13 +1042,16 @@ function Builder({
                   </button>
                 </div>
                 <div className="dxp-canvas-assistants">
-                  <CanvasChat
-                    open={canvasAssistant === 'chat'}
-                    onOpenChange={toggleChat}
-                    configured={!!ai?.endpoint}
-                    selectedLabel={selected?.data.label}
-                    onSend={sendAIMessage}
-                  />
+                  {aiEnabled && (
+                    <CanvasChat
+                      open={canvasAssistant === 'chat'}
+                      onOpenChange={toggleChat}
+                      configured={aiEnabled}
+                      settings={<AISettings store={aiSettings} endpoint={ai!.endpoint} compact />}
+                      selectedLabel={selected?.data.label}
+                      onSend={sendAIMessage}
+                    />
+                  )}
                   <CanvasHelp open={canvasAssistant === 'help'} onOpenChange={toggleHelp} />
                 </div>
               </Panel>
@@ -1066,6 +1113,17 @@ function Builder({
       >
         {view === 'activity' && <ActivityPanel entries={activity} />}
       </div>
+      {showAISettings && (
+        <div
+          className="dxp-work-area"
+          role="tabpanel"
+          id={`${viewId}-settings-panel`}
+          aria-labelledby={`${viewId}-settings-tab`}
+          hidden={view !== 'settings'}
+        >
+          {view === 'settings' && <AISettings store={aiSettings} endpoint={ai!.endpoint} />}
+        </div>
+      )}
       <footer className="dxp-footer">
         <span>
           <span className="dxp-status-dot" />

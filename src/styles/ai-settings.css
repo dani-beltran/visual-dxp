@@ -1,0 +1,92 @@
+.dxp-ai-settings {
+  width: min(100%, 760px);
+  margin: 0 auto;
+  padding: 28px 36px;
+  overflow: auto;
+  color: var(--dxp-text);
+  font-size: 13px;
+  line-height: 1.65;
+}
+.dxp-ai-settings h2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 8px 0 20px;
+  font-size: 24px;
+}
+.dxp-ai-settings-note,
+.dxp-ai-destination {
+  color: var(--dxp-muted);
+}
+.dxp-ai-destination strong {
+  overflow-wrap: anywhere;
+}
+.dxp-ai-settings form {
+  display: grid;
+  gap: 8px;
+  margin-top: 24px;
+}
+.dxp-ai-settings label {
+  margin-top: 8px;
+  font-weight: 600;
+}
+.dxp-ai-settings input {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border: 1px solid var(--dxp-line);
+  border-radius: 8px;
+  background: var(--dxp-surface);
+  color: var(--dxp-text);
+  font: inherit;
+}
+.dxp-ai-settings input:focus-visible {
+  outline: 2px solid var(--dxp-focus);
+  outline-offset: 2px;
+}
+.dxp-ai-key-input {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.dxp-ai-settings-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+.dxp-ai-origin-confirm {
+  margin-top: 16px;
+  padding: 12px;
+  border: 1px solid var(--dxp-line);
+  border-radius: 8px;
+  overflow-wrap: anywhere;
+}
+.dxp-ai-settings.compact {
+  padding: 12px 16px;
+  margin: 0;
+  font-size: 11px;
+  flex-shrink: 0;
+  max-height: 230px;
+  border-bottom: 1px solid var(--dxp-line);
+}
+.dxp-ai-settings.compact p {
+  margin: 4px 0;
+}
+.dxp-ai-settings.compact form {
+  margin-top: 8px;
+}
+@media (max-width: 640px) {
+  .dxp-ai-settings {
+    padding: 20px;
+  }
+}
+
+.dxp-ai-settings > p {
+  margin: 0 0 10px;
+}
+
+.dxp-ai-settings form + p {
+  margin-top: 24px;
+}

@@ -1,9 +1,11 @@
-import { createAgent } from 'langchain';
-import { ChatOpenAI } from '@langchain/openai';
 import { AIMessage, HumanMessage } from '@langchain/core/messages';
-import { applyWorkflowOperations, parseAIChatResponse } from './workflow/ai';
-import type { AIChatRequest, AIChatResponse } from './workflow/ai';
+import { ChatOpenAI } from '@langchain/openai';
+import { createAgent } from 'langchain';
+import OpenAI from 'openai';
+import { type BrowserAIOverride, validAIKey, validAIModel } from '../../lib/aiCredentials';
 import { createWorkflowTools } from './tools';
+import type { AIChatRequest, AIChatResponse } from './workflow/ai';
+import { applyWorkflowOperations, parseAIChatResponse } from './workflow/ai';
 
 export class AIServiceError extends Error {
   constructor(
@@ -24,7 +26,100 @@ Format selected note text using noteMarks: an array of sorted, non-overlapping r
 Frames are existing top-level non-executable containers; preserve their dimensions and parentId membership. Child positions are relative to their frame. Removing a frame releases its children at their absolute positions without deleting them. You may rename, move or remove frames using existing tools, but do not connect them. Only fork has true/false output handles. Only loop has body/done handles: body runs each iteration and done runs after all iterations; never add a back edge. Other executable nodes have no named output handle. Notes cannot have incoming or outgoing edges and never run. Triggers cannot have incoming edges. Cycles are unsupported. Connections do not pass variables or HTTP response data. A fork uses conditionType: selector (default, CSS selector in condition), device (conditionValue desktop/mobile), language (conditionValue language tag such as en or en-US; a base language matches its regional variants using the primary browser language), referrer (conditionValue exact domain such as example.com; ignores protocol, port, path, query, and fragment; subdomains are distinct), date-range (conditionStartDate and conditionEndDate in YYYY-MM-DD format; both required, end on or after start; conditionTimeZone is local (default, visitor's local date) or utc (current UTC date for all visitors), including both entire days in the selected time zone; checked when the node runs, not a scheduled trigger), time-of-day (conditionStartTime and conditionEndTime in 24-hour HH:MM format, both required; conditionTimeZone is local by default or utc; includes both entire selected minutes; an earlier end crosses midnight, equal times match only that minute; checked every time the node runs, not a scheduled trigger), query-param/cookie (conditionKey and exact conditionValue string, including an empty string). The cookie condition checks readable cookies, localStorage, and sessionStorage, taking true if any source matches. Missing or inaccessible visitor data takes the false output when no source matches. The cookie action writes or updates a host-only cookie for all paths (Path=/), with SameSite=Lax and Secure on HTTPS. cookieName is required and cannot contain spaces or cookie separators; cookieValue is required and may be empty. Names and values are percent-encoded when written. cookieDays is a whole number from 0 (browser session, default) to 400. It has one ordinary output and later cookie conditions can read its value. Browser restrictions may prevent writes; HttpOnly cookies must be set by a server. Conditions never evaluate JavaScript. Do not invent unsupported integrations or config fields.
 Each successful mutation tool stages a change. Inspect tool errors and correct your arguments; never claim a failed change succeeded. After editing, summarize the staged changes clearly and briefly. Explain that preview runs the workflow only if asked; tools edit its definition and never run it, fetch its URLs, or inspect the target website. Never place scripts, event handlers, executable URLs or credentials in generated HTML/configuration. Do not expose secrets. Reply in the user's language.`;
 
+/** Browser overrides stay in this local, request-scoped OpenAI tool loop. */
+async function runBrowserAgent(
+  request: AIChatRequest,
+  signal: AbortSignal,
+  override: BrowserAIOverride,
+): Promise<AIChatResponse> {
+  if (!validAIKey(override.apiKey) || !validAIModel(override.model))
+    throw new AIServiceError(400, 'Supply a complete, valid browser key and model.');
+  const client = new OpenAI({
+    apiKey: override.apiKey,
+    baseURL: 'https://api.openai.com/v1',
+    logLevel: 'off',
+    maxRetries: 0,
+    timeout: 60000,
+    fetch: async (url, init) => {
+      if (String(url) !== 'https://api.openai.com/v1/responses')
+        throw new Error('Invalid provider destination.');
+      const response = await fetch(url, { ...init, redirect: 'error', cache: 'no-store' });
+      if (response.redirected || (response.status >= 300 && response.status < 400))
+        throw new Error('Provider redirects are not allowed.');
+      return response;
+    },
+  });
+  const toolkit = createWorkflowTools(request.workflow, request.selectedNodeIds);
+  const conversation: OpenAI.Responses.ResponseInputItem[] = request.messages.map(
+    ({ role, content }) => ({ role, content }),
+  );
+  try {
+    for (let turn = 0; turn < 40; turn++) {
+      signal.throwIfAborted();
+      const result = await client.responses.create(
+        {
+          model: override.model,
+          instructions: systemPrompt,
+          input: conversation,
+          tools: toolkit.definitions,
+          store: false,
+          include: ['reasoning.encrypted_content'],
+        },
+        { signal },
+      );
+      // Never let a provider-reflected credential enter tool drafts or returned data.
+      if (JSON.stringify(result).includes(override.apiKey))
+        throw new Error('Unsafe provider response.');
+      const calls = result.output.filter((item) => item.type === 'function_call');
+      if (!calls.length) {
+        const message = result.output
+          .filter((item) => item.type === 'message')
+          .flatMap((item) => item.content)
+          .filter((item) => item.type === 'output_text')
+          .map((item) => item.text)
+          .join('\n');
+        const response = parseAIChatResponse({ message, operations: toolkit.getOperations() });
+        applyWorkflowOperations(request.workflow, response.operations);
+        return response;
+      }
+      if (calls.length > 100) throw new Error('Too many tool calls.');
+      conversation.push(
+        ...result.output.filter(
+          (item) =>
+            item.type === 'message' || item.type === 'reasoning' || item.type === 'function_call',
+        ),
+      );
+      for (const call of calls) {
+        let output: string;
+        try {
+          output = toolkit.invokePrivate(call.name, JSON.parse(call.arguments));
+        } catch {
+          output = JSON.stringify({ ok: false, error: 'Invalid JSON tool arguments.' });
+        }
+        conversation.push({ type: 'function_call_output', call_id: call.call_id, output });
+      }
+    }
+    throw new Error('Too many agent turns.');
+  } catch {
+    // Do not retain/log SDK errors: they can contain request headers or bodies.
+    throw new AIServiceError(
+      422,
+      'Browser AI request failed. Check your API key and model, then try again. No server fallback was used.',
+    );
+  }
+}
+
 export async function runLocalAgent(
+  request: AIChatRequest,
+  signal: AbortSignal,
+  override?: BrowserAIOverride,
+): Promise<AIChatResponse> {
+  return override
+    ? runBrowserAgent(request, signal, override)
+    : runLocalAgentImplementation(request, signal);
+}
+
+async function runLocalAgentImplementation(
   request: AIChatRequest,
   signal: AbortSignal,
 ): Promise<AIChatResponse> {
@@ -149,7 +244,9 @@ export async function runRemoteAgent(
 export async function respondToAIChat(
   request: AIChatRequest,
   signal: AbortSignal,
+  override?: BrowserAIOverride,
 ): Promise<AIChatResponse> {
+  if (override) return runLocalAgent(request, signal, override);
   return process.env.LANGGRAPH_API_URL?.trim()
     ? runRemoteAgent(request, signal)
     : runLocalAgent(request, signal);

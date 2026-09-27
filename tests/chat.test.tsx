@@ -149,6 +149,7 @@ describe('canvas AI chat', () => {
       root.render(
         <VisualDXPBuilder
           initialWorkflow={{ version: 1, name: 'Empty', websiteUrl: '', nodes: [], edges: [] }}
+          ai={{ endpoint: '/api/ai/chat' }}
         />,
       );
     });
@@ -157,8 +158,8 @@ describe('canvas AI chat', () => {
     expect(chat.parentElement?.nextElementSibling).toBe(help.parentElement);
     expect(chat.closest('.dxp-canvas-dock')).toBe(help.closest('.dxp-canvas-dock'));
     await click(chat);
-    expect(host.textContent).toContain('Connect your AI assistant');
-    expect(composer().disabled).toBe(true);
+    expect(host.textContent).toContain('Server defaults active');
+    expect(composer().disabled).toBe(false);
     await click(help);
     expect(host.querySelector('.dxp-ai-panel')).toBeNull();
     expect(host.querySelector('.dxp-canvas-help-panel')).not.toBeNull();

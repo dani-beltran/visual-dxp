@@ -8,7 +8,7 @@ import {
   Square,
   X,
 } from 'lucide-react';
-import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
+import { type ReactNode, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import type { AIChatMessage } from '../lib/ai';
 import '../styles/chat.css';
 
@@ -17,6 +17,7 @@ export interface CanvasChatProps {
   onOpenChange?: (open: boolean) => void;
   configured: boolean;
   selectedLabel?: string;
+  settings?: ReactNode;
   onSend: (
     messages: AIChatMessage[],
     signal: AbortSignal,
@@ -35,6 +36,7 @@ const suggestions = [
 
 export function CanvasChat({
   configured,
+  settings,
   selectedLabel,
   onSend,
   open: controlledOpen,
@@ -225,6 +227,7 @@ export function CanvasChat({
               <span>Working with your current canvas</span>
             )}
           </div>
+          {settings}
           <div
             ref={transcript}
             className="dxp-ai-transcript"

@@ -1,3 +1,12 @@
+import {
+  type BrowserAIOverride,
+  OPENAI_KEY_HEADER,
+  OPENAI_MODEL_HEADER,
+  OPENAI_OVERRIDE_HEADER,
+  resolveAIEndpoint,
+  validAIKey,
+  validAIModel,
+} from './aiCredentials';
 import { validateWorkflow } from './export';
 import { framesFirst, removeNodes } from './frames';
 import { isNoteMarks } from './noteText';
@@ -41,9 +50,12 @@ export interface AIChatResponse {
   operations: WorkflowOperation[];
 }
 
-/** Configure your own authenticated server endpoint; provider keys belong on that server. */
+/** Explicitly opt in to an authenticated AI server; encrypted settings manage browser overrides. */
 export interface AIChatConfig {
   endpoint: string;
+  /** Show the AI Settings tab when an explicit nonempty endpoint is supplied. Default: true. */
+  showSettings?: boolean;
+  /** Application authentication/CSRF only. X-DXP-OpenAI-* headers are reserved. */
   headers?: Record<string, string>;
   credentials?: RequestCredentials;
 }
@@ -550,21 +562,47 @@ export async function requestAIChat(
   settings: AIChatConfig,
   request: AIChatRequest,
   signal?: AbortSignal,
+  override?: BrowserAIOverride,
 ): Promise<AIChatResponse> {
   const endpoint = text(settings.endpoint, 'AI endpoint', 4000);
-  const url = new URL(endpoint, 'https://dlb-dxp.invalid');
-  if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password)
-    throw new Error('Configure an HTTP or HTTPS AI endpoint.');
+  const url = resolveAIEndpoint(
+    endpoint,
+    typeof window === 'undefined' ? undefined : window.location.origin,
+  );
+  if (override && (url.protocol !== 'https:' || override.origin !== url.origin))
+    throw new Error('Browser credentials require HTTPS and confirmation of this server origin.');
+  if (override && (!validAIKey(override.apiKey) || !validAIModel(override.model)))
+    throw new Error(
+      'Browser AI settings are incomplete or invalid. Save a complete key and model pair.',
+    );
   const body = JSON.stringify(parseAIChatRequest(request));
   const deadline = AbortSignal.timeout(AI_LIMITS.timeoutMs);
   const requestSignal = signal ? AbortSignal.any([signal, deadline]) : deadline;
   const headers = new Headers(settings.headers);
+  if (
+    [OPENAI_KEY_HEADER, OPENAI_MODEL_HEADER, OPENAI_OVERRIDE_HEADER].some((header) =>
+      headers.has(header),
+    )
+  )
+    throw new Error(
+      'Use browser AI settings for provider credentials; reserve ai.headers for application authentication.',
+    );
+  if (override) {
+    if (body.includes(override.apiKey) || url.href.includes(override.apiKey))
+      throw new Error('Remove credentials from your conversation or workflow before sending.');
+    headers.set(OPENAI_KEY_HEADER, override.apiKey);
+    headers.set(OPENAI_MODEL_HEADER, override.model);
+    headers.set(OPENAI_OVERRIDE_HEADER, 'browser');
+  }
   headers.set('Content-Type', 'application/json');
   headers.set('Accept', 'application/json');
   try {
     let response: Response;
     try {
-      response = await fetch(endpoint, {
+      response = await fetch(override ? url.href : endpoint, {
+        redirect: 'error',
+        cache: 'no-store',
+        referrerPolicy: 'no-referrer',
         method: 'POST',
         headers,
         credentials: settings.credentials ?? 'same-origin',
@@ -576,11 +614,17 @@ export async function requestAIChat(
         throw error;
       throw new Error('Could not reach the AI assistant. Check the connection and try again.');
     }
+    if (response.redirected)
+      throw new Error('AI server redirects are not allowed. Configure the final HTTPS endpoint.');
     if (!response.ok) {
       void response.body?.cancel().catch(() => {});
       if (response.status === 401 || response.status === 403)
         throw new Error(
           'You are not authorized to use this AI assistant. Check your sign-in or endpoint configuration.',
+        );
+      if (override && (response.status === 400 || response.status === 422))
+        throw new Error(
+          'Check your browser API key and model in AI Settings. The override was rejected; no server fallback was used.',
         );
       if (response.status === 429)
         throw new Error('The AI assistant is busy. Try again in a moment.');
@@ -589,6 +633,8 @@ export async function requestAIChat(
       throw new Error('The AI request failed. Try again or check your server configuration.');
     }
     const value = await boundedResponse(response);
+    if (override && JSON.stringify(value).includes(override.apiKey))
+      throw new Error('The AI server returned an unsafe response. No changes were applied.');
     try {
       return parseAIChatResponse(value);
     } catch {

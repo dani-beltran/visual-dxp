@@ -1,9 +1,9 @@
 import { randomUUID } from 'node:crypto';
 import { tool } from 'langchain';
 import { z } from 'zod';
-import { catalog } from './workflow/catalog';
-import { applyWorkflowOperations } from './workflow/ai';
 import type { WorkflowOperation } from './workflow/ai';
+import { applyWorkflowOperations } from './workflow/ai';
+import { catalog } from './workflow/catalog';
 import type { Workflow, WorkflowNode } from './workflow/types';
 
 const shortText = z.string().max(200);
@@ -201,14 +201,37 @@ export function createWorkflowTools(workflow: Workflow, selectedNodeIds: string[
     }
   }
 
+  // Reuse the exact schemas and handlers without Runnable tracing/checkpoints for browser keys.
+  const privateHandlers = new Map<string, (input: unknown) => string>();
+  const definitions: {
+    type: 'function';
+    name: string;
+    description: string;
+    parameters: Record<string, unknown>;
+    strict: false;
+  }[] = [];
+  function defineTool<S extends z.ZodObject, const Name extends string>(
+    handler: (input: z.output<S>) => string,
+    fields: { name: Name; description: string; schema: S },
+  ) {
+    privateHandlers.set(fields.name, (input) => handler(fields.schema.parse(input)));
+    definitions.push({
+      type: 'function',
+      name: fields.name,
+      description: fields.description,
+      parameters: z.toJSONSchema(fields.schema),
+      strict: false,
+    });
+    return tool(handler, fields);
+  }
   const tools = [
-    tool(() => JSON.stringify({ workflow: draft, selectedNodeIds }), {
+    defineTool(() => JSON.stringify({ workflow: draft, selectedNodeIds }), {
       name: 'read_workflow',
       description:
         'Read the current workflow draft, node IDs, connections and selected nodes. Read before editing.',
       schema: z.object({}),
     }),
-    tool(
+    defineTool(
       () =>
         JSON.stringify(
           catalog.map(({ kind, label, description, config: defaults }) => ({
@@ -225,7 +248,7 @@ export function createWorkflowTools(workflow: Workflow, selectedNodeIds: string[
         schema: z.object({}),
       },
     ),
-    tool(
+    defineTool(
       ({ kind, label, description, config: patch, position: location }) => {
         const entry = catalog.find((item) => item.kind === kind)!;
         const node: WorkflowNode = {
@@ -269,7 +292,7 @@ export function createWorkflowTools(workflow: Workflow, selectedNodeIds: string[
         }),
       },
     ),
-    tool((patch) => mutate({ type: 'update_node', ...patch }), {
+    defineTool((patch) => mutate({ type: 'update_node', ...patch }), {
       name: 'update_node',
       description:
         'Update label, description, position or configuration of an existing node. Configuration fields are merged. Replacing noteText without noteMarks clears existing formatting; provide noteMarks to preserve or change formatting ranges.',
@@ -281,13 +304,13 @@ export function createWorkflowTools(workflow: Workflow, selectedNodeIds: string[
         position: position.optional(),
       }),
     }),
-    tool(({ id: nodeId }) => mutate({ type: 'remove_node', id: nodeId }), {
+    defineTool(({ id: nodeId }) => mutate({ type: 'remove_node', id: nodeId }), {
       name: 'remove_node',
       description:
         'Remove a node and all of its incident connections. Use only when the user requested removal or replacement.',
       schema: z.object({ id }),
     }),
-    tool(
+    defineTool(
       ({ source, target, sourceHandle, label }) =>
         mutate({
           type: 'add_edge',
@@ -312,7 +335,7 @@ export function createWorkflowTools(workflow: Workflow, selectedNodeIds: string[
         }),
       },
     ),
-    tool((patch) => mutate({ type: 'update_edge', ...patch }), {
+    defineTool((patch) => mutate({ type: 'update_edge', ...patch }), {
       name: 'update_connection',
       description:
         'Rewire or relabel an existing connection. Send sourceHandle=null when changing to an ordinary source node.',
@@ -324,7 +347,7 @@ export function createWorkflowTools(workflow: Workflow, selectedNodeIds: string[
         label: shortText.optional(),
       }),
     }),
-    tool(({ id: edgeId }) => mutate({ type: 'remove_edge', id: edgeId }), {
+    defineTool(({ id: edgeId }) => mutate({ type: 'remove_edge', id: edgeId }), {
       name: 'remove_connection',
       description: 'Remove a connection using its ID without deleting its nodes.',
       schema: z.object({ id }),
@@ -333,6 +356,19 @@ export function createWorkflowTools(workflow: Workflow, selectedNodeIds: string[
 
   return {
     tools,
+    definitions,
+    invokePrivate(name: string, input: unknown): string {
+      try {
+        const handler = privateHandlers.get(name);
+        if (!handler) return JSON.stringify({ ok: false, error: 'Unknown workflow tool.' });
+        return handler(input);
+      } catch {
+        return JSON.stringify({
+          ok: false,
+          error: 'Invalid tool arguments. Check the tool schema and try again.',
+        });
+      }
+    },
     getOperations: () => structuredClone(operations),
     getWorkflow: () => structuredClone(draft),
   };

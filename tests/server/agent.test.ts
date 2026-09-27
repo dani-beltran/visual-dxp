@@ -1,10 +1,10 @@
 // @vitest-environment node
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { createWorkflowTools } from '../../src/server/ai/tools';
-import { runLocalAgent, runRemoteAgent } from '../../src/server/ai/agent';
-import type { AIChatRequest, AIChatResponse } from '../../src/server/ai/workflow/ai';
 import { POST } from '../../src/app/api/ai/chat/route';
+import { runLocalAgent, runRemoteAgent } from '../../src/server/ai/agent';
 import { graph } from '../../src/server/ai/graph';
+import { createWorkflowTools } from '../../src/server/ai/tools';
+import type { AIChatRequest, AIChatResponse } from '../../src/server/ai/workflow/ai';
 
 const input: AIChatRequest = {
   messages: [{ role: 'user', content: 'Add a short delay after the page loads.' }],
@@ -115,6 +115,7 @@ describe('LangChain workflow tools', () => {
   it.each([
     ['route', 'gpt-4.1-mini'],
     ['route', 'gpt-6-luna'],
+    ['browser', 'browser-model'],
     ['graph', 'gpt-6-luna'],
   ])(
     'completes the local %s with %s through the Responses API tool loop',
@@ -190,7 +191,13 @@ describe('LangChain workflow tools', () => {
       });
       vi.stubGlobal('fetch', provider);
       let result: AIChatResponse;
-      if (entrypoint === 'route') {
+      if (entrypoint === 'browser') {
+        result = await runLocalAgent(input, new AbortController().signal, {
+          apiKey: 'browser-test-key',
+          model,
+          origin: 'https://builder.test',
+        });
+      } else if (entrypoint === 'route') {
         const response = await POST(
           new Request('http://localhost:3000/api/ai/chat', {
             method: 'POST',

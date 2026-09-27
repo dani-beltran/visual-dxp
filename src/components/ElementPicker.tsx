@@ -1,7 +1,7 @@
 import { ArrowRight, Check, Globe2, Info, MousePointer2, RefreshCw, X } from 'lucide-react';
 import { useEffect, useId, useRef, useState } from 'react';
 import type { PickedElement, PickerSession } from '../lib/picker';
-import { attachElementPicker, normalizeWebsiteUrl, PICKER_PROTOCOL } from '../lib/picker';
+import { normalizeWebsiteUrl, PICKER_PROTOCOL } from '../lib/picker';
 import '../styles/picker.css';
 
 export interface ElementPickerProps {
@@ -37,6 +37,29 @@ export function ElementPicker({
       return '';
     }
   });
+  const [demoHtml, setDemoHtml] = useState<string>();
+  const isDemo = frameUrl === new URL('/demo-site.html', window.location.origin).href;
+  useEffect(() => {
+    if (!isDemo) return;
+    const controller = new AbortController();
+    void fetch('/demo-site.html', {
+      credentials: 'omit',
+      redirect: 'error',
+      signal: controller.signal,
+    })
+      .then(async (response) => {
+        if (!response.ok) throw new Error();
+        const html = await response.text();
+        if (!controller.signal.aborted)
+          setDemoHtml(
+            `${html}<script src="${window.location.origin}/picker-bridge.js" data-parent-origin="${window.location.origin}"></script>`,
+          );
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setStatus('unavailable');
+      });
+    return () => controller.abort();
+  }, [isDemo]);
   const [reload, setReload] = useState(0);
   const [selector, setSelector] = useState(initialSelector);
   const [hovered, setHovered] = useState<PickedElement | null>(null);
@@ -58,8 +81,8 @@ export function ElementPicker({
       setStatus('unavailable');
       return;
     }
-    const origin = new URL(frameUrl).origin;
-    const channel = window.crypto?.randomUUID?.() || `${Date.now()}-${Math.random()}`;
+    const origin = '*';
+    let channel = crypto.randomUUID();
     channelRef.current = channel;
     const frame = frameRef.current;
     let attached = false;
@@ -83,21 +106,11 @@ export function ElementPicker({
       );
     const initialize = () => {
       if (attached) return;
-      try {
-        const doc = frame?.contentDocument;
-        if (!doc || !doc.body || frame?.contentWindow?.location.href === 'about:blank')
-          throw new Error('Waiting for page');
-        sessionRef.current?.destroy();
-        sessionRef.current = attachElementPicker(doc, setHovered, pick);
-        sessionRef.current.select(selectorRef.current);
-        attached = true;
-        finished = true;
-        setStatus('connected');
-      } catch {
-        send('init', { selector: selectorRef.current });
-      }
+      send('init', { selector: selectorRef.current });
     };
     const reconnect = () => {
+      channel = crypto.randomUUID();
+      channelRef.current = channel;
       attached = false;
       finished = false;
       window.clearInterval(retry);
@@ -123,7 +136,7 @@ export function ElementPicker({
       typeof (value as PickedElement).tagName === 'string' &&
       typeof (value as PickedElement).text === 'string';
     const message = (event: MessageEvent) => {
-      if (event.source !== frame?.contentWindow || event.origin !== origin) return;
+      if (event.source !== frame?.contentWindow || event.origin !== 'null') return;
       const data = event.data;
       if (!data || data.protocol !== PICKER_PROTOCOL || data.channel !== channel) return;
       if (data.type === 'ready') {
@@ -186,7 +199,7 @@ export function ElementPicker({
           channel: channelRef.current,
           selector: value,
         },
-        new URL(frameUrl).origin,
+        '*',
       );
     }
   };
@@ -334,11 +347,12 @@ export function ElementPicker({
             <iframe
               key={`${frameUrl}-${reload}`}
               ref={frameRef}
-              src={frameUrl}
+              src={isDemo ? undefined : frameUrl}
+              srcDoc={isDemo ? demoHtml : undefined}
               title="Website element selection preview"
               className="dxp-picker-frame"
               onLoad={() => initRef.current()}
-              sandbox="allow-scripts allow-same-origin"
+              sandbox="allow-scripts"
               referrerPolicy="no-referrer"
             />
           ) : (

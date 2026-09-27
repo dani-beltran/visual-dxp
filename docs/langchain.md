@@ -1,6 +1,6 @@
 # LangChain and LangSmith setup
 
-The integrated backend lives in `src/server/ai/`. `agent.ts` uses the original LangChain `createAgent` / `ChatOpenAI` tool loop. `tools.ts` stages validated changes in a private workflow draft. `graph.ts` supplies the optional `workflow_editor` deployment. The browser always calls the Next.js API, regardless of execution mode.
+The integrated backend lives in `src/server/ai/`. `agent.ts` uses the original LangChain `createAgent` / `ChatOpenAI` tool loop. `tools.ts` stages validated changes in a private workflow draft. `graph.ts` supplies the optional `workflow_editor` deployment. The browser calls its explicitly configured API endpoint. Browser key/model overrides always use the local request-scoped OpenAI client and the same workflow tool schemas/handlers, bypassing LangChain invocation, remote LangGraph, tracing, conversation stores, and checkpoints. Server-default requests retain the original execution modes described below.
 
 ## Local model mode
 
@@ -10,7 +10,7 @@ The OpenAI SDK call has a 60-second timeout and one retry; the enclosing route e
 
 ## Optional tracing
 
-Local execution does not require a LangSmith account. To enable tracing, configure these server environment variables:
+Local execution does not require a LangSmith account. To enable tracing for server-default requests only, configure these server environment variables:
 
 ```dotenv
 LANGSMITH_TRACING=true

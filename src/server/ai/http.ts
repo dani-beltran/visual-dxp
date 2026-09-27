@@ -1,5 +1,14 @@
 import 'server-only';
 
+import {
+  type BrowserAIOverride,
+  OPENAI_KEY_HEADER,
+  OPENAI_MODEL_HEADER,
+  OPENAI_OVERRIDE_HEADER,
+  validAIKey,
+  validAIModel,
+} from '../../lib/aiCredentials';
+import { type AIAccessPolicy, allowAIRequest, applicationAccess } from './access';
 import { AIServiceError, respondToAIChat } from './agent';
 import {
   type AIChatRequest,
@@ -13,7 +22,11 @@ const maxBodyBytes = 1024 * 1024;
 export const CHAT_TIMEOUT_MS = 90_000;
 const tooLarge = () =>
   new AIServiceError(413, 'The workflow and conversation exceed the 1 MB request limit.');
-type ChatHandler = (request: AIChatRequest, signal: AbortSignal) => Promise<AIChatResponse>;
+type ChatHandler = (
+  request: AIChatRequest,
+  signal: AbortSignal,
+  override?: BrowserAIOverride,
+) => Promise<AIChatResponse>;
 
 function json(status: number, body: unknown): Response {
   return Response.json(body, {
@@ -102,6 +115,7 @@ export function handleHealth(): Response {
 export async function handleChat(
   request: Request,
   handler: ChatHandler = respondToAIChat,
+  access: AIAccessPolicy = applicationAccess,
 ): Promise<Response> {
   if (!allowedOrigin(request)) return json(403, { error: 'The request origin is not allowed.' });
   if (
@@ -113,6 +127,24 @@ export async function handleChat(
     return json(413, { error: tooLarge().message });
   }
 
+  const hasOverride = [OPENAI_KEY_HEADER, OPENAI_MODEL_HEADER, OPENAI_OVERRIDE_HEADER].some(
+    (header) => request.headers.has(header),
+  );
+  let override: BrowserAIOverride | undefined;
+  if (hasOverride) {
+    const apiKey = request.headers.get(OPENAI_KEY_HEADER) ?? '';
+    const model = request.headers.get(OPENAI_MODEL_HEADER) ?? '';
+    if (
+      request.headers.get(OPENAI_OVERRIDE_HEADER) !== 'browser' ||
+      !validAIKey(apiKey) ||
+      !validAIModel(model)
+    )
+      return json(400, { error: 'Supply a complete, valid browser key and model override.' });
+    const url = new URL(request.url);
+    if (url.protocol !== 'https:')
+      return json(400, { error: 'Browser credentials require HTTPS.' });
+    override = { apiKey, model, origin: url.origin };
+  }
   const controller = new AbortController();
   const disconnected = () =>
     controller.abort(new AIServiceError(499, 'The request was cancelled.'));
@@ -132,14 +164,41 @@ export async function handleChat(
         error instanceof Error ? error.message : 'Invalid chat request.',
       );
     }
-    const result = await abortable(() => handler(input, controller.signal), controller.signal);
+    // Authorize the application independently of the provider key. The local demo has
+    // no user accounts; credentialed and production requests therefore fail closed.
+    const principal = await abortable(
+      () => access.authorize(request, input.workflow),
+      controller.signal,
+    );
+    if (
+      !principal &&
+      (hasOverride ||
+        process.env.NODE_ENV === 'production' ||
+        process.env.AI_APPLICATION_TOKEN?.trim())
+    )
+      return json(401, { error: 'Sign in through the application to use AI.' });
+    if (!allowAIRequest(principal ?? 'local-development'))
+      return json(429, { error: 'AI request limit reached. Try again in a minute.' });
+    if (override && JSON.stringify(input).includes(override.apiKey))
+      return json(400, { error: 'Credentials must not appear in chat or workflow data.' });
+    const result = await abortable(
+      () => handler(input, controller.signal, override),
+      controller.signal,
+    );
+    if (override && JSON.stringify(result).includes(override.apiKey))
+      return json(502, { error: 'The AI returned an unsafe response.' });
     controller.signal.throwIfAborted();
     const parsed = parseAIChatResponse(result);
     applyWorkflowOperations(input.workflow, parsed.operations);
     return json(200, parsed);
   } catch (error) {
     const failure = controller.signal.aborted ? controller.signal.reason : error;
-    if (failure instanceof AIServiceError) return json(failure.status, { error: failure.message });
+    if (failure instanceof AIServiceError)
+      return json(failure.status, {
+        error: hasOverride
+          ? 'Browser AI request failed. Check the API key, model, and server configuration; no fallback was used.'
+          : failure.message,
+      });
     return json(502, {
       error:
         'The AI service could not finish this request. Check the model or deployment configuration and try again.',
