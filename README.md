@@ -90,7 +90,7 @@ export function ExperienceEditor() {
 }
 ```
 
-The builder owns the toolbar, canvas, inspector, activity view, footer, element picker, and test preview, including its own `ReactFlowProvider`. The hosting page owns its sidebar, header, test button, and export dialog. `src/app.tsx` demonstrates this split. It accepts `className` and `style`, uses scoped component styles, and does not require a router or backend. Render it on the client in SSR frameworks (for Next.js, use a client component; disable SSR for the editor if your environment requires it).
+The builder owns the toolbar, canvas, inspector, activity view, footer, element picker, and test preview, including its own `ReactFlowProvider`. The hosting page owns its project header, test button, and export dialog. `src/app.tsx` demonstrates this split. It accepts `className` and `style`, uses scoped component styles, and does not require a router or backend. Render it on the client in SSR frameworks (for Next.js, use a client component; disable SSR for the editor if your environment requires it).
 
 | Prop                 | Behavior                                                                                                                                                          |
 | -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -336,7 +336,7 @@ HTML and DOM actions are author-controlled content. Import workflows from truste
 
 ## Source layout
 
-- `src/app.tsx` — demo host page, sidebar/header, test trigger, and export dialog.
+- `src/app.tsx` — demo host page, project header, test trigger, and export dialog.
 - `src/components/VisualDXPBuilder.tsx` — independent editor, state/history, import, persistence, and test preview.
 - `src/components/` — workflow cards, node inspector, picker, and live preview.
 - `src/lib/runtime/` — workflow execution, conditions, popovers, and trigger modules; `index.ts` exposes the runtime API.

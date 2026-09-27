@@ -235,18 +235,12 @@ describe('builder and host boundary', () => {
     expect(button('Test workflow').closest('.dxp-builder')).toBeNull();
     expect(button('Export workflow').closest('.dxp-builder')).toBeNull();
     await click(element('button[aria-label="Add Trigger"]'));
-    const input = element<HTMLInputElement>('input[aria-label="Workflow name"]');
-    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
-    if (!setter) throw new Error('Missing input value setter');
-    await act(async () => {
-      setter.call(input, 'Renamed by host');
-      input.dispatchEvent(new Event('input', { bubbles: true }));
-    });
-    expect(onChange.mock.lastCall?.[0].name).toBe('Renamed by host');
+    expect(onChange.mock.lastCall?.[0].nodes).toHaveLength(1);
     await click(element('button[title^="Undo"]'));
-    expect(input.value).toBe('Embedded journey');
+    expect(onChange.mock.lastCall?.[0].nodes).toHaveLength(0);
     await click(element('button[title^="Redo"]'));
-    expect(input.value).toBe('Renamed by host');
+    expect(onChange.mock.lastCall?.[0].nodes).toHaveLength(1);
+    expect(onChange.mock.lastCall?.[0].name).toBe('Embedded journey');
 
     await click(button('Test workflow'));
     expect(element('[aria-label="Preview workflow"]').closest('.dxp-builder')).not.toBeNull();
