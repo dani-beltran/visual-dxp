@@ -16,6 +16,7 @@ export interface CanvasChatProps {
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   configured: boolean;
+  configurationError?: boolean;
   selectedLabel?: string;
   settings?: ReactNode;
   onSend: (
@@ -36,6 +37,7 @@ const suggestions = [
 
 export function CanvasChat({
   configured,
+  configurationError = false,
   settings,
   selectedLabel,
   onSend,
@@ -50,6 +52,7 @@ export function CanvasChat({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [panelSize, setPanelSize] = useState({ width: 400, height: 520 });
+  const invalidConfiguration = !configured || configurationError;
   const id = useId();
   const root = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
@@ -217,9 +220,14 @@ export function CanvasChat({
               <X size={17} aria-hidden="true" />
             </button>
           </header>
-          <div className="dxp-ai-context">
-            <span className={`dxp-ai-status ${configured ? 'ready' : ''}`} />
-            {selectedLabel ? (
+          <div className="dxp-ai-context" role="status">
+            <span
+              className={`dxp-ai-status ${invalidConfiguration ? 'error' : 'ready'}`}
+              aria-hidden="true"
+            />
+            {invalidConfiguration ? (
+              <span>AI assistant is not available</span>
+            ) : selectedLabel ? (
               <span>
                 Selected: <strong>{selectedLabel}</strong>
               </span>

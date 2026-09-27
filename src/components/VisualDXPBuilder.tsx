@@ -51,6 +51,7 @@ import {
   requestAIChat,
   workflowFingerprint,
 } from '../lib/ai';
+import { AIConfigurationError, resolveAIEndpoint } from '../lib/aiCredentials';
 import { AISettingsStore } from '../lib/aiSettings';
 import { catalog, createNode, defaultWorkflow } from '../lib/catalog';
 import { validateWorkflow } from '../lib/export';
@@ -164,6 +165,29 @@ function Builder({
   const aiEnabled = Boolean(ai?.endpoint?.trim());
   const showAISettings = aiEnabled && ai?.showSettings !== false;
   const [aiSettings] = useState(() => new AISettingsStore());
+  const aiSettingsState = useSyncExternalStore(
+    aiSettings.subscribe,
+    aiSettings.getSnapshot,
+    aiSettings.getSnapshot,
+  );
+  const [aiRequestConfigurationError, setAIRequestConfigurationError] = useState(false);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: A settings or endpoint change invalidates the previous connection failure.
+  useEffect(() => {
+    setAIRequestConfigurationError(false);
+  }, [aiSettingsState, ai?.endpoint]);
+  let aiConfigurationError = aiRequestConfigurationError;
+  if (aiEnabled && ai) {
+    try {
+      const destination = resolveAIEndpoint(ai.endpoint);
+      aiConfigurationError ||=
+        aiSettingsState.status === 'locked' ||
+        aiSettingsState.status === 'unavailable' ||
+        (aiSettingsState.status === 'unlocked' &&
+          (destination.protocol !== 'https:' || aiSettings.needsConfirmation(ai.endpoint)));
+    } catch {
+      aiConfigurationError = true;
+    }
+  }
   useEffect(() => {
     if (!aiEnabled) {
       aiSettings.lock();
@@ -750,7 +774,17 @@ function Builder({
       },
       AbortSignal.any([signal, controller.signal]),
       override,
-    ).finally(() => aiSettings.finishRequest(controller));
+    )
+      .then((result) => {
+        setAIRequestConfigurationError(false);
+        return result;
+      })
+      .catch((error: unknown) => {
+        if (!signal.aborted && !controller.signal.aborted && error instanceof AIConfigurationError)
+          setAIRequestConfigurationError(true);
+        throw error;
+      })
+      .finally(() => aiSettings.finishRequest(controller));
     signal.throwIfAborted();
     if (baseline !== workflowFingerprint(current.current)) {
       throw new Error(
@@ -1047,6 +1081,7 @@ function Builder({
                       open={canvasAssistant === 'chat'}
                       onOpenChange={toggleChat}
                       configured={aiEnabled}
+                      configurationError={aiConfigurationError}
                       settings={<AISettings store={aiSettings} endpoint={ai!.endpoint} compact />}
                       selectedLabel={selected?.data.label}
                       onSend={sendAIMessage}

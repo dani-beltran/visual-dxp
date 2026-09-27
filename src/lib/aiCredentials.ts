@@ -1,3 +1,5 @@
+export class AIConfigurationError extends Error {}
+
 /** Reserved transport headers. Redact these before request logging or tracing. */
 export const OPENAI_KEY_HEADER = 'X-DXP-OpenAI-Key';
 export const OPENAI_MODEL_HEADER = 'X-DXP-OpenAI-Model';
@@ -28,6 +30,8 @@ export function resolveAIEndpoint(
       throw new Error();
     return url;
   } catch {
-    throw new Error('Configure a valid HTTP or HTTPS AI endpoint without embedded credentials.');
+    throw new AIConfigurationError(
+      'Configure a valid HTTP or HTTPS AI endpoint without embedded credentials.',
+    );
   }
 }

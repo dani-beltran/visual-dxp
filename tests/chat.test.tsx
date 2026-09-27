@@ -158,7 +158,13 @@ describe('canvas AI chat', () => {
     expect(chat.parentElement?.nextElementSibling).toBe(help.parentElement);
     expect(chat.closest('.dxp-canvas-dock')).toBe(help.closest('.dxp-canvas-dock'));
     await click(chat);
-    expect(host.textContent).toContain('Server defaults active');
+    expect(host.textContent).not.toContain('Server defaults active');
+    expect(host.textContent).not.toContain('Configured AI server:');
+    expect(host.textContent).not.toContain('Browser credentials require an HTTPS AI server.');
+    expect(host.querySelector('.dxp-ai-context')?.textContent).toBe(
+      'Working with your current canvas',
+    );
+    expect(host.querySelector('.dxp-ai-status.ready')).not.toBeNull();
     expect(composer().disabled).toBe(false);
     await click(help);
     expect(host.querySelector('.dxp-ai-panel')).toBeNull();
@@ -175,10 +181,24 @@ describe('canvas AI chat', () => {
     expect(button('AI chat').getAttribute('aria-expanded')).toBe('true');
     expect(document.activeElement).toBe(button('Close AI chat'));
     expect(host.textContent).toContain('Connect your AI assistant');
+    expect(host.querySelector('.dxp-ai-context')?.textContent).toContain(
+      'AI configuration is incorrect',
+    );
+    expect(host.querySelector('.dxp-ai-status.error')).not.toBeNull();
     expect(composer().disabled).toBe(true);
     expect(button('Send message').disabled).toBe(true);
     expect(host.querySelector('.dxp-ai-suggestions')).toBeNull();
     expect(onSend).not.toHaveBeenCalled();
+  });
+
+  it('prioritizes configuration errors over the selected canvas step', async () => {
+    await renderChat({ configurationError: true, selectedLabel: 'Welcome step' });
+    await click(button('AI chat'));
+    expect(host.querySelector('.dxp-ai-context')?.textContent).toContain(
+      'AI configuration is incorrect',
+    );
+    expect(host.querySelector('.dxp-ai-status.error')).not.toBeNull();
+    expect(host.querySelector('.dxp-ai-context')?.textContent).not.toContain('Selected:');
   });
 
   it('focuses the composer, reports selection, and closes with Escape without canvas shortcuts', async () => {
@@ -322,6 +342,46 @@ describe('canvas AI chat', () => {
 });
 
 describe('AI workflow integration', () => {
+  it.each([401, 403, 502, 503])(
+    'shows a configuration error for HTTP %s and recovers after a successful retry',
+    async (status) => {
+      vi.stubGlobal(
+        'fetch',
+        vi
+          .fn<typeof fetch>()
+          .mockResolvedValueOnce(new Response('{}', { status }))
+          .mockResolvedValueOnce(responseWithOperations([])),
+      );
+      await renderConnectedBuilder();
+      await typeMessage('Explain this workflow');
+      await click(button('Send message'));
+      expect(host.querySelector('.dxp-ai-context')?.textContent).toContain(
+        'AI configuration is incorrect',
+      );
+      expect(host.querySelector('.dxp-ai-status.error')).not.toBeNull();
+      await click(button('Start a new conversation'));
+      expect(host.querySelector('.dxp-ai-status.error')).not.toBeNull();
+      await typeMessage('Explain this workflow');
+      await click(button('Send message'));
+      expect(host.querySelector('.dxp-ai-status.ready')).not.toBeNull();
+      expect(host.querySelector('.dxp-ai-context')?.textContent).toBe(
+        'Working with your current canvas',
+      );
+    },
+  );
+
+  it('keeps the ready status for rate limits', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn<typeof fetch>().mockResolvedValue(new Response('{}', { status: 429 })),
+    );
+    await renderConnectedBuilder();
+    await typeMessage('Explain this workflow');
+    await click(button('Send message'));
+    expect(host.querySelector('.dxp-ai-status.ready')).not.toBeNull();
+    expect(host.querySelector('[role="alert"]')?.textContent).toContain('busy');
+  });
+
   it('applies multiple node and connection operations together and restores the whole graph with one Undo', async () => {
     const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(
       responseWithOperations([

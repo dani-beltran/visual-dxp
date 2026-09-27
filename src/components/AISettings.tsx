@@ -19,7 +19,7 @@ export function AISettings({
   const state = useSyncExternalStore(store.subscribe, store.getSnapshot, store.getSnapshot);
   const id = useId();
   const [apiKey, setApiKey] = useState('');
-  const defaultModel = process?.env.NEXT_PUBLIC_OPENAI_MODEL?.trim() || '';
+  const defaultModel = process.env.NEXT_PUBLIC_OPENAI_MODEL?.trim() || '';  
   const [model, setModel] = useState(() => state.model || defaultModel);
   const [passphrase, setPassphrase] = useState('');
   const [visible, setVisible] = useState(false);
@@ -60,6 +60,7 @@ export function AISettings({
       setBusy(false);
     }
   }
+  if (compact && state.status === 'server') return null;
   return (
     <section
       className={`dxp-ai-settings ${compact ? 'compact' : ''}`}
@@ -73,22 +74,26 @@ export function AISettings({
           </h2>
         </>
       )}
-      <p role="status">
-        <strong>
-          {state.status === 'server'
-            ? 'Server defaults active'
-            : state.status === 'unlocked'
-              ? 'Browser settings active'
-              : state.status === 'locked'
-                ? 'Browser settings locked · unlock to use AI'
-                : 'Browser settings unavailable · AI blocked'}
-        </strong>
-        {state.model && <> · {state.model}</>}
-      </p>
-      <p className="dxp-ai-destination">
-        Configured AI server: <strong>{origin}</strong>
-      </p>
-      {!secure && <p className="dxp-error">Browser credentials require an HTTPS AI server.</p>}
+      {!compact && (
+        <>
+          <p role="status">
+            <strong>
+              {state.status === 'server'
+                ? 'Server defaults active'
+                : state.status === 'unlocked'
+                  ? 'Browser settings active'
+                  : state.status === 'locked'
+                    ? 'Browser settings locked · unlock to use AI'
+                    : 'Browser settings unavailable · AI blocked'}
+            </strong>
+            {state.model && <> · {state.model}</>}
+          </p>
+          <p className="dxp-ai-destination">
+            Configured AI server: <strong>{origin}</strong>
+          </p>
+          {!secure && <p className="dxp-error">Browser credentials require an HTTPS AI server.</p>}
+        </>
+      )}
       <form
         autoComplete="off"
         onSubmit={(event) => {

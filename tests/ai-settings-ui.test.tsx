@@ -105,17 +105,26 @@ it('keeps saved settings and provides unlocking within the assistant when the ta
   await click(button('AI chat'));
   expect(tab('AI Settings')).toBeUndefined();
   expect(button('Unlock browser settings')).toBeDefined();
-  expect(host.textContent).toContain('Browser settings locked');
+  expect(host.querySelector('.dxp-ai-context')?.textContent).toContain(
+    'AI configuration is incorrect',
+  );
+  expect(host.querySelector('.dxp-ai-status.error')).not.toBeNull();
   await input('Passphrase to unlock', 'a very long passphrase');
   await click(button('Unlock browser settings'));
   // Web Crypto completes asynchronously, outside React's event turn.
   await act(async () => {
     await new Promise((resolve) => setTimeout(resolve, 200));
   });
-  expect(host.textContent).toContain('Browser settings active');
+  expect(host.querySelector('.dxp-ai-context')?.textContent).toBe(
+    'Working with your current canvas',
+  );
+  expect(host.querySelector('.dxp-ai-status.ready')).not.toBeNull();
   expect(localStorage.getItem(AI_SETTINGS_STORAGE_KEY)).toBe(saved);
   await click(button('Lock'));
-  expect(host.textContent).toContain('Browser settings locked');
+  expect(host.querySelector('.dxp-ai-context')?.textContent).toContain(
+    'AI configuration is incorrect',
+  );
+  expect(host.querySelector('.dxp-ai-status.error')).not.toBeNull();
 });
 it('masks keys, toggles visibility, shows destination and privacy text, and removes settings', async () => {
   const store = new AISettingsStore();
@@ -134,4 +143,14 @@ it('masks keys, toggles visibility, shows destination and privacy text, and remo
   await click(button('Remove browser settings'));
   expect(host.textContent).toContain('Server defaults active');
   expect(localStorage.getItem(AI_SETTINGS_STORAGE_KEY)).toBeNull();
+});
+
+it('updates the chat status when damaged browser settings are removed', async () => {
+  localStorage.setItem(AI_SETTINGS_STORAGE_KEY, 'damaged settings');
+  await builder({ endpoint: '/api/ai/chat' });
+  await click(button('AI chat'));
+  expect(host.querySelector('.dxp-ai-status.error')).not.toBeNull();
+  await click(button('Remove browser settings'));
+  expect(host.querySelector('.dxp-ai-status.ready')).not.toBeNull();
+  expect(host.querySelector('[aria-label="Assistant credentials"]')).toBeNull();
 });

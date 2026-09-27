@@ -1,4 +1,5 @@
 import {
+  AIConfigurationError,
   type BrowserAIOverride,
   OPENAI_KEY_HEADER,
   OPENAI_MODEL_HEADER,
@@ -570,9 +571,11 @@ export async function requestAIChat(
     typeof window === 'undefined' ? undefined : window.location.origin,
   );
   if (override && (url.protocol !== 'https:' || override.origin !== url.origin))
-    throw new Error('Browser credentials require HTTPS and confirmation of this server origin.');
+    throw new AIConfigurationError(
+      'Browser credentials require HTTPS and confirmation of this server origin.',
+    );
   if (override && (!validAIKey(override.apiKey) || !validAIModel(override.model)))
-    throw new Error(
+    throw new AIConfigurationError(
       'Browser AI settings are incomplete or invalid. Save a complete key and model pair.',
     );
   const body = JSON.stringify(parseAIChatRequest(request));
@@ -584,7 +587,7 @@ export async function requestAIChat(
       headers.has(header),
     )
   )
-    throw new Error(
+    throw new AIConfigurationError(
       'Use browser AI settings for provider credentials; reserve ai.headers for application authentication.',
     );
   if (override) {
@@ -619,17 +622,21 @@ export async function requestAIChat(
     if (!response.ok) {
       void response.body?.cancel().catch(() => {});
       if (response.status === 401 || response.status === 403)
-        throw new Error(
+        throw new AIConfigurationError(
           'You are not authorized to use this AI assistant. Check your sign-in or endpoint configuration.',
         );
       if (override && (response.status === 400 || response.status === 422))
-        throw new Error(
+        throw new AIConfigurationError(
           'Check your browser API key and model in AI Settings. The override was rejected; no server fallback was used.',
         );
       if (response.status === 429)
         throw new Error('The AI assistant is busy. Try again in a moment.');
       if (response.status === 503)
-        throw new Error('The AI assistant is not configured or is temporarily unavailable.');
+        throw new AIConfigurationError(
+          'The AI assistant is not configured or is temporarily unavailable.',
+        );
+      if (response.status === 502)
+        throw new AIConfigurationError('Check your AI key, model, and server configuration.');
       throw new Error('The AI request failed. Try again or check your server configuration.');
     }
     const value = await boundedResponse(response);

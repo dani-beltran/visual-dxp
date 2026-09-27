@@ -88,6 +88,9 @@
 .dxp-ai-status.ready {
   background: var(--dxp-success);
 }
+.dxp-ai-status.error {
+  background: var(--dxp-danger);
+}
 .dxp-ai-transcript {
   flex: 1;
   min-height: 0;
