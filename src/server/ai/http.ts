@@ -9,7 +9,7 @@ import {
   validAIKey,
   validAIModel,
 } from '../../lib/aiCredentials';
-import { type AIAccessPolicy, allowAIRequest, applicationAccess } from './access';
+import { aiRateLimitKey, allowAIRequest } from './access';
 import { AIServiceError, respondToAIChat } from './agent';
 import {
   type AIChatRequest,
@@ -45,7 +45,7 @@ function allowedOrigin(request: Request): boolean {
   const site = request.headers.get('sec-fetch-site');
   if (site && site !== 'same-origin' && site !== 'none') return false;
   const origin = request.headers.get('origin');
-  if (!origin) return true; // Non-browser clients still require host access controls.
+  if (!origin) return true; // Non-browser clients do not send browser origin metadata.
   try {
     const parsed = new URL(origin);
     const url = new URL(request.url);
@@ -116,7 +116,6 @@ export function handleHealth(): Response {
 export async function handleChat(
   request: Request,
   handler: ChatHandler = respondToAIChat,
-  access: AIAccessPolicy = applicationAccess,
 ): Promise<Response> {
   if (!allowedOrigin(request)) return json(403, { error: 'The request origin is not allowed.' });
   if (
@@ -165,20 +164,7 @@ export async function handleChat(
         error instanceof Error ? error.message : 'Invalid chat request.',
       );
     }
-    // Authorize the application independently of the provider key. The local demo has
-    // no user accounts; credentialed and production requests therefore fail closed.
-    const principal = await abortable(
-      () => access.authorize(request, input.workflow),
-      controller.signal,
-    );
-    if (
-      !principal &&
-      (hasOverride ||
-        process.env.NODE_ENV === 'production' ||
-        process.env.AI_APPLICATION_TOKEN?.trim())
-    )
-      return json(401, { error: 'Sign in through the application to use AI.' });
-    if (!allowAIRequest(principal ?? 'local-development'))
+    if (!allowAIRequest(aiRateLimitKey(request)))
       return json(429, { error: 'AI request limit reached. Try again in a minute.' });
     if (override && JSON.stringify(input).includes(override.apiKey))
       return json(400, { error: 'Credentials must not appear in chat or workflow data.' });

@@ -105,7 +105,7 @@ The builder owns the toolbar, canvas, inspector, activity view, footer, element 
 | `persistenceKey`     | Optional localStorage key. A valid saved workflow takes precedence over `initialWorkflow`. Omit to disable browser persistence.                                   |
 | `activityStore`      | Optional external activity store. Reads and subscribes to entries and appends new editor actions. Defaults to an empty in-memory store for this builder.         |
 | `activityUser`       | Username attached to new activity entries; defaults to `"You"`. Pass the current user's display name.                                                             |
-| `ai`                 | Optional `{ endpoint, headers?, credentials? }` for your authenticated chat API. The AI button remains visible with setup guidance until an endpoint is provided. |
+| `ai`                 | Optional `{ endpoint, headers?, credentials? }` for your chat API. The AI button remains visible with setup guidance until an endpoint is provided. |
 | `className`, `style` | Customize the outer editor container. The parent must provide a height.                                                                                           |
 
 `VisualDXPBuilder` is both the default and a named package export. Import `dlb-dxp/styles.css` once in your application; it includes React Flow and all builder, inspector, dialog, picker, and activity styles. The package exposes the same stylesheet through its `style` field and marks CSS as a side effect so bundlers retain the import.
@@ -292,7 +292,7 @@ AI is enabled **only** by an explicitly supplied, nonempty `ai.endpoint`. There 
 
 AI Settings includes a masked key field, reveal toggle, model ID, encryption passphrase, save/unlock/lock/remove controls, active configuration status, and the configured server origin. The tab follows Canvas and Activity and supports Left/Right, Home/End, and roving tab focus.
 
-Browser overrides require HTTPS, an authenticated application request, and a complete key/model pair. Keys are encrypted with AES-256-GCM and PBKDF2-SHA-256 (600,000 iterations) using a fresh random salt and IV. Only the encrypted key, model, and destination binding are stored under `dlb-dxp-ai-settings-v1`, separately from workflow/activity data. Reload requires unlocking; locking clears in-memory references and aborts active AI requests. Changing server origins requires explicit confirmation for the unlocked session. Removing settings restores server behavior; hiding the tab does not remove them.
+Browser overrides require HTTPS (HTTP is allowed on localhost, 127.0.0.1, and [::1]) and a complete key/model pair. No app login or application token is required, including in production. Keys are encrypted with AES-256-GCM and PBKDF2-SHA-256 (600,000 iterations) using a fresh random salt and IV. Only the encrypted key, model, and destination binding are stored under `dlb-dxp-ai-settings-v1`, separately from workflow/activity data. Reload requires unlocking; locking clears in-memory references and aborts active AI requests. Changing server origins requires explicit confirmation for the unlocked session. Removing settings restores server behavior; hiding the tab does not remove them.
 
 > Your API key is stored encrypted in this browser’s localStorage. When you use the AI assistant, it is sent over HTTPS to the configured AI server, which uses it to contact OpenAI without saving it. It is never included in your published site or workflow exports.
 
@@ -300,7 +300,7 @@ Origin isolation prevents ordinary access by other origins, but cannot protect a
 
 Without a browser override, `OPENAI_API_KEY`/`OPENAI_MODEL` and optional `LANGGRAPH_API_URL` retain their existing behavior. Browser overrides always run through the local server-side OpenAI tool loop, never remote LangGraph. They do not enter LangChain tracing, agent state, or checkpoints. They take effect on the next request without editing `.env.local` or restarting. Locked, damaged, or incomplete settings block AI rather than falling back. `ai.headers` is for application authentication/CSRF only; the reserved provider header is populated exclusively from unlocked settings.
 
-The repository has no existing account or workflow authorization system. The integrated route fails closed for browser overrides and production requests unless the host supplies authorization. Integrate your session and workflow permissions through `AIAccessPolicy`, or use the documented trusted gateway token. An OpenAI key and CORS are never application authentication. See [AI integration and deployment requirements](docs/ai-integration.md) and [server execution modes](docs/langchain.md).
+The integrated chat route works without app login in development and production. It accepts browser AI Settings or the server’s configured provider credentials and retains same-origin checks and rate limiting. See [AI integration and deployment requirements](docs/ai-integration.md) and [server execution modes](docs/langchain.md).
 
 ## Visual element selection
 

@@ -7,7 +7,7 @@ The Next.js App Router serves the demo and `/api/ai/*` in one process. `src/serv
 ```sh
 npm install
 cp .env.example .env.local
-# Set OPENAI_API_KEY in .env.local.
+# Set OPENAI_API_KEY in .env.local, or save a key and model in AI Settings.
 npm run dev
 ```
 
@@ -62,7 +62,6 @@ Requests, response shapes, and the complete proposed operation batch are validat
 | --- | --- |
 | 200 | Valid `{ message, operations }` response |
 | 400 | Malformed JSON, invalid request/graph/selection, or contract limit |
-| 401 | Missing or invalid application authentication/authorization |
 | 403 | Disallowed origin or fetch metadata |
 | 422 | Browser provider key/model rejected or local tool loop failed; no fallback |
 | 429 | Application request quota exceeded |
@@ -87,22 +86,15 @@ Deploy as a Node application, not a static export. Set secrets in the hosting en
 
 The API requires an exact Origin match against the request protocol and Host, rejects cross-site/same-site fetch metadata, and does not grant cross-origin CORS access. A trusted reverse proxy must preserve the public Host and set the request protocol correctly (including trusted `X-Forwarded-Proto` for TLS termination). `X-Forwarded-Host` is not used for origin authorization. The old cross-origin `AI_ALLOWED_ORIGIN` setting is unused.
 
-Origin checks are not authentication. Requests without Origin still require application authorization in production and whenever a browser override is present. Only local development requests using server defaults retain the original unauthenticated behavior. No login system existed in either project. The API now provides `AIAccessPolicy.authorize(request, workflow)` to integrate the host's existing session and workflow permissions; return a stable, non-secret principal ID only after both checks pass, otherwise null. Do not log the Request object.
+The chat API does not require app login, a session, or an application token in any environment, including production. Both server-configured provider credentials and browser overrides work without application authentication. `AI_APPLICATION_TOKEN` is no longer used. Origin checks still reject requests from other browser origins; non-browser callers may omit Origin.
 
-```ts
-// In your host's route; session/permissions functions belong to your application.
-return handleChat(request, respondToAIChat, {
-  async authorize(request, workflow) {
-    const session = await verifyApplicationSession(request);
-    if (!session || !await mayEditWorkflow(session.userId, workflow)) return null;
-    return session.userId;
-  },
-});
-```
+The server allows **20 chat requests per IP address per 60-second window** using Cloudflare's `CF-Connecting-IP` header by default. IPv6 spellings are normalized, including IPv4-mapped addresses. Each IP has an independent quota; users sharing a public IP share that quota. Missing or invalid IPs share an `unknown` bucket. The API returns 429 when the quota is exhausted.
 
-The default adapter requires a timing-safe match of `Authorization: Bearer <AI_APPLICATION_TOKEN>`. This is a single-tenant gateway/service principal with access to the editor; it is not a per-user permissions system. Configure it as a deployment secret only. A trusted authenticated gateway may inject it after authorizing the user and workflow, stripping any incoming client Authorization header first; prevent direct access to the backend. Alternatively use your own session adapter. Never use an OpenAI key as this token. `ai.headers` and `ai.credentials` remain separate application auth controls.
+Keep the origin reachable only through Cloudflare (for example, a Cloudflare Tunnel or origin firewall rules). The App Router does not expose the socket peer, so it cannot verify that a header came from Cloudflare itself. Never expose the origin directly while trusting this header. `X-Forwarded-For` is not used as a fallback. Cloudflare must preserve its visitor-IP header; keep Pseudo IPv4 off or in Add Header mode to retain real IPv6 addresses. See [Cloudflare's header documentation](https://developers.cloudflare.com/fundamentals/reference/http-headers/).
 
-The server limits each authorized principal (or the local-development bucket) to 20 requests/minute, with bounded in-memory rate-limit metadata containing no provider data. Multi-instance deployments also need a shared gateway/user quota and a concurrency cap; the included counter is process-local. Do not cache `/api/ai/*` at any proxy.
+`AI_RATE_LIMIT_IP_HEADER` can override the header name for another trusted proxy that overwrites it with a single IP. An empty setting disables header trust and uses the shared unknown bucket. Comma-separated chains, ports, and scoped IPv6 values are rejected. Local requests without the proxy header share the fallback quota.
+
+Counters live in memory and expire after 60 seconds or a process restart. Multi-instance deployments need shared storage or a Cloudflare rate-limit rule for a deployment-wide quota. Do not cache `/api/ai/*` at any proxy.
 
 See [migration and verification](migration.md) for checks and reproducible mock smoke testing.
 
@@ -119,9 +111,9 @@ An unlocked browser override supplies all three reserved headers:
 | `X-DXP-OpenAI-Key` | The unlocked key | Always redact/omit, case-insensitively |
 | `X-DXP-OpenAI-Model` | User-selected model ID | Prefer omission from request logging |
 
-The body remains exactly `{ messages, workflow, selectedNodeIds }`. A missing marker, missing key/model, invalid characters or empty fields yields 400 before provider work. Unauthenticated requests yield 401, and quota failures 429. Provider rejection yields a safe 422 with no fallback; clients should prompt the user to check/unlock/update their settings. Raw provider errors and reflected keys are never returned. Responses are `no-store`.
+The body remains exactly `{ messages, workflow, selectedNodeIds }`. A missing marker, missing key/model, invalid characters or empty fields yields 400 before provider work. No application authorization is required; quota failures yield 429. Provider rejection yields a safe 422 with no fallback; clients should prompt the user to check/unlock/update their settings. Raw provider errors and reflected keys are never returned. Responses are `no-store`.
 
-For browser overrides, relative endpoints resolve against the real builder origin; HTTPS and the saved/confirmed destination origin are checked before constructing the credential-bearing request. Browser and OpenAI fetches use `redirect: 'error'`. Configure the final HTTPS URL; even same-origin redirects are rejected. The server verifies its effective request URL is HTTPS. The trusted TLS terminator must correctly reconstruct that URL, strip untrusted forwarding headers, and keep all credential-bearing hops encrypted. Do not add a client-controlled upstream URL. The request-scoped OpenAI client is fixed to `https://api.openai.com/v1/responses`, sets `store: false`, disables SDK logging, and never sends browser keys to LangGraph or LangSmith. It uses the existing workflow schemas, private tool draft, and full-operation validation. Environment and shared clients are not mutated.
+For browser overrides, relative endpoints resolve against the real builder origin; HTTPS and the saved/confirmed destination origin are checked before constructing the credential-bearing request. Browser and OpenAI fetches use `redirect: 'error'`. Configure the final HTTPS URL; even same-origin redirects are rejected. The server verifies its effective request URL is HTTPS, with HTTP allowed only on localhost, 127.0.0.1, or [::1] for local use. The trusted TLS terminator must correctly reconstruct that URL, strip untrusted forwarding headers, and keep all credential-bearing hops encrypted. Do not add a client-controlled upstream URL. The request-scoped OpenAI client is fixed to `https://api.openai.com/v1/responses`, sets `store: false`, disables SDK logging, and never sends browser keys to LangGraph or LangSmith. It uses the existing workflow schemas, private tool draft, and full-operation validation. Environment and shared clients are not mutated.
 
 The complete pair overrides `OPENAI_API_KEY` and `OPENAI_MODEL` for this request alone. No key/model mixing or fallback is allowed. Subsequent requests immediately observe saved/removed settings. Without a browser override, the existing local/remote server configuration applies. Removing browser settings restores that behavior; a reload locks them instead of disabling the override.
 
@@ -141,4 +133,4 @@ Origin isolation prevents ordinary cross-origin storage/DOM access. It cannot pr
 
 Before enabling browser credentials in production, configure the entire request path to omit `X-DXP-OpenAI-Key` (including lowercase/reformatted variants), Authorization, Cookies and all provider Authorization headers. Prefer allowlisting safe metadata such as request ID, status and duration. Disable raw request/header/body capture in reverse proxies, load balancers, APM, OpenTelemetry HTTP instrumentation, error reporters, analytics and browser session replay; exclude the key/passphrase fields from replay. Redaction must run before ingestion, not only in a log viewer. Disable caching and request/response recording for `/api/ai/*`.
 
-The application does not log credentialed requests or SDK errors, and the browser override tool loop does not invoke tracing/checkpoint frameworks. Host-installed instrumentation runs outside this code and must be configured by the operator. Never persist browser keys in databases, files, caches, sessions, queues, or checkpoints. Restrict outbound credentialed provider traffic to the fixed OpenAI HTTPS destination. For custom cross-origin servers, allow only exact trusted builder origins and required headers; authenticate/authorize every request independently of CORS. The supplied Next API deliberately supports same-origin requests only.
+The application does not log credentialed requests or SDK errors, and the browser override tool loop does not invoke tracing/checkpoint frameworks. Host-installed instrumentation runs outside this code and must be configured by the operator. Never persist browser keys in databases, files, caches, sessions, queues, or checkpoints. Restrict outbound credentialed provider traffic to the fixed OpenAI HTTPS destination. For custom cross-origin servers, allow only exact trusted builder origins and required headers. The supplied Next API deliberately supports same-origin requests only.

@@ -79,7 +79,6 @@ async function startNext(remoteUrl) {
       env: {
         ...process.env,
         OPENAI_API_KEY: '',
-        AI_APPLICATION_TOKEN: 'smoke-application-token',
         LANGGRAPH_API_URL: remoteUrl,
         LANGGRAPH_ASSISTANT_ID: 'workflow_editor',
         LANGSMITH_API_KEY: 'smoke-only-placeholder',
@@ -141,7 +140,6 @@ const post = (base, body = JSON.stringify(input), headers = {}, extra = {}) =>
     headers: {
       'Content-Type': 'application/json',
       Origin: base,
-      Authorization: 'Bearer smoke-application-token',
       ...headers,
     },
     body,

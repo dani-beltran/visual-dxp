@@ -119,7 +119,7 @@ export interface VisualDXPBuilderProps {
   activityStore?: ActivityStore;
   /** Username attached to actions taken in this builder. Defaults to "You". */
   activityUser?: string;
-  /** Connect to your authenticated server endpoint; never include provider keys. */
+  /** Connect to your server endpoint; never include provider keys. */
   ai?: AIChatConfig;
 }
 interface RecordedActivity {

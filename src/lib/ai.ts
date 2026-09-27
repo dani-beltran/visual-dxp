@@ -52,7 +52,7 @@ export interface AIChatResponse {
   operations: WorkflowOperation[];
 }
 
-/** Explicitly opt in to an authenticated AI server; encrypted settings manage browser overrides. */
+/** Explicitly opt in to an AI server; encrypted settings manage browser overrides. */
 export interface AIChatConfig {
   endpoint: string;
   /** Show the AI Settings tab when an explicit nonempty endpoint is supplied. Default: true. */
@@ -624,7 +624,7 @@ export async function requestAIChat(
       void response.body?.cancel().catch(() => {});
       if (response.status === 401 || response.status === 403)
         throw new AIConfigurationError(
-          'You are not authorized to use this AI assistant. Check your sign-in or endpoint configuration.',
+          'The AI endpoint rejected the request. Check your endpoint configuration.',
         );
       if (override && (response.status === 400 || response.status === 422))
         throw new AIConfigurationError(

@@ -1,10 +1,10 @@
 // @vitest-environment node
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { POST, runtime as chatRuntime } from '../../src/app/api/ai/chat/route';
+import { runtime as chatRuntime, POST } from '../../src/app/api/ai/chat/route';
 import { GET, runtime as healthRuntime } from '../../src/app/api/ai/health/route';
 import { applyWorkflowOperations as applyClientOperations } from '../../src/lib/ai';
 import { CHAT_TIMEOUT_MS, handleChat } from '../../src/server/ai/http';
-import { applyWorkflowOperations, type AIChatRequest } from '../../src/server/ai/workflow/ai';
+import { type AIChatRequest, applyWorkflowOperations } from '../../src/server/ai/workflow/ai';
 
 const input: AIChatRequest = {
   messages: [{ role: 'user', content: 'Rename the selected step.' }],
@@ -84,6 +84,15 @@ describe('Next Node Route Handlers', () => {
     expect(applyWorkflowOperations(input.workflow, body.operations).nodes[0].data.label).toBe(
       'Welcome',
     );
+  });
+
+  it('uses server credentials in production without requiring app login', async () => {
+    vi.stubEnv('NODE_ENV', 'production');
+    vi.stubEnv('AI_APPLICATION_TOKEN', 'legacy-application-secret');
+    const response = await POST(request());
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual(answer);
+    expect(provider).toHaveBeenCalledOnce();
   });
 
   it.each([

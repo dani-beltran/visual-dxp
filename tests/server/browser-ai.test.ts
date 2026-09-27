@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   OPENAI_KEY_HEADER,
   OPENAI_MODEL_HEADER,
@@ -48,6 +48,12 @@ function response(model: string) {
     usage: { input_tokens: 1, output_tokens: 1, total_tokens: 2 },
   });
 }
+// Give each route test a fresh quota window without disabling rate limiting.
+let quotaTime = Date.now();
+beforeEach(() => {
+  quotaTime += 60_001;
+  vi.spyOn(Date, 'now').mockReturnValue(quotaTime);
+});
 afterEach(() => {
   vi.unstubAllEnvs();
   vi.unstubAllGlobals();
@@ -118,23 +124,44 @@ describe('request-scoped browser AI', () => {
     });
     await respondToAIChat(input, new AbortController().signal);
   });
-  it('requires separate application authorization before invoking the agent', async () => {
-    vi.stubEnv('AI_APPLICATION_TOKEN', 'application-secret');
+  it.each(['development', 'production'])(
+    'accepts browser settings without app login in %s, even with a legacy token configured',
+    async (environment) => {
+      vi.stubEnv('NODE_ENV', environment);
+      vi.stubEnv('AI_APPLICATION_TOKEN', 'legacy-application-secret');
+      const handler = vi.fn().mockResolvedValue({ message: 'Ready', operations: [] });
+      const result = await handleChat(request(), handler);
+      expect(result.status).toBe(200);
+      expect(result.headers.get('cache-control')).toBe('no-store');
+      expect(handler.mock.calls[0][0]).toEqual(input);
+      expect(JSON.stringify(handler.mock.calls[0][0])).not.toContain('sk-browser');
+      expect(handler.mock.calls[0][2]).toMatchObject({
+        apiKey: 'sk-browser-secret',
+        model: 'browser-model',
+      });
+    },
+  );
+  it('accepts production requests without browser origin metadata or app credentials', async () => {
+    vi.stubEnv('NODE_ENV', 'production');
+    const req = request();
+    req.headers.delete('origin');
     const handler = vi.fn().mockResolvedValue({ message: 'Ready', operations: [] });
-    expect((await handleChat(request(), handler)).status).toBe(401);
-    expect(handler).not.toHaveBeenCalled();
-    const result = await handleChat(
-      request({ Authorization: 'Bearer application-secret' }),
-      handler,
-    );
-    expect(result.status).toBe(200);
-    expect(result.headers.get('cache-control')).toBe('no-store');
-    expect(handler.mock.calls[0][0]).toEqual(input);
-    expect(JSON.stringify(handler.mock.calls[0][0])).not.toContain('sk-browser');
-    expect(handler.mock.calls[0][2]).toMatchObject({
-      apiKey: 'sk-browser-secret',
-      model: 'browser-model',
-    });
+    expect((await handleChat(req, handler)).status).toBe(200);
+    expect(handler).toHaveBeenCalledOnce();
+  });
+  it('enforces separate per-IP quotas without app login', async () => {
+    vi.stubEnv('NODE_ENV', 'production');
+    vi.stubEnv('AI_RATE_LIMIT_IP_HEADER', 'cf-connecting-ip');
+    const handler = vi.fn().mockResolvedValue({ message: 'Ready', operations: [] });
+    const client = (ip: string, spoofed = '192.0.2.100') =>
+      request({ 'CF-Connecting-IP': ip, 'X-Forwarded-For': spoofed });
+    for (let n = 0; n < 20; n++) {
+      expect((await handleChat(client('192.0.2.1'), handler)).status).toBe(200);
+    }
+    expect((await handleChat(client('192.0.2.1', '192.0.2.200'), handler)).status).toBe(429);
+    expect((await handleChat(client('::ffff:c000:201'), handler)).status).toBe(429);
+    expect((await handleChat(client('192.0.2.2'), handler)).status).toBe(200);
+    expect(handler).toHaveBeenCalledTimes(21);
   });
   it.each([
     [OPENAI_KEY_HEADER, ''],
@@ -147,6 +174,20 @@ describe('request-scoped browser AI', () => {
     expect(result.status).toBe(400);
     expect(handler).not.toHaveBeenCalled();
   });
+  it('still rejects cross-site requests to the local development demo', async () => {
+    vi.stubEnv('NODE_ENV', 'development');
+    vi.stubEnv('AI_APPLICATION_TOKEN', '');
+    const origin = 'http://localhost:3000';
+    const handler = vi.fn();
+    const untrustedHeaders: Record<string, string>[] = [
+      { Origin: 'https://evil.test' },
+      { Origin: origin, 'Sec-Fetch-Site': 'cross-site' },
+    ];
+    for (const extra of untrustedHeaders) {
+      expect((await handleChat(request(extra, `${origin}/api/ai/chat`), handler)).status).toBe(403);
+    }
+    expect(handler).not.toHaveBeenCalled();
+  });
   it.each(['localhost', '127.0.0.1', '[::1]'])(
     'accepts browser credentials over HTTP on %s',
     async (hostname) => {
@@ -155,13 +196,12 @@ describe('request-scoped browser AI', () => {
       const result = await handleChat(
         request({ Origin: origin }, `${origin}/api/ai/chat`),
         handler,
-        { authorize: async () => `local-test-${hostname}` },
       );
       expect(result.status).toBe(200);
       expect(handler.mock.calls[0][2]).toMatchObject({ apiKey: 'sk-browser-secret', origin });
     },
   );
-  it('rejects insecure connections, disallowed origins, and failed authorization', async () => {
+  it('rejects insecure connections and disallowed origins', async () => {
     const handler = vi.fn();
     expect(
       (
@@ -172,18 +212,14 @@ describe('request-scoped browser AI', () => {
       ).status,
     ).toBe(400);
     expect((await handleChat(request({ Origin: 'https://evil.test' }), handler)).status).toBe(403);
-    expect((await handleChat(request(), handler, { authorize: async () => null })).status).toBe(
-      401,
-    );
     expect(handler).not.toHaveBeenCalled();
   });
   it('never echoes reflected keys or provider errors', async () => {
-    const access = { authorize: async () => 'test-safe-errors' };
     for (const handler of [
       vi.fn().mockResolvedValue({ message: headers[OPENAI_KEY_HEADER], operations: [] }),
       vi.fn().mockRejectedValue(new AIServiceError(401, headers[OPENAI_KEY_HEADER])),
     ]) {
-      const result = await handleChat(request(), handler, access);
+      const result = await handleChat(request(), handler);
       expect(await result.text()).not.toContain(headers[OPENAI_KEY_HEADER]);
     }
   });
