@@ -13,7 +13,7 @@ cp .env.example .env.local
 npm run dev
 ```
 
-Open http://127.0.0.1:3000. The page and AI API run in the same Next.js process; no sibling backend process is needed. The included demo website supports the element picker and live workflow testing without additional setup. The demo saves workflow changes in local browser storage. Its Activity tab starts with illustrative actions from several users; activity stays in memory and resets when the page reloads.
+Open http://127.0.0.1:3000. The page and AI API run in the same Next.js process; no sibling backend process is needed. The included demo website supports the element picker and live workflow testing without additional setup. The demo saves workflow changes and activity history in local browser storage and restores them when the page reloads. Its Activity tab starts empty until you make changes.
 
 ```sh
 npm test             # Frontend, integrated backend, and mocked Route Handler tests
@@ -265,7 +265,7 @@ interface ActivityStore {
 
 `getSnapshot` must return the same array reference until entries change. Publish a new immutable snapshot and notify subscribers when local or server updates arrive; `subscribe` returns an unsubscribe function. `append` and `remove` should update the local snapshot synchronously. A production adapter can then persist entries or their deletion asynchronously through the host's API, handling retries and reconciling server updates by entry ID. Undo targets the original entry's ID and store, leaving unrelated activity untouched. Edits undone before their activity is saved cancel the pending entry. The included `createActivityStore` supplies these in-memory operations plus `replaceEntries` to accept a complete updated history from the server.
 
-The builder does not contact an activity server or store activity in localStorage. The fake entries are supplied only by this project's demo; embedded builders start with an empty activity history unless the host supplies entries.
+The builder does not contact an activity server or store activity in localStorage itself; embedded builders start with an empty in-memory activity history unless the host supplies a store. This project's demo supplies a localStorage-backed store under `dlb-dxp-activity-v1`, alongside the workflow saved under `dlb-dxp-workflow-v1`. Activity updates, including Undo removals and Redo restorations, are saved automatically. Missing or invalid saved history starts empty; if browser storage is unavailable or full, activity continues in memory.
 
 ## AI workflow assistant
 

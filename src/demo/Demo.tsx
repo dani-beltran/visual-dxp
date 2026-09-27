@@ -1,11 +1,11 @@
 'use client';
 
+import { useState } from 'react';
 import { App } from '../app';
-import { createActivityStore } from '../lib/activity';
-
-const activityStore = createActivityStore([]);
+import { createLocalStorageActivityStore } from './activityStore';
 
 export default function Demo() {
+  const [activityStore] = useState(() => createLocalStorageActivityStore('dlb-dxp-activity-v1'));
   return (
     <App
       activityStore={activityStore}
