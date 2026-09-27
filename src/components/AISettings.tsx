@@ -19,7 +19,8 @@ export function AISettings({
   const state = useSyncExternalStore(store.subscribe, store.getSnapshot, store.getSnapshot);
   const id = useId();
   const [apiKey, setApiKey] = useState('');
-  const [model, setModel] = useState(state.model);
+  const defaultModel = process?.env.NEXT_PUBLIC_OPENAI_MODEL?.trim() || '';
+  const [model, setModel] = useState(() => state.model || defaultModel);
   const [passphrase, setPassphrase] = useState('');
   const [visible, setVisible] = useState(false);
   const [busy, setBusy] = useState(false);
