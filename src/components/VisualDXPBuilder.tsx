@@ -1085,8 +1085,8 @@ function Builder({
                       open={canvasAssistant === 'chat'}
                       onOpenChange={toggleChat}
                       configured={aiEnabled}
+                      locked={aiSettingsState.status === 'locked'}
                       configurationError={aiConfigurationError}
-                      settings={<AISettings store={aiSettings} endpoint={ai!.endpoint} compact />}
                       selectedLabel={selected?.data.label}
                       onSend={sendAIMessage}
                     />

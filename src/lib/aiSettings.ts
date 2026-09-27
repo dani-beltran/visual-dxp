@@ -227,7 +227,7 @@ export class AISettingsStore {
     if (this.snapshot.status === 'unavailable') throw new Error(this.snapshot.error);
     if (!this.apiKey || this.snapshot.status !== 'unlocked')
       throw new Error(
-        'Unlock browser AI settings in the assistant before sending, or remove them to use server defaults.',
+        'Unlock AI settings in the corresponding section.',
       );
     const url = resolveAIEndpoint(endpoint);
     if (!allowsBrowserCredentials(url))

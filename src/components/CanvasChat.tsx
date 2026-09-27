@@ -8,7 +8,7 @@ import {
   Square,
   X,
 } from 'lucide-react';
-import { type ReactNode, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import type { AIChatMessage } from '../lib/ai';
 import '../styles/chat.css';
 
@@ -16,9 +16,9 @@ export interface CanvasChatProps {
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   configured: boolean;
+  locked?: boolean;
   configurationError?: boolean;
   selectedLabel?: string;
-  settings?: ReactNode;
   onSend: (
     messages: AIChatMessage[],
     signal: AbortSignal,
@@ -37,8 +37,8 @@ const suggestions = [
 
 export function CanvasChat({
   configured,
+  locked = false,
   configurationError = false,
-  settings,
   selectedLabel,
   onSend,
   open: controlledOpen,
@@ -235,7 +235,6 @@ export function CanvasChat({
               <span>Working with your current canvas</span>
             )}
           </div>
-          {settings}
           <div
             ref={transcript}
             className="dxp-ai-transcript"
@@ -245,7 +244,7 @@ export function CanvasChat({
             // biome-ignore lint/a11y/noNoninteractiveTabindex: The scrollable transcript must be keyboard-focusable for scrolling.
             tabIndex={0}
           >
-            {!messages.length && configured && (
+            {!messages.length && configured && !locked && (
               <div className="dxp-ai-welcome">
                 <MessageCircle size={25} strokeWidth={1.5} aria-hidden="true" />
                 <h3>What would you like to create?</h3>
