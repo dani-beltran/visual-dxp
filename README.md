@@ -277,7 +277,7 @@ The demo configures the reusable builder with the same-origin endpoint:
 <VisualDXPBuilder ai={{ endpoint: '/api/ai/chat', credentials: 'same-origin' }} />
 ```
 
-Set `OPENAI_API_KEY` in `.env.local` to use the integrated local LangChain agent. `OPENAI_MODEL` defaults to `gpt-4.1-mini`. Alternatively set `LANGGRAPH_API_URL`, `LANGGRAPH_ASSISTANT_ID` (default `workflow_editor`), and `LANGSMITH_API_KEY` for a remote deployment. The remote graph needs its own `OPENAI_API_KEY`; the Next.js proxy does not. Optional `LANGSMITH_TRACING`, `LANGSMITH_PROJECT`, `LANGSMITH_ENDPOINT`, and `LANGSMITH_WORKSPACE_ID` configure tracing. All provider settings stay server-side; none belong in `NEXT_PUBLIC_*`, `VITE_*`, client props, or browser request headers.
+Set `OPENAI_API_KEY` in `.env.local` to use the integrated local LangChain agent. `OPENAI_MODEL` defaults to `gpt-6-luna`. Alternatively set `LANGGRAPH_API_URL`, `LANGGRAPH_ASSISTANT_ID` (default `workflow_editor`), and `LANGSMITH_API_KEY` for a remote deployment. The remote graph needs its own `OPENAI_API_KEY`; the Next.js proxy does not. Optional `LANGSMITH_TRACING`, `LANGSMITH_PROJECT`, `LANGSMITH_ENDPOINT`, and `LANGSMITH_WORKSPACE_ID` configure tracing. All provider settings stay server-side; none belong in `NEXT_PUBLIC_*`, `VITE_*`, client props, or browser request headers.
 
 `GET /api/ai/health` reports `{ configured, mode }` based on configuration presence, not verified credentials. Without configuration the editor still works and chat returns a safe 503 error. No AI responses are simulated by the app. This migration does not read or copy secrets from the original backend.
 

@@ -4,7 +4,7 @@ The integrated backend lives in `src/server/ai/`. `agent.ts` uses the original L
 
 ## Local model mode
 
-Copy `.env.example` to `.env.local` and set `OPENAI_API_KEY`. Leave `LANGGRAPH_API_URL` empty. `OPENAI_MODEL` defaults to `gpt-4.1-mini`; use an account-accessible model with tool calling. Run `npm run dev`. There is no second backend process. API keys in the original sibling project's environment are not loaded or copied automatically.
+Copy `.env.example` to `.env.local` and set `OPENAI_API_KEY`. Leave `LANGGRAPH_API_URL` empty. `OPENAI_MODEL` defaults to `gpt-6-luna`; use an account-accessible model with tool calling. Run `npm run dev`. There is no second backend process. `.env.example` is only a template and is not loaded; put actual credentials in the ignored `.env.local` file. The agent uses the OpenAI Responses API so reasoning models such as `gpt-6-luna` can call workflow tools. API keys in the original sibling project's environment are not loaded or copied automatically.
 
 The OpenAI SDK call has a 60-second timeout and one retry; the enclosing route enforces 90 seconds across the entire request. Every invocation receives the current workflow and bounded conversation, and creates its own tools. There are no browsing, execution, filesystem, or arbitrary HTTP tools. Workflow URLs are data and are never visited by the assistant.
 

@@ -112,16 +112,22 @@ describe('LangChain workflow tools', () => {
     expect(toolkit.getWorkflow().edges).toEqual([]);
   });
 
-  it.each(['route', 'graph'])(
-    'completes the local %s and real agent tool loop against mocked model HTTP responses',
-    async (entrypoint) => {
+  it.each([
+    ['route', 'gpt-4.1-mini'],
+    ['route', 'gpt-6-luna'],
+    ['graph', 'gpt-6-luna'],
+  ])(
+    'completes the local %s with %s through the Responses API tool loop',
+    async (entrypoint, model) => {
       vi.stubEnv('OPENAI_API_KEY', 'test-key');
-      vi.stubEnv('OPENAI_MODEL', 'gpt-4.1-mini');
+      vi.stubEnv('OPENAI_MODEL', model);
       vi.stubEnv('LANGSMITH_TRACING', 'false');
       vi.stubEnv('LANGGRAPH_API_URL', '');
       let step = 0;
       const provider = vi.fn().mockImplementation((_url: unknown, init: RequestInit) => {
+        expect(String(_url)).toBe('https://api.openai.com/v1/responses');
         const body = JSON.parse(String(init.body));
+        expect(body.model).toBe(model);
         const current = step++;
         let name = 'read_workflow';
         let args: Record<string, unknown> = {};
@@ -134,54 +140,52 @@ describe('LangChain workflow tools', () => {
           };
         }
         if (current === 2) {
-          const nodeResult = body.messages
-            .filter((message: { role: string }) => message.role === 'tool')
+          const nodeResult = body.input
+            .filter((item: { type: string }) => item.type === 'function_call_output')
             .at(-1);
           name = 'add_connection';
           args = {
             source: 'start',
-            target: JSON.parse(nodeResult.content).operation.node.id,
+            target: JSON.parse(nodeResult.output).operation.node.id,
           };
         }
-        const message =
+        const output =
           current < 3
-            ? {
-                role: 'assistant',
-                content: null,
-                tool_calls: [
-                  {
-                    id: `call-${current}`,
-                    type: 'function',
-                    function: { name, arguments: JSON.stringify(args) },
-                  },
-                ],
-              }
-            : {
-                role: 'assistant',
-                content: 'Added and connected a 2-second delay.',
-              };
-        return Promise.resolve(
-          new Response(
-            JSON.stringify({
-              id: `completion-${current}`,
-              object: 'chat.completion',
-              created: 1,
-              model: 'gpt-4.1-mini',
-              choices: [
+            ? [
                 {
-                  index: 0,
-                  message,
-                  finish_reason: current < 3 ? 'tool_calls' : 'stop',
+                  type: 'function_call',
+                  id: `fc-${current}`,
+                  call_id: `call-${current}`,
+                  name,
+                  arguments: JSON.stringify(args),
+                  status: 'completed',
                 },
-              ],
-              usage: {
-                prompt_tokens: 10,
-                completion_tokens: 10,
-                total_tokens: 20,
-              },
-            }),
-            { headers: { 'Content-Type': 'application/json' } },
-          ),
+              ]
+            : [
+                {
+                  type: 'message',
+                  id: 'msg-final',
+                  role: 'assistant',
+                  status: 'completed',
+                  content: [
+                    {
+                      type: 'output_text',
+                      text: 'Added and connected a 2-second delay.',
+                      annotations: [],
+                    },
+                  ],
+                },
+              ];
+        return Promise.resolve(
+          Response.json({
+            id: `resp-${current}`,
+            object: 'response',
+            created_at: 1,
+            status: 'completed',
+            model,
+            output,
+            usage: { input_tokens: 10, output_tokens: 10, total_tokens: 20 },
+          }),
         );
       });
       vi.stubGlobal('fetch', provider);

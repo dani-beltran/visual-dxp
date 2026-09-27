@@ -11,7 +11,7 @@ cp .env.example .env.local
 npm run dev
 ```
 
-Open http://127.0.0.1:3000. `OPENAI_MODEL` defaults to `gpt-4.1-mini`. See [LangChain and deployment setup](langchain.md) for remote execution and tracing. Restart after changing environment variables. The demo no longer reads `VITE_DXP_AI_ENDPOINT`; old Vite settings can be removed from your local environment. Do not copy secrets into any public variable.
+Open http://127.0.0.1:3000. `OPENAI_MODEL` defaults to `gpt-6-luna`. See [LangChain and deployment setup](langchain.md) for remote execution and tracing. Restart after changing environment variables. The demo no longer reads `VITE_DXP_AI_ENDPOINT`; old Vite settings can be removed from your local environment. Do not copy secrets into any public variable.
 
 The demo passes exactly:
 

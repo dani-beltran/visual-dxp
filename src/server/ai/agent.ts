@@ -39,7 +39,9 @@ export async function runLocalAgent(
   const agent = createAgent({
     model: new ChatOpenAI({
       apiKey,
-      model: process.env.OPENAI_MODEL?.trim() || 'gpt-4.1-mini',
+      model: process.env.OPENAI_MODEL?.trim() || 'gpt-6-luna',
+      // Reasoning models such as GPT-6 Luna require Responses for tool calling.
+      useResponsesApi: true,
       maxRetries: 1,
       timeout: 60000,
     }),
