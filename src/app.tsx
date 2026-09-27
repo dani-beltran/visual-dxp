@@ -17,6 +17,8 @@ import {
   X,
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import visualDxpLogo from './assets/visual-dxp-logo.png';
+import visualDxpSymbol from './assets/visual-dxp-symbol.png';
 import {
   VisualDXPBuilder,
   type VisualDXPBuilderApi,
@@ -137,13 +139,10 @@ export function App({
           }}
           aria-label="Visual DXP home"
         >
-          <span className="dxp-brand-mark">
-            <span />
-            <span />
-            <span />
-          </span>
-          Visual
-          <span className="dxp-brand-tag">DXP</span>
+          <picture className="dxp-brand-picture">
+            <source media="(max-width: 800px)" srcSet={visualDxpSymbol} />
+            <img className="dxp-brand-image" src={visualDxpLogo} alt="Visual DXP" />
+          </picture>
         </button>
         <div className="dxp-workspace-label">
           <span className="dxp-workspace-icon">
