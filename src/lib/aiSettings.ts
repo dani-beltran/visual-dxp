@@ -1,4 +1,5 @@
 import {
+  allowsBrowserCredentials,
   type BrowserAIOverride,
   resolveAIEndpoint,
   validAIKey,
@@ -36,7 +37,7 @@ function decode(raw: string): Envelope {
     !bytes(value.ciphertext, 24, 528) ||
     !validAIModel(value.model) ||
     new URL(value.origin).origin !== value.origin ||
-    !value.origin.startsWith('https://')
+    !allowsBrowserCredentials(new URL(value.origin))
   )
     throw new Error();
   return value;
@@ -118,7 +119,7 @@ export class AISettingsStore {
   };
   async save(apiKey: string, model: string, passphrase: string, endpoint: string) {
     const url = resolveAIEndpoint(endpoint);
-    if (url.protocol !== 'https:')
+    if (!allowsBrowserCredentials(url))
       throw new Error('Use an HTTPS AI server before saving browser credentials.');
     if (!validAIKey(apiKey) || !validAIModel(model))
       throw new Error('Enter a valid API key and model ID.');
@@ -209,7 +210,7 @@ export class AISettingsStore {
   };
   confirmOrigin(endpoint: string) {
     const url = resolveAIEndpoint(endpoint);
-    if (url.protocol !== 'https:')
+    if (!allowsBrowserCredentials(url))
       throw new Error('Browser credentials require an HTTPS AI server.');
     this.confirmedOrigin = url.origin;
     this.emit({ ...this.snapshot });
@@ -229,7 +230,7 @@ export class AISettingsStore {
         'Unlock browser AI settings in the assistant before sending, or remove them to use server defaults.',
       );
     const url = resolveAIEndpoint(endpoint);
-    if (url.protocol !== 'https:')
+    if (!allowsBrowserCredentials(url))
       throw new Error('Browser credentials require an HTTPS AI server.');
     if (this.needsConfirmation(endpoint))
       throw new Error(

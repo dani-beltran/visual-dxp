@@ -33,6 +33,39 @@ const get = (store: AISettingsStore, url = endpoint) =>
   store.forRequest(url, new AbortController());
 
 describe('encrypted browser settings', () => {
+  it.each(['localhost', '127.0.0.1', '[::1]'])(
+    'saves, reloads, unlocks, and sends browser credentials over HTTP on %s',
+    async (hostname) => {
+      const url = `http://${hostname}:3000/api/ai/chat`;
+      const store = new AISettingsStore();
+      await store.save(apiKey, model, passphrase, url);
+      const reloaded = new AISettingsStore();
+      reloaded.refresh();
+      expect(reloaded.getSnapshot().status).toBe('locked');
+      await reloaded.unlock(passphrase);
+      const override = get(reloaded, url);
+      expect(override).toEqual({ apiKey, model, origin: new URL(url).origin });
+      const fetcher = vi
+        .fn()
+        .mockResolvedValue(Response.json({ message: 'Ready', operations: [] }));
+      vi.stubGlobal('fetch', fetcher);
+      await requestAIChat({ endpoint: url }, request, undefined, override);
+      expect(fetcher.mock.calls[0][1].headers.get(OPENAI_KEY_HEADER)).toBe(apiKey);
+      const otherPort = `http://${hostname}:4000/chat`;
+      expect(() => get(reloaded, otherPort)).toThrow(/origin changed/);
+      reloaded.confirmOrigin(otherPort);
+      expect(get(reloaded, otherPort)?.origin).toBe(new URL(otherPort).origin);
+    },
+  );
+  it.each(['ai.example.test', 'localhost.example.test', '127.0.0.1.example.test', '192.168.1.1'])(
+    'keeps HTTPS required for %s',
+    async (hostname) => {
+      const store = new AISettingsStore();
+      const url = `http://${hostname}/chat`;
+      await expect(store.save(apiKey, model, passphrase, url)).rejects.toThrow(/HTTPS/);
+      expect(() => store.confirmOrigin(url)).toThrow(/HTTPS/);
+    },
+  );
   it('encrypts with fresh salts and IVs, persists no key material, and requires unlocking after reload', async () => {
     const store = new AISettingsStore();
     await store.save(apiKey, model, passphrase, endpoint);

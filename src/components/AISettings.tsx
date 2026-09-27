@@ -1,11 +1,11 @@
 import { Eye, EyeOff, KeyRound, LockKeyhole } from 'lucide-react';
 import { useEffect, useId, useState, useSyncExternalStore } from 'react';
-import { resolveAIEndpoint } from '../lib/aiCredentials';
+import { allowsBrowserCredentials, resolveAIEndpoint } from '../lib/aiCredentials';
 import type { AISettingsStore } from '../lib/aiSettings';
 import '../styles/ai-settings.css';
 
 export const AI_PRIVACY_TEXT =
-  'Your API key is stored encrypted in this browser’s localStorage. When you use the AI assistant, it is sent over HTTPS to the configured AI server, which uses it to contact OpenAI without saving it. It is never included in your published site or workflow exports.';
+  'Your API key is stored encrypted in this browser’s localStorage. When you use the AI assistant, it is sent to the configured AI server over HTTPS (HTTP is allowed for localhost), which uses it to contact OpenAI without saving it. It is never included in your published site or workflow exports.';
 
 export function AISettings({
   store,
@@ -19,7 +19,7 @@ export function AISettings({
   const state = useSyncExternalStore(store.subscribe, store.getSnapshot, store.getSnapshot);
   const id = useId();
   const [apiKey, setApiKey] = useState('');
-  const defaultModel = process.env.NEXT_PUBLIC_OPENAI_MODEL?.trim() || '';  
+  const defaultModel = process.env.NEXT_PUBLIC_OPENAI_MODEL?.trim() || '';
   const [model, setModel] = useState(() => state.model || defaultModel);
   const [passphrase, setPassphrase] = useState('');
   const [visible, setVisible] = useState(false);
@@ -38,7 +38,7 @@ export function AISettings({
   try {
     const destination = resolveAIEndpoint(endpoint);
     origin = destination.origin;
-    secure = destination.protocol === 'https:';
+    secure = allowsBrowserCredentials(destination);
     confirmation = store.needsConfirmation(endpoint);
   } catch {
     /* Render a safe configuration error. */

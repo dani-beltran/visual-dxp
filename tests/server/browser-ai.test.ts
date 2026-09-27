@@ -147,6 +147,20 @@ describe('request-scoped browser AI', () => {
     expect(result.status).toBe(400);
     expect(handler).not.toHaveBeenCalled();
   });
+  it.each(['localhost', '127.0.0.1', '[::1]'])(
+    'accepts browser credentials over HTTP on %s',
+    async (hostname) => {
+      const origin = `http://${hostname}:3000`;
+      const handler = vi.fn().mockResolvedValue({ message: 'Ready', operations: [] });
+      const result = await handleChat(
+        request({ Origin: origin }, `${origin}/api/ai/chat`),
+        handler,
+        { authorize: async () => `local-test-${hostname}` },
+      );
+      expect(result.status).toBe(200);
+      expect(handler.mock.calls[0][2]).toMatchObject({ apiKey: 'sk-browser-secret', origin });
+    },
+  );
   it('rejects insecure connections, disallowed origins, and failed authorization', async () => {
     const handler = vi.fn();
     expect(

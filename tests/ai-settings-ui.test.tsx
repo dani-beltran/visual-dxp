@@ -145,6 +145,29 @@ it('masks keys, toggles visibility, shows destination and privacy text, and remo
   expect(localStorage.getItem(AI_SETTINGS_STORAGE_KEY)).toBeNull();
 });
 
+it.each(['localhost', '127.0.0.1', '[::1]'])(
+  'allows browser credentials and shows a ready chat on HTTP %s',
+  async (hostname) => {
+    const endpoint = `http://${hostname}:3000/api/ai/chat`;
+    await builder({ endpoint });
+    await click(tab('AI Settings')!);
+    expect(host.textContent).not.toContain('Browser credentials require an HTTPS AI server.');
+    await input('OpenAI API key', 'sk-test-private');
+    await input('OpenAI model ID', 'my-model');
+    await input('Encryption passphrase (at least 12 characters)', 'a very long passphrase');
+    await act(async () => {
+      host
+        .querySelector('form')!
+        .dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    });
+    await act(async () => {
+      await vi.waitFor(() => expect(host.textContent).toContain('Browser settings active'));
+    });
+    await click(button('AI chat'));
+    expect(host.querySelector('.dxp-ai-status.ready')).not.toBeNull();
+  },
+);
+
 it('updates the chat status when damaged browser settings are removed', async () => {
   localStorage.setItem(AI_SETTINGS_STORAGE_KEY, 'damaged settings');
   await builder({ endpoint: '/api/ai/chat' });

@@ -51,7 +51,11 @@ import {
   requestAIChat,
   workflowFingerprint,
 } from '../lib/ai';
-import { AIConfigurationError, resolveAIEndpoint } from '../lib/aiCredentials';
+import {
+  AIConfigurationError,
+  allowsBrowserCredentials,
+  resolveAIEndpoint,
+} from '../lib/aiCredentials';
 import { AISettingsStore } from '../lib/aiSettings';
 import { catalog, createNode, defaultWorkflow } from '../lib/catalog';
 import { validateWorkflow } from '../lib/export';
@@ -183,7 +187,7 @@ function Builder({
         aiSettingsState.status === 'locked' ||
         aiSettingsState.status === 'unavailable' ||
         (aiSettingsState.status === 'unlocked' &&
-          (destination.protocol !== 'https:' || aiSettings.needsConfirmation(ai.endpoint)));
+          (!allowsBrowserCredentials(destination) || aiSettings.needsConfirmation(ai.endpoint)));
     } catch {
       aiConfigurationError = true;
     }

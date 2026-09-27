@@ -1,5 +1,6 @@
 import {
   AIConfigurationError,
+  allowsBrowserCredentials,
   type BrowserAIOverride,
   OPENAI_KEY_HEADER,
   OPENAI_MODEL_HEADER,
@@ -570,7 +571,7 @@ export async function requestAIChat(
     endpoint,
     typeof window === 'undefined' ? undefined : window.location.origin,
   );
-  if (override && (url.protocol !== 'https:' || override.origin !== url.origin))
+  if (override && (!allowsBrowserCredentials(url) || override.origin !== url.origin))
     throw new AIConfigurationError(
       'Browser credentials require HTTPS and confirmation of this server origin.',
     );

@@ -1,6 +1,7 @@
 import 'server-only';
 
 import {
+  allowsBrowserCredentials,
   type BrowserAIOverride,
   OPENAI_KEY_HEADER,
   OPENAI_MODEL_HEADER,
@@ -141,7 +142,7 @@ export async function handleChat(
     )
       return json(400, { error: 'Supply a complete, valid browser key and model override.' });
     const url = new URL(request.url);
-    if (url.protocol !== 'https:')
+    if (!allowsBrowserCredentials(url))
       return json(400, { error: 'Browser credentials require HTTPS.' });
     override = { apiKey, model, origin: url.origin };
   }

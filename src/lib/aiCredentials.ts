@@ -9,6 +9,12 @@ export interface BrowserAIOverride {
   model: string;
   origin: string;
 }
+export function allowsBrowserCredentials(url: URL): boolean {
+  return (
+    url.protocol === 'https:' ||
+    (url.protocol === 'http:' && ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname))
+  );
+}
 export function validAIKey(key: string): boolean {
   return typeof key === 'string' && /^[\x21-\x7e]{8,512}$/.test(key);
 }
