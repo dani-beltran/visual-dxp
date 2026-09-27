@@ -5,9 +5,9 @@ export default defineConfig({
   plugins: [
     react(),
     dts({
-      include: ['src'],
-      exclude: ['src/main.tsx', 'src/app.tsx'],
-      tsconfigPath: './tsconfig.json',
+      include: ['src/index.ts', 'src/components', 'src/lib'],
+      exclude: ['src/app', 'src/server', 'src/demo', 'src/app.tsx'],
+      tsconfigPath: './tsconfig.lib.json',
     }),
   ],
   build: {

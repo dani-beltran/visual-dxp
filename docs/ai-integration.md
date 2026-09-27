@@ -1,56 +1,27 @@
-# Frontend AI integration
+# Same-origin AI integration
 
-`dlb-dxp` contains the editor, chat interface, HTTP client, and client-side validation of proposed workflow edits. The LangChain agent and tools run in the separate `dlb-dxp-server` project. That project's `README.md` and `docs/langchain.md` describe provider credentials, LangSmith configuration, deployment, and server verification.
+The Next.js App Router serves the demo and `/api/ai/*` in one process. `src/server/ai/` contains the copied LangChain agent, tools, workflow validation, and optional remote deployment graph. The original `dlb-dxp-server` directory is untouched and is not needed to build, test, or run this application.
 
-## Local demo
-
-In `dlb-dxp`:
+## Local setup
 
 ```sh
 npm install
-cp .env.example .env
+cp .env.example .env.local
+# Set OPENAI_API_KEY in .env.local.
 npm run dev
 ```
 
-The frontend environment file contains only this public value:
+Open http://127.0.0.1:3000. `OPENAI_MODEL` defaults to `gpt-4.1-mini`. See [LangChain and deployment setup](langchain.md) for remote execution and tracing. Restart after changing environment variables. The demo no longer reads `VITE_DXP_AI_ENDPOINT`; old Vite settings can be removed from your local environment. Do not copy secrets into any public variable.
 
-```dotenv
-VITE_DXP_AI_ENDPOINT=http://127.0.0.1:8787/api/ai/chat
-```
-
-Restart Vite after changing it. An unset endpoint leaves the AI button visible with setup guidance. If an existing `.env` uses `/api/ai/chat`, replace it with the direct API URL unless your host already routes that path to the backend.
-
-In a second terminal, start the sibling backend:
-
-```sh
-cd ../dlb-dxp-server
-npm install
-cp .env.example .env
-# Set OPENAI_API_KEY in this backend .env file.
-# Set AI_ALLOWED_ORIGIN=http://127.0.0.1:5173.
-npm run dev
-```
-
-Open the frontend at `http://127.0.0.1:5173`. It calls the separate backend directly; Vite has no API proxy configuration. The backend permits cross-origin requests only from its exact configured `AI_ALLOWED_ORIGIN`. If you use `localhost`, a different port, or another hostname for the frontend, update that backend setting to match. If the API host or port changes, update `VITE_DXP_AI_ENDPOINT` too. Open **AI chat** to the left of Canvas Help and request a node or connection change. Each valid response is one undoable edit. Responses based on an older canvas revision are rejected, and chat history remains in memory.
-
-## Embed in a host application
-
-Configure the endpoint through the builder's `ai` prop:
+The demo passes exactly:
 
 ```tsx
-<VisualDXPBuilder
-  ai={{
-    endpoint: '/api/ai/chat',
-    credentials: 'same-origin',
-  }}
-/>
+<VisualDXPBuilder ai={{ endpoint: '/api/ai/chat', credentials: 'same-origin' }} />
 ```
 
-The relative endpoint above requires routing from the host application to the API. You can instead pass a full API URL; configure the backend's allowed origin for that frontend.
+Open **AI chat** next to Canvas Help. Each request includes the latest workflow and selected node IDs plus recent conversation. A complete valid operation batch is applied in one history commit; one Undo restores all of it, and Redo reapplies it. If the canvas changes while a request is pending, the response is rejected. Chat history stays in memory. Closing chat preserves an ongoing request; Stop and unmount cancel it.
 
-`credentials` follows the browser Fetch API and defaults to `same-origin`. Optional `headers` can carry your application's authentication or CSRF headers. These settings are visible to the browser: never put model provider or LangSmith keys in them, in `VITE_*` variables, or in workflow configuration. The backend receives workflow configuration, including node headers and HTML, together with the conversation.
-
-The demo's environment variable configures only the demo. Applications embedding the library supply their own `ai` prop.
+The library remains reusable without Next.js or a backend. Other hosts can pass their own endpoint, `credentials`, and application authentication/CSRF `headers`. These settings are browser-visible: never use provider or LangSmith credentials here or in workflow configuration. The integrated API intentionally supports only same-origin hosting.
 
 ## HTTP contract
 
@@ -79,10 +50,40 @@ An empty operations array represents a conversational reply. Supported operation
 
 Requests support up to 40 messages, 500 nodes, and 1,000 connections. Responses allow up to 100 operations. Browser request and response bodies are limited to 1 MB, and requests time out after 120 seconds. The UI handles unauthorized (`401`/`403`), busy (`429`), and unconfigured or unavailable (`503`) responses without displaying raw server error bodies.
 
+## Server boundary
+
+Both routes declare `runtime = 'nodejs'` and `dynamic = 'force-dynamic'`. The Next entry imports a `server-only` HTTP module; no standalone HTTP listener starts in Next. The agent tools and JSON workflow modules are also usable by the standalone LangGraph runner, so they do not import the Next-only marker. Import server code only through server entrypoints; the public library entry and declaration build exclude it.
+
+The chat route requires the exact `application/json` media type (parameters such as charset are accepted). It checks Content-Length as an early rejection, then counts actual streamed bytes and cancels the reader above 1,048,576 bytes, even when the header is missing or incorrect. Body reading and provider work share a 90-second server deadline. The frontend timeout remains 120 seconds. Request aborts propagate to the model/deployment and cancel upload reading. The deadline returns even if a provider ignores cancellation. Timers and listeners are removed on completion.
+
+Requests, response shapes, and the complete proposed operation batch are validated before success. Server validation is DOM-independent and supports frames and child coordinates; the browser performs its existing additional selector validation and validates again before committing. Tools operate on private drafts and never execute workflows, browse target URLs, or publish anything.
+
+| Status | Meaning |
+| --- | --- |
+| 200 | Valid `{ message, operations }` response |
+| 400 | Malformed JSON, invalid request/graph/selection, or contract limit |
+| 403 | Disallowed origin or fetch metadata |
+| 405 | Unsupported HTTP method (provided by Next) |
+| 413 | Wire body exceeds 1 MiB |
+| 415 | Unsupported content type |
+| 499 | Request cancelled; a disconnected browser generally receives no response |
+| 502 | Provider failure, malformed provider output, or invalid operation batch |
+| 503 | Missing local key or invalid deployment URL configuration |
+| 504 | Server deadline exceeded |
+
+Chat and health responses set `Cache-Control: no-store` and `X-Content-Type-Options: nosniff`. Provider error bodies and stack traces are not sent to the browser. Expected configuration errors use safe messages. The health response contains only `{ configured: boolean, mode: 'local' | 'deployment' }`. `configured` means a nonempty local key or deployment URL exists; it does not check a URL's reachability, required deployment credentials, or credential validity.
+
 ## Production hosting
 
-`npm run build` produces the static demo in `demo-dist/` and the reusable library in `dist/`. Neither output includes the AI server. Deploy `dlb-dxp-server` separately and configure its full API URL in the frontend, or route the host application's `/api/ai/chat` endpoint to it through an authenticated backend or reverse proxy. API routing and access settings belong to the host and backend.
+```sh
+npm run build
+npm start
+```
 
-Use the host's application authentication, workflow access checks, and request limits. For direct cross-origin requests, set the backend's `AI_ALLOWED_ORIGIN` to the exact frontend origin. Its CORS policy allows `POST` requests with `Content-Type`, `Authorization`, and `X-CSRF-Token` headers. For a same-origin reverse proxy, preserve the original `Host` header or configure the allowed origin explicitly. Cross-origin cookie authentication also requires `ai.credentials: 'include'` and appropriate cookie and CSRF settings in the host. Provider credentials stay in the backend environment.
+Deploy as a Node application, not a static export. Set secrets in the hosting environment. Configure the host's request duration above the 90-second application deadline; the chat route declares a 120-second `maxDuration` hint, but hosting platforms may impose shorter limits. The default command binds to 127.0.0.1. For a container or public listener behind your access controls, use `npm start -- --hostname 0.0.0.0`. Port can be set with `PORT` or `--port`.
 
-Run `npm test` and `npm run build` here to verify the frontend. Run backend checks from `dlb-dxp-server` as described in its README.
+The API requires an exact Origin match against the request protocol and Host, rejects cross-site/same-site fetch metadata, and does not grant cross-origin CORS access. A trusted reverse proxy must preserve the public Host and set the request protocol correctly (including trusted `X-Forwarded-Proto` for TLS termination). `X-Forwarded-Host` is not used for origin authorization. The old cross-origin `AI_ALLOWED_ORIGIN` setting is unused.
+
+Origin checks are not authentication. Non-browser requests without Origin are accepted, just as in the original backend. Neither project supplied authentication, so no login system was invented. Use the host's authentication, workflow access controls, rate limits, and quotas before exposing a credentialed API. Do not cache `/api/ai/*` at a reverse proxy. Provider credentials never go through the browser.
+
+See [migration and verification](migration.md) for checks and reproducible mock smoke testing.

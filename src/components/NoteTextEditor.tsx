@@ -183,11 +183,13 @@ export function NoteTextEditor({
   }
 
   return (
+    // biome-ignore lint/a11y/useSemanticElements: Mixed inline text marks require a contenteditable rich-text textbox.
     <div
       ref={editor}
       id={id}
       className={`dxp-note-editor nodrag nopan nowheel ${className}`.trim()}
       contentEditable
+      tabIndex={0}
       suppressContentEditableWarning
       role="textbox"
       aria-label={ariaLabel}

@@ -1,0 +1,6 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": { "plugins": [], "incremental": false },
+  "include": ["src/index.ts", "src/components", "src/lib"],
+  "exclude": ["node_modules", "dist", "src/app", "src/server", "src/demo", "src/app.tsx"]
+}

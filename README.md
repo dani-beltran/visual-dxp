@@ -1,6 +1,6 @@
 # Visual DXP
 
-An embeddable React 19 workflow editor powered by React Flow. Build website experiences visually, pick elements inside an iframe, test the journey, and export a standalone JavaScript file.
+A Next.js App Router application and embeddable React 19 workflow editor powered by React Flow. Build website experiences visually, pick elements inside an iframe, test the journey, and export a standalone JavaScript file.
 
 ## Run the demo
 
@@ -8,14 +8,19 @@ Requires Node.js 22.12+ (tested with Node.js 24).
 
 ```sh
 npm install
+cp .env.example .env.local
+# Set OPENAI_API_KEY in .env.local to enable local AI execution.
 npm run dev
 ```
 
-Open http://localhost:5173. The included demo website supports the element picker and live workflow testing without additional setup. The demo saves workflow changes in local browser storage. Its Activity tab starts with illustrative actions from several users; activity stays in memory and resets when the page reloads.
+Open http://127.0.0.1:3000. The page and AI API run in the same Next.js process; no sibling backend process is needed. The included demo website supports the element picker and live workflow testing without additional setup. The demo saves workflow changes in local browser storage. Its Activity tab starts with illustrative actions from several users; activity stays in memory and resets when the page reloads.
 
 ```sh
-npm test             # Runtime, export, picker bridge, and import boundary tests
-npm run build        # Typecheck, demo-dist/, and reusable dist/ library with declarations
+npm test             # Frontend, integrated backend, and mocked Route Handler tests
+npm run typecheck    # App, server, library, and test types
+npm run build        # Production Next.js application (.next/)
+npm start            # Serve the production application on port 3000
+npm run build:lib    # Reusable dist/ library with declarations and public assets
 npm run lint         # Check Biome lint rules
 npm run lint:fix     # Apply safe lint fixes
 npm run format       # Format supported files with Biome
@@ -33,7 +38,7 @@ Build and install this local package from your application (the package is not p
 
 ```sh
 # In this repository
-npm run build
+npm run build:lib
 npm pack
 
 # In your application, using the archive produced above
@@ -266,26 +271,17 @@ The builder does not contact an activity server or store activity in localStorag
 
 The **AI chat** button to the left of Canvas Help opens a conversation for creating, updating, removing, and connecting steps. It sends the current workflow and selected node with each message. Valid edits are applied together as one undoable change. If you edit the canvas while the assistant is working, its response is rejected so your changes are preserved. Chat history stays in memory and is not saved to browser storage.
 
-This repository contains the frontend only. The LangChain agent, HTTP API, tools, and LangSmith deployment configuration live in the separate `dlb-dxp-server` project. Configure your host application's authenticated endpoint:
+The demo configures the reusable builder with the same-origin endpoint:
 
 ```tsx
-<VisualDXPBuilder ai={{ endpoint: '/api/ai/chat' }} />
+<VisualDXPBuilder ai={{ endpoint: '/api/ai/chat', credentials: 'same-origin' }} />
 ```
 
-For the local demo, copy `.env.example` to `.env`; its only setting is the public `VITE_DXP_AI_ENDPOINT=http://127.0.0.1:8787/api/ai/chat`. Run `npm run dev` here and start the backend from the sibling project in another terminal:
+Set `OPENAI_API_KEY` in `.env.local` to use the integrated local LangChain agent. `OPENAI_MODEL` defaults to `gpt-4.1-mini`. Alternatively set `LANGGRAPH_API_URL`, `LANGGRAPH_ASSISTANT_ID` (default `workflow_editor`), and `LANGSMITH_API_KEY` for a remote deployment. The remote graph needs its own `OPENAI_API_KEY`; the Next.js proxy does not. Optional `LANGSMITH_TRACING`, `LANGSMITH_PROJECT`, `LANGSMITH_ENDPOINT`, and `LANGSMITH_WORKSPACE_ID` configure tracing. All provider settings stay server-side; none belong in `NEXT_PUBLIC_*`, `VITE_*`, client props, or browser request headers.
 
-```sh
-cd ../dlb-dxp-server
-npm install
-cp .env.example .env
-# Set OPENAI_API_KEY in this backend .env file.
-# Set AI_ALLOWED_ORIGIN=http://127.0.0.1:5173 for the local frontend.
-npm run dev
-```
+`GET /api/ai/health` reports `{ configured, mode }` based on configuration presence, not verified credentials. Without configuration the editor still works and chat returns a safe 503 error. No AI responses are simulated by the app. This migration does not read or copy secrets from the original backend.
 
-Open `http://127.0.0.1:5173`. The frontend calls the backend directly, with no Vite proxy. The backend's `AI_ALLOWED_ORIGIN` must exactly match the frontend origin, including hostname and port. In production, use your API URL with its allowed frontend origin, or route a relative `/api/ai/chat` endpoint through your host's authenticated backend or reverse proxy. Keep model and LangSmith keys only in the backend's environment. Without an endpoint, the chat displays setup guidance; it does not simulate AI responses.
-
-See [frontend AI integration](docs/ai-integration.md) for the HTTP contract, authentication options, and hosting setup. Backend setup and LangChain platform configuration are documented in the separate project's `README.md` and `docs/langchain.md` (locally, `../dlb-dxp-server/docs/langchain.md`).
+The application rejects browser requests from other origins. This is an origin protection, not authentication: neither original project supplies login or workflow authorization. Keep private deployments behind your host's existing access controls and quotas. The development and start scripts bind to loopback; when required, use `npm start -- --hostname 0.0.0.0` behind your hosting access controls. See [AI integration](docs/ai-integration.md), [LangChain/deployment setup](docs/langchain.md), and [migration verification](docs/migration.md).
 
 ## Visual element selection
 
@@ -332,11 +328,13 @@ runtime.destroy(); // Abort pending work and remove listeners/popovers.
 
 **Run workflow** in the test preview installs the current workflow with `start()`, just like the exported script. Page-load triggers run immediately on the loaded page; clicks, form events, inactivity, and other behavioral triggers respond to interactions inside the preview website. The execution log shows the actions and branches that actually run. **Restart workflow** replaces the active runtime with a fresh run, and **Stop workflow** removes its listeners, cancels pending work, and closes its popovers. Editing the workflow, reloading or navigating the preview website, and closing the modal also stop the active runtime. DOM changes remain on the preview page until it is reloaded; `destroy()` does not revert page mutations or completed HTTP requests.
 
-HTML and DOM actions are author-controlled content. Import workflows from trusted sources, and do not put server secrets in client-side request headers. HTML previews are sandboxed; the exported runtime intentionally inserts authored HTML on your website. This project is a client-side editor/runtime, with application authentication, server persistence, and publishing supplied by the host project.
+HTML and DOM actions are author-controlled content. Import workflows from trusted sources, and do not put server secrets in client-side request headers. HTML previews are sandboxed; the exported runtime intentionally inserts authored HTML on your website. The reusable editor/runtime remains independent of Next.js. Application authentication, server persistence, and publishing are supplied by the host.
 
 ## Source layout
 
-- `src/app.tsx` — demo host page, project header, test trigger, and export dialog.
+- `src/app/` — Next.js layout, client-only editor entry, and Node API Route Handlers.
+- `src/demo/Demo.tsx` — demo activity, persistence, and same-origin AI configuration.
+- `src/app.tsx` — reusable demo host UI, project header, test trigger, and export dialog.
 - `src/components/VisualDXPBuilder.tsx` — independent editor, state/history, import, persistence, and test preview.
 - `src/components/` — workflow cards, node inspector, picker, and live preview.
 - `src/lib/runtime/` — workflow execution, conditions, popovers, and trigger modules; `index.ts` exposes the runtime API.
@@ -345,7 +343,8 @@ HTML and DOM actions are author-controlled content. Import workflows from truste
 - `src/lib/types.ts` — public workflow schema.
 - `src/lib/ai.ts` — chat protocol, transport, and validated atomic workflow edits.
 - `src/lib/activity.ts` — public activity entries and subscribable in-memory store.
-- `docs/ai-integration.md` — connect the frontend to the separate AI backend.
+- `src/server/ai/` — integrated agent, tools, independent server workflow validation, HTTP boundary, and deployable graph.
+- `docs/ai-integration.md` — same-origin API contract and hosting guidance.
 - `public/picker-bridge.js` — standalone bridge deployed on the target website.
 - `public/demo-site.html` — working sample website.
 

@@ -1,8 +1,7 @@
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import { App } from './app';
-import { createActivityStore } from './lib/activity';
-import './styles/demo.css';
+'use client';
+
+import { App } from '../app';
+import { createActivityStore } from '../lib/activity';
 
 const demoStartedAt = Date.now();
 const minutesAgo = (minutes: number) => new Date(demoStartedAt - minutes * 60_000).toISOString();
@@ -45,17 +44,12 @@ const activityStore = createActivityStore([
   },
 ]);
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
+export default function Demo() {
+  return (
     <App
       activityStore={activityStore}
-      activityUser="Daniel Beltrán"
       persistenceKey="dlb-dxp-workflow-v1"
-      ai={
-        import.meta.env.VITE_DXP_AI_ENDPOINT
-          ? { endpoint: import.meta.env.VITE_DXP_AI_ENDPOINT }
-          : undefined
-      }
+      ai={{ endpoint: '/api/ai/chat', credentials: 'same-origin' }}
     />
-  </React.StrictMode>,
-);
+  );
+}

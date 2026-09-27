@@ -1,6 +1,5 @@
 import { ArrowDownToLine, ArrowUpRight, Check, Code2, Copy, FileJson, Play, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import visualDxpLogo from './assets/visual-dxp-logo.png';
 import {
   VisualDXPBuilder,
   type VisualDXPBuilderApi,
@@ -118,7 +117,7 @@ export function App({
             <div className="dxp-project-summary">
               <div className="dxp-title-row">
                 <h1>
-                  <img className="dxp-brand-image" src={visualDxpLogo} alt="Visual DXP" />
+                  <img className="dxp-brand-image" src="/visual-dxp-logo.png" alt="Visual DXP" />
                 </h1>
                 <span className="dxp-draft-badge">DRAFT</span>
               </div>
