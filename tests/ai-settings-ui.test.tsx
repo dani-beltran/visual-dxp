@@ -105,9 +105,7 @@ it('keeps saved settings and provides unlocking within the assistant when the ta
   await click(button('AI chat'));
   expect(tab('AI Settings')).toBeUndefined();
   expect(button('Unlock browser settings')).toBeDefined();
-  expect(host.querySelector('.dxp-ai-context')?.textContent).toContain(
-    'AI configuration is incorrect',
-  );
+  expect(host.querySelector('.dxp-ai-context')?.textContent).toContain('Unlock OpenAI');
   expect(host.querySelector('.dxp-ai-status.error')).not.toBeNull();
   await input('Passphrase to unlock', 'a very long passphrase');
   await click(button('Unlock browser settings'));
@@ -121,12 +119,10 @@ it('keeps saved settings and provides unlocking within the assistant when the ta
   expect(host.querySelector('.dxp-ai-status.ready')).not.toBeNull();
   expect(localStorage.getItem(AI_SETTINGS_STORAGE_KEY)).toBe(saved);
   await click(button('Lock'));
-  expect(host.querySelector('.dxp-ai-context')?.textContent).toContain(
-    'AI configuration is incorrect',
-  );
+  expect(host.querySelector('.dxp-ai-context')?.textContent).toContain('Unlock OpenAI');
   expect(host.querySelector('.dxp-ai-status.error')).not.toBeNull();
 });
-it('masks keys, toggles visibility, shows destination and privacy text, and removes settings', async () => {
+it('masks keys, toggles visibility, shows privacy text, and removes settings', async () => {
   const store = new AISettingsStore();
   store.refresh();
   await act(async () => root.render(<AISettings store={store} endpoint="https://ai.test/chat" />));
@@ -134,15 +130,14 @@ it('masks keys, toggles visibility, shows destination and privacy text, and remo
   await click(button('Show API key'));
   expect(host.querySelector('input')?.type).toBe('text');
   await click(button('Hide API key'));
-  expect(host.textContent).toContain('https://ai.test');
   expect(host.textContent).toContain('privileged browser extensions');
   expect(host.textContent).toContain('never included in your published site');
   await act(async () =>
     store.save('sk-test-private', 'my-model', 'a very long passphrase', 'https://ai.test/chat'),
   );
   await click(button('Remove browser settings'));
-  expect(host.textContent).toContain('Server defaults active');
-  expect(localStorage.getItem(AI_SETTINGS_STORAGE_KEY)).toBeNull();
+  expect(host.textContent).toContain('No saved configuration');
+  expect(JSON.parse(localStorage.getItem(AI_SETTINGS_STORAGE_KEY)!).providers).toEqual({});
 });
 
 it.each(['localhost', '127.0.0.1', '[::1]'])(
@@ -161,7 +156,7 @@ it.each(['localhost', '127.0.0.1', '[::1]'])(
         .dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
     });
     await act(async () => {
-      await vi.waitFor(() => expect(host.textContent).toContain('Browser settings active'));
+      await vi.waitFor(() => expect(host.textContent).toContain('Browser settings ready'));
     });
     await click(button('AI chat'));
     expect(host.querySelector('.dxp-ai-status.ready')).not.toBeNull();
@@ -175,5 +170,110 @@ it('updates the chat status when damaged browser settings are removed', async ()
   expect(host.querySelector('.dxp-ai-status.error')).not.toBeNull();
   await click(button('Remove browser settings'));
   expect(host.querySelector('.dxp-ai-status.ready')).not.toBeNull();
-  expect(host.querySelector('[aria-label="Assistant credentials"]')).toBeNull();
+  expect(host.querySelector('[aria-label="Assistant credentials"]')?.textContent).toContain(
+    'Active provider: OpenAI',
+  );
+});
+
+it('uses accessible provider tabs without activating them and restores the viewed tab after reload', async () => {
+  const store = new AISettingsStore();
+  store.refresh();
+  await act(async () => root.render(<AISettings store={store} endpoint="https://ai.test/chat" />));
+  const providerTabs = () => [
+    ...host.querySelectorAll<HTMLButtonElement>('[aria-label="AI providers"] [role="tab"]'),
+  ];
+  const first = providerTabs()[0];
+  expect(first.textContent).toContain('Active');
+  await act(async () =>
+    first.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true })),
+  );
+  expect(document.activeElement).toBe(providerTabs()[1]);
+  expect(providerTabs()[1].getAttribute('aria-selected')).toBe('true');
+  expect(providerTabs()[0].textContent).toContain('Active');
+  const panel = document.getElementById(providerTabs()[1].getAttribute('aria-controls')!)!;
+  expect(panel.hidden).toBe(false);
+  expect(panel.getAttribute('aria-labelledby')).toBe(providerTabs()[1].id);
+  await act(async () =>
+    providerTabs()[1].dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true })),
+  );
+  expect(document.activeElement).toBe(providerTabs()[2]);
+  expect(store.getSnapshot().activeProvider).toBe('openai');
+  const restored = new AISettingsStore();
+  restored.refresh();
+  expect(restored.getSnapshot()).toMatchObject({
+    viewedProvider: 'local',
+    activeProvider: 'openai',
+  });
+});
+it('saves and activates local settings without a key, and unsaved fields never affect requests', async () => {
+  const store = new AISettingsStore();
+  store.refresh();
+  await act(async () => root.render(<AISettings store={store} endpoint="https://ai.test/chat" />));
+  await click(tab('Self-Hosted')!);
+  expect(host.textContent).toContain('hosted locally on your computer won’t work');
+  expect(host.querySelector('input[type="password"]')).not.toBeNull();
+  expect(
+    [...host.querySelectorAll('label')].some((label) => label.textContent?.includes('passphrase')),
+  ).toBe(false);
+  await input('Self-Hosted API base URL', 'https://models.example.com/v1');
+  await input('Self-Hosted model ID', 'local-model');
+  expect(store.forRequest('https://ai.test/chat', new AbortController())).toBeUndefined();
+  await act(async () =>
+    host
+      .querySelector('form')!
+      .dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })),
+  );
+  expect(store.getSnapshot().activeProvider).toBe('local');
+  await input('Self-Hosted model ID', 'unsaved-model');
+  await input('Self-Hosted API base URL', 'http://evil.test/v1');
+  expect(store.forRequest('https://ai.test/chat', new AbortController())).toMatchObject({
+    provider: 'local',
+    model: 'local-model',
+    baseURL: 'https://models.example.com/v1',
+  });
+  await click(tab('Claude')!);
+  await input('Anthropic API key', 'sk-ant-private');
+  await input('Claude model ID', 'unsaved-claude');
+  expect(store.forRequest('https://ai.test/chat', new AbortController())).toMatchObject({
+    provider: 'local',
+    model: 'local-model',
+  });
+});
+it('keeps the previous provider after a failed save and activates saved credentials without re-entry', async () => {
+  const store = new AISettingsStore();
+  await store.save(
+    'sk-openai-private',
+    'openai-model',
+    'a very long passphrase',
+    'https://ai.test/chat',
+  );
+  await store.saveProvider(
+    'local',
+    { apiKey: '', model: 'local-model', baseURL: 'http://127.0.0.1:11434/v1' },
+    '',
+    'https://ai.test/chat',
+  );
+  await act(async () => root.render(<AISettings store={store} endpoint="https://ai.test/chat" />));
+  await click(tab('Claude')!);
+  await input('Anthropic API key', 'sk-ant-private');
+  await input('Claude model ID', 'claude-model');
+  await input('Encryption passphrase (at least 12 characters)', 'a very long passphrase');
+  const write = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+    throw new Error('quota');
+  });
+  await act(async () => {
+    host
+      .querySelector('form')!
+      .dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    await new Promise((resolve) => setTimeout(resolve, 200));
+  });
+  expect(host.textContent).toContain('Previous active settings were preserved');
+  expect(store.getSnapshot().activeProvider).toBe('local');
+  write.mockRestore();
+  await click(tab('OpenAI')!);
+  await click(button('Activate saved configuration'));
+  expect(store.getSnapshot().activeProvider).toBe('openai');
+  expect(store.forRequest('https://ai.test/chat', new AbortController())).toMatchObject({
+    apiKey: 'sk-openai-private',
+  });
 });

@@ -52,6 +52,7 @@ import {
   workflowFingerprint,
 } from '../lib/ai';
 import {
+  AI_PROVIDER_LABELS,
   AIConfigurationError,
   allowsBrowserCredentials,
   resolveAIEndpoint,
@@ -178,7 +179,7 @@ function Builder({
   // biome-ignore lint/correctness/useExhaustiveDependencies: A settings or endpoint change invalidates the previous connection failure.
   useEffect(() => {
     setAIRequestConfigurationError(false);
-  }, [aiSettingsState, ai?.endpoint]);
+  }, [aiSettingsState.effectiveRevision, ai?.endpoint]);
   let aiConfigurationError = aiRequestConfigurationError;
   if (aiEnabled && ai) {
     try {
@@ -192,6 +193,7 @@ function Builder({
       aiConfigurationError = true;
     }
   }
+  // biome-ignore lint/correctness/useExhaustiveDependencies: Changing the application destination must cancel pending requests and revoke unlocked keys.
   useEffect(() => {
     if (!aiEnabled) {
       aiSettings.lock();
@@ -205,7 +207,7 @@ function Builder({
       window.removeEventListener('storage', aiSettings.refresh);
       window.removeEventListener('pagehide', aiSettings.lock);
     };
-  }, [aiEnabled, aiSettings]);
+  }, [aiEnabled, aiSettings, ai?.endpoint]);
   useEffect(() => {
     if (!showAISettings && view === 'settings') setView('canvas');
   }, [showAISettings, view]);
@@ -790,6 +792,7 @@ function Builder({
       })
       .finally(() => aiSettings.finishRequest(controller));
     signal.throwIfAborted();
+    controller.signal.throwIfAborted();
     if (baseline !== workflowFingerprint(current.current)) {
       throw new Error(
         'The canvas changed while I was working. Send your message again to use the latest version.',
@@ -1085,6 +1088,8 @@ function Builder({
                       open={canvasAssistant === 'chat'}
                       onOpenChange={toggleChat}
                       configured={aiEnabled}
+                      activeProvider={AI_PROVIDER_LABELS[aiSettingsState.activeProvider]}
+                      settings={<AISettings store={aiSettings} endpoint={ai!.endpoint} compact />}
                       locked={aiSettingsState.status === 'locked'}
                       configurationError={aiConfigurationError}
                       selectedLabel={selected?.data.label}

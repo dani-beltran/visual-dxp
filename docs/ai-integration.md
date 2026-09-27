@@ -1,6 +1,6 @@
 # Same-origin AI integration
 
-The Next.js App Router serves the demo and `/api/ai/*` in one process. `src/server/ai/` contains the copied LangChain agent, tools, workflow validation, and optional remote deployment graph. The original `dlb-dxp-server` directory is untouched and is not needed to build, test, or run this application.
+The Next.js App Router serves the demo and `/api/ai/*` in one process. `src/server/ai/` contains the Vercel AI SDK Core provider factory, shared tool loop, workflow validation, and optional remote LangGraph deployment graph. The original `dlb-dxp-server` directory is untouched and is not needed to build, test, or run this application.
 
 ## Local setup
 
@@ -11,7 +11,7 @@ cp .env.example .env.local
 npm run dev
 ```
 
-Open http://127.0.0.1:3000. `OPENAI_MODEL` defaults to `gpt-6-luna`. See [LangChain and deployment setup](langchain.md) for remote execution and tracing. Restart after changing environment variables. Browser AI Settings updates apply immediately and never change these files. The demo no longer reads `VITE_DXP_AI_ENDPOINT`; old Vite settings can be removed from your local environment. Do not copy secrets into any public variable.
+Open http://127.0.0.1:3000. `OPENAI_MODEL` defaults to `gpt-6-luna`. See [execution and deployment setup](langchain.md) for remote execution. Claude uses ANTHROPIC_API_KEY and ANTHROPIC_MODEL; Self-Hosted uses the settings below. Restart after changing environment variables. Browser AI Settings updates apply immediately and never change these files. The demo no longer reads `VITE_DXP_AI_ENDPOINT`; old Vite settings can be removed from your local environment. Do not copy secrets into any public variable.
 
 The demo passes exactly:
 
@@ -63,7 +63,8 @@ Requests, response shapes, and the complete proposed operation batch are validat
 | 200 | Valid `{ message, operations }` response |
 | 400 | Malformed JSON, invalid request/graph/selection, or contract limit |
 | 403 | Disallowed origin or fetch metadata |
-| 422 | Browser provider key/model rejected or local tool loop failed; no fallback |
+| 409 | Unsupported provider/remote execution combination |
+| 422 | Provider request/tool capability failure or invalid tool operation; no changes or fallback |
 | 429 | Application request quota exceeded |
 | 405 | Unsupported HTTP method (provided by Next) |
 | 413 | Wire body exceeds 1 MiB |
@@ -103,34 +104,75 @@ See [migration and verification](migration.md) for checks and reproducible mock 
 
 With an explicit nonempty endpoint, `showSettings` defaults to true. Set `ai.showSettings: false` to hide only the tab. With no endpoint both the tab and assistant are absent and no AI request occurs, regardless of localStorage contents. No environment setting or default URL enables the library's AI features. See README for embedding examples.
 
-An unlocked browser override supplies all three reserved headers:
+The active provider is independent of the viewed settings tab. OpenAI is the default for new and existing users. Opening a tab or editing a field changes no request configuration. **Save and activate** validates format, encrypts any key, and atomically persists the configuration and selection before activation. It does not test upstream connectivity. Failed saves preserve the previous selection and effective settings. **Activate saved configuration** uses an already unlocked configuration without key re-entry. Locked providers must be unlocked first. Compact assistant settings share the same store and controls.
+
+The active badge indicates selection, not connectivity. Locked/damaged settings block requests. With no browser configuration, only that provider’s server defaults are considered; absence or rejection is an actionable error, never a fallback to another provider. Removing a configuration preserves provider selection. Server-side credentials are intended only for development and debugging and are not advertised or selectable in the product UI.
 
 | Header | Value | Logging policy |
 | --- | --- | --- |
-| `X-DXP-AI-Override` | `browser` | May log the presence of an override only |
-| `X-DXP-OpenAI-Key` | The unlocked key | Always redact/omit, case-insensitively |
-| `X-DXP-OpenAI-Model` | User-selected model ID | Prefer omission from request logging |
+| `X-DXP-AI-Provider` | `openai`, `claude`, or `local`; omitted legacy requests mean OpenAI | Non-secret |
+| `X-DXP-AI-Override` | `browser` when using saved browser configuration | May log presence only |
+| `X-DXP-OpenAI-Key` / `X-DXP-OpenAI-Model` | OpenAI browser key/model; legacy protocol retained | Always redact key |
+| `X-DXP-AI-Key` / `X-DXP-AI-Model` | Claude or Local browser key/model | Always redact key |
+| `X-DXP-AI-Base-URL` | Local provider base URL only | Prefer omission |
 
-The body remains exactly `{ messages, workflow, selectedNodeIds }`. A missing marker, missing key/model, invalid characters or empty fields yields 400 before provider work. No application authorization is required; quota failures yield 429. Provider rejection yields a safe 422 with no fallback; clients should prompt the user to check/unlock/update their settings. Raw provider errors and reflected keys are never returned. Responses are `no-store`.
+The local key header is absent when authentication is not configured. Cloud keys and model IDs are mandatory for browser overrides. The server also accepts generic key/model headers for OpenAI but rejects mixing the legacy and generic pairs, or using OpenAI headers with another provider. Incomplete overrides, unknown providers, and cloud destination overrides fail before provider work. All of these headers are reserved and cannot be supplied via `ai.headers`.
 
-For browser overrides, relative endpoints resolve against the real builder origin; HTTPS and the saved/confirmed destination origin are checked before constructing the credential-bearing request. Browser and OpenAI fetches use `redirect: 'error'`. Configure the final HTTPS URL; even same-origin redirects are rejected. The server verifies its effective request URL is HTTPS, with HTTP allowed only on localhost, 127.0.0.1, or [::1] for local use. The trusted TLS terminator must correctly reconstruct that URL, strip untrusted forwarding headers, and keep all credential-bearing hops encrypted. Do not add a client-controlled upstream URL. The request-scoped OpenAI client is fixed to `https://api.openai.com/v1/responses`, sets `store: false`, disables SDK logging, and never sends browser keys to LangGraph or LangSmith. It uses the existing workflow schemas, private tool draft, and full-operation validation. Environment and shared clients are not mutated.
+The body remains `{ messages, workflow, selectedNodeIds }`, and the response remains `{ message, operations }`. Provider configuration never enters workflow data. No application authorization is required; quotas and same-origin checks still apply. Raw provider errors and reflected credentials are never returned. Responses are `no-store`.
 
-The complete pair overrides `OPENAI_API_KEY` and `OPENAI_MODEL` for this request alone. No key/model mixing or fallback is allowed. Subsequent requests immediately observe saved/removed settings. Without a browser override, the existing local/remote server configuration applies. Removing browser settings restores that behavior; a reload locks them instead of disabling the override.
+Browser settings bind to the application API’s origin. HTTPS is required except on localhost, 127.0.0.1, or [::1]. Changing that origin requires confirmation for the unlocked session. Browser and upstream fetches reject redirects, including same-origin redirects. A trusted TLS terminator must correctly reconstruct the request URL and keep credential-bearing hops encrypted.
+
+### Provider execution and development/debugging defaults
+
+Direct execution uses explicit request-scoped instances of `@ai-sdk/openai`, `@ai-sdk/anthropic`, and `@ai-sdk/openai-compatible` with AI SDK Core `generateText`; no AI Gateway is required. The lockfile pins a compatible stable SDK 7 family (Core 7.0.118, OpenAI 4.0.78, Anthropic 4.0.65, OpenAI-compatible 3.0.57). Provider clients, keys and drafts are never shared or changed globally.
+
+| Provider | Fixed API / protocol | Same-provider server defaults |
+| --- | --- | --- |
+| OpenAI | `https://api.openai.com/v1/responses`, `store: false`, encrypted reasoning continuation | `OPENAI_API_KEY`, `OPENAI_MODEL` (default `gpt-6-luna`); existing optional LangGraph mode |
+| Claude | `https://api.anthropic.com/v1/messages` | `ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL` (both required) |
+| Self-Hosted | Allowlisted base URL + `/chat/completions` | `LOCAL_LLM_BASE_URL`, `LOCAL_LLM_MODEL`, optional `LOCAL_LLM_API_KEY` |
+
+Browser overrides replace the complete configuration for their selected provider. An empty local browser key means no authentication, even if server environment keys exist. No cross-provider credential mixing, model mixing, or retry/fallback occurs. Cloud environment base URL overrides are ignored.
+
+All direct execution uses one bounded loop (40 model calls, at most 100 calls per turn, at most 100 staged mutations, 8,192 output tokens per call, no automatic retries, 2 MiB per upstream response). It adapts the existing tool schemas and private mutation functions. Local models must honor a forced `read_workflow` call first. An endpoint/model that rejects tools or ignores that choice fails clearly. Unknown tools, malformed arguments, invalid mutations, truncation, cancellation and exhausted bounds discard the entire batch, including earlier staged edits. There is no partial commit. A capability check demonstrates basic tool calling, not comprehensive model quality.
+
+AI SDK telemetry is explicitly disabled for all direct executions. Browser credentials never enter LangGraph state/checkpoints or LangSmith. If `LANGGRAPH_API_URL` is set, OpenAI server-default requests retain the existing stateless remote contract; Claude/Local server-default requests return 409. Browser configurations for all providers still execute directly. See [remote deployment](langchain.md).
+
+### Local model setup
+
+Start an OpenAI-compatible runtime and load a model that supports tool calls. For example:
+
+```dotenv
+# Explicit exact base URLs; no implicit localhost permission or wildcards.
+AI_LOCAL_ALLOWED_BASE_URLS=http://127.0.0.1:11434/v1,http://127.0.0.1:1234/v1
+# Optional development/debugging defaults:
+LOCAL_LLM_BASE_URL=http://127.0.0.1:11434/v1
+LOCAL_LLM_MODEL=your-installed-tool-capable-model
+LOCAL_LLM_API_KEY=
+```
+
+Ollama commonly exposes `/v1` on port 11434; LM Studio commonly uses port 1234. Enter the actual base URL and loaded model ID in **Self-Hosted**, then save and activate. Model IDs are editable and accept repository-style IDs and runtime tags. Model availability and tool support depend on the runtime and model; compatible API formatting alone is insufficient.
+
+The model base URL is separate from the browser’s application endpoint (`/api/ai/chat`). It must be reachable from the **application backend**. Localhost identifies the backend machine/container, not the visitor’s computer. Hosted Next servers normally cannot reach a model running on a visitor’s laptop.
+
+The server canonicalizes URLs and compares the entire base URL against `AI_LOCAL_ALLOWED_BASE_URLS`. The default allowance is empty, including loopback. It rejects credentials, queries, fragments, unsupported protocols, unauthorized paths/ports/hosts, and redirects. Only server administrators can change the allowlist. Allow only model servers you control; an allowed hostname’s DNS and network destination must also be administrator-controlled (the application does not pin DNS answers). Do not allow metadata services or arbitrary user-controlled hosts. Set network egress restrictions appropriate to the deployment.
 
 ## Encryption and isolation
 
-`dlb-dxp-ai-settings-v1` contains a versioned JSON envelope of model, HTTPS server origin, 16 random salt bytes, 12 random IV bytes, and AES-GCM ciphertext/tag bytes. The cipher uses AES-256-GCM and a non-extractable key derived with Web Crypto PBKDF2-HMAC-SHA-256, 600,000 iterations; salt and IV are fresh on every save. Model and original origin are authenticated additional data, so changing either invalidates decryption. The passphrase and derived key exist only during save/unlock; neither is saved. Numeric arrays encode ciphertext bytes; this encoding is not the security mechanism. The KDF work factor follows [OWASP guidance](https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html).
+The historical `dlb-dxp-ai-settings-v1` localStorage key now holds a version-2 document with `activeProvider`, `viewedProvider`, and independent provider records. Non-secret records hold model, application origin, and optional local base URL. A credential envelope holds 16 random salt bytes, 12 random IV bytes and AES-GCM ciphertext. Keyless local configurations contain no credential envelope and require neither a passphrase nor Web Crypto.
 
-The key remains only in the builder's credential store while unlocked. Lock, pagehide, unmount, disabling AI, or detecting external storage changes clears those references and aborts pending AI requests. Storage errors and damaged/unsupported records fail closed with actionable UI. Changing origins requires explicit confirmation for that unlocked session; locking/reloading revokes it. Origin confirmation is not silently persisted. Hiding the tab preserves saved credentials, and assistant controls allow unlocking, confirmation, locking and removal.
+Legacy version-1 OpenAI envelopes are read without alteration, defaulting both selection fields to OpenAI. The next successful store write atomically wraps the legacy envelope in version 2, preserving its ciphertext and original authenticated metadata. It remains decryptable with the existing passphrase. New keys use AES-256-GCM with a non-extractable Web Crypto PBKDF2-HMAC-SHA-256 key, 600,000 iterations, and fresh salt/IV. Version-2 authenticated data binds provider, model, application origin and local destination; moving ciphertext to another provider/destination invalidates decryption. No API key or passphrase is persisted in plaintext or exposed in React snapshots.
+
+Reload locks encrypted credentials. Lock/pagehide/unmount/disabling AI clear in-memory keys and origin confirmations. Saved effective configuration changes and provider activation cancel pending requests; a final abort check prevents a late response from applying edits even if fetch ignores cancellation. Browsing tabs and unsaved edits do not cancel requests. Cross-tab navigation preserves unlocked keys; cross-tab configuration replacement clears the changed provider’s key and cancels requests only if it affects the active configuration. Storage failures block requests, failed writes preserve previous saved state, and damaged provider records can be replaced/removed without deleting healthy provider records. Hiding the main settings screen preserves configuration; the assistant offers the same controls.
 
 Workflow JSON, exports, previews, activity entries, URLs and graph/checkpoint inputs do not receive the settings store. Demo/fullscreen/picker frames use `sandbox="allow-scripts"` without `allow-same-origin`, creating a separate opaque origin even for a resource served under the builder's URL. No credentials are sent via postMessage. Inbound parent messages check exact builder origin and source; inbound iframe messages check the iframe Window, origin `null`, protocol and random channel. Outbound messages to opaque origins necessarily use `*` and contain only credential-free workflow/picker data. Published sites must be hosted on a distinct origin; different paths or storage prefixes are not isolation. Do not host untrusted executable content as a top-level page on the builder origin.
 
-> Your API key is stored encrypted in this browser’s localStorage. When you use the AI assistant, it is sent over HTTPS to the configured AI server, which uses it to contact OpenAI without saving it. It is never included in your published site or workflow exports.
+> Your API key is stored encrypted in this browser’s localStorage. When you use the AI assistant, it is sent over HTTPS to the configured AI server, which uses it to contact the selected provider without saving it. It is never included in your published site or workflow exports.
 
 Origin isolation prevents ordinary cross-origin storage/DOM access. It cannot protect an unlocked key from malicious builder scripts, compromised same-origin dependencies, or privileged extensions. JavaScript string memory cannot be reliably overwritten; locking removes references. Encryption does not make a weak passphrase resistant to offline guessing. There is no passphrase recovery.
 
 ## Required deployment redaction
 
-Before enabling browser credentials in production, configure the entire request path to omit `X-DXP-OpenAI-Key` (including lowercase/reformatted variants), Authorization, Cookies and all provider Authorization headers. Prefer allowlisting safe metadata such as request ID, status and duration. Disable raw request/header/body capture in reverse proxies, load balancers, APM, OpenTelemetry HTTP instrumentation, error reporters, analytics and browser session replay; exclude the key/passphrase fields from replay. Redaction must run before ingestion, not only in a log viewer. Disable caching and request/response recording for `/api/ai/*`.
+Before enabling browser credentials in production, configure the entire request path to omit `X-DXP-OpenAI-Key`, `X-DXP-AI-Key`, upstream `X-Api-Key` (including lowercase/reformatted variants), Authorization, Cookies and all provider Authorization headers. Prefer allowlisting safe metadata such as request ID, status and duration. Disable raw request/header/body capture in reverse proxies, load balancers, APM, OpenTelemetry HTTP instrumentation, error reporters, analytics and browser session replay; exclude the key/passphrase fields from replay. Redaction must run before ingestion, not only in a log viewer. Disable caching and request/response recording for `/api/ai/*`.
 
-The application does not log credentialed requests or SDK errors, and the browser override tool loop does not invoke tracing/checkpoint frameworks. Host-installed instrumentation runs outside this code and must be configured by the operator. Never persist browser keys in databases, files, caches, sessions, queues, or checkpoints. Restrict outbound credentialed provider traffic to the fixed OpenAI HTTPS destination. For custom cross-origin servers, allow only exact trusted builder origins and required headers. The supplied Next API deliberately supports same-origin requests only.
+The application does not log credentialed requests or SDK errors, and the browser override tool loop does not invoke tracing/checkpoint frameworks. Host-installed instrumentation runs outside this code and must be configured by the operator. Never persist browser keys in databases, files, caches, sessions, queues, or checkpoints. Restrict outbound traffic to the fixed cloud HTTPS APIs and administrator-approved local model servers. For custom cross-origin servers, allow only exact trusted builder origins and required headers. The supplied Next API deliberately supports same-origin requests only.

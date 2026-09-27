@@ -3,6 +3,7 @@ import { webcrypto } from 'node:crypto';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { requestAIChat } from '../src/lib/ai';
 import {
+  isBrowserConfiguration,
   OPENAI_KEY_HEADER,
   OPENAI_MODEL_HEADER,
   resolveAIEndpoint,
@@ -29,8 +30,10 @@ afterEach(() => {
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
-const get = (store: AISettingsStore, url = endpoint) =>
-  store.forRequest(url, new AbortController());
+const get = (store: AISettingsStore, url = endpoint) => {
+  const result = store.forRequest(url, new AbortController());
+  return result && isBrowserConfiguration(result) ? result : undefined;
+};
 
 describe('encrypted browser settings', () => {
   it.each(['localhost', '127.0.0.1', '[::1]'])(
@@ -44,7 +47,7 @@ describe('encrypted browser settings', () => {
       expect(reloaded.getSnapshot().status).toBe('locked');
       await reloaded.unlock(passphrase);
       const override = get(reloaded, url);
-      expect(override).toEqual({ apiKey, model, origin: new URL(url).origin });
+      expect(override).toMatchObject({ apiKey, model, origin: new URL(url).origin });
       const fetcher = vi
         .fn()
         .mockResolvedValue(Response.json({ message: 'Ready', operations: [] }));
@@ -70,21 +73,16 @@ describe('encrypted browser settings', () => {
     const store = new AISettingsStore();
     await store.save(apiKey, model, passphrase, endpoint);
     const raw = localStorage.getItem(AI_SETTINGS_STORAGE_KEY)!;
-    const first = JSON.parse(raw);
+    const document = JSON.parse(raw);
+    const first = document.providers.openai.credential;
+    expect(document.version).toBe(2);
     expect(raw).not.toContain(apiKey);
     expect(raw).not.toContain(passphrase);
-    expect(Object.keys(first).sort()).toEqual([
-      'ciphertext',
-      'iv',
-      'model',
-      'origin',
-      'salt',
-      'version',
-    ]);
+    expect(Object.keys(first).sort()).toEqual(['ciphertext', 'iv', 'salt', 'version']);
     expect(first.iv).toHaveLength(12);
     expect(first.salt).toHaveLength(16);
     expect(JSON.stringify(store.getSnapshot())).not.toContain(apiKey);
-    expect(get(store)).toEqual({ apiKey, model, origin: 'https://ai.example.test' });
+    expect(get(store)).toMatchObject({ apiKey, model, origin: 'https://ai.example.test' });
     const reloaded = new AISettingsStore();
     reloaded.refresh();
     expect(() => get(reloaded)).toThrow(/Unlock/);
@@ -97,19 +95,20 @@ describe('encrypted browser settings', () => {
     expect(controller.signal.aborted).toBe(true);
     expect(() => get(reloaded)).toThrow(/Unlock/);
     await store.save(apiKey, model, passphrase, endpoint);
-    const second = JSON.parse(localStorage.getItem(AI_SETTINGS_STORAGE_KEY)!);
+    const second = JSON.parse(localStorage.getItem(AI_SETTINGS_STORAGE_KEY)!).providers.openai
+      .credential;
     expect(first.iv).not.toEqual(second.iv);
     expect(first.salt).not.toEqual(second.salt);
     expect(first.ciphertext).not.toEqual(second.ciphertext);
     store.remove();
     expect(get(store)).toBeUndefined();
-    expect(localStorage.getItem(AI_SETTINGS_STORAGE_KEY)).toBeNull();
+    expect(JSON.parse(localStorage.getItem(AI_SETTINGS_STORAGE_KEY)!).providers).toEqual({});
   });
   it('authenticates stored model and origin and blocks damaged settings', async () => {
     const store = new AISettingsStore();
     await store.save(apiKey, model, passphrase, endpoint);
     const value = JSON.parse(localStorage.getItem(AI_SETTINGS_STORAGE_KEY)!);
-    value.origin = 'https://evil.test';
+    value.providers.openai.origin = 'https://evil.test';
     localStorage.setItem(AI_SETTINGS_STORAGE_KEY, JSON.stringify(value));
     await expect(store.unlock(passphrase)).rejects.toThrow(/Could not unlock/);
     expect(() => get(store)).toThrow(/Unlock/);
@@ -145,10 +144,10 @@ describe('encrypted browser settings', () => {
     expect(localStorage.getItem(AI_SETTINGS_STORAGE_KEY)).toBe(saved);
     expect(() => get(store)).toThrow(/Unlock/);
     write.mockRestore();
-    vi.spyOn(Storage.prototype, 'removeItem').mockImplementation(() => {
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
       throw new Error();
     });
-    expect(() => store.remove()).toThrow(/could not be removed/);
+    expect(() => store.remove()).toThrow(/could not be saved/);
     expect(() => get(store)).toThrow(/Unlock/);
   });
   it('does not unlock if locking occurs during decryption and blocks missing Web Crypto', async () => {

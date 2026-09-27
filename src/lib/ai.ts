@@ -1,13 +1,19 @@
 import {
+  AI_BASE_URL_HEADER,
+  AI_KEY_HEADER,
+  AI_MODEL_HEADER,
+  AI_PROVIDER_HEADER,
+  AI_RESERVED_HEADERS,
   AIConfigurationError,
+  type AIRequestConfiguration,
   allowsBrowserCredentials,
-  type BrowserAIOverride,
+  isAIProvider,
+  isBrowserConfiguration,
   OPENAI_KEY_HEADER,
   OPENAI_MODEL_HEADER,
   OPENAI_OVERRIDE_HEADER,
   resolveAIEndpoint,
-  validAIKey,
-  validAIModel,
+  validBrowserConfiguration,
 } from './aiCredentials';
 import { validateWorkflow } from './export';
 import { framesFirst, removeNodes } from './frames';
@@ -564,8 +570,12 @@ export async function requestAIChat(
   settings: AIChatConfig,
   request: AIChatRequest,
   signal?: AbortSignal,
-  override?: BrowserAIOverride,
+  configuration?: AIRequestConfiguration,
 ): Promise<AIChatResponse> {
+  const override =
+    configuration && isBrowserConfiguration(configuration) ? configuration : undefined;
+  const provider = configuration?.provider ?? 'openai';
+  if (!isAIProvider(provider)) throw new AIConfigurationError('Choose a supported AI provider.');
   const endpoint = text(settings.endpoint, 'AI endpoint', 4000);
   const url = resolveAIEndpoint(
     endpoint,
@@ -575,7 +585,7 @@ export async function requestAIChat(
     throw new AIConfigurationError(
       'Browser credentials require HTTPS and confirmation of this server origin.',
     );
-  if (override && (!validAIKey(override.apiKey) || !validAIModel(override.model)))
+  if (override && !validBrowserConfiguration(override))
     throw new AIConfigurationError(
       'Browser AI settings are incomplete or invalid. Save a complete key and model pair.',
     );
@@ -583,19 +593,19 @@ export async function requestAIChat(
   const deadline = AbortSignal.timeout(AI_LIMITS.timeoutMs);
   const requestSignal = signal ? AbortSignal.any([signal, deadline]) : deadline;
   const headers = new Headers(settings.headers);
-  if (
-    [OPENAI_KEY_HEADER, OPENAI_MODEL_HEADER, OPENAI_OVERRIDE_HEADER].some((header) =>
-      headers.has(header),
-    )
-  )
+  if (AI_RESERVED_HEADERS.some((header) => headers.has(header)))
     throw new AIConfigurationError(
       'Use browser AI settings for provider credentials; reserve ai.headers for application authentication.',
     );
+  headers.set(AI_PROVIDER_HEADER, provider);
   if (override) {
-    if (body.includes(override.apiKey) || url.href.includes(override.apiKey))
+    if (override.apiKey && (body.includes(override.apiKey) || url.href.includes(override.apiKey)))
       throw new Error('Remove credentials from your conversation or workflow before sending.');
-    headers.set(OPENAI_KEY_HEADER, override.apiKey);
-    headers.set(OPENAI_MODEL_HEADER, override.model);
+    // Retain the legacy OpenAI wire protocol for existing embedding backends.
+    if (override.apiKey)
+      headers.set(provider === 'openai' ? OPENAI_KEY_HEADER : AI_KEY_HEADER, override.apiKey);
+    headers.set(provider === 'openai' ? OPENAI_MODEL_HEADER : AI_MODEL_HEADER, override.model);
+    if (override.baseURL) headers.set(AI_BASE_URL_HEADER, override.baseURL);
     headers.set(OPENAI_OVERRIDE_HEADER, 'browser');
   }
   headers.set('Content-Type', 'application/json');
@@ -628,7 +638,13 @@ export async function requestAIChat(
         );
       if (override && (response.status === 400 || response.status === 422))
         throw new AIConfigurationError(
-          'Check your browser API key and model in AI Settings. The override was rejected; no server fallback was used.',
+          provider === 'local'
+            ? 'Check the local base URL, server allowlist, optional key, and model. The model must support workflow tool calls. No changes were applied.'
+            : 'Check your browser API key and model in AI Settings. The override was rejected; no server fallback was used.',
+        );
+      if (response.status === 409)
+        throw new AIConfigurationError(
+          'This provider is unavailable in the current execution mode. Save its configuration in AI Settings.',
         );
       if (response.status === 429)
         throw new Error('The AI assistant is busy. Try again in a moment.');
@@ -637,11 +653,12 @@ export async function requestAIChat(
           'The AI assistant is not configured or is temporarily unavailable.',
         );
       if (response.status === 502)
-        throw new AIConfigurationError('Check your AI key, model, and server configuration.');
-      throw new Error('The AI request failed. Try again or check your server configuration.');
+        throw new AIConfigurationError('Check your API key and model in AI Settings.');
+      throw new Error('The AI request failed. Try again or check AI Settings.');
     }
     const value = await boundedResponse(response);
-    if (override && JSON.stringify(value).includes(override.apiKey))
+    requestSignal.throwIfAborted();
+    if (override?.apiKey && JSON.stringify(value).includes(override.apiKey))
       throw new Error('The AI server returned an unsafe response. No changes were applied.');
     try {
       return parseAIChatResponse(value);

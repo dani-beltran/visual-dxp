@@ -1,13 +1,18 @@
 import 'server-only';
 
 import {
+  AI_BASE_URL_HEADER,
+  AI_KEY_HEADER,
+  AI_MODEL_HEADER,
+  AI_PROVIDER_HEADER,
+  type AIRequestConfiguration,
   allowsBrowserCredentials,
-  type BrowserAIOverride,
+  isAIProvider,
+  isBrowserConfiguration,
   OPENAI_KEY_HEADER,
   OPENAI_MODEL_HEADER,
   OPENAI_OVERRIDE_HEADER,
-  validAIKey,
-  validAIModel,
+  validBrowserConfiguration,
 } from '../../lib/aiCredentials';
 import { aiRateLimitKey, allowAIRequest } from './access';
 import { AIServiceError, respondToAIChat } from './agent';
@@ -26,7 +31,7 @@ const tooLarge = () =>
 type ChatHandler = (
   request: AIChatRequest,
   signal: AbortSignal,
-  override?: BrowserAIOverride,
+  override?: AIRequestConfiguration,
 ) => Promise<AIChatResponse>;
 
 function json(status: number, body: unknown): Response {
@@ -127,24 +132,50 @@ export async function handleChat(
     return json(413, { error: tooLarge().message });
   }
 
-  const hasOverride = [OPENAI_KEY_HEADER, OPENAI_MODEL_HEADER, OPENAI_OVERRIDE_HEADER].some(
-    (header) => request.headers.has(header),
-  );
-  let override: BrowserAIOverride | undefined;
+  const provider = request.headers.get(AI_PROVIDER_HEADER) ?? 'openai';
+  if (!isAIProvider(provider)) return json(400, { error: 'Unsupported AI provider.' });
+  const legacy = request.headers.has(OPENAI_KEY_HEADER) || request.headers.has(OPENAI_MODEL_HEADER);
+  const generic = request.headers.has(AI_KEY_HEADER) || request.headers.has(AI_MODEL_HEADER);
+  if (
+    (legacy && (provider !== 'openai' || generic)) ||
+    (provider !== 'local' && request.headers.has(AI_BASE_URL_HEADER))
+  )
+    return json(400, {
+      error: 'Provider credentials or destination do not match the selected provider.',
+    });
+  const hasOverride =
+    legacy ||
+    generic ||
+    request.headers.has(OPENAI_OVERRIDE_HEADER) ||
+    request.headers.has(AI_BASE_URL_HEADER);
+  let override: AIRequestConfiguration | undefined =
+    provider === 'openai' ? undefined : { provider, source: 'server' };
   if (hasOverride) {
-    const apiKey = request.headers.get(OPENAI_KEY_HEADER) ?? '';
-    const model = request.headers.get(OPENAI_MODEL_HEADER) ?? '';
+    const apiKey = request.headers.get(legacy ? OPENAI_KEY_HEADER : AI_KEY_HEADER) ?? '';
+    const model = request.headers.get(legacy ? OPENAI_MODEL_HEADER : AI_MODEL_HEADER) ?? '';
+    const url = new URL(request.url);
+    const browser = {
+      provider,
+      source: 'browser' as const,
+      apiKey,
+      model,
+      origin: url.origin,
+      ...(request.headers.has(AI_BASE_URL_HEADER)
+        ? { baseURL: request.headers.get(AI_BASE_URL_HEADER)! }
+        : {}),
+    };
     if (
       request.headers.get(OPENAI_OVERRIDE_HEADER) !== 'browser' ||
-      !validAIKey(apiKey) ||
-      !validAIModel(model)
+      !validBrowserConfiguration(browser)
     )
-      return json(400, { error: 'Supply a complete, valid browser key and model override.' });
-    const url = new URL(request.url);
+      return json(400, {
+        error: 'Supply a complete, valid configuration for the selected provider.',
+      });
     if (!allowsBrowserCredentials(url))
       return json(400, { error: 'Browser credentials require HTTPS.' });
-    override = { apiKey, model, origin: url.origin };
+    override = browser;
   }
+  const browserKey = override && isBrowserConfiguration(override) ? override.apiKey : '';
   const controller = new AbortController();
   const disconnected = () =>
     controller.abort(new AIServiceError(499, 'The request was cancelled.'));
@@ -166,13 +197,13 @@ export async function handleChat(
     }
     if (!allowAIRequest(aiRateLimitKey(request)))
       return json(429, { error: 'AI request limit reached. Try again in a minute.' });
-    if (override && JSON.stringify(input).includes(override.apiKey))
+    if (browserKey && JSON.stringify(input).includes(browserKey))
       return json(400, { error: 'Credentials must not appear in chat or workflow data.' });
     const result = await abortable(
       () => handler(input, controller.signal, override),
       controller.signal,
     );
-    if (override && JSON.stringify(result).includes(override.apiKey))
+    if (browserKey && JSON.stringify(result).includes(browserKey))
       return json(502, { error: 'The AI returned an unsafe response.' });
     controller.signal.throwIfAborted();
     const parsed = parseAIChatResponse(result);
@@ -182,9 +213,11 @@ export async function handleChat(
     const failure = controller.signal.aborted ? controller.signal.reason : error;
     if (failure instanceof AIServiceError)
       return json(failure.status, {
-        error: hasOverride
-          ? 'Browser AI request failed. Check the API key, model, and server configuration; no fallback was used.'
-          : failure.message,
+        ...(failure.code ? { code: failure.code } : {}),
+        error:
+          hasOverride && !failure.code
+            ? 'Browser AI request failed. Check the API key, model, and server configuration; no fallback was used.'
+            : failure.message,
       });
     return json(502, {
       error:

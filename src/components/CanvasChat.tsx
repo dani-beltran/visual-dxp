@@ -8,7 +8,7 @@ import {
   Square,
   X,
 } from 'lucide-react';
-import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
+import { type ReactNode, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import type { AIChatMessage } from '../lib/ai';
 import '../styles/chat.css';
 
@@ -16,6 +16,8 @@ export interface CanvasChatProps {
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   configured: boolean;
+  activeProvider?: string;
+  settings?: ReactNode;
   locked?: boolean;
   configurationError?: boolean;
   selectedLabel?: string;
@@ -37,6 +39,8 @@ const suggestions = [
 
 export function CanvasChat({
   configured,
+  activeProvider = 'OpenAI',
+  settings,
   locked = false,
   configurationError = false,
   selectedLabel,
@@ -192,7 +196,7 @@ export function CanvasChat({
             </span>
             <div>
               <h2 id={`${id}-title`}>Your workflow assistant</h2>
-              <p>From an idea to a connected experience</p>
+              <p>Active provider: {activeProvider}</p>
             </div>
             <button
               type="button"
@@ -226,7 +230,11 @@ export function CanvasChat({
               aria-hidden="true"
             />
             {invalidConfiguration ? (
-              <span>AI assistant is not available</span>
+              <span>
+                {locked
+                  ? `Unlock ${activeProvider} in settings below to use AI`
+                  : `AI configuration is incorrect for ${activeProvider}. Check settings below.`}
+              </span>
             ) : selectedLabel ? (
               <span>
                 Selected: <strong>{selectedLabel}</strong>
@@ -235,6 +243,12 @@ export function CanvasChat({
               <span>Working with your current canvas</span>
             )}
           </div>
+          {settings && (
+            <details className="dxp-ai-compact-settings" open={locked || undefined}>
+              <summary>AI provider settings</summary>
+              {settings}
+            </details>
+          )}
           <div
             ref={transcript}
             className="dxp-ai-transcript"

@@ -5,6 +5,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { CanvasChat, type CanvasChatProps } from '../src/components/CanvasChat';
 import { VisualDXPBuilder, type VisualDXPBuilderApi } from '../src/components/VisualDXPBuilder';
+import { AISettingsStore } from '../src/lib/aiSettings';
 import type { Workflow } from '../src/lib/types';
 
 let host: HTMLDivElement;
@@ -12,6 +13,7 @@ let root: Root;
 let mounted: boolean;
 
 beforeEach(() => {
+  localStorage.clear();
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
   vi.stubGlobal(
     'ResizeObserver',
@@ -30,6 +32,7 @@ beforeEach(() => {
 afterEach(async () => {
   if (mounted) await act(async () => root.unmount());
   host.remove();
+  localStorage.clear();
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
 });
@@ -484,4 +487,46 @@ describe('AI workflow integration', () => {
     expect(host.querySelector('[role="alert"]')?.textContent).toContain('No changes were made.');
     expect(composer().value).toBe('Change the journey');
   });
+});
+
+it('browsing provider tabs preserves requests, but cross-tab activation cancels and rejects a late workflow edit', async () => {
+  let resolve!: (response: Response) => void;
+  const fetcher = vi.fn<typeof fetch>().mockReturnValue(
+    new Promise((done) => {
+      resolve = done;
+    }),
+  );
+  vi.stubGlobal('fetch', fetcher);
+  const { onChange, baseline } = await renderConnectedBuilder();
+  await typeMessage('Rename the delay');
+  await click(button('Send message'));
+  const signal = fetcher.mock.calls[0][1]!.signal!;
+  const providerTabs = [
+    ...host.querySelectorAll<HTMLButtonElement>('[aria-label="AI providers"] [role="tab"]'),
+  ];
+  await click(providerTabs[1]);
+  expect(signal.aborted).toBe(false);
+  expect(new Headers(fetcher.mock.calls[0][1]!.headers).get('X-DXP-AI-Provider')).toBe('openai');
+  const otherTab = new AISettingsStore();
+  otherTab.refresh();
+  await act(async () => {
+    await otherTab.saveProvider(
+      'local',
+      { apiKey: '', model: 'local-model', baseURL: 'http://127.0.0.1:11434/v1' },
+      '',
+      '/api/ai/chat',
+    );
+    window.dispatchEvent(new StorageEvent('storage'));
+  });
+  expect(signal.aborted).toBe(true);
+  const before = onChange.mock.calls.length;
+  await act(async () =>
+    resolve(
+      responseWithOperations([{ type: 'update_node', id: 'delay', label: 'Stale provider edit' }]),
+    ),
+  );
+  expect(onChange).toHaveBeenCalledTimes(before);
+  expect(onChange.mock.lastCall![0]).toEqual(baseline);
+  expect(host.textContent).not.toContain('1 edit applied');
+  expect(host.querySelector('.dxp-ai-header')?.textContent).toContain('Active provider: Self-Hosted');
 });

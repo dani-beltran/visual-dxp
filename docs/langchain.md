@@ -1,28 +1,18 @@
-# LangChain and LangSmith setup
+# AI execution and LangGraph deployment
 
-The integrated backend lives in `src/server/ai/`. `agent.ts` uses the original LangChain `createAgent` / `ChatOpenAI` tool loop. `tools.ts` stages validated changes in a private workflow draft. `graph.ts` supplies the optional `workflow_editor` deployment. The browser calls its explicitly configured API endpoint. Browser key/model overrides always use the local request-scoped OpenAI client and the same workflow tool schemas/handlers, bypassing LangChain invocation, remote LangGraph, tracing, conversation stores, and checkpoints. Server-default requests retain the original execution modes described below.
+The active backend is `src/server/ai/` in this Next.js project. Direct model execution now uses Vercel AI SDK Core for OpenAI, Claude and OpenAI-compatible local endpoints, with one shared bounded tool loop and the existing private workflow schemas/handlers. Browser configurations never enter LangGraph or checkpoints. There is no AI Gateway, streaming requirement, or second backend process. See [provider setup and contract](ai-integration.md).
 
-## Local model mode
+## Direct execution
 
-Copy `.env.example` to `.env.local` and set `OPENAI_API_KEY`. Leave `LANGGRAPH_API_URL` empty. `OPENAI_MODEL` defaults to `gpt-6-luna`; use an account-accessible model with tool calling. Run `npm run dev`. There is no second backend process. `.env.example` is only a template and is not loaded; put actual credentials in the ignored `.env.local` file. The agent uses the OpenAI Responses API so reasoning models such as `gpt-6-luna` can call workflow tools. API keys in the original sibling project's environment are not loaded or copied automatically.
+Copy `.env.example` to `.env.local`; use browser AI Settings for normal use. Server-side provider credentials are intended only for development and debugging. Leave `LANGGRAPH_API_URL` empty for direct server-default execution. OpenAI retains its Responses API and default model; Claude requires an Anthropic key/model; Self-Hosted requires an exact server allowlist entry and a tool-capable model. The 90-second route deadline includes the complete bounded tool loop and propagates cancellation. Provider redirects are rejected and automatic retries are disabled. Tools stage definitions only; they never browse, publish or execute workflows.
 
-The OpenAI SDK call has a 60-second timeout and one retry; the enclosing route enforces 90 seconds across the entire request. Every invocation receives the current workflow and bounded conversation, and creates its own tools. There are no browsing, execution, filesystem, or arbitrary HTTP tools. Workflow URLs are data and are never visited by the assistant.
+## Tracing
 
-## Optional tracing
-
-Local execution does not require a LangSmith account. To enable tracing for server-default requests only, configure these server environment variables:
-
-```dotenv
-LANGSMITH_TRACING=true
-LANGSMITH_PROJECT=dlb-dxp-workflow-editor
-LANGSMITH_API_KEY=<set privately in your environment>
-```
-
-Optionally use `LANGSMITH_ENDPOINT` for your region and `LANGSMITH_WORKSPACE_ID` for workspace selection. Traces can include messages, workflow HTML/headers, and tool results. Keep secrets out of workflows and select suitable workspace access and retention policies. Keep tracing disabled for isolated mock tests.
+AI SDK telemetry is disabled for all direct execution, including browser credentials. `LANGSMITH_TRACING` no longer traces the direct model/tool loop. It may still trace a separately deployed LangGraph wrapper using server-only credentials; deployment traces can include workflow and conversation data. Browser keys always bypass that wrapper. Retained `@langchain/core` and `@langchain/langgraph` dependencies support the remote graph; unused `langchain`, `@langchain/openai`, and `openai` dependencies were removed.
 
 ## Remote Agent Server / LangSmith deployment
 
-The repository's `langgraph.json` registers `./src/server/ai/graph.ts:graph` as `workflow_editor`. It has no embedded secrets or references to local environment files. Make this repository available to your deployment platform and select that configuration file. Supply `OPENAI_API_KEY` and optionally `OPENAI_MODEL` in the **deployment's** secret environment. Its graph always runs the local model implementation, independent of the Next.js proxy setting.
+The repository's `langgraph.json` registers `./src/server/ai/graph.ts:graph` as `workflow_editor`. It has no embedded secrets or references to local environment files. Make this repository available to your deployment platform and select that configuration file. Supply `OPENAI_API_KEY` and optionally `OPENAI_MODEL` in the **deployment's** secret environment. Its graph always runs the shared AI SDK flow with OpenAI server defaults, independent of the Next.js proxy setting. The existing remote state contract supports only OpenAI server-default requests; Claude or Self-Hosted server-default selections return 409 when remote mode is configured. Save a browser configuration for direct execution or disable remote mode to use those providers.
 
 The graph's internal modules are framework-independent Node code and do not import the Next-only `server-only` marker; that marker guards the HTTP entrypoint. No Next server is started by the graph runner. The dependencies and lockfile are included at this repository's root.
 

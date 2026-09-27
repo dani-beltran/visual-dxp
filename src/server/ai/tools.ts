@@ -1,5 +1,4 @@
 import { randomUUID } from 'node:crypto';
-import { tool } from 'langchain';
 import { z } from 'zod';
 import type { WorkflowOperation } from './workflow/ai';
 import { applyWorkflowOperations } from './workflow/ai';
@@ -201,7 +200,7 @@ export function createWorkflowTools(workflow: Workflow, selectedNodeIds: string[
     }
   }
 
-  // Reuse the exact schemas and handlers without Runnable tracing/checkpoints for browser keys.
+  // Share the exact schemas and handlers with the SDK loop, without Runnable tracing/checkpoints.
   const privateHandlers = new Map<string, (input: unknown) => string>();
   const definitions: {
     type: 'function';
@@ -222,7 +221,7 @@ export function createWorkflowTools(workflow: Workflow, selectedNodeIds: string[
       parameters: z.toJSONSchema(fields.schema),
       strict: false,
     });
-    return tool(handler, fields);
+    return { ...fields, invoke: async (input: unknown) => handler(fields.schema.parse(input)) };
   }
   const tools = [
     defineTool(() => JSON.stringify({ workflow: draft, selectedNodeIds }), {

@@ -20,10 +20,11 @@ const config: NextConfig = {
   },
   // Keep the Node-only provider SDKs out of the browser and load them natively.
   serverExternalPackages: [
-    'openai',
-    'langchain',
+    'ai',
+    '@ai-sdk/openai',
+    '@ai-sdk/anthropic',
+    '@ai-sdk/openai-compatible',
     '@langchain/core',
-    '@langchain/openai',
     '@langchain/langgraph',
   ],
 };
