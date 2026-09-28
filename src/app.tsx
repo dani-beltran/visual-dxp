@@ -119,7 +119,6 @@ export function App({
                 <h1>
                   <img className="dxp-brand-image" src="/visual-dxp-logo.png" alt="Visual DXP" />
                 </h1>
-                <span className="dxp-draft-badge">DRAFT</span>
               </div>
               <p>
                 Build website workflows visually, test them live, and export standalone JavaScript.
