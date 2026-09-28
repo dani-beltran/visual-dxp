@@ -260,6 +260,7 @@ export function NodeInspector({
                 ))}
               </Select>
             </Field>
+            <InfoBox>{trigger?.hint ?? 'Choose a supported trigger event.'}</InfoBox>
             {trigger?.settings.map(({ key, label, defaultValue, min, max }) => (
               <Field key={key} label={label} htmlFor={id(key)}>
                 <NumberInput
@@ -273,10 +274,6 @@ export function NodeInspector({
               </Field>
             ))}
             {elementTriggerEvents.includes(config.event ?? 'page-load') && targetField()}
-            <div className="dxp-inspector-note">
-              <Info size={15} />
-              <p>{trigger?.hint ?? 'Choose a supported trigger event.'}</p>
-            </div>
           </>
         )}
 
@@ -506,6 +503,48 @@ export function NodeInspector({
               </Select>
             </Field>
             {conditionType === 'selector' && (
+              <InfoBox>True when this CSS selector matches an element.</InfoBox>
+            )}
+            {conditionType === 'device' && (
+              <InfoBox>
+                Uses the browser’s device information, with user agent detection as a fallback.
+              </InfoBox>
+            )}
+            {conditionType === 'language' && (
+              <InfoBox>
+                Checks the primary browser language. Use en for any English variant, or en-US for an
+                exact locale.
+              </InfoBox>
+            )}
+            {conditionType === 'referrer' && (
+              <InfoBox>
+                Matches the exact domain, ignoring protocol, port and path. Subdomains are distinct:
+                example.com does not match www.example.com. A missing referrer takes the False path.
+              </InfoBox>
+            )}
+            {conditionType === 'date-range' && (
+              <InfoBox>
+                True when the current date is within this range. Both dates are included, using{' '}
+                {config.conditionTimeZone === 'utc' ? 'UTC' : 'the visitor’s local time zone'}.
+              </InfoBox>
+            )}
+            {conditionType === 'time-of-day' && (
+              <InfoBox>
+                Checks the current time using{' '}
+                {config.conditionTimeZone === 'utc' ? 'UTC' : 'the visitor’s local time zone'}. Both
+                selected minutes are included. An earlier end time crosses midnight; equal times
+                match only that minute.
+              </InfoBox>
+            )}
+            {variableCondition && (
+              <InfoBox>
+                {conditionType === 'query-param'
+                  ? 'Checks the current page URL. Any matching value in a repeated parameter counts.'
+                  : 'Checks cookies, localStorage and sessionStorage on this website. True if any source contains the name and value. Cookie names and values are URL-decoded. If none match, the False path runs.'}{' '}
+                Exact, case-sensitive match. An empty value matches only a present, empty variable.
+              </InfoBox>
+            )}
+            {conditionType === 'selector' && (
               <Field label="Element exists" htmlFor={id('condition')}>
                 <input
                   id={id('condition')}
@@ -664,48 +703,6 @@ export function NodeInspector({
                 <span>Condition does not match</span>
               </div>
             </div>
-            {conditionType === 'selector' && (
-              <InfoBox>True when this CSS selector matches an element.</InfoBox>
-            )}
-            {conditionType === 'device' && (
-              <InfoBox>
-                Uses the browser’s device information, with user agent detection as a fallback.
-              </InfoBox>
-            )}
-            {conditionType === 'language' && (
-              <InfoBox>
-                Checks the primary browser language. Use en for any English variant, or en-US for an
-                exact locale.
-              </InfoBox>
-            )}
-            {conditionType === 'referrer' && (
-              <InfoBox>
-                Matches the exact domain, ignoring protocol, port and path. Subdomains are distinct:
-                example.com does not match www.example.com. A missing referrer takes the False path.
-              </InfoBox>
-            )}
-            {conditionType === 'date-range' && (
-              <InfoBox>
-                True when the current date is within this range. Both dates are included, using{' '}
-                {config.conditionTimeZone === 'utc' ? 'UTC' : 'the visitor’s local time zone'}.
-              </InfoBox>
-            )}
-            {conditionType === 'time-of-day' && (
-              <InfoBox>
-                Checks the current time using{' '}
-                {config.conditionTimeZone === 'utc' ? 'UTC' : 'the visitor’s local time zone'}. Both
-                selected minutes are included. An earlier end time crosses midnight; equal times
-                match only that minute.
-              </InfoBox>
-            )}
-            {variableCondition && (
-              <InfoBox>
-                {conditionType === 'query-param'
-                  ? 'Checks the current page URL. Any matching value in a repeated parameter counts.'
-                  : 'Checks cookies, localStorage and sessionStorage on this website. True if any source contains the name and value. Cookie names and values are URL-decoded. If none match, the False path runs.'}{' '}
-                Exact, case-sensitive match. An empty value matches only a present, empty variable.
-              </InfoBox>
-            )}
           </>
         )}
 
