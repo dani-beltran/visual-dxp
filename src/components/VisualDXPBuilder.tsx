@@ -64,6 +64,7 @@ import { duplicateNode, framesFirst, groupNodes, nodeSize, removeNodes } from '.
 import { NoteEditingContext } from '../lib/noteEditing';
 import { NoteSelectionProvider } from '../lib/noteSelection';
 import { isWorkflow } from '../lib/serialization';
+import { EXPORT_TARGET_MESSAGE, resolveWebsiteUrl, validateExportTarget } from '../lib/targeting';
 import type {
   NodeKind,
   RunLog,
@@ -97,7 +98,16 @@ const edgeOptions = {
   labelBgPadding: [7, 5] as [number, number],
   labelBgBorderRadius: 4,
 };
+export interface WebsiteConfigurationOptions {
+  /** Require a production target before saving, then resume the host's export flow. */
+  requireExportable?: boolean;
+  onSave?: (workflow: Workflow) => void;
+}
 export interface VisualDXPBuilderApi {
+  /** Read the latest committed workflow, including edits not yet delivered to onChange. */
+  getWorkflow: () => Workflow;
+  /** Open the existing target website dialog. Cancellation never invokes onSave. */
+  configureWebsite: (options?: WebsiteConfigurationOptions) => void;
   /** Open the built-in test preview using the current workflow. */
   testWorkflow: () => void;
   /** Rename the workflow through the editor's undo and activity history. */
@@ -132,7 +142,7 @@ interface HistoryEntry {
   activity?: RecordedActivity;
 }
 function copyWorkflow(w: Workflow): Workflow {
-  return structuredClone(w);
+  return { ...structuredClone(w), includeSubpages: w.includeSubpages ?? false };
 }
 export function VisualDXPBuilder(props: VisualDXPBuilderProps) {
   return (
@@ -216,7 +226,7 @@ function Builder({
     if (persistenceKey)
       try {
         const saved = JSON.parse(localStorage.getItem(persistenceKey) || 'null');
-        if (isWorkflow(saved)) return saved;
+        if (isWorkflow(saved)) return copyWorkflow(saved);
       } catch {
         /* Start fresh if storage is unavailable. */
       }
@@ -245,7 +255,28 @@ function Builder({
   const [showMinimap, setShowMinimap] = useState(false);
   const [zoom, setZoom] = useState(100);
   const [websiteDraft, setWebsiteDraft] = useState(workflow.websiteUrl);
+  const [includeSubpagesDraft, setIncludeSubpagesDraft] = useState(
+    workflow.includeSubpages ?? false,
+  );
   const [websiteError, setWebsiteError] = useState('');
+  const websiteOptions = useRef<WebsiteConfigurationOptions>({});
+  const configureWebsite = useCallback((options: WebsiteConfigurationOptions = {}) => {
+    websiteOptions.current = options;
+    setWebsiteDraft(current.current.websiteUrl ?? '');
+    setIncludeSubpagesDraft(current.current.includeSubpages ?? false);
+    setWebsiteError('');
+    setModal('website');
+  }, []);
+  const closeWebsite = useCallback(() => {
+    websiteOptions.current = {};
+    setModal(null);
+  }, []);
+  let websiteScope: URL | undefined;
+  try {
+    websiteScope = resolveWebsiteUrl(websiteDraft);
+  } catch {
+    // The save action reports invalid input; omit scope until it can be parsed.
+  }
   const modalRef = useDialogFocus(modal === 'website');
   const changeCallback = useRef(onChange);
   changeCallback.current = onChange;
@@ -352,7 +383,7 @@ function Builder({
   useEffect(() => flushActivity, [flushActivity, store, activityUser]);
   function changeView(next: 'canvas' | 'activity' | 'settings') {
     flushActivity();
-    setModal(null);
+    closeWebsite();
     setView(next);
   }
   useEffect(() => {
@@ -410,6 +441,8 @@ function Builder({
   );
   const api = useMemo<VisualDXPBuilderApi>(
     () => ({
+      getWorkflow: () => copyWorkflow(current.current),
+      configureWebsite,
       testWorkflow: () => {
         setStatuses({});
         setPicking(false);
@@ -424,7 +457,7 @@ function Builder({
       },
       flushActivity,
     }),
-    [commit, recordActivity, flow.fitView, flushActivity],
+    [commit, recordActivity, flow.fitView, flushActivity, configureWebsite],
   );
   useEffect(() => {
     onReady?.(api);
@@ -511,14 +544,14 @@ function Builder({
     const close = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         setPicking(false);
-        setModal(null);
+        closeWebsite();
         setSelectedId(null);
         setSelectedEdgeId(null);
       }
     };
     window.addEventListener('keydown', close);
     return () => window.removeEventListener('keydown', close);
-  }, []);
+  }, [closeWebsite]);
   const onNodesChange = useCallback(
     (changes: NodeChange<WorkflowNode>[]) => {
       // React Flow reports connected-edge and node removals separately. Handle both in onDelete.
@@ -741,7 +774,7 @@ function Builder({
     try {
       const value: unknown = JSON.parse(await file.text());
       if (!isWorkflow(value)) throw new Error('Choose a valid Visual DXP workflow JSON file.');
-      commit(() => value, `Imported workflow “${value.name}”`);
+      commit(() => copyWorkflow(value), `Imported workflow “${value.name}”`);
       setSelectedId(null);
       setSelectedEdgeId(null);
       setTimeout(() => void flow.fitView({ padding: 0.2, duration: 300 }), 80);
@@ -753,16 +786,23 @@ function Builder({
   }
   function saveWebsite() {
     try {
-      const url = new URL(websiteDraft, window.location.origin);
-      if (!['http:', 'https:'].includes(url.protocol)) throw new Error();
+      resolveWebsiteUrl(websiteDraft);
+      const next = {
+        ...current.current,
+        websiteUrl: websiteDraft.trim(),
+        includeSubpages: includeSubpagesDraft,
+      };
+      if (websiteOptions.current.requireExportable) validateExportTarget(next);
       commit(
-        (w) => ({ ...w, websiteUrl: websiteDraft.trim() }),
-        `Changed the target website to “${websiteDraft.trim()}”`,
+        () => next,
+        `Changed the target website to “${next.websiteUrl}” (${includeSubpagesDraft ? 'including subpages' : 'this page only'})`,
       );
-      setModal(null);
+      const onSave = websiteOptions.current.onSave;
+      closeWebsite();
       notify('Target website updated');
-    } catch {
-      setWebsiteError('Enter an http:// or https:// URL, or a relative website path.');
+      onSave?.(copyWorkflow(next));
+    } catch (error) {
+      setWebsiteError((error as Error).message);
     }
   }
   async function sendAIMessage(messages: AIChatMessage[], signal: AbortSignal) {
@@ -888,11 +928,7 @@ function Builder({
           type="button"
           className="dxp-website-button"
           aria-label="Change target website"
-          onClick={() => {
-            setWebsiteDraft(workflow.websiteUrl);
-            setWebsiteError('');
-            setModal('website');
-          }}
+          onClick={() => configureWebsite()}
         >
           <Globe2 size={14} />
           <span>
@@ -1224,7 +1260,7 @@ function Builder({
       {modal === 'website' && (
         // biome-ignore lint/a11y/useKeyWithClickEvents: The close button and Escape key dismiss this dialog for keyboard users.
         // biome-ignore lint/a11y/noStaticElementInteractions: Only the backdrop uses clicks to dismiss the dialog.
-        <div className="dxp-modal-backdrop" onClick={() => setModal(null)}>
+        <div className="dxp-modal-backdrop" onClick={closeWebsite}>
           {/* biome-ignore lint/a11y/useKeyWithClickEvents: This handler only prevents dialog clicks from reaching the backdrop. */}
           <section
             ref={modalRef}
@@ -1242,17 +1278,24 @@ function Builder({
               <button
                 type="button"
                 className="dxp-icon-button"
-                onClick={() => setModal(null)}
+                onClick={closeWebsite}
                 aria-label="Close dialog"
               >
                 <X size={20} />
               </button>
             </div>
             <div className="dxp-website-settings">
-              <p>Set the website where this experience will happen.</p>
+              <p>This experience will run only on the page at this URL.</p>
+              {websiteOptions.current.requireExportable && (
+                <p className="dxp-error" role="alert">
+                  {EXPORT_TARGET_MESSAGE}
+                </p>
+              )}
               <label>
                 Website URL
                 <input
+                  aria-invalid={Boolean(websiteError)}
+                  aria-describedby={websiteError ? `${viewId}-website-error` : undefined}
                   value={websiteDraft}
                   placeholder="https://your-website.com"
                   onChange={(e) => setWebsiteDraft(e.target.value)}
@@ -1263,12 +1306,45 @@ function Builder({
                   autoFocus
                 />
               </label>
-              {websiteError && <p className="dxp-error">{websiteError}</p>}
+              <label className="dxp-subpages-option">
+                <input
+                  type="checkbox"
+                  checked={includeSubpagesDraft}
+                  onChange={(event) => setIncludeSubpagesDraft(event.target.checked)}
+                  aria-describedby={`${viewId}-subpages-help`}
+                />
+                Include subpages
+              </label>
+              <p id={`${viewId}-subpages-help`} className="dxp-subpages-help">
+                Also run this experience on pages beneath this URL.
+              </p>
+              {websiteScope && (
+                <div className="dxp-website-scope" role="status">
+                  <strong>Effective scope: {websiteScope.href}</strong>
+                  <p>
+                    {websiteScope.pathname === '/'
+                      ? includeSubpagesDraft
+                        ? 'The homepage and all subpages.'
+                        : 'The homepage only.'
+                      : includeSubpagesDraft
+                        ? `This page and descendants beneath ${websiteScope.pathname}/, excluding similarly named paths such as ${websiteScope.pathname}-sale.`
+                        : 'This page only.'}
+                  </p>
+                  <p>
+                    Trailing slashes, query parameters,
+                    and fragments do not change the scope.
+                  </p>
+                </div>
+              )}
+              {websiteError && (
+                <p id={`${viewId}-website-error`} className="dxp-error" role="alert">
+                  {websiteError}
+                </p>
+              )}
               <div className="dxp-website-note">
                 <Globe2 size={18} />
                 <p>
-                  Element selection works directly with same-origin pages. Other websites need the
-                  picker bridge and permission to load in an iframe.
+                  Your website need the picker bridge and permission to load in an iframe.
                 </p>
               </div>
               <button
@@ -1279,7 +1355,7 @@ function Builder({
                 <RotateCcw size={13} /> Use the demo website
               </button>
               <div className="dxp-modal-footer">
-                <button type="button" className="dxp-button" onClick={() => setModal(null)}>
+                <button type="button" className="dxp-button" onClick={closeWebsite}>
                   Cancel
                 </button>
                 <button

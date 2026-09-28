@@ -13,6 +13,7 @@ const input: AIChatRequest = {
     version: 1,
     name: 'Route test',
     websiteUrl: '/demo-site.html',
+    includeSubpages: false,
     nodes: [
       {
         id: 'start',

@@ -63,6 +63,7 @@ export function isWorkflow(value: unknown): value is Workflow {
     value.version !== 1 ||
     typeof value.name !== 'string' ||
     typeof value.websiteUrl !== 'string' ||
+    (value.includeSubpages !== undefined && typeof value.includeSubpages !== 'boolean') ||
     !Array.isArray(value.nodes) ||
     !Array.isArray(value.edges)
   )

@@ -71,6 +71,7 @@ describe('atomic AI workflow edits', () => {
     expect(validateWorkflow(annotated)).toEqual([]);
     expect(parseAIChatRequest({ ...request(), workflow: annotated }).workflow).toEqual({
       ...annotated,
+      includeSubpages: false,
       edges: annotated.edges.map((edge) => ({ ...edge, type: 'smoothstep' })),
     });
   });

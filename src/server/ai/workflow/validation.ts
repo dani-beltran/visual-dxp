@@ -83,6 +83,8 @@ export function validateWorkflow(workflow: Workflow): ValidationIssue[] {
       add(message, nodeId);
     }
   };
+  if (workflow.includeSubpages !== undefined && typeof workflow.includeSubpages !== 'boolean')
+    add('Include subpages must be a boolean.');
   if (workflow.version !== 1) add('This workflow version is not supported.');
   if (!workflow.nodes.length) add('Add a trigger and a step to get started.');
   if (!workflow.nodes.some((node) => node.data.kind === 'trigger'))

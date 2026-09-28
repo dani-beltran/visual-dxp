@@ -21,6 +21,7 @@ npm run typecheck    # App, server, library, and test types
 npm run build        # Production Next.js application (.next/)
 npm start            # Serve the production application on port 3000
 npm run build:lib    # Reusable dist/ library with declarations and public assets
+node tests/export-library.mjs # Execute targeting tests against both built library bundles
 npm run lint         # Check Biome lint rules
 npm run lint:fix     # Apply safe lint fixes
 npm run format       # Format supported files with Biome
@@ -56,6 +57,7 @@ const initialWorkflow: Workflow = {
   version: 1,
   name: 'My first experience',
   websiteUrl: '/my-preview-page',
+  includeSubpages: false,
   nodes: [
     {
       id: 'visit',
@@ -80,7 +82,7 @@ export function ExperienceEditor() {
       <button disabled={!builder} onClick={() => builder?.testWorkflow()}>
         Test workflow
       </button>
-      {/* Use workflow in your own export dialog; JSON.stringify(workflow) produces JSON. */}
+      {/* Validate the target before exporting; see URL targeting below. */}
       <span>{workflow.name}</span>
       <div style={{ height: 600 }}>
         <VisualDXPBuilder
@@ -101,7 +103,7 @@ The builder owns the toolbar, canvas, inspector, activity view, footer, element 
 | -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `initialWorkflow`    | Initial workflow; defaults to the included welcome journey. Changes after mounting do not replace editor state; use a React `key` to open another workflow.       |
 | `onChange`           | Receives the initial or restored workflow and all subsequent edits as a JSON-serializable `Workflow` object. Use it for persistence or your own export dialog.                                                 |
-| `onReady`            | Receives a `VisualDXPBuilderApi` with `testWorkflow()`, `renameWorkflow(name)`, `fitView()`, and `flushActivity()`. Receives `null` on cleanup; use a stable callback such as a state setter.                                                                                     |
+| `onReady`            | Receives a `VisualDXPBuilderApi` with `getWorkflow()`, `configureWebsite(options?)`, `testWorkflow()`, `renameWorkflow(name)`, `fitView()`, and `flushActivity()`. Receives `null` on cleanup; use a stable callback such as a state setter.                                                                                     |
 | `persistenceKey`     | Optional localStorage key. A valid saved workflow takes precedence over `initialWorkflow`. Omit to disable browser persistence.                                   |
 | `activityStore`      | Optional external activity store. Reads and subscribes to entries and appends new editor actions. Defaults to an empty in-memory store for this builder.         |
 | `activityUser`       | Username attached to new activity entries; defaults to `"You"`. Pass the current user's display name.                                                             |
@@ -163,9 +165,34 @@ Builders inherit the closest theme, including their dialogs and picker. Changing
 
 The palette derives hover colors, borders, backgrounds, shadows, and canvas colors with CSS `color-mix()`. Use brand colors with sufficient contrast for text on light surfaces. Solid primary buttons use white text by default; set `--dxp-on-primary` in your `theme.css` when your primary color needs a different foreground. Status indicators retain semantic success/warning/error colors. User-authored note colors, popover content, and preview websites remain part of the workflow rather than the editor theme.
 
-Call `builder.testWorkflow()` from your own button to open the built-in preview. Use `exportWorkflow(workflow)` to generate JavaScript in your host, or `JSON.stringify(workflow, null, 2)` for JSON. Export UI and the `onExport` callback now belong to the demo `App`, not `VisualDXPBuilder`. `renameWorkflow(name)` participates in undo/redo and activity; `flushActivity()` publishes pending edits when a host input loses focus.
+Call `builder.testWorkflow()` from your own button to open the built-in preview. Use `exportWorkflow(workflow)` to generate JavaScript in your host. For JSON, call `validateExportTarget(workflow)` first, then serialize the workflow with its returned absolute URL and `includeSubpages: workflow.includeSubpages ?? false`. Export UI and the `onExport` callback now belong to the demo `App`, not `VisualDXPBuilder`. `renameWorkflow(name)` participates in undo/redo and activity; `flushActivity()` publishes pending edits when a host input loses focus.
 
 The default journey points to `/demo-site.html`. To use it in another application, copy `dist/demo-site.html` to the application's public assets, or provide your own `initialWorkflow.websiteUrl`.
+
+## URL targeting and export requirements
+
+The **Target website** dialog controls where the exported experience runs. **Include subpages** is unchecked by default. Its effective scope preview shows the normalized target and whether descendants are included:
+
+| Target | Include subpages | Where the script runs |
+| --- | --- | --- |
+| `https://example.com` | Off | Homepage only |
+| `https://example.com` | On | Homepage and all paths on that origin |
+| `https://example.com/products` | Off | `/products` only |
+| `https://example.com/products` | On | `/products`, `/products/item`, and deeper descendants; never `/products-sale` or unrelated paths |
+
+Targeting uses parsed URLs and path-segment boundaries. The protocol, hostname, and effective port must match: subdomains, different ports, and HTTP versus HTTPS are separate origins. Standard URL parsing normalizes hostname case, default ports, and dot segments. Paths remain case-sensitive; percent-encoded path characters are not decoded for matching (an encoded slash is not a descendant boundary). All trailing slashes are ignored, so `/products`, `/products/`, and `/products///` have the same scope. Query parameters and fragments are ignored on both the target and the executing page. URL-parameter condition nodes can still distinguish query values within that scope.
+
+Relative preview URLs remain supported, including `/products`, `./products`, and `products.html`; preview keeps the entered URL and its normal iframe resolution. **For production export**, relative targets resolve from the editor origin's root, regardless of the editor route or any HTML `<base>` tag. Both the demo app's JSON export and generated JavaScript embed the normalized absolute target. A script exported for `https://editor.example/products` stays restricted to that origin even when loaded elsewhere. Enter an absolute URL when targeting a separate production website.
+
+The generated standalone JavaScript reads the actual page's `window.location.href` before replacing an existing `window.dlbDXP`, creating a runtime, registering listeners, starting timers, or running actions. On a nonmatching page it exits without side effects. The URL configuration and self-contained matching function are embedded; the editor is not required. This check happens when the script loads; it does not monitor client-side SPA navigation. The low-level `createRuntime`/`executeWorkflow` API remains usable for explicit preview/test execution without the production target gate.
+
+**Export workflow**, **Copy**, and **Download** require a nonempty HTTP(S) target URL, without embedded credentials, that is not the built-in demo. `/demo-site.html` is for preview only, including equivalent relative paths and same-editor-origin absolute URLs with queries, fragments, or trailing slashes. An external site's `demo-site.html` or a different path with that filename is allowed. Invalid export targets reopen the builder's existing configuration dialog. Saving a valid target returns to the export dialog; cancellation discards the draft and never exports. JavaScript also requires a valid executable graph. JSON retains the existing ability to export an incomplete graph once its target is configured.
+
+`exportWorkflow(workflow, { baseUrl? })` enforces the same target eligibility for direct callers. `baseUrl` defaults to the browser's editor origin; outside a browser, pass the editor's URL/origin to resolve relative targets and identify same-origin absolute demo URLs. Without a base, Node callers must supply an absolute production URL. `validateWorkflow(workflow)` checks editable graph configuration and deliberately does not block building or testing on the demo.
+
+Workflow schema version 1 remains compatible. `includeSubpages` is an optional boolean in the public TypeScript types so older workflows still load; missing values mean `false`. The builder, restored/imported workflows, AI request parsers, and exports default it to false. Both frontend and server AI parsers validate and preserve the field, and response operations preserve it. Changes use the existing save/restore, undo/redo, and activity history paths.
+
+Hosts can reuse the configuration dialog with `builder.configureWebsite({ requireExportable: true, onSave: (workflow) => { /* reopen export UI */ } })`. The callback runs only after a valid save, never on cancellation. `builder.getWorkflow()` returns a copy of the latest committed workflow so action handlers can recheck `validateExportTarget` or `exportWorkflow` without relying on possibly stale host UI state.
 
 ## Nodes and execution
 

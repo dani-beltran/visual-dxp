@@ -164,7 +164,7 @@ describe('encrypted browser settings', () => {
   it('keeps encrypted settings separate from workflow exports', async () => {
     const store = new AISettingsStore();
     await store.save(apiKey, model, passphrase, endpoint);
-    for (const output of [JSON.stringify(defaultWorkflow), exportWorkflow(defaultWorkflow)]) {
+    for (const output of [JSON.stringify(defaultWorkflow), exportWorkflow({ ...defaultWorkflow, websiteUrl: 'https://example.com/' })]) {
       expect(output).not.toContain(apiKey);
       expect(output).not.toContain(AI_SETTINGS_STORAGE_KEY);
       expect(output).not.toContain(passphrase);

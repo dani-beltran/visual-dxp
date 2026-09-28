@@ -738,7 +738,7 @@
   color: var(--dxp-muted);
   font-size: 11px;
 }
-.dxp-website-settings input {
+.dxp-website-settings input:not([type="checkbox"]) {
   display: block;
   width: 100%;
   border: 1px solid var(--dxp-line);
@@ -747,6 +747,31 @@
   padding: 11px 12px;
   color: var(--dxp-text-secondary);
   background: var(--dxp-canvas);
+}
+.dxp-website-settings > .dxp-subpages-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 18px;
+  color: var(--dxp-text-secondary);
+  font-size: 12px;
+}
+.dxp-subpages-option input {
+  accent-color: var(--dxp-primary);
+}
+.dxp-website-settings > .dxp-subpages-help {
+  padding-bottom: 0;
+  margin-top: 6px;
+}
+.dxp-website-scope {
+  margin: 16px 29px;
+  font-size: 11px;
+  line-height: 1.7;
+  color: var(--dxp-muted);
+  overflow-wrap: anywhere;
+}
+.dxp-website-scope strong {
+  color: var(--dxp-text-secondary);
 }
 .dxp-website-note {
   display: flex;

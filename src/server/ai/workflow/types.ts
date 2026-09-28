@@ -129,6 +129,8 @@ export interface Workflow {
   version: 1;
   name: string;
   websiteUrl: string;
+  /** Run on descendant paths on the same origin. Missing in older workflows means false. */
+  includeSubpages?: boolean;
   nodes: WorkflowNode[];
   edges: WorkflowEdge[];
 }

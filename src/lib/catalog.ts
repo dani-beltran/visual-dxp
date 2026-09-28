@@ -136,6 +136,7 @@ export const defaultWorkflow: Workflow = {
   version: 1,
   name: 'Welcome journey',
   websiteUrl: '/demo-site.html',
+  includeSubpages: false,
   nodes: [
     {
       id: 'welcome',

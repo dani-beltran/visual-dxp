@@ -13,7 +13,7 @@ function workflow(config: StepConfig = zoomConfig): Workflow {
   return {
     version: 1,
     name: 'Zoom into an element',
-    websiteUrl: 'https://example.com',
+    websiteUrl: window.location.href,
     nodes: [
       {
         id: 'start',

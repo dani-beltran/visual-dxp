@@ -281,6 +281,8 @@ function operations(value: unknown): WorkflowOperation[] {
 
 function workflowShape(value: unknown): Workflow {
   const input = record(value, 'Workflow');
+  if (input.includeSubpages !== undefined && typeof input.includeSubpages !== 'boolean')
+    throw new Error('Include subpages must be a boolean.');
   if (input.version !== 1) throw new Error('This workflow version is not supported.');
   if (
     !Array.isArray(input.nodes) ||
@@ -295,6 +297,7 @@ function workflowShape(value: unknown): Workflow {
     version: 1,
     name: text(input.name, 'Workflow name', 500, true),
     websiteUrl: text(input.websiteUrl, 'Website URL', 4000, true),
+    includeSubpages: input.includeSubpages ?? false,
     nodes: input.nodes.map(node),
     edges: input.edges.map(edge),
   };

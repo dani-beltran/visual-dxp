@@ -2,6 +2,7 @@ import { buildCookie } from './cookies';
 import { getDateRange } from './dateRange';
 import { isNoteMarks } from './noteText';
 import { getRuntimeSource } from './runtime';
+import { type ExportOptions, matchesTargetUrl, validateExportTarget } from './targeting';
 import { getTimeRange } from './timeRange';
 import { elementTriggerEvents, validateTriggerConfig } from './triggers';
 import type { ValidationIssue, Workflow } from './types';
@@ -91,6 +92,8 @@ export function validateWorkflow(workflow: Workflow): ValidationIssue[] {
       add(message, nodeId);
     }
   };
+  if (workflow.includeSubpages !== undefined && typeof workflow.includeSubpages !== 'boolean')
+    add('Include subpages must be a boolean.');
   if (workflow.version !== 1) add('This workflow version is not supported.');
   if (!workflow.nodes.length) add('Add a trigger and a step to get started.');
   if (!workflow.nodes.some((node) => node.data.kind === 'trigger'))
@@ -381,7 +384,8 @@ export function validateWorkflow(workflow: Workflow): ValidationIssue[] {
 }
 
 /** Create a dependency-free script to load on the target website. */
-export function exportWorkflow(workflow: Workflow): string {
+export function exportWorkflow(workflow: Workflow, options: ExportOptions = {}): string {
+  const target = validateExportTarget(workflow, options);
   const issues = validateWorkflow(workflow);
   if (issues.length) throw new Error(issues.map((issue) => issue.message).join('\n'));
   const annotations = new Set(
@@ -394,7 +398,8 @@ export function exportWorkflow(workflow: Workflow): string {
   const definition = {
     version: workflow.version,
     name: workflow.name,
-    websiteUrl: workflow.websiteUrl,
+    websiteUrl: target.href,
+    includeSubpages: workflow.includeSubpages ?? false,
     nodes: workflow.nodes
       .filter((node) => !annotations.has(node.id))
       .map(({ id, data }) => ({
@@ -416,5 +421,5 @@ export function exportWorkflow(workflow: Workflow): string {
     .replace(/&/g, '\\u0026')
     .replace(/\u2028/g, '\\u2028')
     .replace(/\u2029/g, '\\u2029');
-  return `/* Visual DXP — generated workflow. Load this script on your target website. */\n(() => {\n  "use strict";\n  const workflow = ${json};\n  const createRuntime = ${getRuntimeSource()};\n  if (window.dlbDXP && typeof window.dlbDXP.destroy === "function") window.dlbDXP.destroy();\n  window.dlbDXP = createRuntime(workflow);\n  window.dlbDXP.start();\n})();\n`;
+  return `/* Visual DXP — generated workflow. Load this script on your target website. */\n(() => {\n  "use strict";\n  const workflow = ${json};\n  const matchesTargetUrl = ${matchesTargetUrl.toString()};\n  if (!matchesTargetUrl(workflow.websiteUrl, window.location.href, workflow.includeSubpages)) return;\n  const createRuntime = ${getRuntimeSource()};\n  if (window.dlbDXP && typeof window.dlbDXP.destroy === "function") window.dlbDXP.destroy();\n  window.dlbDXP = createRuntime(workflow);\n  window.dlbDXP.start();\n})();\n`;
 }

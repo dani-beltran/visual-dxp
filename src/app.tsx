@@ -8,6 +8,7 @@ import {
 import { createActivityStore } from './lib/activity';
 import { defaultWorkflow } from './lib/catalog';
 import { exportWorkflow, validateWorkflow } from './lib/export';
+import { validateExportTarget } from './lib/targeting';
 import type { Workflow } from './lib/types';
 import { useDialogFocus } from './lib/useDialogFocus';
 import './styles/app.css';
@@ -83,10 +84,70 @@ export function App({
       return '// Resolve the workflow issues below before exporting.';
     }
   }, [workflow]);
-  const code = exportTab === 'javascript' ? script : JSON.stringify(workflow, null, 2);
-  async function copyCode() {
+  const code = useMemo(() => {
+    if (exportTab === 'javascript') return script;
     try {
-      await navigator.clipboard.writeText(code);
+      const target = validateExportTarget(workflow);
+      return JSON.stringify(
+        {
+          ...workflow,
+          websiteUrl: target.href,
+          includeSubpages: workflow.includeSubpages ?? false,
+        },
+        null,
+        2,
+      );
+    } catch {
+      return '// Configure your website URL before exporting.';
+    }
+  }, [exportTab, script, workflow]);
+  function requireExportTarget(next: Workflow): boolean {
+    try {
+      validateExportTarget(next);
+      return true;
+    } catch {
+      setExportOpen(false);
+      builder?.configureWebsite({
+        requireExportable: true,
+        onSave: (configured) => {
+          // Resume the dialog, never an earlier Copy/Download action.
+          setWorkflow(configured);
+          setExportOpen(true);
+        },
+      });
+      return false;
+    }
+  }
+  function openExport() {
+    if (!builder) return;
+    const next = builder.getWorkflow();
+    if (!requireExportTarget(next)) return;
+    setWorkflow(next);
+    setExportOpen(true);
+  }
+  function prepareExport() {
+    if (!builder) return;
+    const next = builder.getWorkflow();
+    if (!requireExportTarget(next)) return;
+    try {
+      const target = validateExportTarget(next);
+      const definition = {
+        ...next,
+        websiteUrl: target.href,
+        includeSubpages: next.includeSubpages ?? false,
+      };
+      const content =
+        exportTab === 'javascript' ? exportWorkflow(next) : JSON.stringify(definition, null, 2);
+      return { workflow: next, content };
+    } catch (error) {
+      notify((error as Error).message);
+    }
+  }
+  async function copyCode() {
+    const prepared = prepareExport();
+    if (!prepared) return;
+    try {
+      await navigator.clipboard.writeText(prepared.content);
       recordActivity(
         `Copied the workflow as ${exportTab === 'javascript' ? 'JavaScript' : 'JSON'}`,
       );
@@ -96,17 +157,18 @@ export function App({
     }
   }
   function exportFile() {
-    if (exportTab === 'javascript' && issues.length) return;
-    const name = workflow.name.toLowerCase().replace(/[^a-z0-9]+/g, '-') || 'workflow';
+    const prepared = prepareExport();
+    if (!prepared) return;
+    const name = prepared.workflow.name.toLowerCase().replace(/[^a-z0-9]+/g, '-') || 'workflow';
     download(
       `${name}.${exportTab === 'javascript' ? 'js' : 'json'}`,
-      code,
+      prepared.content,
       exportTab === 'javascript' ? 'text/javascript' : 'application/json',
     );
     recordActivity(
       `Exported the workflow as ${exportTab === 'javascript' ? 'JavaScript' : 'JSON'}`,
     );
-    if (exportTab === 'javascript') onExport?.(script, workflow);
+    if (exportTab === 'javascript') onExport?.(prepared.content, prepared.workflow);
     notify('Your workflow is ready to go');
   }
   return (
@@ -134,11 +196,7 @@ export function App({
               >
                 <Play size={14} /> Test workflow
               </button>
-              <button
-                type="button"
-                className="dxp-button dxp-button-primary"
-                onClick={() => setExportOpen(true)}
-              >
+              <button type="button" className="dxp-button dxp-button-primary" onClick={openExport}>
                 <Code2 size={16} /> Export workflow <ArrowUpRight size={14} />
               </button>
             </div>

@@ -11,7 +11,7 @@ function workflow(nodes: WorkflowNode[], connections: [string, string, string?][
   return {
     version: 1,
     name: 'Test experience',
-    websiteUrl: 'https://example.com',
+    websiteUrl: window.location.href,
     nodes,
     edges: connections.map(([source, target, sourceHandle], index) => ({
       id: `e${index}`,
