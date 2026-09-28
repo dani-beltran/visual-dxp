@@ -2,27 +2,21 @@ import {
   ArrowDown,
   Braces,
   ChevronDown,
-  Clock3,
-  Cookie,
   Copy,
   Frame,
-  GitFork,
-  Globe2,
   Info,
   Maximize2,
   MousePointer2,
-  MousePointerClick,
-  PanelTop,
   Repeat2,
   ScanLine,
   StickyNote,
-  Timer,
   Trash2,
   X,
 } from 'lucide-react';
 import { type ReactNode, type SelectHTMLAttributes, useEffect, useId, useState } from 'react';
+import { catalog } from '../lib/catalog';
 import { elementTriggerEvents, triggerOptions } from '../lib/triggers';
-import type { ConditionType, NodeKind, StepConfig, StepData, WorkflowNode } from '../lib/types';
+import type { ConditionType, StepConfig, StepData, WorkflowNode } from '../lib/types';
 import { NoteControls } from './NoteControls';
 import { NoteTextEditor } from './NoteTextEditor';
 import '../styles/inspector.css';
@@ -37,68 +31,14 @@ interface NodeInspectorProps {
   onPreviewContent: () => void;
 }
 
-const details = {
-  trigger: {
-    name: 'Trigger',
-    icon: MousePointerClick,
-    summary: 'Choose the moment your experience begins.',
-    color: 'green',
-  },
-  http: {
-    name: 'HTTP request',
-    icon: Globe2,
-    summary: 'Connect your experience to any API.',
-    color: 'blue',
-  },
-  dom: {
-    name: 'Update element',
-    icon: MousePointer2,
-    summary: 'Make a change to an element on your website.',
-    color: 'orange',
-  },
-  delay: {
-    name: 'Delay',
-    icon: Timer,
-    summary: 'Give your experience a little breathing room.',
-    color: 'amber',
-  },
-  cookie: {
-    name: 'Set cookie',
-    icon: Cookie,
-    summary: 'Save a value for later visits or steps in your workflow.',
-    color: 'brown',
-  },
-  fork: {
-    name: 'Condition',
-    icon: GitFork,
-    summary: 'Take a different path based on your visitor or page.',
-    color: 'violet',
-  },
-  loop: {
-    name: 'Loop',
-    icon: Repeat2,
-    summary: 'Run a group of steps more than once.',
-    color: 'pink',
-  },
-  popover: {
-    name: 'Popover',
-    icon: PanelTop,
-    summary: 'Bring a message or embedded page into the moment.',
-    color: 'teal',
-  },
-  note: {
-    name: 'Note',
-    icon: StickyNote,
-    summary: 'Keep ideas, context, and reminders alongside your workflow.',
-    color: 'amber',
-  },
-  frame: {
-    name: 'Frame',
-    icon: Frame,
-    summary: 'Keep related nodes together and move them as a group.',
-    color: 'blue',
-  },
-} satisfies Record<NodeKind, { name: string; icon: typeof Timer; summary: string; color: string }>;
+function InfoBox({ children, className = '' }: { children: ReactNode; className?: string }) {
+  return (
+    <div className={`dxp-inspector-note ${className}`}>
+      <Info size={15} aria-hidden="true" />
+      <p>{children}</p>
+    </div>
+  );
+}
 
 function Field({
   label,
@@ -189,7 +129,8 @@ export function NodeInspector({
     : undefined;
   const conditionType = config.conditionType ?? 'selector';
   const variableCondition = ['query-param', 'cookie'].includes(conditionType);
-  const metadata = details[node.data.kind];
+  const metadata = catalog.find((entry) => entry.kind === node.data.kind);
+  if (!metadata) throw new Error(`Unknown node type: ${node.data.kind}`);
   const isNote = node.data.kind === 'note';
   const isFrame = node.data.kind === 'frame';
   const itemName = isFrame ? 'frame' : isNote ? 'note' : 'step';
@@ -232,7 +173,7 @@ export function NodeInspector({
   );
 
   return (
-    <aside className="dxp-inspector" aria-label={`${metadata.name} configuration`}>
+    <aside className="dxp-inspector" aria-label={`${metadata.label} configuration`}>
       <header className="dxp-inspector-header">
         <div className="dxp-inspector-eyebrow">{itemName.toUpperCase()} DETAILS</div>
         <button
@@ -251,11 +192,11 @@ export function NodeInspector({
             <Icon size={21} strokeWidth={1.8} />
           </div>
           <div>
-            <h2>{metadata.name}</h2>
+            <h2>{metadata.label}</h2>
             <span>{isFrame ? 'Canvas group' : isNote ? 'Canvas annotation' : 'Workflow step'}</span>
           </div>
         </div>
-        <p className="dxp-inspector-description">{metadata.summary}</p>
+        <p className="dxp-inspector-description">{metadata.description}</p>
         <Field
           label={isFrame ? 'Frame name' : isNote ? 'Note name' : 'Step name'}
           htmlFor={id('name')}
@@ -263,7 +204,7 @@ export function NodeInspector({
           <input
             id={id('name')}
             value={node.data.label}
-            placeholder={metadata.name}
+            placeholder={metadata.label}
             onChange={(event) => onChange({ label: event.target.value })}
           />
         </Field>
@@ -301,10 +242,6 @@ export function NodeInspector({
               />
             </Field>
             <NoteControls noteId={node.id} config={config} onChange={update} />
-            <div className="dxp-inspector-note">
-              <Info size={15} />
-              <p>Notes stay on your canvas and are skipped when the workflow runs.</p>
-            </div>
           </>
         )}
 
@@ -524,30 +461,24 @@ export function NodeInspector({
         )}
 
         {node.data.kind === 'delay' && (
-          <>
-            <Field
-              label="Wait for"
-              htmlFor={id('duration')}
-              hint="1,000 milliseconds = 1 second. Maximum 24 hours."
-            >
-              <div className="dxp-inspector-unit-field">
-                <NumberInput
-                  key={node.id}
-                  id={id('duration')}
-                  min={0}
-                  max={86400000}
-                  step={100}
-                  value={config.duration ?? 1000}
-                  onChange={(duration) => update({ duration })}
-                />
-                <span>ms</span>
-              </div>
-            </Field>
-            <div className="dxp-inspector-note">
-              <Clock3 size={15} />
-              <p>The next connected step runs after this pause.</p>
+          <Field
+            label="Wait for"
+            htmlFor={id('duration')}
+            hint="1,000 milliseconds = 1 second. Maximum 24 hours."
+          >
+            <div className="dxp-inspector-unit-field">
+              <NumberInput
+                key={node.id}
+                id={id('duration')}
+                min={0}
+                max={86400000}
+                step={100}
+                value={config.duration ?? 1000}
+                onChange={(duration) => update({ duration })}
+              />
+              <span>ms</span>
             </div>
-          </>
+          </Field>
         )}
 
         {node.data.kind === 'fork' && (
@@ -575,11 +506,7 @@ export function NodeInspector({
               </Select>
             </Field>
             {conditionType === 'selector' && (
-              <Field
-                label="Element exists"
-                htmlFor={id('condition')}
-                hint="True when this CSS selector matches an element."
-              >
+              <Field label="Element exists" htmlFor={id('condition')}>
                 <input
                   id={id('condition')}
                   className="dxp-inspector-code"
@@ -591,11 +518,7 @@ export function NodeInspector({
               </Field>
             )}
             {conditionType === 'device' && (
-              <Field
-                label="Device is"
-                htmlFor={id('condition-value')}
-                hint="Uses the browser’s device information, with user agent detection as a fallback."
-              >
+              <Field label="Device is" htmlFor={id('condition-value')}>
                 <Select
                   id={id('condition-value')}
                   value={config.conditionValue ?? ''}
@@ -610,11 +533,7 @@ export function NodeInspector({
               </Field>
             )}
             {conditionType === 'language' && (
-              <Field
-                label="Language is"
-                htmlFor={id('condition-value')}
-                hint="Checks the primary browser language. Use en for any English variant, or en-US for an exact locale."
-              >
+              <Field label="Language is" htmlFor={id('condition-value')}>
                 <input
                   id={id('condition-value')}
                   value={config.conditionValue ?? ''}
@@ -625,11 +544,7 @@ export function NodeInspector({
               </Field>
             )}
             {conditionType === 'referrer' && (
-              <Field
-                label="Referrer domain equals"
-                htmlFor={id('condition-value')}
-                hint="Matches the exact domain, ignoring protocol, port and path. Subdomains are distinct: example.com does not match www.example.com. A missing referrer takes the False path."
-              >
+              <Field label="Referrer domain equals" htmlFor={id('condition-value')}>
                 <input
                   id={id('condition-value')}
                   type="text"
@@ -683,10 +598,6 @@ export function NodeInspector({
                     onChange={(event) => update({ conditionEndDate: event.target.value })}
                   />
                 </Field>
-                <p className="dxp-inspector-hint">
-                  True when the current date is within this range. Both dates are included, using{' '}
-                  {config.conditionTimeZone === 'utc' ? 'UTC' : 'the visitor’s local time zone'}.
-                </p>
               </>
             )}
             {conditionType === 'time-of-day' && (
@@ -709,12 +620,6 @@ export function NodeInspector({
                     onChange={(event) => update({ conditionEndTime: event.target.value })}
                   />
                 </Field>
-                <p className="dxp-inspector-hint">
-                  Checks the current time using{' '}
-                  {config.conditionTimeZone === 'utc' ? 'UTC' : 'the visitor’s local time zone'}.
-                  Both selected minutes are included. An earlier end time crosses midnight; equal
-                  times match only that minute.
-                </p>
               </>
             )}
             {variableCondition && (
@@ -736,11 +641,7 @@ export function NodeInspector({
                     spellCheck={false}
                   />
                 </Field>
-                <Field
-                  label="Value equals"
-                  htmlFor={id('condition-value')}
-                  hint="Exact, case-sensitive match. An empty value matches only a present, empty variable."
-                >
+                <Field label="Value equals" htmlFor={id('condition-value')}>
                   <input
                     id={id('condition-value')}
                     value={config.conditionValue ?? ''}
@@ -749,11 +650,6 @@ export function NodeInspector({
                     spellCheck={false}
                   />
                 </Field>
-                <p className="dxp-inspector-hint">
-                  {conditionType === 'query-param'
-                    ? 'Checks the current page URL. Any matching value in a repeated parameter counts.'
-                    : 'Checks cookies, localStorage and sessionStorage on this website. True if any source contains the name and value. Cookie names and values are URL-decoded. If none match, the False path runs.'}
-                </p>
               </>
             )}
             <div className="dxp-inspector-branches">
@@ -768,9 +664,48 @@ export function NodeInspector({
                 <span>Condition does not match</span>
               </div>
             </div>
-            <p className="dxp-inspector-hint">
-              Connect each output to the next step for that path.
-            </p>
+            {conditionType === 'selector' && (
+              <InfoBox>True when this CSS selector matches an element.</InfoBox>
+            )}
+            {conditionType === 'device' && (
+              <InfoBox>
+                Uses the browser’s device information, with user agent detection as a fallback.
+              </InfoBox>
+            )}
+            {conditionType === 'language' && (
+              <InfoBox>
+                Checks the primary browser language. Use en for any English variant, or en-US for an
+                exact locale.
+              </InfoBox>
+            )}
+            {conditionType === 'referrer' && (
+              <InfoBox>
+                Matches the exact domain, ignoring protocol, port and path. Subdomains are distinct:
+                example.com does not match www.example.com. A missing referrer takes the False path.
+              </InfoBox>
+            )}
+            {conditionType === 'date-range' && (
+              <InfoBox>
+                True when the current date is within this range. Both dates are included, using{' '}
+                {config.conditionTimeZone === 'utc' ? 'UTC' : 'the visitor’s local time zone'}.
+              </InfoBox>
+            )}
+            {conditionType === 'time-of-day' && (
+              <InfoBox>
+                Checks the current time using{' '}
+                {config.conditionTimeZone === 'utc' ? 'UTC' : 'the visitor’s local time zone'}. Both
+                selected minutes are included. An earlier end time crosses midnight; equal times
+                match only that minute.
+              </InfoBox>
+            )}
+            {variableCondition && (
+              <InfoBox>
+                {conditionType === 'query-param'
+                  ? 'Checks the current page URL. Any matching value in a repeated parameter counts.'
+                  : 'Checks cookies, localStorage and sessionStorage on this website. True if any source contains the name and value. Cookie names and values are URL-decoded. If none match, the False path runs.'}{' '}
+                Exact, case-sensitive match. An empty value matches only a present, empty variable.
+              </InfoBox>
+            )}
           </>
         )}
 

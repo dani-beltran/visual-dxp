@@ -1,3 +1,4 @@
+import { nodeDescriptions } from '../../../lib/nodeDescriptions';
 import type { NodeKind, StepConfig } from './types';
 export const catalog: {
   kind: NodeKind;
@@ -8,43 +9,43 @@ export const catalog: {
   {
     kind: 'trigger',
     label: 'Trigger',
-    description: 'Choose when it all begins',
+    description: nodeDescriptions.trigger,
     config: { event: 'page-load', selector: '#shop-now' },
   },
   {
     kind: 'http',
     label: 'HTTP request',
-    description: 'Connect to any API',
+    description: nodeDescriptions.http,
     config: { method: 'GET', url: 'https://jsonplaceholder.typicode.com/todos/1', headers: '{}' },
   },
   {
     kind: 'dom',
     label: 'Update element',
-    description: 'Make the page your own',
+    description: nodeDescriptions.dom,
     config: { selector: '#shop-now', action: 'text', value: 'Discover your next favorite' },
   },
   {
     kind: 'delay',
     label: 'Delay',
-    description: 'Wait for the right moment',
+    description: nodeDescriptions.delay,
     config: { duration: 1500 },
   },
   {
     kind: 'fork',
     label: 'Condition',
-    description: 'Branch by visitor or page conditions',
+    description: nodeDescriptions.fork,
     config: { conditionType: 'selector', condition: '#shop-now' },
   },
   {
     kind: 'loop',
     label: 'Loop',
-    description: 'Repeat a set of actions',
+    description: nodeDescriptions.loop,
     config: { iterations: 3 },
   },
   {
     kind: 'popover',
     label: 'Popover',
-    description: 'Put your message in focus',
+    description: nodeDescriptions.popover,
     config: {
       contentType: 'html',
       content:
@@ -56,13 +57,13 @@ export const catalog: {
   {
     kind: 'cookie',
     label: 'Set cookie',
-    description: 'Remember a value on this website',
+    description: nodeDescriptions.cookie,
     config: { cookieName: 'audience', cookieValue: 'returning', cookieDays: 0 },
   },
   {
     kind: 'note',
     label: 'Note',
-    description: 'Add a note to your canvas',
+    description: nodeDescriptions.note,
     config: {
       noteText: '',
       noteColor: '#fff4b8',

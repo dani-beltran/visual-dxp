@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { catalog } from '../lib/catalog';
 import type { NodeKind } from '../lib/types';
 
 export function NodeLibrary({ onAdd }: { onAdd: (kind: NodeKind) => void }) {
+  const tooltipPrefix = useId();
   const [activeTooltip, setActiveTooltip] = useState<NodeKind | null>(null);
 
   return (
@@ -24,12 +25,13 @@ export function NodeLibrary({ onAdd }: { onAdd: (kind: NodeKind) => void }) {
       }}
     >
       <div className="dxp-node-library">
-        {catalog.map(({ kind, label, color, icon: Icon }) => (
+        {catalog.map(({ kind, label, description, color, icon: Icon }) => (
           <button
             type="button"
             className={`dxp-node-library-button dxp-color-${color}`}
             key={kind}
             aria-label={`Add ${label}`}
+            aria-describedby={activeTooltip === kind ? `${tooltipPrefix}-${kind}` : undefined}
             onClick={() => {
               setActiveTooltip(null);
               onAdd(kind);
@@ -47,8 +49,13 @@ export function NodeLibrary({ onAdd }: { onAdd: (kind: NodeKind) => void }) {
           >
             <Icon size={20} aria-hidden="true" />
             {activeTooltip === kind && (
-              <span className="dxp-node-library-tooltip" aria-hidden="true">
-                {label}
+              <span
+                className="dxp-node-library-tooltip"
+                id={`${tooltipPrefix}-${kind}`}
+                role="tooltip"
+              >
+                <strong>{label}</strong>
+                <span>{description}</span>
               </span>
             )}
           </button>

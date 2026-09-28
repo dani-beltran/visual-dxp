@@ -294,6 +294,9 @@
   color: var(--dxp-muted);
   margin: 2px 0 17px;
 }
+.dxp-inspector-note.dxp-inspector-description {
+  margin: 16px 0 24px;
+}
 .dxp-inspector-note svg {
   flex-shrink: 0;
   margin-top: 1px;
