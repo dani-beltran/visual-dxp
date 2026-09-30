@@ -227,6 +227,12 @@ describe('host-owned builder localization', () => {
 });
 
 describe('demo language selector', () => {
+  beforeEach(() => localStorage.removeItem('visual-dxp-language'));
+  afterEach(() => {
+    vi.restoreAllMocks();
+    localStorage.removeItem('visual-dxp-language');
+  });
+
   async function selectLanguage(value: string) {
     await act(async () => {
       const select = host.querySelector<HTMLSelectElement>('.dxp-language-selector select');
@@ -297,5 +303,40 @@ describe('demo language selector', () => {
     expect(t('activity.nodeAdded', { label: 'Custom content' })).toBe('Se añadió «Custom content»');
     expect(t('summary.delay', { seconds: 1 })).toBe('Esperar 1 segundo');
     expect(t('summary.delay', { seconds: 2 })).toBe('Esperar 2 segundos');
+  });
+
+  it('persists and restores both language choices across app mounts', async () => {
+    await act(async () => root.render(<App initialWorkflow={workflow} />));
+    for (const language of ['es', 'en']) {
+      await selectLanguage(language);
+      expect(localStorage.getItem('visual-dxp-language')).toBe(language);
+      await act(async () => root.render(null));
+      await act(async () => root.render(<App initialWorkflow={workflow} />));
+      expect(host.querySelector<HTMLSelectElement>('.dxp-language-selector select')?.value).toBe(
+        language,
+      );
+      expect(host.querySelector('.dxp-builder')?.getAttribute('lang')).toBe(
+        language === 'es' ? 'es-ES' : 'en',
+      );
+    }
+  });
+
+  it('ignores unsupported stored languages and still switches when storage is blocked', async () => {
+    localStorage.setItem('visual-dxp-language', 'unsupported');
+    await act(async () =>
+      root.render(<App initialWorkflow={workflow} i18n={{ locale: 'es-MX' }} />),
+    );
+    expect(host.querySelector('.dxp-builder')?.getAttribute('lang')).toBe('es-MX');
+    await act(async () => root.render(null));
+    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+      throw new Error('Storage blocked');
+    });
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new Error('Storage blocked');
+    });
+    await act(async () => root.render(<App initialWorkflow={workflow} />));
+    expect(host.querySelector('.dxp-builder')?.getAttribute('lang')).toBe('en');
+    await selectLanguage('es');
+    expect(host.querySelector('.dxp-builder')?.getAttribute('lang')).toBe('es-ES');
   });
 });

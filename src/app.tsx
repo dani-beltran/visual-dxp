@@ -28,6 +28,7 @@ import { useDialogFocus } from './lib/useDialogFocus';
 import './styles/app.css';
 
 const themeStorageKey = 'visual-dxp-theme';
+const languageStorageKey = 'visual-dxp-language';
 
 export interface AppProps extends Omit<VisualDXPBuilderProps, 'onReady'> {
   onExport?: (script: string, workflow: Workflow) => void;
@@ -53,8 +54,25 @@ export function App({
   i18n,
   ...builderProps
 }: AppProps) {
-  // Keep host-supplied localization until the user chooses a language.
-  const [language, setLanguage] = useState<'en' | 'es' | null>(null);
+  // Use host localization unless the user has saved a supported language choice.
+  const [language, setLanguage] = useState<'en' | 'es' | null>(() => {
+    try {
+      const saved = localStorage.getItem(languageStorageKey);
+      return saved === 'en' || saved === 'es' ? saved : null;
+    } catch {
+      return null;
+    }
+  });
+  function selectLanguage(value: string) {
+    const next = value === 'en' || value === 'es' ? value : null;
+    setLanguage(next);
+    try {
+      if (next) localStorage.setItem(languageStorageKey, next);
+      else localStorage.removeItem(languageStorageKey);
+    } catch {
+      // Keep language switching usable when browser storage is unavailable.
+    }
+  }
   const hostLanguage = i18n?.locale ?? 'en';
   const selectedLanguage =
     language ?? (hostLanguage.split('-')[0].toLowerCase() === 'es' ? 'es' : hostLanguage);
@@ -238,15 +256,7 @@ export function App({
                 <select
                   className="dxp-button"
                   value={selectedLanguage}
-                  onChange={(event) =>
-                    setLanguage(
-                      event.target.value === 'es'
-                        ? 'es'
-                        : event.target.value === 'en'
-                          ? 'en'
-                          : null,
-                    )
-                  }
+                  onChange={(event) => selectLanguage(event.target.value)}
                 >
                   <option value="en" lang="en">
                     English
