@@ -118,7 +118,7 @@
   font-size: 11px;
   color: var(--dxp-muted);
 }
-.dxp-inspector-description {
+.dxp-inspector .dxp-inspector-description {
   font-size: 11.5px;
   line-height: 1.7;
   color: var(--dxp-muted);
