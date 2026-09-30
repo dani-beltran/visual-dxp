@@ -6,7 +6,15 @@
     "useIgnoreFile": true
   },
   "files": {
-    "includes": ["**", "!!**/node_modules", "!!**/dist", "!!**/demo-dist", "!**/package-lock.json"]
+    "includes": [
+      "**",
+      "!!**/node_modules",
+      "!!**/dist",
+      "!!**/demo-dist",
+      "!**/package-lock.json",
+      "!!**/.next",
+      "!next-env.d.ts"
+    ]
   },
   "formatter": {
     "enabled": true,

@@ -11,7 +11,7 @@ function workflow(trigger = config): Workflow {
   return {
     version: 1,
     name: 'Swipe an element',
-    websiteUrl: 'https://example.com',
+    websiteUrl: window.location.href,
     nodes: [
       {
         id: 'start',

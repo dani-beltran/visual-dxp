@@ -5,6 +5,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Preview } from '../src/components/Preview';
 import type { NodeKind, RunLog, StepConfig, Workflow, WorkflowNode } from '../src/lib/types';
+import { connectPreview, mockDemoFetch } from './helpers/preview';
 
 let host: HTMLDivElement;
 let root: Root;
@@ -12,6 +13,7 @@ let mounted: boolean;
 
 beforeEach(() => {
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
+  mockDemoFetch();
   host = document.createElement('div');
   document.body.appendChild(host);
   root = createRoot(host);
@@ -97,6 +99,7 @@ async function loadWebsite(html = '<p id="result">Waiting</p>') {
   // before installing page-load and visibility-sensitive behavior triggers.
   vi.spyOn(doc, 'readyState', 'get').mockReturnValue('complete');
   vi.spyOn(doc, 'hidden', 'get').mockReturnValue(false);
+  connectPreview(frame);
   await act(async () => frame.dispatchEvent(new Event('load')));
   return { frame, doc, win };
 }
@@ -112,6 +115,15 @@ function successIds(onLog: ReturnType<typeof vi.fn<(log: RunLog) => void>>) {
 }
 
 describe('workflow website preview', () => {
+  it.each([false, true])('keeps demo preview executable with includeSubpages=%s', async (includeSubpages) => {
+    const graph = { ...eventWorkflow({ event: 'page-load' }), includeSubpages };
+    const onLog = await renderPreview(graph);
+    const { doc } = await loadWebsite();
+    await clickButton('Run workflow');
+    expect(doc.querySelector('#result')?.textContent).toBe('Triggered');
+    expect(successIds(onLog)).toEqual(['start', 'update']);
+  });
+
   it.each([true, false])(
     'runs page-load triggers and the matching website branch when a member exists: %s',
     async (member) => {
@@ -214,7 +226,7 @@ describe('workflow website preview', () => {
     await act(async () => frame.dispatchEvent(new Event('load')));
 
     expect(button('Run workflow').disabled).toBe(true);
-    expect(document.querySelector('[role="alert"]')?.textContent).toContain('same-origin');
+    expect(frame.getAttribute('sandbox')).toBe('allow-scripts');
     expect(onLog).not.toHaveBeenCalled();
   });
 

@@ -1,3 +1,20 @@
+import {
+  AI_BASE_URL_HEADER,
+  AI_KEY_HEADER,
+  AI_MODEL_HEADER,
+  AI_PROVIDER_HEADER,
+  AI_RESERVED_HEADERS,
+  AIConfigurationError,
+  type AIRequestConfiguration,
+  allowsBrowserCredentials,
+  isAIProvider,
+  isBrowserConfiguration,
+  OPENAI_KEY_HEADER,
+  OPENAI_MODEL_HEADER,
+  OPENAI_OVERRIDE_HEADER,
+  resolveAIEndpoint,
+  validBrowserConfiguration,
+} from './aiCredentials';
 import { validateWorkflow } from './export';
 import { framesFirst, removeNodes } from './frames';
 import { isNoteMarks } from './noteText';
@@ -41,9 +58,12 @@ export interface AIChatResponse {
   operations: WorkflowOperation[];
 }
 
-/** Configure your own authenticated server endpoint; provider keys belong on that server. */
+/** Explicitly opt in to an AI server; encrypted settings manage browser overrides. */
 export interface AIChatConfig {
   endpoint: string;
+  /** Show the AI Settings tab when an explicit nonempty endpoint is supplied. Default: true. */
+  showSettings?: boolean;
+  /** Application authentication/CSRF only. X-DXP-OpenAI-* headers are reserved. */
   headers?: Record<string, string>;
   credentials?: RequestCredentials;
 }
@@ -77,13 +97,18 @@ const configStrings = [
   'method',
   'headers',
   'body',
+  'responseDataPath',
   'action',
   'value',
+  'valueSource',
+  'valueDataPath',
   'attribute',
   'cookieName',
   'cookieValue',
   'condition',
   'conditionType',
+  'conditionDataPath',
+  'conditionOperator',
   'conditionKey',
   'conditionValue',
   'conditionStartDate',
@@ -298,6 +323,8 @@ function operations(value: unknown): WorkflowOperation[] {
 
 function workflowShape(value: unknown): Workflow {
   const input = record(value, 'Workflow');
+  if (input.includeSubpages !== undefined && typeof input.includeSubpages !== 'boolean')
+    throw new Error('Include subpages must be a boolean.');
   if (input.version !== 1) throw new Error('This workflow version is not supported.');
   if (
     !Array.isArray(input.nodes) ||
@@ -312,6 +339,7 @@ function workflowShape(value: unknown): Workflow {
     version: 1,
     name: text(input.name, 'Workflow name', 500, true),
     websiteUrl: text(input.websiteUrl, 'Website URL', 4000, true),
+    includeSubpages: input.includeSubpages ?? false,
     nodes: input.nodes.map(node),
     edges: input.edges.map(edge),
   };
@@ -550,21 +578,53 @@ export async function requestAIChat(
   settings: AIChatConfig,
   request: AIChatRequest,
   signal?: AbortSignal,
+  configuration?: AIRequestConfiguration,
 ): Promise<AIChatResponse> {
+  const override =
+    configuration && isBrowserConfiguration(configuration) ? configuration : undefined;
+  const provider = configuration?.provider ?? 'openai';
+  if (!isAIProvider(provider)) throw new AIConfigurationError('Choose a supported AI provider.');
   const endpoint = text(settings.endpoint, 'AI endpoint', 4000);
-  const url = new URL(endpoint, 'https://dlb-dxp.invalid');
-  if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password)
-    throw new Error('Configure an HTTP or HTTPS AI endpoint.');
+  const url = resolveAIEndpoint(
+    endpoint,
+    typeof window === 'undefined' ? undefined : window.location.origin,
+  );
+  if (override && (!allowsBrowserCredentials(url) || override.origin !== url.origin))
+    throw new AIConfigurationError(
+      'Browser credentials require HTTPS and confirmation of this server origin.',
+    );
+  if (override && !validBrowserConfiguration(override))
+    throw new AIConfigurationError(
+      'Browser AI settings are incomplete or invalid. Save a complete key and model pair.',
+    );
   const body = JSON.stringify(parseAIChatRequest(request));
   const deadline = AbortSignal.timeout(AI_LIMITS.timeoutMs);
   const requestSignal = signal ? AbortSignal.any([signal, deadline]) : deadline;
   const headers = new Headers(settings.headers);
+  if (AI_RESERVED_HEADERS.some((header) => headers.has(header)))
+    throw new AIConfigurationError(
+      'Use browser AI settings for provider credentials; reserve ai.headers for application authentication.',
+    );
+  headers.set(AI_PROVIDER_HEADER, provider);
+  if (override) {
+    if (override.apiKey && (body.includes(override.apiKey) || url.href.includes(override.apiKey)))
+      throw new Error('Remove credentials from your conversation or workflow before sending.');
+    // Retain the legacy OpenAI wire protocol for existing embedding backends.
+    if (override.apiKey)
+      headers.set(provider === 'openai' ? OPENAI_KEY_HEADER : AI_KEY_HEADER, override.apiKey);
+    headers.set(provider === 'openai' ? OPENAI_MODEL_HEADER : AI_MODEL_HEADER, override.model);
+    if (override.baseURL) headers.set(AI_BASE_URL_HEADER, override.baseURL);
+    headers.set(OPENAI_OVERRIDE_HEADER, 'browser');
+  }
   headers.set('Content-Type', 'application/json');
   headers.set('Accept', 'application/json');
   try {
     let response: Response;
     try {
-      response = await fetch(endpoint, {
+      response = await fetch(override ? url.href : endpoint, {
+        redirect: 'error',
+        cache: 'no-store',
+        referrerPolicy: 'no-referrer',
         method: 'POST',
         headers,
         credentials: settings.credentials ?? 'same-origin',
@@ -576,19 +636,38 @@ export async function requestAIChat(
         throw error;
       throw new Error('Could not reach the AI assistant. Check the connection and try again.');
     }
+    if (response.redirected)
+      throw new Error('AI server redirects are not allowed. Configure the final HTTPS endpoint.');
     if (!response.ok) {
       void response.body?.cancel().catch(() => {});
       if (response.status === 401 || response.status === 403)
-        throw new Error(
-          'You are not authorized to use this AI assistant. Check your sign-in or endpoint configuration.',
+        throw new AIConfigurationError(
+          'The AI endpoint rejected the request. Check your endpoint configuration.',
+        );
+      if (override && (response.status === 400 || response.status === 422))
+        throw new AIConfigurationError(
+          provider === 'local'
+            ? 'Check the local base URL, server allowlist, optional key, and model. The model must support workflow tool calls. No changes were applied.'
+            : 'Check your browser API key and model in AI Settings. The override was rejected; no server fallback was used.',
+        );
+      if (response.status === 409)
+        throw new AIConfigurationError(
+          'This provider is unavailable in the current execution mode. Save its configuration in AI Settings.',
         );
       if (response.status === 429)
         throw new Error('The AI assistant is busy. Try again in a moment.');
       if (response.status === 503)
-        throw new Error('The AI assistant is not configured or is temporarily unavailable.');
-      throw new Error('The AI request failed. Try again or check your server configuration.');
+        throw new AIConfigurationError(
+          'The AI assistant is not configured or is temporarily unavailable.',
+        );
+      if (response.status === 502)
+        throw new AIConfigurationError('Check your API key and model in AI Settings.');
+      throw new Error('The AI request failed. Try again or check AI Settings.');
     }
     const value = await boundedResponse(response);
+    requestSignal.throwIfAborted();
+    if (override?.apiKey && JSON.stringify(value).includes(override.apiKey))
+      throw new Error('The AI server returned an unsafe response. No changes were applied.');
     try {
       return parseAIChatResponse(value);
     } catch {

@@ -88,6 +88,9 @@
 .dxp-ai-status.ready {
   background: var(--dxp-success);
 }
+.dxp-ai-status.error {
+  background: var(--dxp-danger);
+}
 .dxp-ai-transcript {
   flex: 1;
   min-height: 0;
@@ -248,7 +251,7 @@
   gap: 7px;
 }
 .dxp-ai-panel-compact .dxp-ai-header p {
-  display: none;
+  display: block;
 }
 .dxp-ai-panel-compact .dxp-ai-avatar {
   width: 28px;

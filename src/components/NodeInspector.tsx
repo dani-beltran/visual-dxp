@@ -1,26 +1,22 @@
 import {
   ArrowDown,
+  ArrowRight,
   Braces,
   ChevronDown,
-  Clock3,
-  Cookie,
   Copy,
   Frame,
-  GitFork,
-  Globe2,
   Info,
   Maximize2,
   MousePointer2,
-  MousePointerClick,
-  PanelTop,
   Repeat2,
   ScanLine,
   StickyNote,
-  Timer,
   Trash2,
   X,
 } from 'lucide-react';
 import { type ReactNode, type SelectHTMLAttributes, useEffect, useId, useState } from 'react';
+import { catalog } from '../lib/catalog';
+import { dataTools } from '../lib/data';
 import { elementTriggerEvents, triggerOptions } from '../lib/triggers';
 import type { ConditionType, NodeKind, StepConfig, StepData, WorkflowNode } from '../lib/types';
 import { NoteControls } from './NoteControls';
@@ -37,68 +33,23 @@ interface NodeInspectorProps {
   onPreviewContent: () => void;
 }
 
-const details = {
-  trigger: {
-    name: 'Trigger',
-    icon: MousePointerClick,
-    summary: 'Choose the moment your experience begins.',
-    color: 'green',
-  },
-  http: {
-    name: 'HTTP request',
-    icon: Globe2,
-    summary: 'Connect your experience to any API.',
-    color: 'blue',
-  },
-  dom: {
-    name: 'Update element',
-    icon: MousePointer2,
-    summary: 'Make a change to an element on your website.',
-    color: 'orange',
-  },
-  delay: {
-    name: 'Delay',
-    icon: Timer,
-    summary: 'Give your experience a little breathing room.',
-    color: 'amber',
-  },
-  cookie: {
-    name: 'Set cookie',
-    icon: Cookie,
-    summary: 'Save a value for later visits or steps in your workflow.',
-    color: 'brown',
-  },
-  fork: {
-    name: 'Condition',
-    icon: GitFork,
-    summary: 'Take a different path based on your visitor or page.',
-    color: 'violet',
-  },
-  loop: {
-    name: 'Loop',
-    icon: Repeat2,
-    summary: 'Run a group of steps more than once.',
-    color: 'pink',
-  },
-  popover: {
-    name: 'Popover',
-    icon: PanelTop,
-    summary: 'Bring a message or embedded page into the moment.',
-    color: 'teal',
-  },
-  note: {
-    name: 'Note',
-    icon: StickyNote,
-    summary: 'Keep ideas, context, and reminders alongside your workflow.',
-    color: 'amber',
-  },
-  frame: {
-    name: 'Frame',
-    icon: Frame,
-    summary: 'Keep related nodes together and move them as a group.',
-    color: 'blue',
-  },
-} satisfies Record<NodeKind, { name: string; icon: typeof Timer; summary: string; color: string }>;
+const nextOutputDescriptions = {
+  trigger: 'Runs when the selected event occurs',
+  http: 'Passes response data to the next node',
+  dom: 'Runs after the elements are updated',
+  cookie: 'Runs after the cookie is saved',
+  delay: 'Runs after the pause',
+  popover: 'Runs after the popover is displayed',
+} satisfies Record<Exclude<NodeKind, 'fork' | 'loop' | 'note' | 'frame'>, string>;
+
+function InfoBox({ children, className = '' }: { children: ReactNode; className?: string }) {
+  return (
+    <div className={`dxp-inspector-note ${className}`}>
+      <Info size={15} aria-hidden="true" />
+      <p>{children}</p>
+    </div>
+  );
+}
 
 function Field({
   label,
@@ -188,8 +139,18 @@ export function NodeInspector({
     ? triggerOptions[config.event ?? 'page-load']
     : undefined;
   const conditionType = config.conditionType ?? 'selector';
+  const dataOperator = config.conditionOperator ?? 'equal';
+  let dataError: string | undefined;
+  try {
+    if (node.data.kind === 'http') dataTools.validateResponse(config);
+    if (node.data.kind === 'dom') dataTools.validateElementValue(config);
+    if (node.data.kind === 'fork' && conditionType === 'data') dataTools.validateCondition(config);
+  } catch (error) {
+    dataError = (error as Error).message;
+  }
   const variableCondition = ['query-param', 'cookie'].includes(conditionType);
-  const metadata = details[node.data.kind];
+  const metadata = catalog.find((entry) => entry.kind === node.data.kind);
+  if (!metadata) throw new Error(`Unknown node type: ${node.data.kind}`);
   const isNote = node.data.kind === 'note';
   const isFrame = node.data.kind === 'frame';
   const itemName = isFrame ? 'frame' : isNote ? 'note' : 'step';
@@ -232,7 +193,7 @@ export function NodeInspector({
   );
 
   return (
-    <aside className="dxp-inspector" aria-label={`${metadata.name} configuration`}>
+    <aside className="dxp-inspector" aria-label={`${metadata.label} configuration`}>
       <header className="dxp-inspector-header">
         <div className="dxp-inspector-eyebrow">{itemName.toUpperCase()} DETAILS</div>
         <button
@@ -251,11 +212,11 @@ export function NodeInspector({
             <Icon size={21} strokeWidth={1.8} />
           </div>
           <div>
-            <h2>{metadata.name}</h2>
+            <h2>{metadata.label}</h2>
             <span>{isFrame ? 'Canvas group' : isNote ? 'Canvas annotation' : 'Workflow step'}</span>
           </div>
         </div>
-        <p className="dxp-inspector-description">{metadata.summary}</p>
+        <p className="dxp-inspector-description">{metadata.description}</p>
         <Field
           label={isFrame ? 'Frame name' : isNote ? 'Note name' : 'Step name'}
           htmlFor={id('name')}
@@ -263,7 +224,7 @@ export function NodeInspector({
           <input
             id={id('name')}
             value={node.data.label}
-            placeholder={metadata.name}
+            placeholder={metadata.label}
             onChange={(event) => onChange({ label: event.target.value })}
           />
         </Field>
@@ -301,10 +262,6 @@ export function NodeInspector({
               />
             </Field>
             <NoteControls noteId={node.id} config={config} onChange={update} />
-            <div className="dxp-inspector-note">
-              <Info size={15} />
-              <p>Notes stay on your canvas and are skipped when the workflow runs.</p>
-            </div>
           </>
         )}
 
@@ -323,6 +280,7 @@ export function NodeInspector({
                 ))}
               </Select>
             </Field>
+            <InfoBox>{trigger?.hint ?? 'Choose a supported trigger event.'}</InfoBox>
             {trigger?.settings.map(({ key, label, defaultValue, min, max }) => (
               <Field key={key} label={label} htmlFor={id(key)}>
                 <NumberInput
@@ -336,10 +294,6 @@ export function NodeInspector({
               </Field>
             ))}
             {elementTriggerEvents.includes(config.event ?? 'page-load') && targetField()}
-            <div className="dxp-inspector-note">
-              <Info size={15} />
-              <p>{trigger?.hint ?? 'Choose a supported trigger event.'}</p>
-            </div>
           </>
         )}
 
@@ -431,35 +385,82 @@ export function NodeInspector({
               </Field>
             )}
             {!['hide', 'show'].includes(config.action ?? 'text') && (
-              <Field
-                label={
-                  config.action === 'html'
-                    ? 'HTML content'
-                    : ['add-class', 'remove-class'].includes(config.action ?? '')
-                      ? 'CSS class names'
-                      : config.action === 'attribute'
-                        ? 'Attribute value'
-                        : 'New text'
-                }
-                htmlFor={id('value')}
-                hint={
-                  ['add-class', 'remove-class'].includes(config.action ?? '')
-                    ? 'Separate multiple class names with spaces.'
-                    : undefined
-                }
-              >
-                <textarea
-                  id={id('value')}
-                  className={config.action === 'html' ? 'dxp-inspector-code' : ''}
-                  rows={config.action === 'html' ? 5 : 3}
-                  value={config.value ?? ''}
-                  placeholder={
-                    config.action === 'html' ? '<p>Your new content</p>' : 'Enter a value…'
-                  }
-                  onChange={(event) => update({ value: event.target.value })}
-                  spellCheck={config.action !== 'html'}
-                />
-              </Field>
+              <>
+                <div className="dxp-inspector-toggle">
+                  <label htmlFor={id('value-source')}>Use incoming data</label>
+                  <input
+                    id={id('value-source')}
+                    type="checkbox"
+                    role="switch"
+                    aria-checked={config.valueSource === 'incoming-data'}
+                    checked={config.valueSource === 'incoming-data'}
+                    onChange={(event) =>
+                      update({ valueSource: event.target.checked ? 'incoming-data' : 'manual' })
+                    }
+                  />
+                </div>
+                {dataTools.usesIncomingValue(config) ? (
+                  <>
+                    <InfoBox className="dxp-inspector-incoming-data">
+                      Uses the value received through the blue input connection, such as an HTTP
+                      response, for this action. The target element and attribute name stay as
+                      configured.
+                    </InfoBox>
+                    <Field label="Incoming data path" htmlFor={id('value-data-path')}>
+                      <input
+                        id={id('value-data-path')}
+                        value={config.valueDataPath ?? ''}
+                        placeholder="e.g. user.name"
+                        onChange={(event) => update({ valueDataPath: event.target.value })}
+                        spellCheck={false}
+                      />
+                    </Field>
+                    <InfoBox>
+                      Optional. Leave empty to use the whole incoming value. Examples: user.name or
+                      data.items[0].price. Strings, numbers, and booleans become text; null and
+                      missing values become empty text.
+                      {['add-class', 'remove-class'].includes(config.action ?? '')
+                        ? ' Class names can also be an array of strings. Separate multiple names in text with spaces.'
+                        : ' Arrays and objects become JSON text.'}
+                    </InfoBox>
+                  </>
+                ) : (
+                  <Field
+                    label={
+                      config.action === 'html'
+                        ? 'HTML content'
+                        : ['add-class', 'remove-class'].includes(config.action ?? '')
+                          ? 'CSS class names'
+                          : config.action === 'attribute'
+                            ? 'Attribute value'
+                            : 'New text'
+                    }
+                    htmlFor={id('value')}
+                    hint={
+                      ['add-class', 'remove-class'].includes(config.action ?? '')
+                        ? 'Separate multiple class names with spaces.'
+                        : undefined
+                    }
+                  >
+                    <textarea
+                      id={id('value')}
+                      className={config.action === 'html' ? 'dxp-inspector-code' : ''}
+                      rows={config.action === 'html' ? 5 : 3}
+                      value={config.value ?? ''}
+                      placeholder={
+                        config.action === 'html' ? '<p>Your new content</p>' : 'Enter a value…'
+                      }
+                      onChange={(event) => update({ value: event.target.value })}
+                      spellCheck={config.action !== 'html'}
+                    />
+                  </Field>
+                )}
+                {dataError && (
+                  <p role="alert" className="dxp-inspector-hint">
+                    {dataError}
+                  </p>
+                )}
+              </>
             )}
           </>
         )}
@@ -524,30 +525,24 @@ export function NodeInspector({
         )}
 
         {node.data.kind === 'delay' && (
-          <>
-            <Field
-              label="Wait for"
-              htmlFor={id('duration')}
-              hint="1,000 milliseconds = 1 second. Maximum 24 hours."
-            >
-              <div className="dxp-inspector-unit-field">
-                <NumberInput
-                  key={node.id}
-                  id={id('duration')}
-                  min={0}
-                  max={86400000}
-                  step={100}
-                  value={config.duration ?? 1000}
-                  onChange={(duration) => update({ duration })}
-                />
-                <span>ms</span>
-              </div>
-            </Field>
-            <div className="dxp-inspector-note">
-              <Clock3 size={15} />
-              <p>The next connected step runs after this pause.</p>
+          <Field
+            label="Wait for"
+            htmlFor={id('duration')}
+            hint="1,000 milliseconds = 1 second. Maximum 24 hours."
+          >
+            <div className="dxp-inspector-unit-field">
+              <NumberInput
+                key={node.id}
+                id={id('duration')}
+                min={0}
+                max={86400000}
+                step={100}
+                value={config.duration ?? 1000}
+                onChange={(duration) => update({ duration })}
+              />
+              <span>ms</span>
             </div>
-          </>
+          </Field>
         )}
 
         {node.data.kind === 'fork' && (
@@ -565,6 +560,7 @@ export function NodeInspector({
                 }}
               >
                 <option value="selector">Element exists</option>
+                <option value="data">Incoming data</option>
                 <option value="device">User device</option>
                 <option value="language">User language</option>
                 <option value="referrer">Referrer domain</option>
@@ -574,12 +570,104 @@ export function NodeInspector({
                 <option value="cookie">Cookies</option>
               </Select>
             </Field>
+            {conditionType === 'data' && (
+              <>
+                <InfoBox>
+                  Evaluates data received through the incoming connection, such as an HTTP response.
+                  Choose a value and an operator to route execution through True or False.
+                </InfoBox>
+                <Field
+                  label="Incoming data path"
+                  htmlFor={id('condition-data-path')}
+                  hint="Optional. Leave empty to evaluate all incoming data. Examples: user.name, data.items[0].price, items[2].tags."
+                >
+                  <input
+                    id={id('condition-data-path')}
+                    value={config.conditionDataPath ?? ''}
+                    placeholder="e.g. user.name"
+                    onChange={(event) => update({ conditionDataPath: event.target.value })}
+                    spellCheck={false}
+                  />
+                </Field>
+                <Field label="Operator" htmlFor={id('condition-operator')}>
+                  <Select
+                    id={id('condition-operator')}
+                    value={dataOperator}
+                    onChange={(event) =>
+                      update({
+                        conditionOperator: event.target.value as StepConfig['conditionOperator'],
+                      })
+                    }
+                  >
+                    {Object.entries(dataTools.operators).map(([value, label]) => (
+                      <option key={value} value={value}>
+                        {label}
+                      </option>
+                    ))}
+                  </Select>
+                </Field>
+                {dataTools.needsValue(dataOperator) && (
+                  <Field label="Comparison value" htmlFor={id('condition-value')}>
+                    <input
+                      id={id('condition-value')}
+                      value={config.conditionValue ?? ''}
+                      onChange={(event) => update({ conditionValue: event.target.value })}
+                      spellCheck={false}
+                    />
+                  </Field>
+                )}
+                <InfoBox>{dataTools.hint(dataOperator)}</InfoBox>
+                {dataError && (
+                  <p role="alert" className="dxp-inspector-hint">
+                    {dataError}
+                  </p>
+                )}
+              </>
+            )}
             {conditionType === 'selector' && (
-              <Field
-                label="Element exists"
-                htmlFor={id('condition')}
-                hint="True when this CSS selector matches an element."
-              >
+              <InfoBox>True when this CSS selector matches an element.</InfoBox>
+            )}
+            {conditionType === 'device' && (
+              <InfoBox>
+                Uses the browser’s device information, with user agent detection as a fallback.
+              </InfoBox>
+            )}
+            {conditionType === 'language' && (
+              <InfoBox>
+                Checks the primary browser language. Use en for any English variant, or en-US for an
+                exact locale.
+              </InfoBox>
+            )}
+            {conditionType === 'referrer' && (
+              <InfoBox>
+                Matches the exact domain, ignoring protocol, port and path. Subdomains are distinct:
+                example.com does not match www.example.com. A missing referrer takes the False path.
+              </InfoBox>
+            )}
+            {conditionType === 'date-range' && (
+              <InfoBox>
+                True when the current date is within this range. Both dates are included, using{' '}
+                {config.conditionTimeZone === 'utc' ? 'UTC' : 'the visitor’s local time zone'}.
+              </InfoBox>
+            )}
+            {conditionType === 'time-of-day' && (
+              <InfoBox>
+                Checks the current time using{' '}
+                {config.conditionTimeZone === 'utc' ? 'UTC' : 'the visitor’s local time zone'}. Both
+                selected minutes are included. An earlier end time crosses midnight; equal times
+                match only that minute.
+              </InfoBox>
+            )}
+            {variableCondition && (
+              <InfoBox>
+                {conditionType === 'query-param'
+                  ? 'Checks the current page URL. Any matching value in a repeated parameter counts.'
+                  : 'Checks cookies, localStorage and sessionStorage on this website. True if any source contains the name and value. Cookie names and values are URL-decoded. If none match, the False path runs.'}{' '}
+                Exact, case-sensitive match. An empty value matches only a present, empty variable.
+              </InfoBox>
+            )}
+            {conditionType === 'selector' && (
+              <Field label="Element exists" htmlFor={id('condition')}>
                 <input
                   id={id('condition')}
                   className="dxp-inspector-code"
@@ -591,11 +679,7 @@ export function NodeInspector({
               </Field>
             )}
             {conditionType === 'device' && (
-              <Field
-                label="Device is"
-                htmlFor={id('condition-value')}
-                hint="Uses the browser’s device information, with user agent detection as a fallback."
-              >
+              <Field label="Device is" htmlFor={id('condition-value')}>
                 <Select
                   id={id('condition-value')}
                   value={config.conditionValue ?? ''}
@@ -610,11 +694,7 @@ export function NodeInspector({
               </Field>
             )}
             {conditionType === 'language' && (
-              <Field
-                label="Language is"
-                htmlFor={id('condition-value')}
-                hint="Checks the primary browser language. Use en for any English variant, or en-US for an exact locale."
-              >
+              <Field label="Language is" htmlFor={id('condition-value')}>
                 <input
                   id={id('condition-value')}
                   value={config.conditionValue ?? ''}
@@ -625,11 +705,7 @@ export function NodeInspector({
               </Field>
             )}
             {conditionType === 'referrer' && (
-              <Field
-                label="Referrer domain equals"
-                htmlFor={id('condition-value')}
-                hint="Matches the exact domain, ignoring protocol, port and path. Subdomains are distinct: example.com does not match www.example.com. A missing referrer takes the False path."
-              >
+              <Field label="Referrer domain equals" htmlFor={id('condition-value')}>
                 <input
                   id={id('condition-value')}
                   type="text"
@@ -683,10 +759,6 @@ export function NodeInspector({
                     onChange={(event) => update({ conditionEndDate: event.target.value })}
                   />
                 </Field>
-                <p className="dxp-inspector-hint">
-                  True when the current date is within this range. Both dates are included, using{' '}
-                  {config.conditionTimeZone === 'utc' ? 'UTC' : 'the visitor’s local time zone'}.
-                </p>
               </>
             )}
             {conditionType === 'time-of-day' && (
@@ -709,12 +781,6 @@ export function NodeInspector({
                     onChange={(event) => update({ conditionEndTime: event.target.value })}
                   />
                 </Field>
-                <p className="dxp-inspector-hint">
-                  Checks the current time using{' '}
-                  {config.conditionTimeZone === 'utc' ? 'UTC' : 'the visitor’s local time zone'}.
-                  Both selected minutes are included. An earlier end time crosses midnight; equal
-                  times match only that minute.
-                </p>
               </>
             )}
             {variableCondition && (
@@ -736,11 +802,7 @@ export function NodeInspector({
                     spellCheck={false}
                   />
                 </Field>
-                <Field
-                  label="Value equals"
-                  htmlFor={id('condition-value')}
-                  hint="Exact, case-sensitive match. An empty value matches only a present, empty variable."
-                >
+                <Field label="Value equals" htmlFor={id('condition-value')}>
                   <input
                     id={id('condition-value')}
                     value={config.conditionValue ?? ''}
@@ -749,63 +811,26 @@ export function NodeInspector({
                     spellCheck={false}
                   />
                 </Field>
-                <p className="dxp-inspector-hint">
-                  {conditionType === 'query-param'
-                    ? 'Checks the current page URL. Any matching value in a repeated parameter counts.'
-                    : 'Checks cookies, localStorage and sessionStorage on this website. True if any source contains the name and value. Cookie names and values are URL-decoded. If none match, the False path runs.'}
-                </p>
               </>
             )}
-            <div className="dxp-inspector-branches">
-              <div>
-                <i className="dxp-inspector-dot-true" />
-                <strong>True</strong>
-                <span>Condition matches</span>
-              </div>
-              <div>
-                <i className="dxp-inspector-dot-false" />
-                <strong>False</strong>
-                <span>Condition does not match</span>
-              </div>
-            </div>
-            <p className="dxp-inspector-hint">
-              Connect each output to the next step for that path.
-            </p>
           </>
         )}
 
         {node.data.kind === 'loop' && (
-          <>
-            <Field label="Number of repetitions" htmlFor={id('iterations')}>
-              <div className="dxp-inspector-unit-field">
-                <NumberInput
-                  key={node.id}
-                  id={id('iterations')}
-                  min={1}
-                  max={1000}
-                  step={1}
-                  value={config.iterations ?? 3}
-                  onChange={(iterations) => update({ iterations })}
-                />
-                <span>times</span>
-              </div>
-            </Field>
-            <div className="dxp-inspector-branches">
-              <div>
-                <Repeat2 size={13} />
-                <strong>Body</strong>
-                <span>Runs each repetition</span>
-              </div>
-              <div>
-                <ArrowDown size={13} />
-                <strong>Done</strong>
-                <span>Runs after the last one</span>
-              </div>
+          <Field label="Number of repetitions" htmlFor={id('iterations')}>
+            <div className="dxp-inspector-unit-field">
+              <NumberInput
+                key={node.id}
+                id={id('iterations')}
+                min={1}
+                max={1000}
+                step={1}
+                value={config.iterations ?? 3}
+                onChange={(iterations) => update({ iterations })}
+              />
+              <span>times</span>
             </div>
-            <p className="dxp-inspector-hint">
-              Connect the steps to repeat to Body. Connect the next step to Done.
-            </p>
-          </>
+          </Field>
         )}
 
         {node.data.kind === 'popover' && (
@@ -912,6 +937,86 @@ export function NodeInspector({
             </div>
           </>
         )}
+        <section aria-labelledby={id('outputs-heading')}>
+          <h3 id={id('outputs-heading')} className="dxp-inspector-section-label">
+            <ArrowRight size={14} aria-hidden="true" /> Outputs
+          </h3>
+          {node.data.kind === 'fork' ? (
+            <div className="dxp-inspector-branches">
+              <div>
+                <i className="dxp-inspector-dot-true" />
+                <strong>True</strong>
+                <span>Condition matches</span>
+              </div>
+              <div>
+                <i className="dxp-inspector-dot-false" />
+                <strong>False</strong>
+                <span>Condition does not match</span>
+              </div>
+            </div>
+          ) : node.data.kind === 'loop' ? (
+            <>
+              <div className="dxp-inspector-branches">
+                <div>
+                  <Repeat2 size={13} />
+                  <strong>Body</strong>
+                  <span>Runs each repetition</span>
+                </div>
+                <div>
+                  <ArrowDown size={13} />
+                  <strong>Done</strong>
+                  <span>Runs after the last one</span>
+                </div>
+              </div>
+              <p className="dxp-inspector-hint">
+                Connect the steps to repeat to Body. Connect the next step to Done.
+              </p>
+            </>
+          ) : node.data.kind === 'note' || node.data.kind === 'frame' ? (
+            <InfoBox>
+              No outputs. {isNote ? 'Notes' : 'Frames'} organize the canvas and do not run workflow
+              steps.
+            </InfoBox>
+          ) : (
+            <div
+              className={`dxp-inspector-branches${node.data.kind === 'http' ? ' dxp-inspector-data-output' : ''}`}
+            >
+              <div>
+                {node.data.kind === 'http' ? (
+                  <i className="dxp-inspector-dot-data" aria-hidden="true" />
+                ) : (
+                  <ArrowRight size={13} aria-hidden="true" />
+                )}
+                <strong>{node.data.kind === 'http' ? 'Data' : 'Next'}</strong>
+                <span>{nextOutputDescriptions[node.data.kind]}</span>
+              </div>
+            </div>
+          )}
+          {node.data.kind === 'http' && (
+            <>
+              <Field label="Response data path" htmlFor={id('response-data-path')}>
+                <input
+                  id={id('response-data-path')}
+                  value={config.responseDataPath ?? ''}
+                  placeholder="e.g. data.items[0].price"
+                  onChange={(event) => update({ responseDataPath: event.target.value })}
+                  spellCheck={false}
+                />
+              </Field>
+              <InfoBox>
+                Responses are automatically parsed as JSON when possible. Optionally select a value
+                using a path such as user.name, data.items[0].price, or items[2].tags; leave empty
+                for the whole body. A missing JSON path returns undefined; null is passed as null.
+                Non-JSON responses ignore the path and pass as complete text.
+              </InfoBox>
+              {dataError && (
+                <p role="alert" className="dxp-inspector-hint">
+                  {dataError}
+                </p>
+              )}
+            </>
+          )}
+        </section>
       </div>
       <footer className="dxp-inspector-footer">
         <button type="button" onClick={onDuplicate} title={`Duplicate ${itemName}`}>

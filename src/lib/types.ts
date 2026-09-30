@@ -1,4 +1,5 @@
 import type { Edge, Node } from '@xyflow/react';
+import type { DataOperator } from './data';
 export type NodeKind =
   | 'trigger'
   | 'http'
@@ -19,6 +20,7 @@ export interface NoteMark {
   strikethrough?: boolean;
 }
 export type ConditionType =
+  | 'data'
   | 'selector'
   | 'device'
   | 'language'
@@ -61,8 +63,14 @@ export interface StepConfig {
   method?: string;
   headers?: string;
   body?: string;
+  /** Optional selection within parsed JSON. Non-JSON responses pass as complete text. */
+  responseDataPath?: string;
   action?: 'text' | 'html' | 'add-class' | 'remove-class' | 'hide' | 'show' | 'attribute';
   value?: string;
+  /** Value source for Update element actions. Older workflows default to manual. */
+  valueSource?: 'manual' | 'incoming-data';
+  /** Optional selection within incoming data for Update element. */
+  valueDataPath?: string;
   attribute?: string;
   /** Name of the cookie to create or overwrite on the current host. */
   cookieName?: string;
@@ -74,6 +82,9 @@ export interface StepConfig {
   duration?: number;
   /** Omitted in older workflows, which check CSS selector existence. */
   conditionType?: ConditionType;
+  /** Optional nested selection from incoming node data; empty uses all data. */
+  conditionDataPath?: string;
+  conditionOperator?: DataOperator;
   /** CSS selector used by selector conditions. */
   condition?: string;
   /** Exact query parameter, cookie, local storage, or session storage key. */
@@ -119,6 +130,8 @@ export interface Workflow {
   version: 1;
   name: string;
   websiteUrl: string;
+  /** Run on descendant paths on the same origin. Missing in older workflows means false. */
+  includeSubpages?: boolean;
   nodes: WorkflowNode[];
   edges: WorkflowEdge[];
 }

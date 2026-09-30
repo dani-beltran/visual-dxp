@@ -45,17 +45,6 @@
   line-height: 1.6;
   color: var(--dxp-muted);
 }
-.dxp-draft-badge {
-  flex-shrink: 0;
-  border: 1px solid #e8e9dc;
-  background: #f7f7ef;
-  color: #9d9e71;
-  font-size: 8px;
-  letter-spacing: 0.65px;
-  font-weight: 500;
-  border-radius: 5px;
-  padding: 4px 7px;
-}
 .dxp-header-actions {
   display: flex;
   flex-shrink: 0;

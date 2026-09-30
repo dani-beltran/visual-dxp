@@ -1,6 +1,6 @@
 # Visual DXP
 
-An embeddable React 19 workflow editor powered by React Flow. Build website experiences visually, pick elements inside an iframe, test the journey, and export a standalone JavaScript file.
+A Next.js App Router application and embeddable React 19 workflow editor powered by React Flow. Build website experiences visually, pick elements inside an iframe, test the journey, and export a standalone JavaScript file.
 
 ## Run the demo
 
@@ -8,14 +8,20 @@ Requires Node.js 22.12+ (tested with Node.js 24).
 
 ```sh
 npm install
+cp .env.example .env.local
+# Set OPENAI_API_KEY in .env.local to enable local AI execution.
 npm run dev
 ```
 
-Open http://localhost:5173. The included demo website supports the element picker and live workflow testing without additional setup. The demo saves workflow changes in local browser storage. Its Activity tab starts with illustrative actions from several users; activity stays in memory and resets when the page reloads.
+Open http://127.0.0.1:3000. The page and AI API run in the same Next.js process; no sibling backend process is needed. The included demo website supports the element picker and live workflow testing without additional setup. The demo saves workflow changes and activity history in local browser storage and restores them when the page reloads. Its Activity tab starts empty until you make changes.
 
 ```sh
-npm test             # Runtime, export, picker bridge, and import boundary tests
-npm run build        # Typecheck, demo-dist/, and reusable dist/ library with declarations
+npm test             # Frontend, integrated backend, and mocked Route Handler tests
+npm run typecheck    # App, server, library, and test types
+npm run build        # Production Next.js application (.next/)
+npm start            # Serve the production application on port 3000
+npm run build:lib    # Reusable dist/ library with declarations and public assets
+node tests/export-library.mjs # Execute targeting tests against both built library bundles
 npm run lint         # Check Biome lint rules
 npm run lint:fix     # Apply safe lint fixes
 npm run format       # Format supported files with Biome
@@ -33,7 +39,7 @@ Build and install this local package from your application (the package is not p
 
 ```sh
 # In this repository
-npm run build
+npm run build:lib
 npm pack
 
 # In your application, using the archive produced above
@@ -51,6 +57,7 @@ const initialWorkflow: Workflow = {
   version: 1,
   name: 'My first experience',
   websiteUrl: '/my-preview-page',
+  includeSubpages: false,
   nodes: [
     {
       id: 'visit',
@@ -75,7 +82,7 @@ export function ExperienceEditor() {
       <button disabled={!builder} onClick={() => builder?.testWorkflow()}>
         Test workflow
       </button>
-      {/* Use workflow in your own export dialog; JSON.stringify(workflow) produces JSON. */}
+      {/* Validate the target before exporting; see URL targeting below. */}
       <span>{workflow.name}</span>
       <div style={{ height: 600 }}>
         <VisualDXPBuilder
@@ -96,11 +103,11 @@ The builder owns the toolbar, canvas, inspector, activity view, footer, element 
 | -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `initialWorkflow`    | Initial workflow; defaults to the included welcome journey. Changes after mounting do not replace editor state; use a React `key` to open another workflow.       |
 | `onChange`           | Receives the initial or restored workflow and all subsequent edits as a JSON-serializable `Workflow` object. Use it for persistence or your own export dialog.                                                 |
-| `onReady`            | Receives a `VisualDXPBuilderApi` with `testWorkflow()`, `renameWorkflow(name)`, `fitView()`, and `flushActivity()`. Receives `null` on cleanup; use a stable callback such as a state setter.                                                                                     |
+| `onReady`            | Receives a `VisualDXPBuilderApi` with `getWorkflow()`, `configureWebsite(options?)`, `testWorkflow()`, `renameWorkflow(name)`, `fitView()`, and `flushActivity()`. Receives `null` on cleanup; use a stable callback such as a state setter.                                                                                     |
 | `persistenceKey`     | Optional localStorage key. A valid saved workflow takes precedence over `initialWorkflow`. Omit to disable browser persistence.                                   |
 | `activityStore`      | Optional external activity store. Reads and subscribes to entries and appends new editor actions. Defaults to an empty in-memory store for this builder.         |
 | `activityUser`       | Username attached to new activity entries; defaults to `"You"`. Pass the current user's display name.                                                             |
-| `ai`                 | Optional `{ endpoint, headers?, credentials? }` for your authenticated chat API. The AI button remains visible with setup guidance until an endpoint is provided. |
+| `ai`                 | Optional `{ endpoint, headers?, credentials? }` for your chat API. The AI button remains visible with setup guidance until an endpoint is provided. |
 | `className`, `style` | Customize the outer editor container. The parent must provide a height.                                                                                           |
 
 `VisualDXPBuilder` is both the default and a named package export. Import `dlb-dxp/styles.css` once in your application; it includes React Flow and all builder, inspector, dialog, picker, and activity styles. The package exposes the same stylesheet through its `style` field and marks CSS as a side effect so bundlers retain the import.
@@ -158,25 +165,58 @@ Builders inherit the closest theme, including their dialogs and picker. Changing
 
 The palette derives hover colors, borders, backgrounds, shadows, and canvas colors with CSS `color-mix()`. Use brand colors with sufficient contrast for text on light surfaces. Solid primary buttons use white text by default; set `--dxp-on-primary` in your `theme.css` when your primary color needs a different foreground. Status indicators retain semantic success/warning/error colors. User-authored note colors, popover content, and preview websites remain part of the workflow rather than the editor theme.
 
-Call `builder.testWorkflow()` from your own button to open the built-in preview. Use `exportWorkflow(workflow)` to generate JavaScript in your host, or `JSON.stringify(workflow, null, 2)` for JSON. Export UI and the `onExport` callback now belong to the demo `App`, not `VisualDXPBuilder`. `renameWorkflow(name)` participates in undo/redo and activity; `flushActivity()` publishes pending edits when a host input loses focus.
+Call `builder.testWorkflow()` from your own button to open the built-in preview. Use `exportWorkflow(workflow)` to generate JavaScript in your host. For JSON, call `validateExportTarget(workflow)` first, then serialize the workflow with its returned absolute URL and `includeSubpages: workflow.includeSubpages ?? false`. Export UI and the `onExport` callback now belong to the demo `App`, not `VisualDXPBuilder`. `renameWorkflow(name)` participates in undo/redo and activity; `flushActivity()` publishes pending edits when a host input loses focus.
 
 The default journey points to `/demo-site.html`. To use it in another application, copy `dist/demo-site.html` to the application's public assets, or provide your own `initialWorkflow.websiteUrl`.
+
+## URL targeting and export requirements
+
+The **Target website** dialog controls where the exported experience runs. **Include subpages** is unchecked by default. Its effective scope preview shows the normalized target and whether descendants are included:
+
+| Target | Include subpages | Where the script runs |
+| --- | --- | --- |
+| `https://example.com` | Off | Homepage only |
+| `https://example.com` | On | Homepage and all paths on that origin |
+| `https://example.com/products` | Off | `/products` only |
+| `https://example.com/products` | On | `/products`, `/products/item`, and deeper descendants; never `/products-sale` or unrelated paths |
+
+Targeting uses parsed URLs and path-segment boundaries. The protocol, hostname, and effective port must match: subdomains, different ports, and HTTP versus HTTPS are separate origins. Standard URL parsing normalizes hostname case, default ports, and dot segments. Paths remain case-sensitive; percent-encoded path characters are not decoded for matching (an encoded slash is not a descendant boundary). All trailing slashes are ignored, so `/products`, `/products/`, and `/products///` have the same scope. Query parameters and fragments are ignored on both the target and the executing page. URL-parameter condition nodes can still distinguish query values within that scope.
+
+Relative preview URLs remain supported, including `/products`, `./products`, and `products.html`; preview keeps the entered URL and its normal iframe resolution. **For production export**, relative targets resolve from the editor origin's root, regardless of the editor route or any HTML `<base>` tag. Both the demo app's JSON export and generated JavaScript embed the normalized absolute target. A script exported for `https://editor.example/products` stays restricted to that origin even when loaded elsewhere. Enter an absolute URL when targeting a separate production website.
+
+The generated standalone JavaScript reads the actual page's `window.location.href` before replacing an existing `window.dlbDXP`, creating a runtime, registering listeners, starting timers, or running actions. On a nonmatching page it exits without side effects. The URL configuration and self-contained matching function are embedded; the editor is not required. This check happens when the script loads; it does not monitor client-side SPA navigation. The low-level `createRuntime`/`executeWorkflow` API remains usable for explicit preview/test execution without the production target gate.
+
+**Export workflow**, **Copy**, and **Download** require a nonempty HTTP(S) target URL, without embedded credentials, that is not the built-in demo. `/demo-site.html` is for preview only, including equivalent relative paths and same-editor-origin absolute URLs with queries, fragments, or trailing slashes. An external site's `demo-site.html` or a different path with that filename is allowed. Invalid export targets reopen the builder's existing configuration dialog. Saving a valid target returns to the export dialog; cancellation discards the draft and never exports. JavaScript also requires a valid executable graph. JSON retains the existing ability to export an incomplete graph once its target is configured.
+
+`exportWorkflow(workflow, { baseUrl? })` enforces the same target eligibility for direct callers. `baseUrl` defaults to the browser's editor origin; outside a browser, pass the editor's URL/origin to resolve relative targets and identify same-origin absolute demo URLs. Without a base, Node callers must supply an absolute production URL. `validateWorkflow(workflow)` checks editable graph configuration and deliberately does not block building or testing on the demo.
+
+Workflow schema version 1 remains compatible. `includeSubpages` is an optional boolean in the public TypeScript types so older workflows still load; missing values mean `false`. The builder, restored/imported workflows, AI request parsers, and exports default it to false. Both frontend and server AI parsers validate and preserve the field, and response operations preserve it. Changes use the existing save/restore, undo/redo, and activity history paths.
+
+Hosts can reuse the configuration dialog with `builder.configureWebsite({ requireExportable: true, onSave: (workflow) => { /* reopen export UI */ } })`. The callback runs only after a valid save, never on cancellation. `builder.getWorkflow()` returns a copy of the latest committed workflow so action handlers can recheck `validateExportTarget` or `exportWorkflow` without relying on possibly stale host UI state.
 
 ## Nodes and execution
 
 | Node           | Configuration and behavior                                                                                                                                                       |
 | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Trigger        | Page ready, click, hover, submit, input change, element zoom-in, element swipe, exit intention, rage clicking, inactivity, scroll thrashing, or scroll down threshold. Element events use delegated listeners. |
-| HTTP request   | HTTP method, URL, JSON headers, and raw body. Non-success responses stop that run and produce an error. The target API must allow the site's origin through CORS.                |
+| HTTP request   | HTTP method, URL, JSON headers, raw request body, and optional response data path in Outputs. Non-success responses stop that run and produce an error. The target API must allow the site's origin through CORS.                |
 | Update element | Change text/HTML, add/remove classes, hide/show, or set an attribute on all matching elements.                                                                                   |
 | Set cookie     | Creates or updates a cookie on the current website using a name, value, and session or persistent expiration. The next step runs after the value can be read back. |
 | Delay          | Wait 0–86,400,000 milliseconds.                                                                                                                                                  |
-| Condition      | Tests element existence, device, language, referrer, date ranges, time of day, URL parameters, or cookies (including local and session storage). The upper `true` output runs on a match; otherwise the lower `false` output runs.                                                          |
+| Condition      | Tests incoming data, element existence, device, language, referrer, date ranges, time of day, URL parameters, or cookies (including local and session storage). The upper `true` output runs on a match; otherwise the lower `false` output runs.                                                          |
 | Loop           | Executes the complete `body` path 1–1,000 times, then executes the `done` path once. Do not connect the body back to the loop; graph cycles are rejected.                        |
 | Popover        | Author-provided HTML or a sandboxed iframe, 240–960px wide, placed at screen center, any corner, or beneath a picked anchor. Anchored popovers reposition on scrolling/resizing. |
 | Note           | Editable canvas text with bold, italic, and strikethrough formatting, preset or custom background colors, and a transparent option. Notes have no connections and do not run. |
 
-Connections from a step execute in order. An HTTP request currently performs the configured request; its response is not interpolated into later nodes. Conditions compare the configured visitor or page data; they do not evaluate JavaScript expressions. An execution limit protects against excessive loops.
+Connections from a step execute in order. HTTP requests output their response body as incoming data for downstream nodes, including Conditions. Other nodes preserve that data. Each outgoing path receives the same input independently; requests on one path do not overwrite sibling paths or concurrent runs. Repeat sends its incoming data to each body iteration and its Done branch. Conditions do not evaluate JavaScript expressions. An execution limit protects against excessive loops.
+
+HTTP responses always parse valid JSON into native values and otherwise preserve the complete body as text. **Response data path** lives in **Outputs** and selects a value from parsed JSON; non-JSON responses ignore the path. Previously saved response format settings are ignored. Empty paths output the whole body. Paths support properties and zero-based array indexes, such as `user.name`, `data.items[0].price`, `items[2].tags`, or `[0].name`. Properties use letters, digits, `_`, `$`, or `-` (starting with a letter, `_`, or `$`); quoted keys and wildcards are unsupported. Missing response paths pass `undefined` downstream without stopping the run; an explicit `null` stays `null`. Downstream Incoming data conditions can use Does not exist to check for missing output. Malformed path syntax still reports an error.
+
+**Update element** uses a manual value by default. Turn on **Use incoming data** to use connected data for text, HTML, CSS class, and attribute-value actions. Incoming mode shows a blue input socket and a **Uses incoming data** badge on the canvas. An optional **Incoming data path** selects a nested response value; leave it empty when HTTP already selected the value. Strings pass directly, numbers and booleans become text, and null or missing values become empty text. Arrays and objects become JSON text; CSS class actions instead accept arrays of class-name strings. Hide and Show do not need values. Targets and attribute names remain manually configured, and the original incoming data continues downstream unchanged.
+
+The **Incoming data** condition uses an optional **Incoming data path** with the same syntax; empty means all incoming data. Comparisons adapt to the actual value: numeric equality/order accepts finite decimal numbers (including exponents); strings use exact case-sensitive text and stay strings unless ordering requires numeric comparison. Boolean equality accepts `true`/`false`. Array and object equality uses JSON and compares deeply, ignoring object key order while preserving array order. Contains checks a substring, a deep-equal array item (JSON or plain text; quote numeric strings), or an exact own object key. Matches uses a case-sensitive regular expression without slash delimiters. Unsupported comparisons and invalid patterns stop the run and appear in the execution log.
+
+Exists checks whether the path resolves, including `null`. Is null and Is not null both require a resolved path; missing values match neither. Other operators report missing-path errors. Is empty checks empty strings, arrays, or objects; whitespace, `0`, and `false` are not empty. Use null operators for `null` and true/false operators for boolean data. Unary operators hide the comparison field. All new settings are retained by JSON persistence, AI editing, preview, and standalone export.
 
 **Set cookie** (`kind: 'cookie'`) uses `cookieName`, `cookieValue`, and `cookieDays`. The name must be nonempty and contain no spaces or cookie separators; the value may be empty. `cookieDays` is a whole number from 0 to 400: zero or omitted uses a browser-session cookie, and a positive value sets `Max-Age` to that many days from execution. The inspector offers **Browser session** or **After a number of days**. For example, `{ "cookieName": "audience", "cookieValue": "returning", "cookieDays": 30 }` stores a value that a later Cookies condition can match with `conditionKey: 'audience'` and `conditionValue: 'returning'`.
 
@@ -260,38 +300,48 @@ interface ActivityStore {
 
 `getSnapshot` must return the same array reference until entries change. Publish a new immutable snapshot and notify subscribers when local or server updates arrive; `subscribe` returns an unsubscribe function. `append` and `remove` should update the local snapshot synchronously. A production adapter can then persist entries or their deletion asynchronously through the host's API, handling retries and reconciling server updates by entry ID. Undo targets the original entry's ID and store, leaving unrelated activity untouched. Edits undone before their activity is saved cancel the pending entry. The included `createActivityStore` supplies these in-memory operations plus `replaceEntries` to accept a complete updated history from the server.
 
-The builder does not contact an activity server or store activity in localStorage. The fake entries are supplied only by this project's demo; embedded builders start with an empty activity history unless the host supplies entries.
+The builder does not contact an activity server or store activity in localStorage itself; embedded builders start with an empty in-memory activity history unless the host supplies a store. This project's demo supplies a localStorage-backed store under `dlb-dxp-activity-v1`, alongside the workflow saved under `dlb-dxp-workflow-v1`. Activity updates, including Undo removals and Redo restorations, are saved automatically. Missing or invalid saved history starts empty; if browser storage is unavailable or full, activity continues in memory.
 
 ## AI workflow assistant
 
 The **AI chat** button to the left of Canvas Help opens a conversation for creating, updating, removing, and connecting steps. It sends the current workflow and selected node with each message. Valid edits are applied together as one undoable change. If you edit the canvas while the assistant is working, its response is rejected so your changes are preserved. Chat history stays in memory and is not saved to browser storage.
 
-This repository contains the frontend only. The LangChain agent, HTTP API, tools, and LangSmith deployment configuration live in the separate `dlb-dxp-server` project. Configure your host application's authenticated endpoint:
+The demo configures the reusable builder with the same-origin endpoint:
 
 ```tsx
-<VisualDXPBuilder ai={{ endpoint: '/api/ai/chat' }} />
+<VisualDXPBuilder ai={{ endpoint: '/api/ai/chat', credentials: 'same-origin' }} />
 ```
 
-For the local demo, copy `.env.example` to `.env`; its only setting is the public `VITE_DXP_AI_ENDPOINT=http://127.0.0.1:8787/api/ai/chat`. Run `npm run dev` here and start the backend from the sibling project in another terminal:
+AI is enabled **only** by an explicitly supplied, nonempty `ai.endpoint`. There is no implicit endpoint or environment-based opt-in. Omit `ai`, or pass an empty endpoint, to hide both the assistant and AI Settings; saved browser settings do not enable either feature.
 
-```sh
-cd ../dlb-dxp-server
-npm install
-cp .env.example .env
-# Set OPENAI_API_KEY in this backend .env file.
-# Set AI_ALLOWED_ORIGIN=http://127.0.0.1:5173 for the local frontend.
-npm run dev
+```tsx
+// Assistant and AI Settings tab (default when endpoint is supplied).
+<VisualDXPBuilder ai={{ endpoint: '/api/ai/chat', credentials: 'same-origin' }} />
+
+// Assistant only. Existing settings stay saved; unlock/lock/remove remain in chat.
+<VisualDXPBuilder ai={{ endpoint: 'https://builder.example/api/ai/chat', showSettings: false }} />
+
+// No AI UI or AI requests, even if encrypted browser settings already exist.
+<VisualDXPBuilder />
 ```
 
-Open `http://127.0.0.1:5173`. The frontend calls the backend directly, with no Vite proxy. The backend's `AI_ALLOWED_ORIGIN` must exactly match the frontend origin, including hostname and port. In production, use your API URL with its allowed frontend origin, or route a relative `/api/ai/chat` endpoint through your host's authenticated backend or reverse proxy. Keep model and LangSmith keys only in the backend's environment. Without an endpoint, the chat displays setup guidance; it does not simulate AI responses.
+AI Settings has accessible **OpenAI**, **Claude**, and **Self-Hosted** tabs with brand/computer icons. Viewing a tab and activating a provider are independent. **Save and activate** persists valid settings before switching providers; failed saves preserve the previous configuration. An unlocked saved configuration can be activated without re-entering its key. The active badge and assistant header identify the selected provider, while readiness/lock errors are shown separately. The compact assistant settings use the same controls.
 
-See [frontend AI integration](docs/ai-integration.md) for the HTTP contract, authentication options, and hosting setup. Backend setup and LangChain platform configuration are documented in the separate project's `README.md` and `docs/langchain.md` (locally, `../dlb-dxp-server/docs/langchain.md`).
+Each provider retains its own editable model ID and encrypted credentials. Self-Hosted uses an OpenAI-compatible API base URL and optional API key; no encryption passphrase is needed without a key. Local model servers must be reachable from the application backend, explicitly allowed by `AI_LOCAL_ALLOWED_BASE_URLS`, and support workflow tool calls. Localhost refers to the backend machine. See [provider and local runtime setup](docs/ai-integration.md).
+
+Browser settings require HTTPS except on localhost, 127.0.0.1 and [::1]. Version-2 settings safely migrate existing OpenAI ciphertext under the historical `dlb-dxp-ai-settings-v1` key. Active provider, viewed tab and non-secret configurations are stored separately from workflow data; API keys use AES-256-GCM/PBKDF2-SHA-256 encryption with provider/destination binding. No plaintext keys or passphrases are persisted. Reload locks credentials. Origin changes need session confirmation. Unsaved edits and tab browsing do not affect requests; effective configuration changes cancel requests and block stale edits.
+
+> Your API key is stored encrypted in this browser. The application backend uses it only for the selected provider. It is never included in published sites or workflow exports.
+
+Removing settings preserves provider selection; configure the provider again in AI Settings when needed. Direct provider execution uses Vercel AI SDK Core with request-scoped instances, fixed cloud destinations, local allowlisting, no redirects, disabled telemetry and OpenAI `store: false`. Development and debugging execution modes are documented separately in [backend setup](docs/langchain.md). All providers use the same workflow tools and atomic validated edit batches. `ai.headers` remains reserved for application authentication/CSRF; provider headers come from saved settings.
+
+The integrated chat route works without app login in development and production. It accepts browser AI Settings or the server’s configured provider credentials and retains same-origin checks and rate limiting. See [AI integration and deployment requirements](docs/ai-integration.md) and [server execution modes](docs/langchain.md).
 
 ## Visual element selection
 
 Trigger events, Update element, and anchored Popover nodes expose **Select on website**. Enter a URL, hover to highlight elements, click to retain the selection, and choose **Use element**. You can also enter a CSS selector manually.
 
-Browsers only permit direct iframe DOM access for same-origin pages. For websites on another origin, copy `dist/picker-bridge.js` to that website and include:
+The builder uses opaque sandbox origins for all untrusted previews, including same-origin URLs. It never accesses their DOM directly. For external websites, copy `dist/picker-bridge.js` to that website and include:
 
 ```html
 <script src="/picker-bridge.js" data-parent-origin="https://your-editor.example"></script>
@@ -303,7 +353,14 @@ The target website must permit embedding via its `Content-Security-Policy: frame
 
 See [MDN: iframe contentDocument](https://developer.mozilla.org/en-US/docs/Web/API/HTMLIFrameElement/contentDocument) and [MDN: postMessage](https://developer.mozilla.org/en-US/docs/Web/API/Window/postMessage) for the browser model.
 
-**Live workflow preview requires a same-origin website.** The cross-origin bridge enables selection only. To execute on another origin, export the workflow and install the script on that target website.
+**Live previews run in an isolated sandbox origin.** The included demo works automatically. On an external preview website, install the runtime bridge in that website's bundle:
+
+```ts
+import { installPreviewBridge } from 'dlb-dxp';
+installPreviewBridge('https://your-editor.example');
+```
+
+The bridge accepts workflow run/stop commands only from the exact parent origin. Parent messages validate the iframe source, sandbox origin (`null`), protocol and random channel; they carry no settings or credentials. Sandboxing disables access to cookies/localStorage and some integrations, so storage conditions take their unavailable-data branch. Test those integrations on a dedicated preview origin outside the builder. Serve published sites on a different origin from the builder; paths and storage prefixes do not isolate browser storage. Never install the builder or its settings code into a published site.
 
 ## JavaScript export and runtime
 
@@ -332,11 +389,13 @@ runtime.destroy(); // Abort pending work and remove listeners/popovers.
 
 **Run workflow** in the test preview installs the current workflow with `start()`, just like the exported script. Page-load triggers run immediately on the loaded page; clicks, form events, inactivity, and other behavioral triggers respond to interactions inside the preview website. The execution log shows the actions and branches that actually run. **Restart workflow** replaces the active runtime with a fresh run, and **Stop workflow** removes its listeners, cancels pending work, and closes its popovers. Editing the workflow, reloading or navigating the preview website, and closing the modal also stop the active runtime. DOM changes remain on the preview page until it is reloaded; `destroy()` does not revert page mutations or completed HTTP requests.
 
-HTML and DOM actions are author-controlled content. Import workflows from trusted sources, and do not put server secrets in client-side request headers. HTML previews are sandboxed; the exported runtime intentionally inserts authored HTML on your website. This project is a client-side editor/runtime, with application authentication, server persistence, and publishing supplied by the host project.
+HTML and DOM actions are author-controlled content. Import workflows from trusted sources, and do not put server secrets in client-side request headers. HTML previews are sandboxed; the exported runtime intentionally inserts authored HTML on your website. The reusable editor/runtime remains independent of Next.js. Application authentication, server persistence, and publishing are supplied by the host.
 
 ## Source layout
 
-- `src/app.tsx` — demo host page, project header, test trigger, and export dialog.
+- `src/app/` — Next.js layout, client-only editor entry, and Node API Route Handlers.
+- `src/demo/Demo.tsx` — demo activity, persistence, and same-origin AI configuration.
+- `src/app.tsx` — reusable demo host UI, project header, test trigger, and export dialog.
 - `src/components/VisualDXPBuilder.tsx` — independent editor, state/history, import, persistence, and test preview.
 - `src/components/` — workflow cards, node inspector, picker, and live preview.
 - `src/lib/runtime/` — workflow execution, conditions, popovers, and trigger modules; `index.ts` exposes the runtime API.
@@ -345,7 +404,8 @@ HTML and DOM actions are author-controlled content. Import workflows from truste
 - `src/lib/types.ts` — public workflow schema.
 - `src/lib/ai.ts` — chat protocol, transport, and validated atomic workflow edits.
 - `src/lib/activity.ts` — public activity entries and subscribable in-memory store.
-- `docs/ai-integration.md` — connect the frontend to the separate AI backend.
+- `src/server/ai/` — integrated agent, tools, independent server workflow validation, HTTP boundary, and deployable graph.
+- `docs/ai-integration.md` — same-origin API contract and hosting guidance.
 - `public/picker-bridge.js` — standalone bridge deployed on the target website.
 - `public/demo-site.html` — working sample website.
 

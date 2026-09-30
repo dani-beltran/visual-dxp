@@ -260,20 +260,26 @@
 }
 .dxp-node-library-tooltip {
   position: absolute;
-  top: 50%;
+  top: 0;
   left: calc(100% + 16px);
-  transform: translateY(-50%);
-  padding: 7px 9px;
+  width: min(280px, calc(100vw - 116px));
+  text-align: left;
+  padding: 10px 12px;
   border-radius: 6px;
   background: var(--dxp-text);
   color: var(--dxp-on-inverse, white);
   font-size: 11px;
-  font-weight: 500;
+  font-weight: 400;
   line-height: 1.4;
-  white-space: nowrap;
+  white-space: normal;
   pointer-events: none;
   box-shadow: 0 3px 10px var(--dxp-shadow);
   z-index: 1;
+}
+.dxp-node-library-tooltip strong {
+  display: block;
+  margin-bottom: 4px;
+  font-weight: 600;
 }
 .dxp-canvas-kicker {
   font-size: 8px;
@@ -424,9 +430,19 @@
   background: #d4a778;
   border-color: #d4a778;
 }
+.dxp-builder .react-flow__handle.dxp-handle-data {
+  background: var(--dxp-data);
+  border-color: var(--dxp-data);
+}
+.dxp-node-data-output {
+  color: var(--dxp-data);
+}
 .dxp-builder .react-flow__edge.selected path.react-flow__edge-path {
   stroke: var(--dxp-primary-color) !important;
   stroke-width: 2.5 !important;
+}
+.dxp-builder .react-flow__edge.dxp-edge-data path.react-flow__edge-path {
+  stroke: var(--dxp-data) !important;
 }
 .dxp-builder .react-flow__edge-text {
   font-family: 'DM Sans', sans-serif;
@@ -738,7 +754,7 @@
   color: var(--dxp-muted);
   font-size: 11px;
 }
-.dxp-website-settings input {
+.dxp-website-settings input:not([type='checkbox']) {
   display: block;
   width: 100%;
   border: 1px solid var(--dxp-line);
@@ -747,6 +763,31 @@
   padding: 11px 12px;
   color: var(--dxp-text-secondary);
   background: var(--dxp-canvas);
+}
+.dxp-website-settings > .dxp-subpages-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 18px;
+  color: var(--dxp-text-secondary);
+  font-size: 12px;
+}
+.dxp-subpages-option input {
+  accent-color: var(--dxp-primary);
+}
+.dxp-website-settings > .dxp-subpages-help {
+  padding-bottom: 0;
+  margin-top: 6px;
+}
+.dxp-website-scope {
+  margin: 16px 29px;
+  font-size: 11px;
+  line-height: 1.7;
+  color: var(--dxp-muted);
+  overflow-wrap: anywhere;
+}
+.dxp-website-scope strong {
+  color: var(--dxp-text-secondary);
 }
 .dxp-website-note {
   display: flex;
@@ -1061,4 +1102,17 @@
   .dxp-builder .react-flow__panel.dxp-node-library-panel {
     left: 15px;
   }
+}
+
+.dxp-node-incoming-value {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 10px;
+  padding: 5px 7px;
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--dxp-data) 10%, white);
+  color: #2563eb;
+  font-size: 10px;
+  font-weight: 600;
 }

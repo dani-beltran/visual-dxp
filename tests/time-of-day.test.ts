@@ -16,7 +16,7 @@ function graph(config: StepConfig): Workflow {
   return {
     version: 1,
     name: 'Time of day',
-    websiteUrl: 'https://example.com',
+    websiteUrl: window.location.href,
     nodes: [
       node('start', 'trigger', { event: 'click', selector: '#result' }),
       node('condition', 'fork', config),

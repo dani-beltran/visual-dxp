@@ -45,6 +45,7 @@ function initialWorkflow(): Workflow {
     version: 1,
     name: 'Embedded journey',
     websiteUrl: '/demo-site.html',
+    includeSubpages: false,
     nodes: [],
     edges: [],
   };
@@ -225,7 +226,7 @@ describe('builder and host boundary', () => {
       root.render(
         <StrictMode>
           <App
-            initialWorkflow={initialWorkflow()}
+            initialWorkflow={{ ...initialWorkflow(), websiteUrl: 'https://example.com/' }}
             onChange={onChange}
             activityStore={activityStore}
           />

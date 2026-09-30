@@ -10,7 +10,9 @@ import {
   StickyNote,
   Timer,
 } from 'lucide-react';
+import { dataTools } from './data';
 import { FRAME_HEIGHT, FRAME_WIDTH } from './frames';
+import { nodeDescriptions } from './nodeDescriptions';
 import type { NodeKind, StepConfig, Workflow, WorkflowNode } from './types';
 export const catalog: {
   kind: NodeKind;
@@ -24,7 +26,7 @@ export const catalog: {
   {
     kind: 'trigger',
     label: 'Trigger',
-    description: 'Choose when it all begins',
+    description: nodeDescriptions.trigger,
     color: 'green',
     icon: MousePointerClick,
     category: 'Start',
@@ -33,7 +35,7 @@ export const catalog: {
   {
     kind: 'http',
     label: 'HTTP request',
-    description: 'Connect to any API',
+    description: nodeDescriptions.http,
     color: 'blue',
     icon: Globe2,
     category: 'Action',
@@ -42,7 +44,7 @@ export const catalog: {
   {
     kind: 'dom',
     label: 'Update element',
-    description: 'Make the page your own',
+    description: nodeDescriptions.dom,
     color: 'orange',
     icon: MousePointer2,
     category: 'Action',
@@ -51,7 +53,7 @@ export const catalog: {
   {
     kind: 'delay',
     label: 'Delay',
-    description: 'Wait for the right moment',
+    description: nodeDescriptions.delay,
     color: 'amber',
     icon: Timer,
     category: 'Logic',
@@ -60,7 +62,7 @@ export const catalog: {
   {
     kind: 'fork',
     label: 'Condition',
-    description: 'Branch by visitor or page conditions',
+    description: nodeDescriptions.fork,
     color: 'violet',
     icon: GitFork,
     category: 'Logic',
@@ -69,7 +71,7 @@ export const catalog: {
   {
     kind: 'loop',
     label: 'Loop',
-    description: 'Repeat a set of actions',
+    description: nodeDescriptions.loop,
     color: 'pink',
     icon: Repeat2,
     category: 'Logic',
@@ -78,7 +80,7 @@ export const catalog: {
   {
     kind: 'popover',
     label: 'Popover',
-    description: 'Put your message in focus',
+    description: nodeDescriptions.popover,
     color: 'teal',
     icon: PanelTop,
     category: 'Action',
@@ -93,7 +95,7 @@ export const catalog: {
   {
     kind: 'cookie',
     label: 'Set cookie',
-    description: 'Remember a value on this website',
+    description: nodeDescriptions.cookie,
     color: 'brown',
     icon: Cookie,
     category: 'Action',
@@ -102,7 +104,7 @@ export const catalog: {
   {
     kind: 'note',
     label: 'Note',
-    description: 'Leave a thought on the canvas',
+    description: nodeDescriptions.note,
     color: 'amber',
     icon: StickyNote,
     category: 'Annotation',
@@ -115,7 +117,7 @@ export const catalog: {
   {
     kind: 'frame',
     label: 'Frame',
-    description: 'Group nodes and move them together',
+    description: nodeDescriptions.frame,
     color: 'blue',
     icon: Frame,
     category: 'Annotation',
@@ -136,6 +138,7 @@ export const defaultWorkflow: Workflow = {
   version: 1,
   name: 'Welcome journey',
   websiteUrl: '/demo-site.html',
+  includeSubpages: false,
   nodes: [
     {
       id: 'welcome',
@@ -227,7 +230,7 @@ export function stepSummary(kind: NodeKind, c: StepConfig): string {
     case 'http':
       return `${c.method || 'GET'}  ${c.url ? c.url.replace(/^https?:\/\//, '') : 'Configure a URL'}`;
     case 'dom':
-      return `${c.action === 'text' ? 'Change text' : c.action || 'Update'} · ${c.selector || 'Choose an element'}`;
+      return `${c.action === 'text' ? 'Change text' : c.action || 'Update'} · ${c.selector || 'Choose an element'}${dataTools.usesIncomingValue(c) ? ` · Incoming data${c.valueDataPath ? `: ${c.valueDataPath}` : ''}` : ''}`;
     case 'cookie':
       return `${c.cookieName || 'Choose a cookie name'} = ${JSON.stringify(c.cookieValue ?? '')} · ${c.cookieDays ? `${c.cookieDays} days` : 'Session'}`;
     case 'delay':
@@ -235,6 +238,10 @@ export function stepSummary(kind: NodeKind, c: StepConfig): string {
     case 'fork': {
       const conditionType = c.conditionType ?? 'selector';
       switch (conditionType) {
+        case 'data': {
+          const operator = c.conditionOperator ?? 'equal';
+          return `${c.conditionDataPath || 'Data'} · ${dataTools.operators[operator].toLocaleLowerCase() ?? 'Choose an operator'}${dataTools.needsValue(operator) ? ` ${JSON.stringify(c.conditionValue ?? '')}` : ''}`;
+        }
         case 'time-of-day':
           return `Time ${c.conditionStartTime || '…'}–${c.conditionEndTime || '…'} · ${c.conditionTimeZone === 'utc' ? 'UTC' : 'Visitor local'}`;
         case 'date-range':

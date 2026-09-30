@@ -9,3 +9,5 @@ demo-dist
 dlb-dxp-0.1.0.tgz
 todo.md
 output
+.next/
+next-env.d.ts

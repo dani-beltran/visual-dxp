@@ -5,6 +5,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { CanvasChat, type CanvasChatProps } from '../src/components/CanvasChat';
 import { VisualDXPBuilder, type VisualDXPBuilderApi } from '../src/components/VisualDXPBuilder';
+import { AISettingsStore } from '../src/lib/aiSettings';
 import type { Workflow } from '../src/lib/types';
 
 let host: HTMLDivElement;
@@ -12,6 +13,7 @@ let root: Root;
 let mounted: boolean;
 
 beforeEach(() => {
+  localStorage.clear();
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
   vi.stubGlobal(
     'ResizeObserver',
@@ -30,6 +32,7 @@ beforeEach(() => {
 afterEach(async () => {
   if (mounted) await act(async () => root.unmount());
   host.remove();
+  localStorage.clear();
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
 });
@@ -149,6 +152,7 @@ describe('canvas AI chat', () => {
       root.render(
         <VisualDXPBuilder
           initialWorkflow={{ version: 1, name: 'Empty', websiteUrl: '', nodes: [], edges: [] }}
+          ai={{ endpoint: '/api/ai/chat' }}
         />,
       );
     });
@@ -157,8 +161,14 @@ describe('canvas AI chat', () => {
     expect(chat.parentElement?.nextElementSibling).toBe(help.parentElement);
     expect(chat.closest('.dxp-canvas-dock')).toBe(help.closest('.dxp-canvas-dock'));
     await click(chat);
-    expect(host.textContent).toContain('Connect your AI assistant');
-    expect(composer().disabled).toBe(true);
+    expect(host.textContent).not.toContain('Server defaults active');
+    expect(host.textContent).not.toContain('Configured AI server:');
+    expect(host.textContent).not.toContain('Browser credentials require an HTTPS AI server.');
+    expect(host.querySelector('.dxp-ai-context')?.textContent).toBe(
+      'Working with your current canvas',
+    );
+    expect(host.querySelector('.dxp-ai-status.ready')).not.toBeNull();
+    expect(composer().disabled).toBe(false);
     await click(help);
     expect(host.querySelector('.dxp-ai-panel')).toBeNull();
     expect(host.querySelector('.dxp-canvas-help-panel')).not.toBeNull();
@@ -174,10 +184,24 @@ describe('canvas AI chat', () => {
     expect(button('AI chat').getAttribute('aria-expanded')).toBe('true');
     expect(document.activeElement).toBe(button('Close AI chat'));
     expect(host.textContent).toContain('Connect your AI assistant');
+    expect(host.querySelector('.dxp-ai-context')?.textContent).toContain(
+      'AI configuration is incorrect',
+    );
+    expect(host.querySelector('.dxp-ai-status.error')).not.toBeNull();
     expect(composer().disabled).toBe(true);
     expect(button('Send message').disabled).toBe(true);
     expect(host.querySelector('.dxp-ai-suggestions')).toBeNull();
     expect(onSend).not.toHaveBeenCalled();
+  });
+
+  it('prioritizes configuration errors over the selected canvas step', async () => {
+    await renderChat({ configurationError: true, selectedLabel: 'Welcome step' });
+    await click(button('AI chat'));
+    expect(host.querySelector('.dxp-ai-context')?.textContent).toContain(
+      'AI configuration is incorrect',
+    );
+    expect(host.querySelector('.dxp-ai-status.error')).not.toBeNull();
+    expect(host.querySelector('.dxp-ai-context')?.textContent).not.toContain('Selected:');
   });
 
   it('focuses the composer, reports selection, and closes with Escape without canvas shortcuts', async () => {
@@ -321,6 +345,46 @@ describe('canvas AI chat', () => {
 });
 
 describe('AI workflow integration', () => {
+  it.each([401, 403, 502, 503])(
+    'shows a configuration error for HTTP %s and recovers after a successful retry',
+    async (status) => {
+      vi.stubGlobal(
+        'fetch',
+        vi
+          .fn<typeof fetch>()
+          .mockResolvedValueOnce(new Response('{}', { status }))
+          .mockResolvedValueOnce(responseWithOperations([])),
+      );
+      await renderConnectedBuilder();
+      await typeMessage('Explain this workflow');
+      await click(button('Send message'));
+      expect(host.querySelector('.dxp-ai-context')?.textContent).toContain(
+        'AI configuration is incorrect',
+      );
+      expect(host.querySelector('.dxp-ai-status.error')).not.toBeNull();
+      await click(button('Start a new conversation'));
+      expect(host.querySelector('.dxp-ai-status.error')).not.toBeNull();
+      await typeMessage('Explain this workflow');
+      await click(button('Send message'));
+      expect(host.querySelector('.dxp-ai-status.ready')).not.toBeNull();
+      expect(host.querySelector('.dxp-ai-context')?.textContent).toBe(
+        'Working with your current canvas',
+      );
+    },
+  );
+
+  it('keeps the ready status for rate limits', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn<typeof fetch>().mockResolvedValue(new Response('{}', { status: 429 })),
+    );
+    await renderConnectedBuilder();
+    await typeMessage('Explain this workflow');
+    await click(button('Send message'));
+    expect(host.querySelector('.dxp-ai-status.ready')).not.toBeNull();
+    expect(host.querySelector('[role="alert"]')?.textContent).toContain('busy');
+  });
+
   it('applies multiple node and connection operations together and restores the whole graph with one Undo', async () => {
     const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(
       responseWithOperations([
@@ -423,4 +487,46 @@ describe('AI workflow integration', () => {
     expect(host.querySelector('[role="alert"]')?.textContent).toContain('No changes were made.');
     expect(composer().value).toBe('Change the journey');
   });
+});
+
+it('browsing provider tabs preserves requests, but cross-tab activation cancels and rejects a late workflow edit', async () => {
+  let resolve!: (response: Response) => void;
+  const fetcher = vi.fn<typeof fetch>().mockReturnValue(
+    new Promise((done) => {
+      resolve = done;
+    }),
+  );
+  vi.stubGlobal('fetch', fetcher);
+  const { onChange, baseline } = await renderConnectedBuilder();
+  await typeMessage('Rename the delay');
+  await click(button('Send message'));
+  const signal = fetcher.mock.calls[0][1]!.signal!;
+  const providerTabs = [
+    ...host.querySelectorAll<HTMLButtonElement>('[aria-label="AI providers"] [role="tab"]'),
+  ];
+  await click(providerTabs[1]);
+  expect(signal.aborted).toBe(false);
+  expect(new Headers(fetcher.mock.calls[0][1]!.headers).get('X-DXP-AI-Provider')).toBe('openai');
+  const otherTab = new AISettingsStore();
+  otherTab.refresh();
+  await act(async () => {
+    await otherTab.saveProvider(
+      'local',
+      { apiKey: '', model: 'local-model', baseURL: 'http://127.0.0.1:11434/v1' },
+      '',
+      '/api/ai/chat',
+    );
+    window.dispatchEvent(new StorageEvent('storage'));
+  });
+  expect(signal.aborted).toBe(true);
+  const before = onChange.mock.calls.length;
+  await act(async () =>
+    resolve(
+      responseWithOperations([{ type: 'update_node', id: 'delay', label: 'Stale provider edit' }]),
+    ),
+  );
+  expect(onChange).toHaveBeenCalledTimes(before);
+  expect(onChange.mock.lastCall![0]).toEqual(baseline);
+  expect(host.textContent).not.toContain('1 edit applied');
+  expect(host.querySelector('.dxp-ai-header')?.textContent).toContain('Active provider: Self-Hosted');
 });

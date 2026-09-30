@@ -20,13 +20,18 @@ const strings = [
   'method',
   'headers',
   'body',
+  'responseDataPath',
   'action',
   'value',
+  'valueSource',
+  'valueDataPath',
   'attribute',
   'cookieName',
   'cookieValue',
   'condition',
   'conditionType',
+  'conditionDataPath',
+  'conditionOperator',
   'conditionKey',
   'conditionValue',
   'conditionStartDate',
@@ -63,6 +68,7 @@ export function isWorkflow(value: unknown): value is Workflow {
     value.version !== 1 ||
     typeof value.name !== 'string' ||
     typeof value.websiteUrl !== 'string' ||
+    (value.includeSubpages !== undefined && typeof value.includeSubpages !== 'boolean') ||
     !Array.isArray(value.nodes) ||
     !Array.isArray(value.edges)
   )

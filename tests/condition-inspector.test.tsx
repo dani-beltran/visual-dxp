@@ -64,7 +64,7 @@ async function change(label: string, value: string) {
 it('edits each condition type with the corresponding fields and preserves legacy selectors', async () => {
   expect(field('Condition type').value).toBe('selector');
   expect(field('Element exists').value).toBe('#legacy');
-  expect([...field('Condition type').querySelectorAll('option')]).toHaveLength(8);
+  expect([...field('Condition type').querySelectorAll('option')]).toHaveLength(9);
   await change('Condition type', 'device');
   expect(field('Device is').value).toBe('desktop');
   await change('Device is', 'mobile');
@@ -187,4 +187,134 @@ it('edits time-of-day ranges and keeps their time zone and times when switching 
   expect(current.conditionTimeZone).toBe('local');
   expect(current.conditionEndTime).toBe('');
   expect(stepSummary('fork', current)).toBe('Time 22:00–… · Visitor local');
+});
+
+it('edits Data conditions, hides unary comparison inputs, and reports path/regex errors', async () => {
+  await change('Condition type', 'data');
+  expect(field('Incoming data path').value).toBe('');
+  expect([...field('Operator').querySelectorAll('option')]).toHaveLength(20);
+  await change('Incoming data path', 'items[2].tags');
+  await change('Operator', 'contains');
+  await change('Comparison value', '"42"');
+  expect(current).toMatchObject({
+    conditionType: 'data',
+    conditionDataPath: 'items[2].tags',
+    conditionOperator: 'contains',
+    conditionValue: '"42"',
+  });
+  expect(host.textContent).toContain('Objects: exact key');
+  expect(stepSummary('fork', current)).toContain('items[2].tags');
+  for (const operator of [
+    'exists',
+    'not-exists',
+    'is-null',
+    'is-not-null',
+    'is-empty',
+    'is-not-empty',
+    'is-true',
+    'is-false',
+  ]) {
+    await change('Operator', operator);
+    expect(() => field('Comparison value')).toThrow('Missing field');
+  }
+  await change('Operator', 'matches');
+  await change('Comparison value', '[');
+  expect(host.querySelector('[role="alert"]')?.textContent).toContain('Invalid regular expression');
+  await change('Comparison value', '^premium');
+  expect(host.querySelector('[role="alert"]')).toBeNull();
+  await change('Incoming data path', 'items[');
+  expect(host.querySelector('[role="alert"]')?.textContent).toContain('Invalid data path');
+});
+
+it('edits response selection in Outputs without a response format setting', async () => {
+  function HttpInspector() {
+    const [config, setConfig] = useState<StepConfig>({ url: 'https://example.com' });
+    current = config;
+    return (
+      <NodeInspector
+        node={{
+          id: 'http',
+          type: 'workflow',
+          position: { x: 0, y: 0 },
+          data: { kind: 'http', label: 'HTTP Request', config },
+        }}
+        onChange={(patch) => setConfig(patch.config!)}
+        onClose={() => {}}
+        onPickElement={() => {}}
+        onDelete={() => {}}
+        onDuplicate={() => {}}
+        onPreviewContent={() => {}}
+      />
+    );
+  }
+  await act(async () => root.render(<HttpInspector />));
+  expect(() => field('Response format')).toThrow('Missing field');
+  const outputSection = field('Response data path').closest('section');
+  expect(outputSection?.querySelector('h3')?.textContent).toContain('Outputs');
+  expect(outputSection?.textContent).toContain('automatically parsed as JSON');
+  expect(field('Response data path').value).toBe('');
+  await change('Response data path', 'data.items[0].price');
+  expect(current.responseDataPath).toBe('data.items[0].price');
+  expect(host.textContent).toContain('null is passed as null');
+  await change('Response data path', 'items[');
+  expect(outputSection?.querySelector('[role="alert"]')?.textContent).toContain(
+    'Invalid data path',
+  );
+  await change('Response data path', '');
+  expect(current.responseDataPath).toBe('');
+  expect(outputSection?.querySelector('[role="alert"]')).toBeNull();
+});
+
+it('switches element values between manual and incoming data while preserving manual input', async () => {
+  function ElementInspector() {
+    const [config, setConfig] = useState<StepConfig>({
+      selector: '#result',
+      action: 'text',
+      value: 'Manual text',
+    });
+    current = config;
+    return (
+      <NodeInspector
+        node={{
+          id: 'element',
+          type: 'workflow',
+          position: { x: 0, y: 0 },
+          data: { kind: 'dom', label: 'Update element', config },
+        }}
+        onChange={(patch) => setConfig(patch.config!)}
+        onClose={() => {}}
+        onPickElement={() => {}}
+        onDelete={() => {}}
+        onDuplicate={() => {}}
+        onPreviewContent={() => {}}
+      />
+    );
+  }
+  await act(async () => root.render(<ElementInspector />));
+  expect((field('Use incoming data') as HTMLInputElement).checked).toBe(false);
+  expect(field('Use incoming data').getAttribute('role')).toBe('switch');
+  expect(host.querySelector('textarea')?.value).toBe('Manual text');
+  await act(async () => field('Use incoming data').click());
+  expect(host.querySelector('textarea')).toBeNull();
+  expect(host.textContent).toContain('blue input connection');
+  await change('Incoming data path', 'user.name');
+  expect(current).toMatchObject({
+    valueSource: 'incoming-data',
+    valueDataPath: 'user.name',
+    value: 'Manual text',
+  });
+  expect(stepSummary('dom', current)).toContain('Incoming data: user.name');
+  await change('Action', 'attribute');
+  expect(field('Attribute name')).toBeTruthy();
+  await change('Action', 'hide');
+  expect(() => field('Use incoming data')).toThrow('Missing field');
+  expect(() => field('Incoming data path')).toThrow('Missing field');
+  expect(stepSummary('dom', current)).not.toContain('Incoming data');
+  await change('Action', 'text');
+  expect(field('Incoming data path').value).toBe('user.name');
+  await change('Incoming data path', 'user[');
+  expect(host.querySelector('[role="alert"]')?.textContent).toContain('Invalid data path');
+  await act(async () => field('Use incoming data').click());
+  expect(host.querySelector('[role="alert"]')).toBeNull();
+  expect(host.querySelector('textarea')?.value).toBe('Manual text');
 });

@@ -24,7 +24,7 @@ function workflow(config: StepConfig): Workflow {
   return {
     version: 1,
     name: 'Behavior trigger',
-    websiteUrl: 'https://example.com',
+    websiteUrl: window.location.href,
     nodes: [
       {
         id: 'start',

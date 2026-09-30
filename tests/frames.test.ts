@@ -180,6 +180,7 @@ describe('frame persistence and execution boundaries', () => {
   it('omits the frame from executable scripts while retaining its workflow steps', () => {
     const workflow = grouped();
     workflow.nodes[0].data.label = 'Private frame name';
+    workflow.websiteUrl = 'https://example.com/';
     expect(validateWorkflow(workflow)).toEqual([]);
     const script = exportWorkflow(workflow);
     expect(script).not.toContain('Private frame name');

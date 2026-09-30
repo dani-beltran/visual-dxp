@@ -20,7 +20,7 @@ function graph(config: StepConfig): Workflow {
   return {
     version: 1,
     name: 'Conditions',
-    websiteUrl: 'https://example.com',
+    websiteUrl: window.location.href,
     nodes: [
       node('start', 'trigger', { event: 'page-load' }),
       node('condition', 'fork', config),

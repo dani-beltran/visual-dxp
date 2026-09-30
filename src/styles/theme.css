@@ -34,6 +34,7 @@
 
   /* Status colors describe workflow outcomes independently of the brand. */
   --dxp-success: #39804e;
+  --dxp-data: #3b82f6;
   --dxp-warning: #98712f;
   --dxp-warning-soft: #fdf7e9;
   --dxp-warning-border: #eee1c2;

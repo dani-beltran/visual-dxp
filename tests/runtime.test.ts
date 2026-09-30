@@ -11,7 +11,7 @@ function workflow(nodes: WorkflowNode[], connections: [string, string, string?][
   return {
     version: 1,
     name: 'Test experience',
-    websiteUrl: 'https://example.com',
+    websiteUrl: window.location.href,
     nodes,
     edges: connections.map(([source, target, sourceHandle], index) => ({
       id: `e${index}`,
@@ -183,7 +183,7 @@ describe('workflow runtime', () => {
     const websiteWindow = frame.contentWindow;
     if (!website || !websiteWindow) throw new Error('Expected an accessible website iframe.');
     website.head.innerHTML = '<base href="https://shop.example.com/products/">';
-    const request = vi.fn<typeof fetch>().mockResolvedValue(new Response('ok'));
+    const request = vi.fn<typeof fetch>().mockImplementation(async () => new Response('ok'));
     Object.defineProperty(websiteWindow, 'fetch', { configurable: true, value: request });
     const instance = runtime(
       workflow(
@@ -233,7 +233,7 @@ describe('workflow runtime', () => {
   it('awaits every repeated body before executing the done branch once', async () => {
     const completed: string[] = [];
     document.body.innerHTML = '<p id="result">Waiting</p>';
-    const request = vi.fn<typeof fetch>().mockResolvedValue(new Response('ok'));
+    const request = vi.fn<typeof fetch>().mockImplementation(async () => new Response('ok'));
     const instance = runtime(
       workflow(
         [
@@ -556,7 +556,9 @@ describe('workflow export', () => {
   it('exports connected runtime modules with shared cancellation and popover cleanup', async () => {
     vi.useFakeTimers();
     document.body.innerHTML = '<button id="start">Run</button><p id="result">Waiting</p>';
-    const request = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('ok'));
+    const request = vi
+      .spyOn(globalThis, 'fetch')
+      .mockImplementation(async () => new Response('ok'));
     const graph = workflow(
       [
         node('start', 'trigger', { event: 'click', selector: '#start' }),

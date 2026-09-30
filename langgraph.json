@@ -1,0 +1,6 @@
+{
+  "node_version": "22",
+  "dependencies": ["."],
+  "graphs": { "workflow_editor": "./src/server/ai/graph.ts:graph" },
+  "env": {}
+}

@@ -8,11 +8,11 @@ import {
   Square,
   X,
 } from 'lucide-react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { validateWorkflow } from '../lib/export';
-import { createRuntime } from '../lib/runtime';
 import type { RunLog, Workflow } from '../lib/types';
 import { useDialogFocus } from '../lib/useDialogFocus';
+import { IsolatedPreview } from './IsolatedPreview';
 export function Preview({
   workflow,
   onClose,
@@ -23,106 +23,29 @@ export function Preview({
   onLog: (log: RunLog) => void;
 }) {
   const modalRef = useDialogFocus(true);
-  const frame = useRef<HTMLIFrameElement>(null);
-  const runtime = useRef<ReturnType<typeof createRuntime> | null>(null);
-  const session = useRef(0);
-  const callbacks = useRef({ onClose, onLog });
-  callbacks.current = { onClose, onLog };
-  const [page, setPage] = useState<{ document: Document; url: string; key: number } | null>(null);
+  const [ready, setReady] = useState(false);
   const [running, setRunning] = useState(false);
   const [logs, setLogs] = useState<RunLog[]>([]);
   const [error, setError] = useState('');
   const [key, setKey] = useState(0);
-  const ready = page?.url === workflow.websiteUrl && page.key === key;
-  const stop = useCallback(() => {
-    session.current += 1;
-    runtime.current?.destroy();
-    runtime.current = null;
-    setRunning(false);
-  }, []);
-
-  // biome-ignore lint/correctness/useExhaustiveDependencies: Editing the workflow invalidates the active test and its logs.
+  const [revision, setRevision] = useState(0);
+  const stop = useCallback(() => setRunning(false), []);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: Any workflow edit invalidates the active run.
   useEffect(() => {
     stop();
     setLogs([]);
     setError('');
-    return () => {
-      session.current += 1;
-      runtime.current?.destroy();
-      runtime.current = null;
-    };
   }, [workflow, stop]);
-
-  useEffect(() => {
-    const win = page?.document.defaultView;
-    if (!win) return;
-    const leaving = () => {
-      stop();
-      setPage(null);
-    };
-    const close = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return;
-      event.preventDefault();
-      callbacks.current.onClose();
-    };
-    win.addEventListener('pagehide', leaving);
-    win.addEventListener('keydown', close);
-    return () => {
-      try {
-        win.removeEventListener('pagehide', leaving);
-        win.removeEventListener('keydown', close);
-      } catch {
-        // The website may have navigated to another origin before effect cleanup.
-      }
-    };
-  }, [page, stop]);
-
-  function loaded() {
-    stop();
-    setPage(null);
-    try {
-      const doc = frame.current?.contentDocument;
-      if (!doc?.body || !doc.defaultView) throw new Error();
-      setPage({ document: doc, url: workflow.websiteUrl, key });
-      setError('');
-    } catch {
-      setError(
-        'Live preview requires a same-origin page. Export the JavaScript to run this workflow on your own website.',
-      );
-    }
-  }
   function run() {
-    stop();
     setLogs([]);
     setError('');
     const issues = validateWorkflow(workflow);
     if (issues.length) {
-      setError(issues.map((i) => i.message).join(' '));
+      setError(issues.map((issue) => issue.message).join(' '));
       return;
     }
-    try {
-      const doc = frame.current?.contentDocument;
-      const win = doc?.defaultView;
-      if (!ready || !doc?.body || !win || doc !== page?.document)
-        throw new Error('Wait for the website to load, then run the workflow again.');
-      const currentSession = session.current;
-      runtime.current = createRuntime(workflow, {
-        document: doc,
-        window: win,
-        onLog: (log) => {
-          if (session.current !== currentSession) return;
-          setLogs((prev) => [...prev, log]);
-          if (log.status === 'error') setError(log.message);
-          callbacks.current.onLog(log);
-        },
-      });
-      // Match the exported script: page-load runs now; other triggers listen to the website.
-      runtime.current.start();
-      setRunning(true);
-    } catch (e) {
-      stop();
-      setError(e instanceof Error ? e.message : 'The workflow could not run.');
-    }
+    setRevision((value) => value + 1);
+    setRunning(true);
   }
   return (
     // biome-ignore lint/a11y/useKeyWithClickEvents: The close button and the builder's Escape handler provide keyboard dismissal.
@@ -161,7 +84,7 @@ export function Preview({
             className="dxp-button"
             onClick={() => {
               stop();
-              setPage(null);
+              setReady(false);
               setLogs([]);
               setError('');
               setKey((x) => x + 1);
@@ -187,16 +110,23 @@ export function Preview({
           </button>
         </div>
         <div className="dxp-preview-body">
-          <iframe
+          <IsolatedPreview
             key={`${workflow.websiteUrl}-${key}`}
-            ref={frame}
-            src={workflow.websiteUrl}
+            url={workflow.websiteUrl}
+            workflow={workflow}
+            running={running}
+            revision={revision}
             title="Workflow preview website"
-            onLoad={loaded}
-            onError={() => {
-              stop();
-              setPage(null);
-              setError('The website could not be loaded. Reload the website to try again.');
+            onReady={(value) => {
+              setReady(value);
+              if (!value) setRunning(false);
+            }}
+            onError={setError}
+            onClose={onClose}
+            onLog={(log) => {
+              if (!running) return;
+              setLogs((previous) => [...previous, log]);
+              onLog(log);
             }}
           />
           <aside className="dxp-run-log">
@@ -236,8 +166,10 @@ export function Preview({
               </p>
             )}
             <p className="dxp-log-note">
-              <ExternalLink size={13} /> Page-load triggers run when you start. Other triggers
-              respond to this website, just like the exported script. Reload to reset page changes.
+              <ExternalLink size={13} /> External websites need the preview bridge configured for
+              this builder origin. Previews run in a separate sandbox origin. Page-load triggers run
+              when you start. Other triggers respond to this website, just like the exported script.
+              Reload to reset page changes.
             </p>
           </aside>
         </div>

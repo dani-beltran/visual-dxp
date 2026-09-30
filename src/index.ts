@@ -1,6 +1,10 @@
 export type { ElementPickerProps } from './components/ElementPicker';
 export { ElementPicker } from './components/ElementPicker';
-export type { VisualDXPBuilderApi, VisualDXPBuilderProps } from './components/VisualDXPBuilder';
+export type {
+  VisualDXPBuilderApi,
+  VisualDXPBuilderProps,
+  WebsiteConfigurationOptions,
+} from './components/VisualDXPBuilder';
 export { VisualDXPBuilder, VisualDXPBuilder as default } from './components/VisualDXPBuilder';
 export type { ActivityEntry, ActivityStore } from './lib/activity';
 export { createActivityStore } from './lib/activity';
@@ -20,9 +24,12 @@ export {
 } from './lib/ai';
 export { createNode, defaultWorkflow } from './lib/catalog';
 export { exportWorkflow, validateWorkflow } from './lib/export';
+export { installPreviewBridge } from './lib/previewBridge';
 export type { RuntimeOptions, WorkflowRuntime } from './lib/runtime';
 export { createRuntime, executeWorkflow } from './lib/runtime';
 export { isWorkflow } from './lib/serialization';
+export type { ExportOptions } from './lib/targeting';
+export { validateExportTarget } from './lib/targeting';
 export type {
   ConditionType,
   NodeKind,

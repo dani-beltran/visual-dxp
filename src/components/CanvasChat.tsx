@@ -8,7 +8,7 @@ import {
   Square,
   X,
 } from 'lucide-react';
-import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
+import { type ReactNode, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import type { AIChatMessage } from '../lib/ai';
 import '../styles/chat.css';
 
@@ -16,6 +16,10 @@ export interface CanvasChatProps {
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   configured: boolean;
+  activeProvider?: string;
+  settings?: ReactNode;
+  locked?: boolean;
+  configurationError?: boolean;
   selectedLabel?: string;
   onSend: (
     messages: AIChatMessage[],
@@ -35,6 +39,10 @@ const suggestions = [
 
 export function CanvasChat({
   configured,
+  activeProvider = 'OpenAI',
+  settings,
+  locked = false,
+  configurationError = false,
   selectedLabel,
   onSend,
   open: controlledOpen,
@@ -48,6 +56,7 @@ export function CanvasChat({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [panelSize, setPanelSize] = useState({ width: 400, height: 520 });
+  const invalidConfiguration = !configured || configurationError;
   const id = useId();
   const root = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
@@ -187,7 +196,7 @@ export function CanvasChat({
             </span>
             <div>
               <h2 id={`${id}-title`}>Your workflow assistant</h2>
-              <p>From an idea to a connected experience</p>
+              <p>Active provider: {activeProvider}</p>
             </div>
             <button
               type="button"
@@ -215,9 +224,18 @@ export function CanvasChat({
               <X size={17} aria-hidden="true" />
             </button>
           </header>
-          <div className="dxp-ai-context">
-            <span className={`dxp-ai-status ${configured ? 'ready' : ''}`} />
-            {selectedLabel ? (
+          <div className="dxp-ai-context" role="status">
+            <span
+              className={`dxp-ai-status ${invalidConfiguration ? 'error' : 'ready'}`}
+              aria-hidden="true"
+            />
+            {invalidConfiguration ? (
+              <span>
+                {locked
+                  ? `Unlock ${activeProvider} in settings below to use AI`
+                  : `AI configuration is incorrect for ${activeProvider}. Check settings below.`}
+              </span>
+            ) : selectedLabel ? (
               <span>
                 Selected: <strong>{selectedLabel}</strong>
               </span>
@@ -225,6 +243,12 @@ export function CanvasChat({
               <span>Working with your current canvas</span>
             )}
           </div>
+          {settings && (
+            <details className="dxp-ai-compact-settings" open={locked || undefined}>
+              <summary>AI provider settings</summary>
+              {settings}
+            </details>
+          )}
           <div
             ref={transcript}
             className="dxp-ai-transcript"
@@ -234,7 +258,7 @@ export function CanvasChat({
             // biome-ignore lint/a11y/noNoninteractiveTabindex: The scrollable transcript must be keyboard-focusable for scrolling.
             tabIndex={0}
           >
-            {!messages.length && configured && (
+            {!messages.length && configured && !locked && (
               <div className="dxp-ai-welcome">
                 <MessageCircle size={25} strokeWidth={1.5} aria-hidden="true" />
                 <h3>What would you like to create?</h3>
