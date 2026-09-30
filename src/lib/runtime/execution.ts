@@ -131,9 +131,9 @@ export function createExecution(
             break;
           }
           case 'dom': {
+            const value = dataTools.elementValue(config, input);
             const targets = selectorElements(config.selector);
             for (const element of targets) {
-              const value = config.value ?? '';
               switch (config.action ?? 'text') {
                 case 'text':
                   element.textContent = value;

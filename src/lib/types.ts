@@ -67,6 +67,10 @@ export interface StepConfig {
   responseDataPath?: string;
   action?: 'text' | 'html' | 'add-class' | 'remove-class' | 'hide' | 'show' | 'attribute';
   value?: string;
+  /** Value source for Update element actions. Older workflows default to manual. */
+  valueSource?: 'manual' | 'incoming-data';
+  /** Optional selection within incoming data for Update element. */
+  valueDataPath?: string;
   attribute?: string;
   /** Name of the cookie to create or overwrite on the current host. */
   cookieName?: string;

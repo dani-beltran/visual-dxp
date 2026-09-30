@@ -143,6 +143,7 @@ export function NodeInspector({
   let dataError: string | undefined;
   try {
     if (node.data.kind === 'http') dataTools.validateResponse(config);
+    if (node.data.kind === 'dom') dataTools.validateElementValue(config);
     if (node.data.kind === 'fork' && conditionType === 'data') dataTools.validateCondition(config);
   } catch (error) {
     dataError = (error as Error).message;
@@ -384,35 +385,82 @@ export function NodeInspector({
               </Field>
             )}
             {!['hide', 'show'].includes(config.action ?? 'text') && (
-              <Field
-                label={
-                  config.action === 'html'
-                    ? 'HTML content'
-                    : ['add-class', 'remove-class'].includes(config.action ?? '')
-                      ? 'CSS class names'
-                      : config.action === 'attribute'
-                        ? 'Attribute value'
-                        : 'New text'
-                }
-                htmlFor={id('value')}
-                hint={
-                  ['add-class', 'remove-class'].includes(config.action ?? '')
-                    ? 'Separate multiple class names with spaces.'
-                    : undefined
-                }
-              >
-                <textarea
-                  id={id('value')}
-                  className={config.action === 'html' ? 'dxp-inspector-code' : ''}
-                  rows={config.action === 'html' ? 5 : 3}
-                  value={config.value ?? ''}
-                  placeholder={
-                    config.action === 'html' ? '<p>Your new content</p>' : 'Enter a value…'
-                  }
-                  onChange={(event) => update({ value: event.target.value })}
-                  spellCheck={config.action !== 'html'}
-                />
-              </Field>
+              <>
+                <div className="dxp-inspector-toggle">
+                  <label htmlFor={id('value-source')}>Use incoming data</label>
+                  <input
+                    id={id('value-source')}
+                    type="checkbox"
+                    role="switch"
+                    aria-checked={config.valueSource === 'incoming-data'}
+                    checked={config.valueSource === 'incoming-data'}
+                    onChange={(event) =>
+                      update({ valueSource: event.target.checked ? 'incoming-data' : 'manual' })
+                    }
+                  />
+                </div>
+                {dataTools.usesIncomingValue(config) ? (
+                  <>
+                    <InfoBox className="dxp-inspector-incoming-data">
+                      Uses the value received through the blue input connection, such as an HTTP
+                      response, for this action. The target element and attribute name stay as
+                      configured.
+                    </InfoBox>
+                    <Field label="Incoming data path" htmlFor={id('value-data-path')}>
+                      <input
+                        id={id('value-data-path')}
+                        value={config.valueDataPath ?? ''}
+                        placeholder="e.g. user.name"
+                        onChange={(event) => update({ valueDataPath: event.target.value })}
+                        spellCheck={false}
+                      />
+                    </Field>
+                    <InfoBox>
+                      Optional. Leave empty to use the whole incoming value. Examples: user.name or
+                      data.items[0].price. Strings, numbers, and booleans become text; null and
+                      missing values become empty text.
+                      {['add-class', 'remove-class'].includes(config.action ?? '')
+                        ? ' Class names can also be an array of strings. Separate multiple names in text with spaces.'
+                        : ' Arrays and objects become JSON text.'}
+                    </InfoBox>
+                  </>
+                ) : (
+                  <Field
+                    label={
+                      config.action === 'html'
+                        ? 'HTML content'
+                        : ['add-class', 'remove-class'].includes(config.action ?? '')
+                          ? 'CSS class names'
+                          : config.action === 'attribute'
+                            ? 'Attribute value'
+                            : 'New text'
+                    }
+                    htmlFor={id('value')}
+                    hint={
+                      ['add-class', 'remove-class'].includes(config.action ?? '')
+                        ? 'Separate multiple class names with spaces.'
+                        : undefined
+                    }
+                  >
+                    <textarea
+                      id={id('value')}
+                      className={config.action === 'html' ? 'dxp-inspector-code' : ''}
+                      rows={config.action === 'html' ? 5 : 3}
+                      value={config.value ?? ''}
+                      placeholder={
+                        config.action === 'html' ? '<p>Your new content</p>' : 'Enter a value…'
+                      }
+                      onChange={(event) => update({ value: event.target.value })}
+                      spellCheck={config.action !== 'html'}
+                    />
+                  </Field>
+                )}
+                {dataError && (
+                  <p role="alert" className="dxp-inspector-hint">
+                    {dataError}
+                  </p>
+                )}
+              </>
             )}
           </>
         )}

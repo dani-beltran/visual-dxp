@@ -110,6 +110,12 @@ for (const library of [esm, umd]) {
             url: 'https://example.com/api',
             responseDataPath: selected ? 'items[0].price' : '',
           }),
+          node('update', 'dom', {
+            selector: '#price',
+            action: 'text',
+            valueSource: 'incoming-data',
+            valueDataPath: selected ? '' : 'items[0].price',
+          }),
           node('condition', 'fork', {
             conditionType: 'data',
             conditionDataPath: selected ? '' : 'items[0].price',
@@ -121,15 +127,19 @@ for (const library of [esm, umd]) {
         ],
         edges: [
           { id: 'a', source: 'start', target: 'request' },
-          { id: 'b', source: 'request', target: 'condition' },
+          { id: 'b', source: 'request', target: 'update' },
+          { id: 'update-condition', source: 'update', target: 'condition' },
           { id: 'c', source: 'condition', target: 'yes', sourceHandle: 'true' },
           { id: 'd', source: 'condition', target: 'no', sourceHandle: 'false' },
         ],
       };
-      const dom = new JSDOM('<button id="start">Run</button><p id="result">waiting</p>', {
-        url: 'https://example.com',
-        runScripts: 'outside-only',
-      });
+      const dom = new JSDOM(
+        '<button id="start">Run</button><p id="result">waiting</p><p id="price"></p>',
+        {
+          url: 'https://example.com',
+          runScripts: 'outside-only',
+        },
+      );
       dom.window.fetch = async () => new Response(JSON.stringify({ items: [{ price }] }));
       try {
         dom.window.eval(library.exportWorkflow(workflow));
@@ -138,6 +148,7 @@ for (const library of [esm, umd]) {
           dom.window.document.querySelector('#result').textContent,
           price > 10 ? 'yes' : 'no',
         );
+        assert.equal(dom.window.document.querySelector('#price').textContent, String(price));
         dataCases += 1;
       } finally {
         dom.window.dlbDXP?.destroy();
@@ -147,5 +158,5 @@ for (const library of [esm, umd]) {
   }
 }
 console.log(
-  `Built ESM and UMD standalone scripts: ${dataCases} HTTP → Data → branch cases passed.`,
+  `Built ESM and UMD standalone scripts: ${dataCases} HTTP → Update element → Incoming data condition → branch cases passed.`,
 );

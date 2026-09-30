@@ -1100,3 +1100,16 @@
     left: 15px;
   }
 }
+
+.dxp-node-incoming-value {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 10px;
+  padding: 5px 7px;
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--dxp-data) 10%, white);
+  color: #2563eb;
+  font-size: 10px;
+  font-weight: 600;
+}

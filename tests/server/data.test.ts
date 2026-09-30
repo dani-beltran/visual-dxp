@@ -22,7 +22,34 @@ const base: Workflow = {
   ],
   edges: [],
 };
-const cases: ['http' | 'fork', StepConfig][] = [
+const cases: ['http' | 'fork' | 'dom', StepConfig][] = [
+  [
+    'dom',
+    {
+      selector: '#result',
+      action: 'text',
+      valueSource: 'incoming-data',
+      valueDataPath: 'user.name',
+    },
+  ],
+  [
+    'dom',
+    {
+      selector: '#result',
+      action: 'attribute',
+      attribute: 'data-price',
+      valueSource: 'incoming-data',
+    },
+  ],
+  [
+    'dom',
+    {
+      selector: '#result',
+      action: 'hide',
+      valueSource: 'incoming-data',
+      valueDataPath: 'ignored[',
+    },
+  ],
   ['http', { url: 'https://example.com', responseDataPath: 'items[0].price' }],
   ['http', { url: 'https://example.com', responseDataPath: '' }],
   [
@@ -58,6 +85,8 @@ it.each(cases)('retains %s config through tools and transport', async (kind, con
 });
 
 it.each([
+  ['dom', { selector: '#result', valueSource: 'unknown' }],
+  ['dom', { selector: '#result', valueSource: 'incoming-data', valueDataPath: 'items[' }],
   ['http', { url: 'https://example.com', responseDataPath: 'items[' }],
   ['fork', { conditionType: 'data', conditionOperator: 'matches', conditionValue: '[' }],
   ['fork', { conditionType: 'data', conditionOperator: 'not-matches', conditionValue: '(' }],

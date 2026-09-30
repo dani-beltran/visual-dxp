@@ -100,6 +100,8 @@ const configStrings = [
   'responseDataPath',
   'action',
   'value',
+  'valueSource',
+  'valueDataPath',
   'attribute',
   'cookieName',
   'cookieValue',

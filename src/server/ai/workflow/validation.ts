@@ -105,6 +105,8 @@ export function validateWorkflow(workflow: Workflow): ValidationIssue[] {
       'responseDataPath',
       'action',
       'value',
+      'valueSource',
+      'valueDataPath',
       'attribute',
       'cookieName',
       'cookieValue',
@@ -193,6 +195,11 @@ export function validateWorkflow(workflow: Workflow): ValidationIssue[] {
         }
         break;
       case 'dom':
+        try {
+          dataTools.validateElementValue(config);
+        } catch (error) {
+          add((error as Error).message, node.id);
+        }
         selector(config.selector, node.id, 'Choose an element to update.');
         if (
           config.action &&

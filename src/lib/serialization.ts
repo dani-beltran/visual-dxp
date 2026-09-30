@@ -23,6 +23,8 @@ const strings = [
   'responseDataPath',
   'action',
   'value',
+  'valueSource',
+  'valueDataPath',
   'attribute',
   'cookieName',
   'cookieValue',

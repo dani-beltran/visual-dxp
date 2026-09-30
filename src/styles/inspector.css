@@ -139,6 +139,47 @@
   color: var(--dxp-text-secondary);
   line-height: 1.3;
 }
+.dxp-inspector-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 19px;
+}
+.dxp-inspector-toggle > label {
+  color: var(--dxp-text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.dxp-inspector .dxp-inspector-toggle input {
+  appearance: none;
+  width: 34px;
+  height: 20px;
+  flex-shrink: 0;
+  margin: 0;
+  padding: 2px;
+  border: 1px solid var(--dxp-line-strong);
+  border-radius: 999px;
+  background: var(--dxp-line-strong);
+  cursor: pointer;
+}
+.dxp-inspector-toggle input::before {
+  content: '';
+  display: block;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: white;
+  transition: transform 0.15s;
+}
+.dxp-inspector .dxp-inspector-toggle input:checked {
+  background: var(--dxp-data);
+  border-color: var(--dxp-data);
+}
+.dxp-inspector-toggle input:checked::before {
+  transform: translateX(14px);
+}
 .dxp-inspector input,
 .dxp-inspector select,
 .dxp-inspector textarea {
@@ -436,4 +477,12 @@
     width: min(310px, calc(100vw - 32px));
     min-width: 0;
   }
+}
+
+.dxp-inspector-incoming-data {
+  background: color-mix(in srgb, var(--dxp-data) 8%, var(--dxp-surface));
+  border-color: color-mix(in srgb, var(--dxp-data) 30%, var(--dxp-surface));
+}
+.dxp-inspector-incoming-data > svg {
+  color: var(--dxp-data);
 }

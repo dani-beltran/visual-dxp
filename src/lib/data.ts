@@ -13,6 +13,13 @@ interface ResponseConfig {
   responseDataPath?: string;
 }
 
+interface ElementValueConfig {
+  action?: string;
+  value?: string;
+  valueSource?: string;
+  valueDataPath?: string;
+}
+
 /** Self-contained so preview and exported scripts use exactly the same rules. */
 export function createDataTools() {
   const operators = {
@@ -90,6 +97,36 @@ export function createDataTools() {
       value = (value as Record<string | number, unknown>)[token];
     }
     return { exists, value };
+  }
+
+  function usesIncomingValue(config: ElementValueConfig): boolean {
+    return (
+      config.valueSource === 'incoming-data' && !['hide', 'show'].includes(config.action ?? 'text')
+    );
+  }
+
+  function validateElementValue(config: ElementValueConfig): void {
+    if (['hide', 'show'].includes(config.action ?? 'text')) return;
+    if (!['manual', 'incoming-data'].includes(config.valueSource ?? 'manual'))
+      throw new Error('Choose Manual value or Incoming data as the value source.');
+    if (usesIncomingValue(config)) parsePath(config.valueDataPath);
+  }
+
+  function elementValue(config: ElementValueConfig, input: DataSelection): string {
+    validateElementValue(config);
+    if (!usesIncomingValue(config)) return config.value ?? '';
+    const { value } = select(input, config.valueDataPath);
+    if (value === null || value === undefined) return '';
+    if (typeof value === 'string') return value;
+    if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+    if (config.action === 'add-class' || config.action === 'remove-class') {
+      if (Array.isArray(value) && value.every((item) => typeof item === 'string'))
+        return value.join(' ');
+      throw new Error(
+        'Incoming CSS classes must be text, a number, a boolean, or an array of strings.',
+      );
+    }
+    return JSON.stringify(value);
   }
 
   function validateResponse(config: ResponseConfig): void {
@@ -273,6 +310,9 @@ export function createDataTools() {
   }
 
   return {
+    usesIncomingValue,
+    validateElementValue,
+    elementValue,
     operators,
     needsValue,
     parsePath,

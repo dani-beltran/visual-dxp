@@ -82,7 +82,9 @@ const config = z.object({
   headers: text.describe('JSON object encoded as a string, with string header values.').optional(),
   body: text.optional(),
   responseDataPath: text
-    .describe('Optional nested response selection, applied to automatically parsed JSON; e.g. data.items[0].price.')
+    .describe(
+      'Optional nested response selection, applied to automatically parsed JSON; e.g. data.items[0].price.',
+    )
     .optional(),
   conditionDataPath: text
     .describe('Optional nested incoming data selection. Empty evaluates the whole value.')
@@ -99,6 +101,15 @@ const config = z.object({
     .enum(['text', 'html', 'add-class', 'remove-class', 'hide', 'show', 'attribute'])
     .optional(),
   value: text.optional(),
+  valueSource: z
+    .enum(['manual', 'incoming-data'])
+    .describe('Update element value source; defaults to manual. Hide/show do not use a value.')
+    .optional(),
+  valueDataPath: text
+    .describe(
+      'Optional selection from incoming data for Update element, e.g. user.name; empty uses the whole value.',
+    )
+    .optional(),
   attribute: text.optional(),
   cookieName: text
     .describe('Name of a cookie to set on the current host; no spaces or cookie separators.')

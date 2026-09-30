@@ -264,3 +264,57 @@ it('edits response selection in Outputs without a response format setting', asyn
   expect(current.responseDataPath).toBe('');
   expect(outputSection?.querySelector('[role="alert"]')).toBeNull();
 });
+
+it('switches element values between manual and incoming data while preserving manual input', async () => {
+  function ElementInspector() {
+    const [config, setConfig] = useState<StepConfig>({
+      selector: '#result',
+      action: 'text',
+      value: 'Manual text',
+    });
+    current = config;
+    return (
+      <NodeInspector
+        node={{
+          id: 'element',
+          type: 'workflow',
+          position: { x: 0, y: 0 },
+          data: { kind: 'dom', label: 'Update element', config },
+        }}
+        onChange={(patch) => setConfig(patch.config!)}
+        onClose={() => {}}
+        onPickElement={() => {}}
+        onDelete={() => {}}
+        onDuplicate={() => {}}
+        onPreviewContent={() => {}}
+      />
+    );
+  }
+  await act(async () => root.render(<ElementInspector />));
+  expect((field('Use incoming data') as HTMLInputElement).checked).toBe(false);
+  expect(field('Use incoming data').getAttribute('role')).toBe('switch');
+  expect(host.querySelector('textarea')?.value).toBe('Manual text');
+  await act(async () => field('Use incoming data').click());
+  expect(host.querySelector('textarea')).toBeNull();
+  expect(host.textContent).toContain('blue input connection');
+  await change('Incoming data path', 'user.name');
+  expect(current).toMatchObject({
+    valueSource: 'incoming-data',
+    valueDataPath: 'user.name',
+    value: 'Manual text',
+  });
+  expect(stepSummary('dom', current)).toContain('Incoming data: user.name');
+  await change('Action', 'attribute');
+  expect(field('Attribute name')).toBeTruthy();
+  await change('Action', 'hide');
+  expect(() => field('Use incoming data')).toThrow('Missing field');
+  expect(() => field('Incoming data path')).toThrow('Missing field');
+  expect(stepSummary('dom', current)).not.toContain('Incoming data');
+  await change('Action', 'text');
+  expect(field('Incoming data path').value).toBe('user.name');
+  await change('Incoming data path', 'user[');
+  expect(host.querySelector('[role="alert"]')?.textContent).toContain('Invalid data path');
+  await act(async () => field('Use incoming data').click());
+  expect(host.querySelector('[role="alert"]')).toBeNull();
+  expect(host.querySelector('textarea')?.value).toBe('Manual text');
+});

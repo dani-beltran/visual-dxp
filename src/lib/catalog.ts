@@ -230,7 +230,7 @@ export function stepSummary(kind: NodeKind, c: StepConfig): string {
     case 'http':
       return `${c.method || 'GET'}  ${c.url ? c.url.replace(/^https?:\/\//, '') : 'Configure a URL'}`;
     case 'dom':
-      return `${c.action === 'text' ? 'Change text' : c.action || 'Update'} · ${c.selector || 'Choose an element'}`;
+      return `${c.action === 'text' ? 'Change text' : c.action || 'Update'} · ${c.selector || 'Choose an element'}${dataTools.usesIncomingValue(c) ? ` · Incoming data${c.valueDataPath ? `: ${c.valueDataPath}` : ''}` : ''}`;
     case 'cookie':
       return `${c.cookieName || 'Choose a cookie name'} = ${JSON.stringify(c.cookieValue ?? '')} · ${c.cookieDays ? `${c.cookieDays} days` : 'Session'}`;
     case 'delay':
@@ -240,7 +240,7 @@ export function stepSummary(kind: NodeKind, c: StepConfig): string {
       switch (conditionType) {
         case 'data': {
           const operator = c.conditionOperator ?? 'equal';
-          return `Incoming data ${c.conditionDataPath || '(whole value)'} · ${dataTools.operators[operator] ?? 'Choose an operator'}${dataTools.needsValue(operator) ? ` ${JSON.stringify(c.conditionValue ?? '')}` : ''}`;
+          return `${c.conditionDataPath || 'Data'} · ${dataTools.operators[operator].toLocaleLowerCase() ?? 'Choose an operator'}${dataTools.needsValue(operator) ? ` ${JSON.stringify(c.conditionValue ?? '')}` : ''}`;
         }
         case 'time-of-day':
           return `Time ${c.conditionStartTime || '…'}–${c.conditionEndTime || '…'} · ${c.conditionTimeZone === 'utc' ? 'UTC' : 'Visitor local'}`;

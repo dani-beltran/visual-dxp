@@ -210,3 +210,150 @@ it('continues an exported flow with undefined output from a missing response pat
   await runtime.run();
   expect(document.querySelector('#result')?.textContent).toBe('yes');
 });
+
+it.each(['direct', 'exported'] as const)(
+  'uses HTTP values for every element action in the %s runtime',
+  async (mode) => {
+    const cases: [StepConfig['action'], unknown, string][] = [
+      ['text', 'Ada', 'Ada'],
+      ['text', 0, '0'],
+      ['text', false, 'false'],
+      ['text', { name: 'Ada' }, '{"name":"Ada"}'],
+      ['text', [1, 2], '[1,2]'],
+      ['text', null, ''],
+      ['text', undefined, ''],
+      ['html', '<b>Ada</b>', '<b>Ada</b>'],
+      ['attribute', 42, '42'],
+      ['add-class', 'active premium', 'base active premium'],
+      ['add-class', ['active', 'premium'], 'base active premium'],
+      ['remove-class', ['active', 'premium'], 'base'],
+    ];
+    for (const selectedByHttp of [false, true]) {
+      for (const [action, value, expected] of cases) {
+        document.querySelector('#target')?.remove();
+        const target = document.createElement('div');
+        target.id = 'target';
+        target.className = action === 'remove-class' ? 'base active premium' : 'base';
+        target.textContent = 'before';
+        document.body.appendChild(target);
+        const workflow = graph(selectedByHttp ? { responseDataPath: 'item' } : {}, {
+          conditionOperator: 'not-exists',
+          conditionDataPath: selectedByHttp ? '' : 'item',
+        });
+        workflow.nodes[2].data.config = {
+          selector: '#target',
+          action,
+          attribute: 'data-value',
+          value: 'old manual value',
+          valueSource: 'incoming-data',
+          valueDataPath: selectedByHttp ? '' : 'item',
+        };
+        vi.spyOn(globalThis, 'fetch').mockImplementation(
+          async () => new Response(JSON.stringify({ item: value })),
+        );
+        let runtime: ReturnType<typeof createRuntime>;
+        if (mode === 'direct') runtime = createRuntime(workflow);
+        else {
+          new Function('window', 'document', exportWorkflow(workflow))(window, document);
+          const exported = (window as Window & { dlbDXP?: ReturnType<typeof createRuntime> })
+            .dlbDXP;
+          if (!exported) throw new Error('Expected exported runtime');
+          runtime = exported;
+        }
+        instances.push(runtime);
+        await runtime.run();
+        const actual =
+          action === 'attribute'
+            ? target.getAttribute('data-value')
+            : action?.includes('class')
+              ? target.className
+              : action === 'html'
+                ? target.innerHTML
+                : target.textContent;
+        expect(actual).toBe(expected);
+        // The element action must forward the original data, including missingness.
+        expect(document.querySelector('#result')?.textContent).toBe(
+          value === undefined ? 'yes' : 'no',
+        );
+        runtime.destroy();
+        vi.restoreAllMocks();
+      }
+    }
+  },
+);
+
+it('preserves incoming element settings across save/reload and AI edits', () => {
+  const workflow = graph();
+  const config: StepConfig = {
+    selector: '#result',
+    action: 'text',
+    valueSource: 'incoming-data',
+    valueDataPath: 'items[0].name',
+    value: 'manual fallback',
+  };
+  workflow.nodes[2].data.config = config;
+  const saved = JSON.parse(JSON.stringify(workflow));
+  expect(isWorkflow(saved)).toBe(true);
+  expect(validateWorkflow(saved)).toEqual([]);
+  const parsed = parseAIChatRequest({
+    workflow: saved,
+    messages: [{ role: 'user', content: 'Edit' }],
+    selectedNodeIds: [],
+  });
+  expect(parsed.workflow.nodes[2].data.config).toEqual(config);
+  const response = parseAIChatResponse({
+    message: 'Updated',
+    operations: [{ type: 'update_node', id: 'pass', config }],
+  });
+  expect(applyWorkflowOperations(saved, response.operations).nodes[2].data.config).toEqual(config);
+});
+
+it('keeps manual values and hide/show independent of incoming-data settings', async () => {
+  for (const config of [
+    { value: 'manual', valueDataPath: 'ignored[' },
+    { action: 'hide', valueSource: 'incoming-data', valueDataPath: 'ignored[' },
+    { action: 'show', valueSource: 'incoming-data', valueDataPath: 'ignored[' },
+  ] as StepConfig[]) {
+    const workflow = graph({}, { conditionOperator: 'exists' });
+    workflow.nodes[2].data.config = { selector: '#result', ...config };
+    // Stop after Update element so its content and visibility can be inspected.
+    workflow.edges = workflow.edges.slice(0, 2);
+    expect(validateWorkflow(workflow)).toEqual([]);
+    const runtime = createRuntime(workflow, {
+      fetch: vi.fn<typeof fetch>().mockImplementation(async () => new Response('null')),
+    });
+    instances.push(runtime);
+    await runtime.run();
+    const target = document.querySelector<HTMLElement>('#result');
+    if (config.action === 'hide') expect(target?.style.display).toBe('none');
+    else if (config.action === 'show') expect(target?.style.display).not.toBe('none');
+    else expect(target?.textContent).toBe('manual');
+  }
+});
+
+it('validates incoming element paths and rejects unsupported CSS class data before mutation', async () => {
+  const workflow = graph();
+  workflow.nodes[2].data.config = {
+    selector: '#result',
+    action: 'text',
+    valueSource: 'incoming-data',
+    valueDataPath: 'items[',
+  };
+  expect(validateWorkflow(workflow)).toContainEqual(
+    expect.objectContaining({
+      nodeId: 'pass',
+      message: expect.stringContaining('Invalid data path'),
+    }),
+  );
+  workflow.nodes[2].data.config = {
+    selector: '#result',
+    action: 'add-class',
+    valueSource: 'incoming-data',
+  };
+  const runtime = createRuntime(workflow, {
+    fetch: vi.fn<typeof fetch>().mockImplementation(async () => new Response('{"class":"active"}')),
+  });
+  instances.push(runtime);
+  await expect(runtime.run()).rejects.toThrow('Incoming CSS classes');
+  expect(document.querySelector('#result')?.className).toBe('');
+});
