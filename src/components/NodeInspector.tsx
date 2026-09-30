@@ -942,18 +942,24 @@ export function NodeInspector({
             <ArrowRight size={14} aria-hidden="true" /> Outputs
           </h3>
           {node.data.kind === 'fork' ? (
-            <div className="dxp-inspector-branches">
-              <div>
-                <i className="dxp-inspector-dot-true" />
-                <strong>True</strong>
-                <span>Condition matches</span>
+            <>
+              <div className="dxp-inspector-branches">
+                <div>
+                  <i className="dxp-inspector-dot-true" />
+                  <strong>True</strong>
+                  <span>Condition matches</span>
+                </div>
+                <div>
+                  <i className="dxp-inspector-dot-false" />
+                  <strong>False</strong>
+                  <span>Condition does not match</span>
+                </div>
               </div>
-              <div>
-                <i className="dxp-inspector-dot-false" />
-                <strong>False</strong>
-                <span>Condition does not match</span>
-              </div>
-            </div>
+              <p className="dxp-inspector-hint">
+                The matching output passes all incoming data unchanged to the next step. The
+                condition’s data path only selects what to compare.
+              </p>
+            </>
           ) : node.data.kind === 'loop' ? (
             <>
               <div className="dxp-inspector-branches">

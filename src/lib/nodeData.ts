@@ -8,12 +8,12 @@ interface NodeDataPorts {
 }
 
 // Define data-port behavior once per node kind. Config changes are evaluated on render.
-// These describe explicit data inputs/outputs, not the runtime's data pass-through.
+// These describe data inputs/outputs shown on the canvas, including condition pass-through.
 const dataPorts: Partial<Record<NodeKind, (config: StepConfig) => NodeDataPorts>> = {
   http: () => ({ acceptsData: false, outputsData: true }),
   fork: (config) => ({
     acceptsData: config.conditionType === 'data',
-    outputsData: false,
+    outputsData: true,
     incomingDataPath: config.conditionDataPath,
   }),
   dom: (config) => ({
