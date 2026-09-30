@@ -626,6 +626,10 @@
 .dxp-footer-link {
   text-decoration: none;
 }
+.dxp-footer-link:hover {
+  transform: scale(1.05);
+  transition: transform 0.2s ease-in-out;
+}
 .dxp-footer-label {
   font-size: 6.5px;
   letter-spacing: 1.25px;
