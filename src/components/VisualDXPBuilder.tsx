@@ -22,6 +22,7 @@ import {
   History,
   KeyRound,
   Layers2,
+  LayoutTemplate,
   Maximize,
   Plus,
   Redo2,
@@ -63,7 +64,7 @@ import { validateWorkflow } from '../lib/export';
 import { duplicateNode, framesFirst, groupNodes, nodeSize, removeNodes } from '../lib/frames';
 import { getNodeDataPorts } from '../lib/nodeData';
 import { NoteEditingContext } from '../lib/noteEditing';
-import { NoteSelectionProvider } from '../lib/noteSelection';
+import { NoteSelectionProvider, useNoteSelection } from '../lib/noteSelection';
 import { isWorkflow } from '../lib/serialization';
 import { EXPORT_TARGET_MESSAGE, resolveWebsiteUrl, validateExportTarget } from '../lib/targeting';
 import type {
@@ -74,6 +75,7 @@ import type {
   Workflow,
   WorkflowEdge,
   WorkflowNode,
+  WorkflowPreset,
 } from '../lib/types';
 import { useDialogFocus } from '../lib/useDialogFocus';
 import { ActivityPanel } from './ActivityPanel';
@@ -85,6 +87,7 @@ import { ElementPicker } from './ElementPicker';
 import { NodeInspector } from './NodeInspector';
 import { NodeLibrary } from './NodeLibrary';
 import { PopoverPreview } from './PopoverPreview';
+import { PresetsPanel } from './PresetsPanel';
 import { Preview } from './Preview';
 import { WorkflowCard } from './WorkflowCard';
 import '@xyflow/react/dist/style.css';
@@ -120,6 +123,8 @@ export interface VisualDXPBuilderApi {
 }
 export interface VisualDXPBuilderProps {
   initialWorkflow?: Workflow;
+  /** Optional configurations shown in Presets. Applying replaces the graph as one undoable edit. */
+  presets?: readonly WorkflowPreset[];
   /** Receives the initial/restored workflow and every edit as a JSON-serializable object. */
   onChange?: (workflow: Workflow) => void;
   /** Exposes editor actions to the host; receives null when detached. Use a stable callback. */
@@ -142,6 +147,7 @@ interface HistoryEntry {
   workflow: Workflow;
   activity?: RecordedActivity;
 }
+type BuilderView = 'canvas' | 'presets' | 'activity' | 'settings';
 function copyWorkflow(w: Workflow): Workflow {
   return { ...structuredClone(w), includeSubpages: w.includeSubpages ?? false };
 }
@@ -156,6 +162,7 @@ export function VisualDXPBuilder(props: VisualDXPBuilderProps) {
 }
 function Builder({
   initialWorkflow = defaultWorkflow,
+  presets,
   onChange,
   onReady,
   className = '',
@@ -177,7 +184,15 @@ function Builder({
     getActivitySnapshot,
     getActivitySnapshot,
   );
-  const [view, setView] = useState<'canvas' | 'activity' | 'settings'>('canvas');
+  const [view, setView] = useState<BuilderView>('canvas');
+  const showPresets = Boolean(presets?.length);
+  const viewId = useId();
+  useEffect(() => {
+    if (!showPresets && view === 'presets') {
+      setView('canvas');
+      document.getElementById(`${viewId}-canvas-tab`)?.focus();
+    }
+  }, [showPresets, view, viewId]);
   const aiEnabled = Boolean(ai?.endpoint?.trim());
   const showAISettings = aiEnabled && ai?.showSettings !== false;
   const [aiSettings] = useState(() => new AISettingsStore());
@@ -222,7 +237,6 @@ function Builder({
   useEffect(() => {
     if (!showAISettings && view === 'settings') setView('canvas');
   }, [showAISettings, view]);
-  const viewId = useId();
   const [workflow, setWorkflow] = useState<Workflow>(() => {
     if (persistenceKey)
       try {
@@ -246,6 +260,8 @@ function Builder({
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
   const [canvasAssistant, setCanvasAssistant] = useState<'chat' | 'help' | null>(null);
+  const [assistantRevision, setAssistantRevision] = useState(0);
+  const { setSelection: setNoteSelection } = useNoteSelection();
   const toggleChat = useCallback((open: boolean) => setCanvasAssistant(open ? 'chat' : null), []);
   const toggleHelp = useCallback((open: boolean) => setCanvasAssistant(open ? 'help' : null), []);
   const [modal, setModal] = useState<'preview' | 'popover-preview' | 'website' | null>(null);
@@ -284,6 +300,17 @@ function Builder({
   const upload = useRef<HTMLInputElement>(null);
   const canvas = useRef<HTMLDivElement>(null);
   const flow = useReactFlow<WorkflowNode>();
+  const [fitPreset, setFitPreset] = useState(false);
+  useEffect(() => {
+    if (!fitPreset || view !== 'canvas') return;
+    // Queue fitting after React commits the new graph and reveals the canvas.
+    // React Flow waits for node measurements before fulfilling fitView.
+    const frame = requestAnimationFrame(() => {
+      void flow.fitView({ padding: 0.2, duration: 300 });
+      setFitPreset(false);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [fitPreset, view, flow.fitView]);
   useEffect(() => {
     const element = canvas.current;
     if (!element) return;
@@ -394,7 +421,7 @@ function Builder({
   );
   // biome-ignore lint/correctness/useExhaustiveDependencies: Flush pending edits when the activity destination or author changes, as well as on unmount.
   useEffect(() => flushActivity, [flushActivity, store, activityUser]);
-  function changeView(next: 'canvas' | 'activity' | 'settings') {
+  function changeView(next: BuilderView) {
     flushActivity();
     closeWebsite();
     setView(next);
@@ -782,6 +809,45 @@ function Builder({
     setSelectedId(copy.selectedId);
     setSelectedEdgeId(null);
   }
+  function applyPreset(preset: WorkflowPreset): string | undefined {
+    let next: Workflow;
+    try {
+      if (!isWorkflow(preset.workflow)) throw new Error('Invalid workflow structure.');
+      next = copyWorkflow(preset.workflow);
+      const issues = validateWorkflow(next);
+      if (issues.length) throw new Error(issues.map((issue) => issue.message).join(' '));
+    } catch (error) {
+      return `Could not apply “${preset.name}”. ${error instanceof Error ? error.message : 'Invalid workflow.'}`;
+    }
+    // Discard saved editor state as well as the current editor's transient state.
+    for (const node of next.nodes) {
+      delete node.selected;
+      delete node.dragging;
+      delete node.resizing;
+      delete node.measured;
+      delete node.data.status;
+    }
+    for (const edge of next.edges) delete edge.selected;
+    commit(
+      (w) => ({ ...w, nodes: next.nodes, edges: next.edges }),
+      `Applied preset “${preset.name}”`,
+    );
+    setSelectedId(null);
+    setSelectedEdgeId(null);
+    setNoteSelection(null);
+    setStatuses({});
+    setPicking(false);
+    setCanvasAssistant(null);
+    // Unmount the chat to cancel pending requests and discard stale graph context.
+    setAssistantRevision((revision) => revision + 1);
+    dragStartPositions.current = null;
+    dragStartWorkflow.current = null;
+    resizeStartWorkflow.current = null;
+    changeView('canvas');
+    document.getElementById(`${viewId}-canvas-tab`)?.focus();
+    setFitPreset(true);
+    notify(`Applied “${preset.name}”. Use Undo to restore your previous workflow.`);
+  }
   async function importFile(file?: File) {
     if (!file) return;
     try {
@@ -876,10 +942,11 @@ function Builder({
           onKeyDown={(event) => {
             if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
             event.preventDefault();
-            const tabs = showAISettings
-              ? (['canvas', 'activity', 'settings'] as const)
-              : (['canvas', 'activity'] as const);
-            const index = tabs.indexOf(view as 'canvas' | 'activity');
+            const tabs: BuilderView[] = ['canvas'];
+            if (showPresets) tabs.push('presets');
+            tabs.push('activity');
+            if (showAISettings) tabs.push('settings');
+            const index = tabs.indexOf(view);
             const next =
               event.key === 'Home'
                 ? tabs[0]
@@ -904,6 +971,20 @@ function Builder({
           >
             <WorkflowIcon size={15} /> Canvas
           </button>
+          {showPresets && (
+            <button
+              type="button"
+              role="tab"
+              id={`${viewId}-presets-tab`}
+              aria-selected={view === 'presets'}
+              aria-controls={`${viewId}-presets-panel`}
+              tabIndex={view === 'presets' ? 0 : -1}
+              className={view === 'presets' ? 'active' : ''}
+              onClick={() => changeView('presets')}
+            >
+              <LayoutTemplate size={15} /> Presets
+            </button>
+          )}
           <button
             type="button"
             role="tab"
@@ -1134,6 +1215,7 @@ function Builder({
                 <div className="dxp-canvas-assistants">
                   {aiEnabled && (
                     <CanvasChat
+                      key={assistantRevision}
                       open={canvasAssistant === 'chat'}
                       onOpenChange={toggleChat}
                       configured={aiEnabled}
@@ -1197,6 +1279,17 @@ function Builder({
           />
         )}
       </div>
+      {showPresets && presets && (
+        <div
+          className="dxp-work-area"
+          role="tabpanel"
+          id={`${viewId}-presets-panel`}
+          aria-labelledby={`${viewId}-presets-tab`}
+          hidden={view !== 'presets'}
+        >
+          {view === 'presets' && <PresetsPanel presets={presets} onApply={applyPreset} />}
+        </div>
+      )}
       <div
         className="dxp-work-area"
         role="tabpanel"

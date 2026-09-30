@@ -42,4 +42,5 @@ export type {
   Workflow,
   WorkflowEdge,
   WorkflowNode,
+  WorkflowPreset,
 } from './lib/types';

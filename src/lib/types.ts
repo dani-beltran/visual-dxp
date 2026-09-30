@@ -135,6 +135,18 @@ export interface Workflow {
   nodes: WorkflowNode[];
   edges: WorkflowEdge[];
 }
+/** A host-supplied, JSON-serializable workflow configuration. */
+export interface WorkflowPreset {
+  id: string;
+  name: string;
+  description: string;
+  complexity: 'beginner' | 'intermediate' | 'advanced';
+  /** Ascending display order, from least to most complex. */
+  order: number;
+  tags?: string[];
+  setupInstructions?: string[];
+  workflow: Workflow;
+}
 export interface RunLog {
   nodeId: string;
   label: string;

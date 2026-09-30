@@ -101,6 +101,7 @@ The builder owns the toolbar, canvas, inspector, activity view, footer, element 
 
 | Prop                 | Behavior                                                                                                                                                          |
 | -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `presets`            | Optional `readonly WorkflowPreset[]`. A nonempty array enables Presets; omitted or empty hides the tab and panel. |
 | `initialWorkflow`    | Initial workflow; defaults to the included welcome journey. Changes after mounting do not replace editor state; use a React `key` to open another workflow.       |
 | `onChange`           | Receives the initial or restored workflow and all subsequent edits as a JSON-serializable `Workflow` object. Use it for persistence or your own export dialog.                                                 |
 | `onReady`            | Receives a `VisualDXPBuilderApi` with `getWorkflow()`, `configureWebsite(options?)`, `testWorkflow()`, `renameWorkflow(name)`, `fitView()`, and `flushActivity()`. Receives `null` on cleanup; use a stable callback such as a state setter.                                                                                     |
@@ -111,6 +112,75 @@ The builder owns the toolbar, canvas, inspector, activity view, footer, element 
 | `className`, `style` | Customize the outer editor container. The parent must provide a height.                                                                                           |
 
 `VisualDXPBuilder` is both the default and a named package export. Import `dlb-dxp/styles.css` once in your application; it includes React Flow and all builder, inspector, dialog, picker, and activity styles. The package exposes the same stylesheet through its `style` field and marks CSS as a side effect so bundlers retain the import.
+
+### Optional workflow presets
+
+Import the public `WorkflowPreset` type from `dlb-dxp`. It uses the existing `Workflow` schema:
+
+```ts
+interface WorkflowPreset {
+  id: string;
+  name: string;
+  description: string;
+  complexity: 'beginner' | 'intermediate' | 'advanced';
+  order: number;
+  tags?: string[];
+  setupInstructions?: string[];
+  workflow: Workflow;
+}
+```
+
+Store each preset in its own `.ts` file as a JSON-serializable object literal with `satisfies WorkflowPreset`. Use fixed node/edge IDs and type-only imports; preset definitions must not contain functions, JSX, generated IDs, or runtime dependencies. For example, `presets/welcome.ts`:
+
+```ts
+import type { WorkflowPreset } from 'dlb-dxp';
+
+export const welcomePreset = {
+  id: 'welcome',
+  name: 'Welcome message',
+  description: 'Greet visitors when the page loads.',
+  complexity: 'beginner',
+  order: 10,
+  setupInstructions: ['Customize the welcome message before publishing.'],
+  workflow: {
+    version: 1,
+    name: 'Welcome message',
+    websiteUrl: '',
+    nodes: [
+      {
+        id: 'start', type: 'workflow', position: { x: 0, y: 0 },
+        data: { kind: 'trigger', label: 'Page loaded', config: { event: 'page-load' } },
+      },
+      {
+        id: 'welcome', type: 'workflow', position: { x: 320, y: 0 },
+        data: {
+          kind: 'popover', label: 'Welcome',
+          config: { contentType: 'html', content: '<h2>Welcome!</h2>', position: 'center' },
+        },
+      },
+    ],
+    edges: [{ id: 'start-welcome', source: 'start', target: 'welcome' }],
+  },
+} satisfies WorkflowPreset;
+```
+
+Pass the presets explicitly from your host:
+
+```tsx
+import VisualDXPBuilder from 'dlb-dxp';
+import 'dlb-dxp/styles.css';
+import { welcomePreset } from './presets/welcome';
+
+export function ExperienceEditor() {
+  return <VisualDXPBuilder presets={[welcomePreset]} style={{ height: 600 }} />;
+}
+```
+
+The builder never loads a built-in collection. Copyable examples of increasing complexity live in [`examples/presets`](examples/presets): a welcome message, a returning-visitor greeting, and API-driven content. In your host, change their type-only import to `dlb-dxp`.
+
+Choose ascending `order` values from least to most complex; this field determines display order without changing your array. Removing all presets while Presets is active returns to Canvas.
+
+Applying validates the workflow structure, graph, and configuration before replacing all nodes and connections. Invalid presets display an error and leave the editor unchanged. The current workflow's `name`, `websiteUrl`, and `includeSubpages` are preserved. Preset data is deep-cloned, editor selections and transient state are cleared, and the applied graph is fitted on Canvas. Application uses the normal commit path: one undoable edit, one activity entry, and the usual `onChange` and optional localStorage persistence. It does not execute the workflow or make network requests. Setup instructions describe any site-specific changes required before testing or publishing.
 
 ### Brand colors with theme.css
 
