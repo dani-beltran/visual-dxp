@@ -38,6 +38,7 @@ afterEach(async () => {
   localStorage.removeItem(persistenceKey);
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
+  vi.useRealTimers();
 });
 
 function initialWorkflow(): Workflow {
@@ -70,6 +71,67 @@ async function click(target: HTMLElement) {
 }
 
 describe('builder and host boundary', () => {
+  it('checks typed website URLs, confirms the bridge, and shows setup only when a check fails', async () => {
+    vi.useFakeTimers();
+    const onChange = vi.fn<(workflow: Workflow) => void>();
+    await act(async () =>
+      root.render(<VisualDXPBuilder initialWorkflow={initialWorkflow()} onChange={onChange} />),
+    );
+    await click(element('button[aria-label="Change target website"]'));
+    expect(host.querySelector('.dxp-website-connection')).toBeNull();
+    const input = element<HTMLInputElement>('.dxp-website-settings input:not([type="checkbox"])');
+    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!;
+    const typeUrl = async (url: string) =>
+      act(async () => {
+        setter.call(input, url);
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+      });
+    await typeUrl('https://example.com/shop/?preview=1');
+    expect(host.textContent).toContain('Connecting to your website');
+    expect(host.querySelector('.dxp-website-setup')).toBeNull();
+    await act(async () => vi.advanceTimersByTime(499));
+    expect(host.querySelector('iframe')).toBeNull();
+    await act(async () => vi.advanceTimersByTime(1));
+    const frame = element<HTMLIFrameElement>('iframe');
+    expect(frame.src).toBe('https://example.com/shop/?preview=1');
+    expect(frame.getAttribute('sandbox')).toBe('allow-scripts');
+    const target = frame.contentWindow!;
+    const post = vi.spyOn(target, 'postMessage').mockImplementation(() => {});
+    await act(async () => frame.dispatchEvent(new Event('load')));
+    expect(host.textContent).toContain('Connecting to your website');
+    const init = post.mock.calls.at(-1)![0];
+    const receive = async (source: Window | null, origin: string, channel = init.channel) =>
+      act(async () => {
+        window.dispatchEvent(
+          new MessageEvent('message', {
+            source,
+            origin,
+            data: { protocol: init.protocol, channel, type: 'ready' },
+          }),
+        );
+      });
+    await receive(window, 'null');
+    await receive(target, 'https://example.com');
+    await receive(target, 'null', 'wrong-channel');
+    expect(host.textContent).toContain('Connecting to your website');
+    await receive(target, 'null');
+    expect(host.textContent).toContain('Website connected successfully');
+    expect(host.querySelector('iframe')).toBeNull();
+    expect(post.mock.calls.at(-1)![0].type).toBe('stop');
+    await typeUrl('https://another.example/');
+    expect(host.textContent).toContain('Connecting to your website');
+    expect(host.textContent).not.toContain('Website connected successfully');
+    await receive(target, 'null');
+    expect(host.textContent).toContain('Connecting to your website');
+    await act(async () => vi.advanceTimersByTime(500));
+    await act(async () => vi.advanceTimersByTime(8000));
+    expect(host.querySelector('.dxp-website-settings .dxp-website-setup')).not.toBeNull();
+    expect(host.querySelector('iframe')).toBeNull();
+    await click(button('Use the demo website'));
+    expect(host.querySelector('.dxp-website-connection')).toBeNull();
+    expect(onChange.mock.lastCall?.[0].websiteUrl).toBe('/demo-site.html');
+  });
+
   it('adds a resizable frame from the library and saves its editable name with undo', async () => {
     const onChange = vi.fn<(workflow: Workflow) => void>();
     await act(async () =>

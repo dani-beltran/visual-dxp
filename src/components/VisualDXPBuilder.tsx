@@ -65,6 +65,7 @@ import { duplicateNode, framesFirst, groupNodes, nodeSize, removeNodes } from '.
 import { getNodeDataPorts } from '../lib/nodeData';
 import { NoteEditingContext } from '../lib/noteEditing';
 import { NoteSelectionProvider, useNoteSelection } from '../lib/noteSelection';
+import { normalizeWebsiteUrl } from '../lib/picker';
 import { isWorkflow } from '../lib/serialization';
 import {
   EXPORT_TARGET_MESSAGE,
@@ -95,7 +96,7 @@ import { NodeLibrary } from './NodeLibrary';
 import { PopoverPreview } from './PopoverPreview';
 import { PresetsPanel } from './PresetsPanel';
 import { Preview } from './Preview';
-import { WebsiteSetup } from './WebsiteSetup';
+import { WebsiteConnectionCheck } from './WebsiteConnectionCheck';
 import { WorkflowCard } from './WorkflowCard';
 import '@xyflow/react/dist/style.css';
 import '../styles/builder.css';
@@ -296,9 +297,12 @@ function Builder({
     setModal(null);
   }, []);
   let websiteScope: URL | undefined;
+  let websiteConnectionUrl: string | undefined;
   try {
     const target = resolveWebsiteUrl(websiteDraft.trim() || '/demo-site.html');
     if (target.href !== resolveWebsiteUrl('/demo-site.html').href) websiteScope = target;
+    if (websiteScope)
+      websiteConnectionUrl = normalizeWebsiteUrl(websiteDraft, window.location.href);
   } catch {
     // The save action reports invalid input; omit scope until it can be parsed.
   }
@@ -1325,7 +1329,12 @@ function Builder({
           {workflow.nodes.length} nodes <i /> {workflow.edges.length} connections
         </span>
         <span>
-          <a className="dxp-footer-link" href="https://github.com/dani-beltran" target="_blank" rel="noopener noreferrer">
+          <a
+            className="dxp-footer-link"
+            href="https://github.com/dani-beltran"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
             <span className="dxp-footer-label">CREATED WITH LOVE BY DANIEL J.L. BELTRAN</span>
           </a>
           <span className="dxp-footer-shortcut">
@@ -1449,10 +1458,16 @@ function Builder({
               <p id={`${viewId}-subpages-help`} className="dxp-subpages-help">
                 Also run this experience on pages beneath this URL.
               </p>
-              <WebsiteSetup />
-              <button type="button" className="dxp-demo-link" onClick={() => setWebsiteDraft('')}>
-                <RotateCcw size={13} /> Use the demo website
-              </button>
+              {websiteConnectionUrl && (
+                <WebsiteConnectionCheck key={websiteConnectionUrl} url={websiteConnectionUrl} />
+              )}
+              {websiteConnectionUrl && (
+                <>
+                  <button type="button" className="dxp-demo-link" onClick={() => setWebsiteDraft('')}>
+                    <RotateCcw size={13} /> Use the demo website
+                  </button>
+                </>
+              )}
               <div className="dxp-modal-footer">
                 <button type="button" className="dxp-button" onClick={closeWebsite}>
                   Cancel

@@ -781,6 +781,7 @@
 .dxp-website-settings > .dxp-subpages-help {
   padding-bottom: 0;
   margin-top: 6px;
+  margin-bottom: 29px;
 }
 .dxp-website-scope {
   margin: 16px 29px;
@@ -792,8 +793,35 @@
 .dxp-website-scope strong {
   color: var(--dxp-text-secondary);
 }
-.dxp-website-settings > .dxp-website-setup {
+.dxp-website-connection {
   margin: 19px 29px 12px;
+}
+.dxp-website-connection-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 0;
+  font-size: 12px;
+  color: var(--dxp-muted);
+}
+.dxp-website-connection-status svg {
+  flex-shrink: 0;
+}
+.dxp-website-connection-connected {
+  color: var(--dxp-primary-color);
+}
+.dxp-website-connection-loading svg {
+  animation: dxp-website-connection-spin 1s linear infinite;
+}
+@keyframes dxp-website-connection-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dxp-website-connection-loading svg {
+    animation: none;
+  }
 }
 .dxp-demo-link {
   border: 0;
