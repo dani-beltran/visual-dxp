@@ -24,6 +24,8 @@ import type { Workflow } from './lib/types';
 import { useDialogFocus } from './lib/useDialogFocus';
 import './styles/app.css';
 
+const themeStorageKey = 'visual-dxp-theme';
+
 export interface AppProps extends Omit<VisualDXPBuilderProps, 'onReady'> {
   onExport?: (script: string, workflow: Workflow) => void;
 }
@@ -54,7 +56,20 @@ export function App({
   const [exportOpen, setExportOpen] = useState(false);
   const [exportTab, setExportTab] = useState<'javascript' | 'json'>('javascript');
   const [toast, setToast] = useState('');
-  const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    try {
+      return localStorage.getItem(themeStorageKey) === 'dark' ? 'dark' : 'light';
+    } catch {
+      return 'light';
+    }
+  });
+  useEffect(() => {
+    try {
+      localStorage.setItem(themeStorageKey, theme);
+    } catch {
+      // Keep the theme toggle usable when browser storage is unavailable.
+    }
+  }, [theme]);
   const modalRef = useDialogFocus(exportOpen);
   const notify = useCallback((message: string) => setToast(message), []);
   const handleChange = useCallback(
