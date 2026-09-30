@@ -17,17 +17,44 @@ export function showPopover(node: WorkflowNode, context: RuntimeContext): void {
     boxSizing: 'border-box',
     width: `${width}px`,
     maxWidth: 'calc(100vw - 32px)',
+    color: '#17262e',
+    fontFamily: 'system-ui, sans-serif',
+    fontSize: '14px',
+  });
+  // Keep the arrow outside the scrolling surface so it cannot be clipped.
+  const surface = doc.createElement('div');
+  Object.assign(surface.style, {
+    position: 'relative',
+    boxSizing: 'border-box',
     maxHeight: 'calc(100vh - 32px)',
     overflow: 'auto',
     background: '#fff',
-    color: '#17262e',
     border: '1px solid #e3e8ec',
     borderRadius: '16px',
     boxShadow: '0 18px 70px rgba(20, 35, 45, .24)',
     padding: '28px 24px 24px',
-    fontFamily: 'system-ui, sans-serif',
-    fontSize: '14px',
   });
+  const arrow = anchor ? doc.createElementNS('http://www.w3.org/2000/svg', 'svg') : null;
+  if (arrow) {
+    arrow.setAttribute('aria-hidden', 'true');
+    arrow.setAttribute('focusable', 'false');
+    arrow.setAttribute('width', '20');
+    arrow.setAttribute('height', '10');
+    arrow.setAttribute('viewBox', '0 0 20 10');
+    Object.assign(arrow.style, {
+      position: 'absolute',
+      width: '20px',
+      height: '10px',
+      overflow: 'visible',
+      pointerEvents: 'none',
+    });
+    const path = doc.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', 'M 0 10 L 10 0 L 20 10');
+    path.setAttribute('fill', '#fff');
+    path.setAttribute('stroke', '#e3e8ec');
+    path.setAttribute('stroke-linejoin', 'round');
+    arrow.appendChild(path);
+  }
   const close = doc.createElement('button');
   close.type = 'button';
   close.textContent = '×';
@@ -64,7 +91,9 @@ export function showPopover(node: WorkflowNode, context: RuntimeContext): void {
     content.innerHTML =
       config.content ?? '<h3>Hello there 👋</h3><p>Welcome to your next experience.</p>';
   }
-  panel.append(close, content);
+  surface.append(close, content);
+  panel.appendChild(surface);
+  if (arrow) panel.appendChild(arrow);
   (doc.body ?? doc.documentElement).appendChild(panel);
 
   function place(): void {
@@ -76,10 +105,21 @@ export function showPopover(node: WorkflowNode, context: RuntimeContext): void {
       const rect = anchor.getBoundingClientRect();
       const panelRect = panel.getBoundingClientRect();
       const left = Math.max(16, Math.min(rect.left, viewportWidth - panelRect.width - 16));
-      let top = rect.bottom + 12;
-      if (top + panelRect.height > viewportHeight - 16) top = rect.top - panelRect.height - 12;
+      const above = rect.bottom + 12 + panelRect.height > viewportHeight - 16;
+      const top = above ? rect.top - panelRect.height - 12 : rect.bottom + 12;
       panel.style.left = `${left}px`;
       panel.style.top = `${Math.max(16, top)}px`;
+      if (arrow) {
+        // Leave room for the rounded corners when the panel hits a viewport edge.
+        const center = Math.max(
+          26,
+          Math.min(rect.left + rect.width / 2 - left, panelRect.width - 26),
+        );
+        arrow.style.left = `${center - 10}px`;
+        arrow.style.top = above ? 'auto' : '-9px';
+        arrow.style.bottom = above ? '-9px' : 'auto';
+        arrow.style.transform = above ? 'rotate(180deg)' : '';
+      }
     } else {
       const position = config.position ?? 'bottom-right';
       if (position === 'center') {

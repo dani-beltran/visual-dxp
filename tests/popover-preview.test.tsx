@@ -73,7 +73,7 @@ async function loadWebsite(html = '<main><h1>Atelier</h1></main>') {
 }
 
 function panel(doc: Document) {
-  const element = doc.querySelector<HTMLElement>('[data-dlb-dxp-popover="selected-popover"]');
+  const element = doc.querySelector<HTMLElement>('[data-visual-dxp-popover="selected-popover"]');
   if (!element) throw new Error('Expected the selected popover to render.');
   return element;
 }
@@ -129,7 +129,7 @@ describe('fullscreen popover preview', () => {
       expect(panel(doc).style.width).toBe('420px');
       expect(panel(doc).style[vertical]).toBe('24px');
       expect(panel(doc).style[horizontal]).toBe('24px');
-      expect(doc.querySelectorAll('[data-dlb-dxp-popover]')).toHaveLength(1);
+      expect(doc.querySelectorAll('[data-visual-dxp-popover]')).toHaveLength(1);
     },
   );
 
@@ -178,7 +178,7 @@ describe('fullscreen popover preview', () => {
   it('shows an error when the anchor does not exist on the demo website', async () => {
     await renderPreview(popover({ position: 'anchor', selector: '#missing-anchor' }));
     const { doc } = await loadWebsite();
-    expect(doc.querySelector('[data-dlb-dxp-popover]')).toBeNull();
+    expect(doc.querySelector('[data-visual-dxp-popover]')).toBeNull();
     expect(document.body.textContent).toContain('No elements match');
     expect(document.body.textContent).toContain('#missing-anchor');
   });
@@ -200,7 +200,7 @@ describe('fullscreen popover preview', () => {
 
     await renderPreview(popover({ width: 640, content: '<h2>Updated offer</h2>' }), onClose);
     expect(original.isConnected).toBe(false);
-    expect(doc.querySelectorAll('[data-dlb-dxp-popover]')).toHaveLength(1);
+    expect(doc.querySelectorAll('[data-visual-dxp-popover]')).toHaveLength(1);
     expect(panel(doc).style.width).toBe('640px');
     expect(panel(doc).textContent).toContain('Updated offer');
 
@@ -208,7 +208,7 @@ describe('fullscreen popover preview', () => {
     await act(async () => root.unmount());
     mounted = false;
     expect(updated.isConnected).toBe(false);
-    expect(doc.querySelector('[data-dlb-dxp-popover]')).toBeNull();
+    expect(doc.querySelector('[data-visual-dxp-popover]')).toBeNull();
   });
 
   it('cleans up the previous runtime when restarting the preview', async () => {
@@ -222,11 +222,11 @@ describe('fullscreen popover preview', () => {
 
     await act(async () => restart.click());
     expect(original.isConnected).toBe(false);
-    expect(doc.querySelector('[data-dlb-dxp-popover]')).toBeNull();
+    expect(doc.querySelector('[data-visual-dxp-popover]')).toBeNull();
     expect(websiteFrame()).not.toBe(frame);
 
     const refreshed = await loadWebsite();
-    expect(refreshed.doc.querySelectorAll('[data-dlb-dxp-popover]')).toHaveLength(1);
+    expect(refreshed.doc.querySelectorAll('[data-visual-dxp-popover]')).toHaveLength(1);
   });
 
   it.each(['parent', 'website'] as const)(
