@@ -106,7 +106,7 @@ export const segmentedOnboardingPreset = {
           config: {
             selector: '.hero .description',
             action: 'text',
-            value: 'Welcome back. Your everyday collection is ready to explore.',
+            value: 'Welcome back. Your collection is ready to explore.',
           },
         },
         parentId: 'onboarding-entry',
@@ -138,11 +138,11 @@ export const segmentedOnboardingPreset = {
         },
         data: {
           kind: 'fork',
-          label: 'Everyday edit campaign?',
+          label: 'Onboarding campaign?',
           config: {
             conditionType: 'query-param',
             conditionKey: 'utm_campaign',
-            conditionValue: 'everyday-edit',
+            conditionValue: 'onboarding',
           },
         },
         parentId: 'onboarding-guidance',
@@ -156,11 +156,11 @@ export const segmentedOnboardingPreset = {
         },
         data: {
           kind: 'dom',
-          label: 'Everyday edit message',
+          label: 'Onboarding message',
           config: {
             selector: '.hero .description',
             action: 'text',
-            value: 'Welcome to the everyday edit. Start with objects for slower mornings.',
+            value: 'Welcome to your onboarding. Start with the collection and get to know Atelier.',
           },
         },
         parentId: 'onboarding-guidance',
@@ -178,7 +178,7 @@ export const segmentedOnboardingPreset = {
           config: {
             selector: '.hero .description',
             action: 'text',
-            value: 'Welcome. Discover natural materials and thoughtful everyday details.',
+            value: 'Welcome. Discover natural materials and thoughtful details.',
           },
         },
         parentId: 'onboarding-guidance',
@@ -224,18 +224,13 @@ export const segmentedOnboardingPreset = {
         },
         data: {
           kind: 'popover',
-          label: 'Explore the everyday edit',
+          label: 'Explore your onboarding',
           config: {
             contentType: 'html',
-            content: `<div style="margin:-28px -24px -24px;padding:36px 24px 28px;background:#f8f6f1;color:#353b32;font-family:Arial,Helvetica,sans-serif;box-sizing:border-box;overflow-wrap:anywhere">
-  <div style="padding:0 0 16px;border-bottom:1px solid #dedfd4"><span style="font-family:Georgia,serif;font-size:25px;font-weight:400;letter-spacing:-1px;line-height:1">atelier<span aria-hidden="true" style="font-family:Arial,Helvetica,sans-serif;font-size:9px;vertical-align:top;margin-left:3px;letter-spacing:0">®</span></span></div>
-  <p style="margin:22px 0 12px;font-size:10px;font-weight:400;line-height:1.5;letter-spacing:1.7px;text-transform:uppercase;color:#697856">The everyday edit</p>
-  <h2 style="margin:0 0 14px;font-family:Georgia,serif;font-size:29px;font-weight:400;line-height:1.15;letter-spacing:-0.7px;color:#353b32">Your everyday edit</h2>
-  <p style="margin:0;font-size:13px;line-height:1.75;color:#626b59">Start here for objects that bring a little calm to everyday routines.</p>
-  <a href="#collection" style="display:flex;align-items:center;justify-content:space-between;gap:16px;box-sizing:border-box;min-height:44px;margin-top:22px;padding:13px 16px;border-radius:2px;background:#697856;color:#fff;font-family:Arial,Helvetica,sans-serif;font-size:12px;font-weight:400;line-height:1.5;text-decoration:none"><span>See the edit</span><span aria-hidden="true">↗</span></a>
-</div>`,
+            content:
+              '<style>[data-visual-dxp-popover="onboarding-campaign-help"] > button { color: #fff !important; }</style><p style="margin:-28px -24px -24px;padding:14px 40px 14px 16px;background:#697856;color:#fff;font:300 14px/1.5 Georgia,serif;letter-spacing:-0.15px;box-sizing:border-box;overflow-wrap:anywhere"><span aria-hidden="true">🌿</span> Start here to explore the collection.</p>',
             position: 'anchor',
-            width: 340,
+            width: 240,
             selector: '#shop-now',
           },
         },
@@ -253,15 +248,10 @@ export const segmentedOnboardingPreset = {
           label: 'Start with the collection',
           config: {
             contentType: 'html',
-            content: `<div style="margin:-28px -24px -24px;padding:36px 24px 28px;background:#f8f6f1;color:#353b32;font-family:Arial,Helvetica,sans-serif;box-sizing:border-box;overflow-wrap:anywhere">
-  <div style="padding:0 0 16px;border-bottom:1px solid #dedfd4"><span style="font-family:Georgia,serif;font-size:25px;font-weight:400;letter-spacing:-1px;line-height:1">atelier<span aria-hidden="true" style="font-family:Arial,Helvetica,sans-serif;font-size:9px;vertical-align:top;margin-left:3px;letter-spacing:0">®</span></span></div>
-  <p style="margin:22px 0 12px;font-size:10px;font-weight:400;line-height:1.5;letter-spacing:1.7px;text-transform:uppercase;color:#697856">Good things start here</p>
-  <h2 style="margin:0 0 14px;font-family:Georgia,serif;font-size:29px;font-weight:400;line-height:1.15;letter-spacing:-0.7px;color:#353b32">Find your everyday favorite</h2>
-  <p style="margin:0;font-size:13px;line-height:1.75;color:#626b59">Browse the collection for natural materials and thoughtful details.</p>
-  <a href="#collection" style="display:flex;align-items:center;justify-content:space-between;gap:16px;box-sizing:border-box;min-height:44px;margin-top:22px;padding:13px 16px;border-radius:2px;background:#697856;color:#fff;font-family:Arial,Helvetica,sans-serif;font-size:12px;font-weight:400;line-height:1.5;text-decoration:none"><span>Explore the collection</span><span aria-hidden="true">↗</span></a>
-</div>`,
+            content:
+              '<style>[data-visual-dxp-popover="onboarding-default-help"] > button { color: #fff !important; }</style><p style="margin:-28px -24px -24px;padding:14px 40px 14px 16px;background:#697856;color:#fff;font:300 14px/1.5 Georgia,serif;letter-spacing:-0.15px;box-sizing:border-box;overflow-wrap:anywhere"><span aria-hidden="true">🌿</span> Browse all objects in the collection.</p>',
             position: 'anchor',
-            width: 340,
+            width: 240,
             selector: '#shop-now',
           },
         },
@@ -280,7 +270,7 @@ export const segmentedOnboardingPreset = {
           label: 'Setup: Guidance targets',
           config: {
             noteText:
-              'Uses .hero .description, #shop-now, and #collection. Test with and without ?utm_campaign=everyday-edit. Guidance anchors must exist when the delays finish.',
+              'Uses .hero .description, #shop-now, and #collection. Test with and without ?utm_campaign=onboarding. Guidance anchors must exist when the delays finish.',
             noteColor: '#fff4b8',
           },
         },
@@ -430,7 +420,7 @@ export const segmentedOnboardingPreset = {
         target: 'onboarding-campaign-copy',
         type: 'smoothstep',
         sourceHandle: 'true',
-        label: 'Everyday edit',
+        label: 'Onboarding',
       },
       {
         id: 'onboarding-campaign-to-onboarding-default-copy',

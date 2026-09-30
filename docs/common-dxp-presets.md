@@ -6,7 +6,7 @@ Each preset carries its setup instructions as editable, disconnected note nodes 
 
 Every canvas also has a green overview note to the left of the workflow, containing the preset title in bold followed by its description.
 
-Popover HTML follows the Atelier demo branding: cream surfaces, olive accents and links styled as buttons, Georgia headings, and an Atelier wordmark. Each snippet includes its own inline styles, so it also works in isolated previews and exports without loading the demo stylesheet. Customize the wordmark, copy, and colors when adapting these examples to another brand.
+Unanchored popover HTML follows the Atelier demo branding: cream surfaces, olive accents and links styled as buttons, Georgia headings, and an Atelier wordmark. Each snippet includes its own inline styles, so it also works in isolated previews and exports without loading the demo stylesheet. Anchored popovers are compact 240px tooltip-style hints with lightweight white Georgia serif text on an olive (#697856) background, a decorative emoji, and a single sentence explaining the target control, without a wordmark, heading, or extra link. They retain the runtime close button. Customize the wordmark, copy, and colors when adapting these examples to another brand.
 
 ```tsx
 import { VisualDXPBuilder, commonDXPPresets } from 'dlb-dxp';
@@ -16,7 +16,7 @@ import { VisualDXPBuilder, commonDXPPresets } from 'dlb-dxp';
 
 The demo explicitly passes the collection through `App` to `VisualDXPBuilder`. The builder imports no preset collection: omitting `presets`, or passing an empty array, leaves the Presets tab hidden. Each preset is also a named public export (for example, `campaignHeadlinePreset` and `segmentedOnboardingPreset`). The collection's array order and each preset's `order` agree.
 
-Applying a preset replaces the graph and preserves the editor's current workflow name, website URL, and subpage scope. It deep-clones the graph, supports Undo, and never executes it automatically. The built-in `/demo-site.html` is a preview target; configure your own website before exporting. When previewing URL personalization, set the preview website URL to `/demo-site.html?utm_campaign=everyday-edit`. The exported scope ignores query strings, but the runtime condition reads the visitor's actual query parameters.
+Applying a preset replaces the graph and preserves the editor's current workflow name, website URL, and subpage scope. It deep-clones the graph, supports Undo, and never executes it automatically. The built-in `/demo-site.html` is a preview target; configure your own website before exporting. When previewing URL personalization, set the preview website URL to `/demo-site.html?utm_campaign=everyday-edit`. For segmented onboarding, use `/demo-site.html?utm_campaign=onboarding`. The exported scope ignores query strings, but the runtime condition reads the visitor's actual query parameters.
 
 ## Preset reference
 
@@ -35,7 +35,7 @@ The first three are ordered by their final implementation: two connected nodes, 
 | 90 | Inactivity assistance / `inactivityAssistancePreset` | Intermediate | 30 seconds idle → form existence → 1-second pause → anchored help; absent form → general help. `trigger`, `fork`, `delay`, `popover`. | `#newsletter form` must still exist after the pause. Remove it to test fallback. Activity can restart the inactivity timer but does not cancel an already-started delay. |
 | 100 | Frustration recovery / `frustrationRecoveryPreset` | Advanced | Three nearby clicks → session gate → help → generic HTTP event → marker. `trigger`, `fork`, `popover`, `http`, `cookie`. | Configure the HTTP endpoint below. `#collection` link; `dxp_assistance_shown=shown` session marker. Detection uses three clicks within 1 second and 40 CSS pixels, across the document. |
 | 110 | Bounded CTA attention sequence / `boundedCtaAttentionPreset` | Advanced | CTA click → two complete highlight/rest iterations → completion tip. `trigger`, `loop`, `dom`, `delay`, `popover`. | Trigger `#shop-now`, target `#collection h2`, and CSS below. The demo CTA scrolls to that heading. |
-| 120 | Segmented onboarding journey / `segmentedOnboardingPreset` | Advanced | Page load → prior-delivery check → campaign/default copy → delayed contextual guidance → HTTP → completion marker. `trigger`, `fork`, `dom`, `delay`, `popover`, `http`, `cookie`, `frame`, `note`. | Configure HTTP; `.hero .description`, `#shop-now`, `#collection`; optional `utm_campaign=everyday-edit`. Marker `dxp_onboarding_delivered=yes` lasts 30 days. Campaign waits 1.5 seconds; default waits 2 seconds. |
+| 120 | Segmented onboarding journey / `segmentedOnboardingPreset` | Advanced | Page load → prior-delivery check → campaign/default copy → delayed contextual guidance → HTTP → completion marker. `trigger`, `fork`, `dom`, `delay`, `popover`, `http`, `cookie`, `frame`, `note`. | Configure HTTP; `.hero .description`, `#shop-now`, `#collection`; optional `utm_campaign=onboarding`. Marker `dxp_onboarding_delivered=yes` lasts 30 days. Campaign waits 1.5 seconds; default waits 2 seconds. |
 
 ## HTTP examples
 

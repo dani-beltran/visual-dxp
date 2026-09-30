@@ -403,7 +403,7 @@ describe('preset execution with a mocked browser and network', () => {
       history.replaceState(
         null,
         '',
-        `/demo-site.html${campaign ? '?utm_campaign=everyday-edit' : ''}`,
+        `/demo-site.html${campaign ? '?utm_campaign=onboarding' : ''}`,
       );
       const first = runtime(segmentedOnboardingPreset);
       const running = first.run();
