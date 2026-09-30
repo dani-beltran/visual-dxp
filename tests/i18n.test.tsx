@@ -13,6 +13,8 @@ import {
   type VisualDXPBuilderApi,
   type Workflow,
 } from '../src';
+import { App } from '../src/app';
+import { spanishMessages } from '../src/app/locales/es';
 import { ActivityPanel } from '../src/components/ActivityPanel';
 import { activityAction } from '../src/lib/activity';
 import { catalog, getCatalog, stepSummary } from '../src/lib/catalog';
@@ -60,7 +62,10 @@ const workflow: Workflow = {
 
 function button(label: string) {
   const target = [...host.querySelectorAll('button')].find(
-    (el) => el.getAttribute('aria-label') === label || el.textContent?.trim() === label,
+    (el) =>
+      el.getAttribute('aria-label') === label ||
+      el.getAttribute('title') === label ||
+      el.textContent?.trim() === label,
   );
   if (!target) throw new Error(`Missing button ${label}`);
   return target;
@@ -218,5 +223,79 @@ describe('host-owned builder localization', () => {
     } catch (error) {
       expect(formatBuilderError(error, t)).toBe('La ruta debe ser texto.');
     }
+  });
+});
+
+describe('demo language selector', () => {
+  async function selectLanguage(value: string) {
+    await act(async () => {
+      const select = host.querySelector<HTMLSelectElement>('.dxp-language-selector select');
+      if (!select) throw new Error('Missing language selector');
+      select.value = value;
+      select.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+  }
+
+  it('switches the shell, builder and export validation without resetting edits or undo history', async () => {
+    const onChange = vi.fn();
+    await act(async () =>
+      root.render(
+        <App
+          initialWorkflow={{ ...workflow, websiteUrl: 'https://example.com' }}
+          onChange={onChange}
+        />,
+      ),
+    );
+    await act(async () => button('Add Delay').click());
+    const edited = onChange.mock.lastCall?.[0];
+    expect(edited.nodes[0].data.label).toBe('Delay');
+    onChange.mockClear();
+    await selectLanguage('es');
+    expect(host.querySelector('.dxp-builder')?.getAttribute('lang')).toBe('es-ES');
+    expect(host.querySelector('.dxp-app')?.getAttribute('lang')).toBe('es-ES');
+    expect(host.querySelector('[title="Acercar"]')).not.toBeNull();
+    expect(host.querySelector('.dxp-inspector')).not.toBeNull();
+    expect(onChange).not.toHaveBeenCalled();
+    await act(async () => button('Exportar flujo de trabajo').click());
+    expect(host.querySelector('[role="dialog"]')?.textContent).toContain('Antes de exportar');
+    expect(host.querySelector('.dxp-validation')?.textContent).toContain(
+      'Añade al menos un disparador.',
+    );
+    await act(async () => button('Cerrar diálogo').click());
+    await selectLanguage('en');
+    expect(host.querySelector('[title="Zoom in"]')).not.toBeNull();
+    expect(host.querySelector('.dxp-builder')?.getAttribute('lang')).toBe('en');
+    expect(onChange).not.toHaveBeenCalled();
+    await act(async () => button('Undo (⌘Z)').click());
+    expect(onChange.mock.lastCall?.[0].nodes).toEqual([]);
+  });
+
+  it('fills the Spanish catalog while preserving initial host overrides', async () => {
+    await act(async () =>
+      root.render(
+        <App
+          initialWorkflow={workflow}
+          i18n={{ locale: 'es-MX', messages: { 'canvas.zoomIn': 'Ampliar vista' } }}
+        />,
+      ),
+    );
+    expect(host.querySelector<HTMLSelectElement>('.dxp-language-selector select')?.value).toBe(
+      'es',
+    );
+    expect(host.querySelector('[title="Ampliar vista"]')).not.toBeNull();
+    expect(button('Añadir Espera')).toBeDefined();
+    await selectLanguage('en');
+    expect(host.querySelector('[title="Zoom in"]')).not.toBeNull();
+    expect(button('Add Delay')).toBeDefined();
+  });
+
+  it('covers every builder key and formats Spanish counts and dynamic values', () => {
+    expect(Object.keys(spanishMessages).sort()).toEqual(Object.keys(englishMessages).sort());
+    const t = createBuilderTranslator(spanishMessages);
+    expect(t('canvas.connectionCount', { count: 1 })).toBe('1 conexión');
+    expect(t('canvas.connectionCount', { count: 2 })).toBe('2 conexiones');
+    expect(t('activity.nodeAdded', { label: 'Custom content' })).toBe('Se añadió «Custom content»');
+    expect(t('summary.delay', { seconds: 1 })).toBe('Esperar 1 segundo');
+    expect(t('summary.delay', { seconds: 2 })).toBe('Esperar 2 segundos');
   });
 });

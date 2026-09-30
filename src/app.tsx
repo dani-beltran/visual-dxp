@@ -11,6 +11,8 @@ import {
   X,
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { appMessages } from './app/locales/appMessages';
+import { spanishMessages } from './app/locales/es';
 import {
   VisualDXPBuilder,
   type VisualDXPBuilderApi,
@@ -19,6 +21,7 @@ import {
 import { createActivityStore } from './lib/activity';
 import { defaultWorkflow } from './lib/catalog';
 import { exportWorkflow, validateWorkflow } from './lib/export';
+import { createBuilderTranslator, formatBuilderError } from './lib/i18n';
 import { validateExportTarget } from './lib/targeting';
 import type { Workflow } from './lib/types';
 import { useDialogFocus } from './lib/useDialogFocus';
@@ -47,8 +50,24 @@ export function App({
   activityStore,
   activityUser = 'You',
   presets,
+  i18n,
   ...builderProps
 }: AppProps) {
+  // Keep host-supplied localization until the user chooses a language.
+  const [language, setLanguage] = useState<'en' | 'es' | null>(null);
+  const hostLanguage = i18n?.locale ?? 'en';
+  const selectedLanguage =
+    language ?? (hostLanguage.split('-')[0].toLowerCase() === 'es' ? 'es' : hostLanguage);
+  const builderI18n = useMemo(() => {
+    if (language === 'es') return { locale: 'es-ES', messages: spanishMessages };
+    if (language === 'en') return { locale: 'en' };
+    if (hostLanguage.split('-')[0].toLowerCase() === 'es') {
+      return { ...i18n, messages: { ...spanishMessages, ...i18n?.messages } };
+    }
+    return i18n;
+  }, [language, hostLanguage, i18n]);
+  const t = useMemo(() => createBuilderTranslator(builderI18n?.messages), [builderI18n]);
+  const copy = appMessages[selectedLanguage === 'es' ? 'es' : 'en'];
   const [localActivityStore] = useState(() => createActivityStore());
   const store = activityStore ?? localActivityStore;
   const [workflow, setWorkflow] = useState(initialWorkflow);
@@ -101,17 +120,17 @@ export function App({
         timestamp: new Date().toISOString(),
       });
     } catch {
-      notify('The activity could not be saved.');
+      notify(copy.activityError);
     }
   }
-  const issues = useMemo(() => validateWorkflow(workflow), [workflow]);
+  const issues = useMemo(() => validateWorkflow(workflow, t), [workflow, t]);
   const script = useMemo(() => {
     try {
       return exportWorkflow(workflow);
     } catch {
-      return '// Resolve the workflow issues below before exporting.';
+      return copy.resolveIssues;
     }
-  }, [workflow]);
+  }, [workflow, copy.resolveIssues]);
   const code = useMemo(() => {
     if (exportTab === 'javascript') return script;
     try {
@@ -126,9 +145,9 @@ export function App({
         2,
       );
     } catch {
-      return '// Configure your website URL before exporting.';
+      return copy.configureWebsite;
     }
-  }, [exportTab, script, workflow]);
+  }, [exportTab, script, workflow, copy.configureWebsite]);
   function requireExportTarget(next: Workflow): boolean {
     try {
       validateExportTarget(next);
@@ -168,7 +187,7 @@ export function App({
         exportTab === 'javascript' ? exportWorkflow(next) : JSON.stringify(definition, null, 2);
       return { workflow: next, content };
     } catch (error) {
-      notify((error as Error).message);
+      notify(formatBuilderError(error, t));
     }
   }
   async function copyCode() {
@@ -176,12 +195,10 @@ export function App({
     if (!prepared) return;
     try {
       await navigator.clipboard.writeText(prepared.content);
-      recordActivity(
-        `Copied the workflow as ${exportTab === 'javascript' ? 'JavaScript' : 'JSON'}`,
-      );
-      notify('Copied to clipboard');
+      recordActivity(copy.copiedActivity(exportTab === 'javascript' ? 'JavaScript' : 'JSON'));
+      notify(copy.copied);
     } catch {
-      notify('Clipboard is unavailable. Use Download instead.');
+      notify(copy.clipboardUnavailable);
     }
   }
   function exportFile() {
@@ -193,14 +210,17 @@ export function App({
       prepared.content,
       exportTab === 'javascript' ? 'text/javascript' : 'application/json',
     );
-    recordActivity(
-      `Exported the workflow as ${exportTab === 'javascript' ? 'JavaScript' : 'JSON'}`,
-    );
+    recordActivity(copy.exportedActivity(exportTab === 'javascript' ? 'JavaScript' : 'JSON'));
     if (exportTab === 'javascript') onExport?.(prepared.content, prepared.workflow);
-    notify('Your workflow is ready to go');
+    notify(copy.ready);
   }
   return (
-    <div className={`dxp-app ${className}`} style={style} data-dxp-theme={theme}>
+    <div
+      className={`dxp-app ${className}`}
+      style={style}
+      data-dxp-theme={theme}
+      lang={builderI18n?.locale ?? 'en'}
+    >
       <main className="dxp-main">
         <header className="dxp-header">
           <div className="dxp-heading">
@@ -210,21 +230,45 @@ export function App({
                   <img className="dxp-brand-image" src="/visual-dxp-logo.png" alt="Visual DXP" />
                 </h1>
               </div>
-              <p>
-                Build website workflows visually, test them live, and export standalone JavaScript.
-              </p>
+              <p>{copy.description}</p>
             </div>
             <div className="dxp-header-actions">
+              <label className="dxp-language-selector">
+                <span>{copy.language}</span>
+                <select
+                  className="dxp-button"
+                  value={selectedLanguage}
+                  onChange={(event) =>
+                    setLanguage(
+                      event.target.value === 'es'
+                        ? 'es'
+                        : event.target.value === 'en'
+                          ? 'en'
+                          : null,
+                    )
+                  }
+                >
+                  <option value="en" lang="en">
+                    English
+                  </option>
+                  <option value="es" lang="es">
+                    Español
+                  </option>
+                  {hostLanguage !== 'en' && hostLanguage.split('-')[0].toLowerCase() !== 'es' && (
+                    <option value={hostLanguage}>{hostLanguage}</option>
+                  )}
+                </select>
+              </label>
               <button
                 type="button"
                 className="dxp-button"
-                aria-label="Dark mode"
+                aria-label={copy.darkMode}
                 aria-pressed={theme === 'dark'}
-                title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+                title={theme === 'dark' ? copy.switchToLight : copy.switchToDark}
                 onClick={() => setTheme((current) => (current === 'light' ? 'dark' : 'light'))}
               >
                 {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
-                {theme === 'dark' ? 'Light mode' : 'Dark mode'}
+                {theme === 'dark' ? copy.lightMode : copy.darkMode}
               </button>
               <button
                 type="button"
@@ -233,16 +277,17 @@ export function App({
                   builder?.testWorkflow();
                 }}
               >
-                <Play size={14} /> Test workflow
+                <Play size={14} /> {copy.testWorkflow}
               </button>
               <button type="button" className="dxp-button dxp-button-primary" onClick={openExport}>
-                <Code2 size={16} /> Export workflow <ArrowUpRight size={14} />
+                <Code2 size={16} /> {copy.exportWorkflow} <ArrowUpRight size={14} />
               </button>
             </div>
           </div>
         </header>
         <VisualDXPBuilder
           {...builderProps}
+          i18n={builderI18n}
           presets={presets}
           initialWorkflow={initialWorkflow}
           activityStore={store}
@@ -255,7 +300,11 @@ export function App({
         <div className="dxp-toast" role="status">
           <Check size={16} />
           {toast}
-          <button type="button" onClick={() => setToast('')} aria-label="Dismiss notification">
+          <button
+            type="button"
+            onClick={() => setToast('')}
+            aria-label={t('builder.dismissNotification')}
+          >
             <X size={14} />
           </button>
         </div>
@@ -270,27 +319,24 @@ export function App({
             className="dxp-modal dxp-export-modal"
             role="dialog"
             aria-modal="true"
-            aria-label="Export workflow"
+            aria-label={copy.exportWorkflow}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="dxp-modal-header">
               <div>
-                <span className="dxp-eyebrow">FROM CANVAS TO CODE</span>
-                <h2>Your workflow. Ready for the web.</h2>
+                <span className="dxp-eyebrow">{copy.eyebrow}</span>
+                <h2>{copy.exportTitle}</h2>
               </div>
               <button
                 type="button"
                 className="dxp-icon-button"
                 onClick={() => setExportOpen(false)}
-                aria-label="Close dialog"
+                aria-label={t('builder.closeDialog')}
               >
                 <X size={20} />
               </button>
             </div>
-            <p className="dxp-modal-description">
-              Add this standalone script to your website. Your triggers and actions take it from
-              there.
-            </p>
+            <p className="dxp-modal-description">{copy.exportDescription}</p>
             <div className="dxp-export-tabs">
               <button
                 type="button"
@@ -304,16 +350,16 @@ export function App({
                 className={exportTab === 'json' ? 'active' : ''}
                 onClick={() => setExportTab('json')}
               >
-                <FileJson size={15} /> Workflow JSON
+                <FileJson size={15} /> {copy.workflowJson}
               </button>
               <span />
               <button type="button" onClick={copyCode}>
-                <Copy size={14} /> Copy
+                <Copy size={14} /> {copy.copy}
               </button>
             </div>
             {issues.length > 0 && (
               <div className="dxp-validation">
-                <strong>Before you export</strong>
+                <strong>{copy.beforeExport}</strong>
                 {issues.map((issue, i) => (
                   // biome-ignore lint/suspicious/noArrayIndexKey: These stateless validation messages are rendered together without persistent row state.
                   <p key={i}>{issue.message}</p>
@@ -325,7 +371,7 @@ export function App({
             </pre>
             <div className="dxp-modal-footer">
               <span>
-                <Check size={14} /> Standalone. No dependencies.
+                <Check size={14} /> {copy.standalone}
               </span>
               <button
                 type="button"
@@ -333,7 +379,7 @@ export function App({
                 disabled={exportTab === 'javascript' && issues.length > 0}
                 onClick={exportFile}
               >
-                <ArrowDownToLine size={16} /> Download{' '}
+                <ArrowDownToLine size={16} /> {copy.download}{' '}
                 {exportTab === 'javascript' ? '.js' : '.json'}
               </button>
             </div>
