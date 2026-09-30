@@ -1,4 +1,5 @@
 import { buildCookie } from './cookies';
+import { dataTools } from './data';
 import { getDateRange } from './dateRange';
 import { isNoteMarks } from './noteText';
 import { getRuntimeSource } from './runtime';
@@ -122,6 +123,7 @@ export function validateWorkflow(workflow: Workflow): ValidationIssue[] {
       'method',
       'headers',
       'body',
+      'responseDataPath',
       'action',
       'value',
       'attribute',
@@ -129,6 +131,8 @@ export function validateWorkflow(workflow: Workflow): ValidationIssue[] {
       'cookieValue',
       'condition',
       'conditionType',
+      'conditionDataPath',
+      'conditionOperator',
       'conditionKey',
       'conditionValue',
       'conditionStartDate',
@@ -184,6 +188,11 @@ export function validateWorkflow(workflow: Workflow): ValidationIssue[] {
           selector(config.selector, node.id, 'Choose a target element for this trigger.');
         break;
       case 'http':
+        try {
+          dataTools.validateResponse(config);
+        } catch (error) {
+          add((error as Error).message, node.id);
+        }
         url(config.url, node.id, 'Enter a valid HTTP or HTTPS request URL.', true);
         if (
           config.method &&
@@ -228,6 +237,13 @@ export function validateWorkflow(workflow: Workflow): ValidationIssue[] {
         break;
       case 'fork':
         switch (config.conditionType ?? 'selector') {
+          case 'data':
+            try {
+              dataTools.validateCondition(config);
+            } catch (error) {
+              add((error as Error).message, node.id);
+            }
+            break;
           case 'time-of-day':
             try {
               getTimeRange(config);

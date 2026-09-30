@@ -10,6 +10,7 @@ import {
   StickyNote,
   Timer,
 } from 'lucide-react';
+import { dataTools } from './data';
 import { FRAME_HEIGHT, FRAME_WIDTH } from './frames';
 import { nodeDescriptions } from './nodeDescriptions';
 import type { NodeKind, StepConfig, Workflow, WorkflowNode } from './types';
@@ -237,6 +238,10 @@ export function stepSummary(kind: NodeKind, c: StepConfig): string {
     case 'fork': {
       const conditionType = c.conditionType ?? 'selector';
       switch (conditionType) {
+        case 'data': {
+          const operator = c.conditionOperator ?? 'equal';
+          return `Incoming data ${c.conditionDataPath || '(whole value)'} · ${dataTools.operators[operator] ?? 'Choose an operator'}${dataTools.needsValue(operator) ? ` ${JSON.stringify(c.conditionValue ?? '')}` : ''}`;
+        }
         case 'time-of-day':
           return `Time ${c.conditionStartTime || '…'}–${c.conditionEndTime || '…'} · ${c.conditionTimeZone === 'utc' ? 'UTC' : 'Visitor local'}`;
         case 'date-range':

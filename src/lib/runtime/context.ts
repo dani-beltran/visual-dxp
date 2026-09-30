@@ -1,3 +1,4 @@
+import type { DataSelection } from '../data';
 import type { RunLog, Workflow } from '../types';
 import type { RuntimeOptions } from './types';
 
@@ -76,6 +77,7 @@ export function createRuntimeContext(workflow: Workflow, options: RuntimeOptions
   }
 
   return {
+    data: { exists: false, value: undefined } as DataSelection,
     doc,
     win,
     controller,

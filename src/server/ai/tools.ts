@@ -3,6 +3,7 @@ import { z } from 'zod';
 import type { WorkflowOperation } from './workflow/ai';
 import { applyWorkflowOperations } from './workflow/ai';
 import { catalog } from './workflow/catalog';
+import { dataTools } from './workflow/data';
 import type { Workflow, WorkflowNode } from './workflow/types';
 
 const shortText = z.string().max(200);
@@ -80,6 +81,20 @@ const config = z.object({
   method: shortText.optional(),
   headers: text.describe('JSON object encoded as a string, with string header values.').optional(),
   body: text.optional(),
+  responseDataPath: text
+    .describe('Optional nested response selection, applied to automatically parsed JSON; e.g. data.items[0].price.')
+    .optional(),
+  conditionDataPath: text
+    .describe('Optional nested incoming data selection. Empty evaluates the whole value.')
+    .optional(),
+  conditionOperator: z
+    .enum(
+      Object.keys(dataTools.operators) as [
+        keyof typeof dataTools.operators,
+        ...Array<keyof typeof dataTools.operators>,
+      ],
+    )
+    .optional(),
   action: z
     .enum(['text', 'html', 'add-class', 'remove-class', 'hide', 'show', 'attribute'])
     .optional(),
@@ -101,6 +116,7 @@ const config = z.object({
   duration: z.number().min(0).max(86400000).describe('Milliseconds.').optional(),
   conditionType: z
     .enum([
+      'data',
       'selector',
       'device',
       'language',
@@ -120,7 +136,7 @@ const config = z.object({
     .optional(),
   conditionValue: text
     .describe(
-      'Expected value: desktop/mobile, language tag (en or en-US), exact referrer domain (example.com; subdomains are distinct), or exact stored string. Empty strings are allowed for named variables.',
+      'Expected value: desktop/mobile, language tag (en or en-US), exact referrer domain (example.com; subdomains are distinct), exact stored string, or Data comparison input (numbers, true/false, text, JSON arrays/objects). Empty strings are allowed for named variables.',
     )
     .optional(),
   conditionStartDate: text

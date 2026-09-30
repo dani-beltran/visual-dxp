@@ -430,6 +430,13 @@
   background: #d4a778;
   border-color: #d4a778;
 }
+.dxp-builder .react-flow__handle.dxp-handle-data {
+  background: var(--dxp-data);
+  border-color: var(--dxp-data);
+}
+.dxp-node-data-output {
+  color: var(--dxp-data);
+}
 .dxp-builder .react-flow__edge.selected path.react-flow__edge-path {
   stroke: var(--dxp-primary-color) !important;
   stroke-width: 2.5 !important;

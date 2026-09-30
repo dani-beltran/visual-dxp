@@ -89,3 +89,63 @@ for (const library of [esm, umd]) {
   }
 }
 console.log(`Built ESM and UMD standalone scripts: ${cases} targeting cases passed.`);
+
+let dataCases = 0;
+for (const library of [esm, umd]) {
+  for (const selected of [false, true]) {
+    for (const price of [12, 4]) {
+      const node = (id, kind, config) => ({
+        id,
+        type: 'workflow',
+        position: { x: 0, y: 0 },
+        data: { kind, label: id, config },
+      });
+      const workflow = {
+        version: 1,
+        name: 'Built response data',
+        websiteUrl: 'https://example.com',
+        nodes: [
+          node('start', 'trigger', { event: 'click', selector: '#start' }),
+          node('request', 'http', {
+            url: 'https://example.com/api',
+            responseDataPath: selected ? 'items[0].price' : '',
+          }),
+          node('condition', 'fork', {
+            conditionType: 'data',
+            conditionDataPath: selected ? '' : 'items[0].price',
+            conditionOperator: 'greater-than',
+            conditionValue: '10',
+          }),
+          node('yes', 'dom', { selector: '#result', value: 'yes' }),
+          node('no', 'dom', { selector: '#result', value: 'no' }),
+        ],
+        edges: [
+          { id: 'a', source: 'start', target: 'request' },
+          { id: 'b', source: 'request', target: 'condition' },
+          { id: 'c', source: 'condition', target: 'yes', sourceHandle: 'true' },
+          { id: 'd', source: 'condition', target: 'no', sourceHandle: 'false' },
+        ],
+      };
+      const dom = new JSDOM('<button id="start">Run</button><p id="result">waiting</p>', {
+        url: 'https://example.com',
+        runScripts: 'outside-only',
+      });
+      dom.window.fetch = async () => new Response(JSON.stringify({ items: [{ price }] }));
+      try {
+        dom.window.eval(library.exportWorkflow(workflow));
+        await dom.window.dlbDXP.run();
+        assert.equal(
+          dom.window.document.querySelector('#result').textContent,
+          price > 10 ? 'yes' : 'no',
+        );
+        dataCases += 1;
+      } finally {
+        dom.window.dlbDXP?.destroy();
+        dom.window.close();
+      }
+    }
+  }
+}
+console.log(
+  `Built ESM and UMD standalone scripts: ${dataCases} HTTP → Data → branch cases passed.`,
+);

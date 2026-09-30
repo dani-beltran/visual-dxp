@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { type ReactNode, type SelectHTMLAttributes, useEffect, useId, useState } from 'react';
 import { catalog } from '../lib/catalog';
+import { dataTools } from '../lib/data';
 import { elementTriggerEvents, triggerOptions } from '../lib/triggers';
 import type { ConditionType, NodeKind, StepConfig, StepData, WorkflowNode } from '../lib/types';
 import { NoteControls } from './NoteControls';
@@ -34,7 +35,7 @@ interface NodeInspectorProps {
 
 const nextOutputDescriptions = {
   trigger: 'Runs when the selected event occurs',
-  http: 'Runs after a successful response',
+  http: 'Passes response data to the next node',
   dom: 'Runs after the elements are updated',
   cookie: 'Runs after the cookie is saved',
   delay: 'Runs after the pause',
@@ -138,6 +139,14 @@ export function NodeInspector({
     ? triggerOptions[config.event ?? 'page-load']
     : undefined;
   const conditionType = config.conditionType ?? 'selector';
+  const dataOperator = config.conditionOperator ?? 'equal';
+  let dataError: string | undefined;
+  try {
+    if (node.data.kind === 'http') dataTools.validateResponse(config);
+    if (node.data.kind === 'fork' && conditionType === 'data') dataTools.validateCondition(config);
+  } catch (error) {
+    dataError = (error as Error).message;
+  }
   const variableCondition = ['query-param', 'cookie'].includes(conditionType);
   const metadata = catalog.find((entry) => entry.kind === node.data.kind);
   if (!metadata) throw new Error(`Unknown node type: ${node.data.kind}`);
@@ -503,6 +512,7 @@ export function NodeInspector({
                 }}
               >
                 <option value="selector">Element exists</option>
+                <option value="data">Incoming data</option>
                 <option value="device">User device</option>
                 <option value="language">User language</option>
                 <option value="referrer">Referrer domain</option>
@@ -512,6 +522,60 @@ export function NodeInspector({
                 <option value="cookie">Cookies</option>
               </Select>
             </Field>
+            {conditionType === 'data' && (
+              <>
+                <InfoBox>
+                  Evaluates data received through the incoming connection, such as an HTTP response.
+                  Choose a value and an operator to route execution through True or False.
+                </InfoBox>
+                <Field
+                  label="Incoming data path"
+                  htmlFor={id('condition-data-path')}
+                  hint="Optional. Leave empty to evaluate all incoming data. Examples: user.name, data.items[0].price, items[2].tags."
+                >
+                  <input
+                    id={id('condition-data-path')}
+                    value={config.conditionDataPath ?? ''}
+                    placeholder="e.g. user.name"
+                    onChange={(event) => update({ conditionDataPath: event.target.value })}
+                    spellCheck={false}
+                  />
+                </Field>
+                <Field label="Operator" htmlFor={id('condition-operator')}>
+                  <Select
+                    id={id('condition-operator')}
+                    value={dataOperator}
+                    onChange={(event) =>
+                      update({
+                        conditionOperator: event.target.value as StepConfig['conditionOperator'],
+                      })
+                    }
+                  >
+                    {Object.entries(dataTools.operators).map(([value, label]) => (
+                      <option key={value} value={value}>
+                        {label}
+                      </option>
+                    ))}
+                  </Select>
+                </Field>
+                {dataTools.needsValue(dataOperator) && (
+                  <Field label="Comparison value" htmlFor={id('condition-value')}>
+                    <input
+                      id={id('condition-value')}
+                      value={config.conditionValue ?? ''}
+                      onChange={(event) => update({ conditionValue: event.target.value })}
+                      spellCheck={false}
+                    />
+                  </Field>
+                )}
+                <InfoBox>{dataTools.hint(dataOperator)}</InfoBox>
+                {dataError && (
+                  <p role="alert" className="dxp-inspector-hint">
+                    {dataError}
+                  </p>
+                )}
+              </>
+            )}
             {conditionType === 'selector' && (
               <InfoBox>True when this CSS selector matches an element.</InfoBox>
             )}
@@ -866,13 +930,43 @@ export function NodeInspector({
               steps.
             </InfoBox>
           ) : (
-            <div className="dxp-inspector-branches">
+            <div
+              className={`dxp-inspector-branches${node.data.kind === 'http' ? ' dxp-inspector-data-output' : ''}`}
+            >
               <div>
-                <ArrowRight size={13} aria-hidden="true" />
-                <strong>Next</strong>
+                {node.data.kind === 'http' ? (
+                  <i className="dxp-inspector-dot-data" aria-hidden="true" />
+                ) : (
+                  <ArrowRight size={13} aria-hidden="true" />
+                )}
+                <strong>{node.data.kind === 'http' ? 'Data' : 'Next'}</strong>
                 <span>{nextOutputDescriptions[node.data.kind]}</span>
               </div>
             </div>
+          )}
+          {node.data.kind === 'http' && (
+            <>
+              <Field label="Response data path" htmlFor={id('response-data-path')}>
+                <input
+                  id={id('response-data-path')}
+                  value={config.responseDataPath ?? ''}
+                  placeholder="e.g. data.items[0].price"
+                  onChange={(event) => update({ responseDataPath: event.target.value })}
+                  spellCheck={false}
+                />
+              </Field>
+              <InfoBox>
+                Responses are automatically parsed as JSON when possible. Optionally select a value
+                using a path such as user.name, data.items[0].price, or items[2].tags; leave empty
+                for the whole body. A missing JSON path returns undefined; null is passed as null.
+                Non-JSON responses ignore the path and pass as complete text.
+              </InfoBox>
+              {dataError && (
+                <p role="alert" className="dxp-inspector-hint">
+                  {dataError}
+                </p>
+              )}
+            </>
           )}
         </section>
       </div>

@@ -64,7 +64,7 @@ async function change(label: string, value: string) {
 it('edits each condition type with the corresponding fields and preserves legacy selectors', async () => {
   expect(field('Condition type').value).toBe('selector');
   expect(field('Element exists').value).toBe('#legacy');
-  expect([...field('Condition type').querySelectorAll('option')]).toHaveLength(8);
+  expect([...field('Condition type').querySelectorAll('option')]).toHaveLength(9);
   await change('Condition type', 'device');
   expect(field('Device is').value).toBe('desktop');
   await change('Device is', 'mobile');
@@ -187,4 +187,80 @@ it('edits time-of-day ranges and keeps their time zone and times when switching 
   expect(current.conditionTimeZone).toBe('local');
   expect(current.conditionEndTime).toBe('');
   expect(stepSummary('fork', current)).toBe('Time 22:00–… · Visitor local');
+});
+
+it('edits Data conditions, hides unary comparison inputs, and reports path/regex errors', async () => {
+  await change('Condition type', 'data');
+  expect(field('Incoming data path').value).toBe('');
+  expect([...field('Operator').querySelectorAll('option')]).toHaveLength(20);
+  await change('Incoming data path', 'items[2].tags');
+  await change('Operator', 'contains');
+  await change('Comparison value', '"42"');
+  expect(current).toMatchObject({
+    conditionType: 'data',
+    conditionDataPath: 'items[2].tags',
+    conditionOperator: 'contains',
+    conditionValue: '"42"',
+  });
+  expect(host.textContent).toContain('Objects: exact key');
+  expect(stepSummary('fork', current)).toContain('items[2].tags');
+  for (const operator of [
+    'exists',
+    'not-exists',
+    'is-null',
+    'is-not-null',
+    'is-empty',
+    'is-not-empty',
+    'is-true',
+    'is-false',
+  ]) {
+    await change('Operator', operator);
+    expect(() => field('Comparison value')).toThrow('Missing field');
+  }
+  await change('Operator', 'matches');
+  await change('Comparison value', '[');
+  expect(host.querySelector('[role="alert"]')?.textContent).toContain('Invalid regular expression');
+  await change('Comparison value', '^premium');
+  expect(host.querySelector('[role="alert"]')).toBeNull();
+  await change('Incoming data path', 'items[');
+  expect(host.querySelector('[role="alert"]')?.textContent).toContain('Invalid data path');
+});
+
+it('edits response selection in Outputs without a response format setting', async () => {
+  function HttpInspector() {
+    const [config, setConfig] = useState<StepConfig>({ url: 'https://example.com' });
+    current = config;
+    return (
+      <NodeInspector
+        node={{
+          id: 'http',
+          type: 'workflow',
+          position: { x: 0, y: 0 },
+          data: { kind: 'http', label: 'HTTP Request', config },
+        }}
+        onChange={(patch) => setConfig(patch.config!)}
+        onClose={() => {}}
+        onPickElement={() => {}}
+        onDelete={() => {}}
+        onDuplicate={() => {}}
+        onPreviewContent={() => {}}
+      />
+    );
+  }
+  await act(async () => root.render(<HttpInspector />));
+  expect(() => field('Response format')).toThrow('Missing field');
+  const outputSection = field('Response data path').closest('section');
+  expect(outputSection?.querySelector('h3')?.textContent).toContain('Outputs');
+  expect(outputSection?.textContent).toContain('automatically parsed as JSON');
+  expect(field('Response data path').value).toBe('');
+  await change('Response data path', 'data.items[0].price');
+  expect(current.responseDataPath).toBe('data.items[0].price');
+  expect(host.textContent).toContain('null is passed as null');
+  await change('Response data path', 'items[');
+  expect(outputSection?.querySelector('[role="alert"]')?.textContent).toContain(
+    'Invalid data path',
+  );
+  await change('Response data path', '');
+  expect(current.responseDataPath).toBe('');
+  expect(outputSection?.querySelector('[role="alert"]')).toBeNull();
 });

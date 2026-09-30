@@ -1,6 +1,6 @@
-import { validateWorkflow } from './validation';
 import { parseNoteMarks } from './notes';
 import type { NodeKind, NoteMark, StepConfig, Workflow, WorkflowEdge, WorkflowNode } from './types';
+import { validateWorkflow } from './validation';
 
 export interface AIChatMessage {
   role: 'user' | 'assistant';
@@ -69,6 +69,7 @@ const configStrings = [
   'method',
   'headers',
   'body',
+  'responseDataPath',
   'action',
   'value',
   'attribute',
@@ -76,6 +77,8 @@ const configStrings = [
   'cookieValue',
   'condition',
   'conditionType',
+  'conditionDataPath',
+  'conditionOperator',
   'conditionKey',
   'conditionValue',
   'conditionStartDate',
@@ -103,7 +106,7 @@ const configNumbers = [
   'scrollThreshold',
 ] as const;
 const configBooleans = ['noteBold', 'noteItalic', 'noteStrikethrough'] as const;
-const own = (value: object, key: string) => Object.prototype.hasOwnProperty.call(value, key);
+const own = (value: object, key: string) => Object.hasOwn(value, key);
 
 function record(value: unknown, label: string): Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value))

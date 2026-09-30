@@ -1,4 +1,5 @@
 import type { buildCookie } from '../cookies';
+import type { createDataTools, DataSelection } from '../data';
 import type { getDateRange } from '../dateRange';
 import type { getTimeRange } from '../timeRange';
 import type { Workflow } from '../types';
@@ -8,6 +9,7 @@ import type { showPopover } from './popovers';
 import type { WorkflowRuntime } from './types';
 
 interface ExecutionModules {
+  createDataTools: typeof createDataTools;
   buildCookie: typeof buildCookie;
   matchesCondition: typeof matchesCondition;
   getDateRange: typeof getDateRange;
@@ -18,20 +20,33 @@ interface ExecutionModules {
 export function createExecution(
   workflow: Workflow,
   context: RuntimeContext,
-  { buildCookie, matchesCondition, getDateRange, getTimeRange, showPopover }: ExecutionModules,
+  {
+    buildCookie,
+    matchesCondition,
+    getDateRange,
+    getTimeRange,
+    showPopover,
+    createDataTools,
+  }: ExecutionModules,
 ): WorkflowRuntime['run'] {
   const { doc, win, signal, nodes, fetcher, maxSteps, aborted, log, wait, selectorElements } =
     context;
+  const dataTools = createDataTools();
   type RunState = { steps: number; active: Set<string> };
 
-  async function next(nodeId: string, state: RunState, handle?: string): Promise<void> {
+  async function next(
+    nodeId: string,
+    state: RunState,
+    data: DataSelection,
+    handle?: string,
+  ): Promise<void> {
     const edges = workflow.edges.filter(
       (edge) => edge.source === nodeId && (handle === undefined || edge.sourceHandle === handle),
     );
-    for (const edge of edges) await execute(edge.target, state);
+    for (const edge of edges) await execute(edge.target, state, data);
   }
 
-  async function execute(nodeId: string, state: RunState): Promise<void> {
+  async function execute(nodeId: string, state: RunState, input: DataSelection): Promise<void> {
     aborted();
     const node = nodes.get(nodeId);
     if (!node) throw new Error(`Step “${nodeId}” does not exist.`);
@@ -52,6 +67,8 @@ export function createExecution(
     state.active.add(nodeId);
     try {
       const config = node.data.config;
+      // Data belongs to this path, never the shared runtime (runs may overlap).
+      let output = input;
       let selectedHandle: string | undefined;
       let loopIterations = 0;
       log(nodeId, 'running', 'Running step');
@@ -80,6 +97,7 @@ export function createExecution(
             break;
           }
           case 'http': {
+            dataTools.validateResponse(config);
             if (!fetcher) throw new Error('This browser does not support fetch.');
             if (!config.url?.trim()) throw new Error('Enter a request URL.');
             const url = new URL(config.url, doc.baseURI);
@@ -109,6 +127,7 @@ export function createExecution(
               throw new Error(
                 `Request failed: HTTP ${response.status}${response.statusText ? ` ${response.statusText}` : ''}.`,
               );
+            output = dataTools.parseResponse(await response.text(), config);
             break;
           }
           case 'dom': {
@@ -149,7 +168,11 @@ export function createExecution(
             break;
           }
           case 'fork':
-            selectedHandle = matchesCondition(config, context, { getDateRange, getTimeRange })
+            selectedHandle = matchesCondition(
+              config,
+              { ...context, data: input },
+              { getDateRange, getTimeRange, dataTools },
+            )
               ? 'true'
               : 'false';
             break;
@@ -182,11 +205,11 @@ export function createExecution(
       if (loopIterations) {
         for (let index = 0; index < loopIterations; index += 1) {
           aborted();
-          await next(nodeId, state, 'body');
+          await next(nodeId, state, output, 'body');
         }
-        await next(nodeId, state, 'done');
+        await next(nodeId, state, output, 'done');
       } else {
-        await next(nodeId, state, selectedHandle);
+        await next(nodeId, state, output, selectedHandle);
       }
     } finally {
       state.active.delete(nodeId);
@@ -203,7 +226,11 @@ export function createExecution(
       for (const trigger of triggers) {
         if (trigger?.data.kind !== 'trigger')
           throw new Error('Choose a valid trigger to run this workflow.');
-        await execute(trigger.id, { steps: 0, active: new Set() });
+        await execute(
+          trigger.id,
+          { steps: 0, active: new Set() },
+          { exists: false, value: undefined },
+        );
       }
     } catch (error) {
       if (!signal.aborted) throw error;

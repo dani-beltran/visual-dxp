@@ -321,6 +321,9 @@
   padding: 8px 0;
   font-size: 10px;
 }
+.dxp-inspector-data-output {
+  margin-bottom: 24px;
+}
 .dxp-inspector-branches > div + div {
   border-top: 1px solid var(--dxp-line);
 }
@@ -348,6 +351,9 @@
 }
 .dxp-inspector-dot-false {
   background: #d4a778;
+}
+.dxp-inspector-dot-data {
+  background: var(--dxp-data);
 }
 .dxp-inspector-preview {
   border: 1px solid var(--dxp-line);
