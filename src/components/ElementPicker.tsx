@@ -229,7 +229,7 @@ export function ElementPicker({
       {unavailable && (
         <p role="status">
           This website couldn’t connect to the picker. Check the setup below, then try Load website
-          again. You can also enter a CSS selector manually.
+          again.
         </p>
       )}
       <WebsiteSetup />
