@@ -441,6 +441,9 @@
   stroke: var(--dxp-primary-color) !important;
   stroke-width: 2.5 !important;
 }
+.dxp-builder .react-flow__edge.dxp-edge-data path.react-flow__edge-path {
+  stroke: var(--dxp-data) !important;
+}
 .dxp-builder .react-flow__edge-text {
   font-family: 'DM Sans', sans-serif;
 }

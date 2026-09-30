@@ -61,6 +61,7 @@ import { AISettingsStore } from '../lib/aiSettings';
 import { catalog, createNode, defaultWorkflow } from '../lib/catalog';
 import { validateWorkflow } from '../lib/export';
 import { duplicateNode, framesFirst, groupNodes, nodeSize, removeNodes } from '../lib/frames';
+import { getNodeDataPorts } from '../lib/nodeData';
 import { NoteEditingContext } from '../lib/noteEditing';
 import { NoteSelectionProvider } from '../lib/noteSelection';
 import { isWorkflow } from '../lib/serialization';
@@ -320,6 +321,18 @@ function Builder({
       })),
     [workflow.nodes, selectedId, statuses],
   );
+  const edges = useMemo(() => {
+    const nodeMap = new Map(workflow.nodes.map((node) => [node.id, node]));
+    return workflow.edges.map((edge) => {
+      const source = nodeMap.get(edge.source)?.data;
+      const target = nodeMap.get(edge.target)?.data;
+      const carriesData =
+        getNodeDataPorts(source).outputsData && getNodeDataPorts(target).acceptsData;
+      return carriesData
+        ? { ...edge, className: `${edge.className ?? ''} dxp-edge-data`.trim() }
+        : edge;
+    });
+  }, [workflow.nodes, workflow.edges]);
   const notify = useCallback((message: string) => setToast(message), []);
   const pendingActivity = useRef<{
     key: string;
@@ -983,7 +996,7 @@ function Builder({
           <NoteEditingContext.Provider value={editNote}>
             <ReactFlow
               nodes={nodes}
-              edges={workflow.edges}
+              edges={edges}
               nodeTypes={nodeTypes}
               defaultEdgeOptions={edgeOptions}
               onNodesChange={onNodesChange}

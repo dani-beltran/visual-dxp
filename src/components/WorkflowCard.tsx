@@ -2,7 +2,7 @@ import { Handle, type NodeProps, Position } from '@xyflow/react';
 import { ArrowRight, Check, Circle, Ellipsis, LoaderCircle } from 'lucide-react';
 import { useContext } from 'react';
 import { catalog, stepSummary } from '../lib/catalog';
-import { dataTools } from '../lib/data';
+import { getNodeDataPorts } from '../lib/nodeData';
 import { NoteEditingContext } from '../lib/noteEditing';
 import type { WorkflowNode } from '../lib/types';
 import { FrameCard } from './FrameCard';
@@ -16,12 +16,7 @@ export function WorkflowCard({ id, data, selected }: NodeProps<WorkflowNode>) {
   const entry = catalog.find((x) => x.kind === data.kind)!;
   const Icon = entry.icon;
   const split = data.kind === 'fork' || data.kind === 'loop';
-  const usesIncomingValue = data.kind === 'dom' && dataTools.usesIncomingValue(data.config);
-  const acceptsData =
-    (data.kind === 'fork' && data.config.conditionType === 'data') || usesIncomingValue;
-  const incomingDataPath =
-    data.kind === 'fork' ? data.config.conditionDataPath : data.config.valueDataPath;
-  const outputsData = data.kind === 'http';
+  const { acceptsData, outputsData, incomingDataPath } = getNodeDataPorts(data);
   return (
     <div
       className={`dxp-node dxp-node-${entry.color} ${selected ? 'is-selected' : ''} ${data.status === 'running' ? 'is-running' : ''}`}
