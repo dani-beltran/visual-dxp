@@ -1,5 +1,6 @@
 import {
   ArrowDown,
+  ArrowRight,
   Braces,
   ChevronDown,
   Copy,
@@ -16,7 +17,7 @@ import {
 import { type ReactNode, type SelectHTMLAttributes, useEffect, useId, useState } from 'react';
 import { catalog } from '../lib/catalog';
 import { elementTriggerEvents, triggerOptions } from '../lib/triggers';
-import type { ConditionType, StepConfig, StepData, WorkflowNode } from '../lib/types';
+import type { ConditionType, NodeKind, StepConfig, StepData, WorkflowNode } from '../lib/types';
 import { NoteControls } from './NoteControls';
 import { NoteTextEditor } from './NoteTextEditor';
 import '../styles/inspector.css';
@@ -30,6 +31,15 @@ interface NodeInspectorProps {
   onDuplicate: () => void;
   onPreviewContent: () => void;
 }
+
+const nextOutputDescriptions = {
+  trigger: 'Runs when the selected event occurs',
+  http: 'Runs after a successful response',
+  dom: 'Runs after the elements are updated',
+  cookie: 'Runs after the cookie is saved',
+  delay: 'Runs after the pause',
+  popover: 'Runs after the popover is displayed',
+} satisfies Record<Exclude<NodeKind, 'fork' | 'loop' | 'note' | 'frame'>, string>;
 
 function InfoBox({ children, className = '' }: { children: ReactNode; className?: string }) {
   return (
@@ -691,53 +701,24 @@ export function NodeInspector({
                 </Field>
               </>
             )}
-            <div className="dxp-inspector-branches">
-              <div>
-                <i className="dxp-inspector-dot-true" />
-                <strong>True</strong>
-                <span>Condition matches</span>
-              </div>
-              <div>
-                <i className="dxp-inspector-dot-false" />
-                <strong>False</strong>
-                <span>Condition does not match</span>
-              </div>
-            </div>
           </>
         )}
 
         {node.data.kind === 'loop' && (
-          <>
-            <Field label="Number of repetitions" htmlFor={id('iterations')}>
-              <div className="dxp-inspector-unit-field">
-                <NumberInput
-                  key={node.id}
-                  id={id('iterations')}
-                  min={1}
-                  max={1000}
-                  step={1}
-                  value={config.iterations ?? 3}
-                  onChange={(iterations) => update({ iterations })}
-                />
-                <span>times</span>
-              </div>
-            </Field>
-            <div className="dxp-inspector-branches">
-              <div>
-                <Repeat2 size={13} />
-                <strong>Body</strong>
-                <span>Runs each repetition</span>
-              </div>
-              <div>
-                <ArrowDown size={13} />
-                <strong>Done</strong>
-                <span>Runs after the last one</span>
-              </div>
+          <Field label="Number of repetitions" htmlFor={id('iterations')}>
+            <div className="dxp-inspector-unit-field">
+              <NumberInput
+                key={node.id}
+                id={id('iterations')}
+                min={1}
+                max={1000}
+                step={1}
+                value={config.iterations ?? 3}
+                onChange={(iterations) => update({ iterations })}
+              />
+              <span>times</span>
             </div>
-            <p className="dxp-inspector-hint">
-              Connect the steps to repeat to Body. Connect the next step to Done.
-            </p>
-          </>
+          </Field>
         )}
 
         {node.data.kind === 'popover' && (
@@ -844,6 +825,56 @@ export function NodeInspector({
             </div>
           </>
         )}
+        <section aria-labelledby={id('outputs-heading')}>
+          <h3 id={id('outputs-heading')} className="dxp-inspector-section-label">
+            <ArrowRight size={14} aria-hidden="true" /> Outputs
+          </h3>
+          {node.data.kind === 'fork' ? (
+            <div className="dxp-inspector-branches">
+              <div>
+                <i className="dxp-inspector-dot-true" />
+                <strong>True</strong>
+                <span>Condition matches</span>
+              </div>
+              <div>
+                <i className="dxp-inspector-dot-false" />
+                <strong>False</strong>
+                <span>Condition does not match</span>
+              </div>
+            </div>
+          ) : node.data.kind === 'loop' ? (
+            <>
+              <div className="dxp-inspector-branches">
+                <div>
+                  <Repeat2 size={13} />
+                  <strong>Body</strong>
+                  <span>Runs each repetition</span>
+                </div>
+                <div>
+                  <ArrowDown size={13} />
+                  <strong>Done</strong>
+                  <span>Runs after the last one</span>
+                </div>
+              </div>
+              <p className="dxp-inspector-hint">
+                Connect the steps to repeat to Body. Connect the next step to Done.
+              </p>
+            </>
+          ) : node.data.kind === 'note' || node.data.kind === 'frame' ? (
+            <InfoBox>
+              No outputs. {isNote ? 'Notes' : 'Frames'} organize the canvas and do not run workflow
+              steps.
+            </InfoBox>
+          ) : (
+            <div className="dxp-inspector-branches">
+              <div>
+                <ArrowRight size={13} aria-hidden="true" />
+                <strong>Next</strong>
+                <span>{nextOutputDescriptions[node.data.kind]}</span>
+              </div>
+            </div>
+          )}
+        </section>
       </div>
       <footer className="dxp-inspector-footer">
         <button type="button" onClick={onDuplicate} title={`Duplicate ${itemName}`}>
