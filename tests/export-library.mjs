@@ -62,13 +62,13 @@ for (const library of [esm, umd]) {
           destroyed = true;
         },
       };
-      page.dlbDXP = previous;
+      page.visualDXP = previous;
       try {
         page.eval(script);
         page.document.dispatchEvent(new page.Event('DOMContentLoaded'));
         await new Promise(setImmediate);
         assert.equal(destroyed, matches);
-        assert.equal(page.dlbDXP !== previous, matches);
+        assert.equal(page.visualDXP !== previous, matches);
         assert.equal(
           page.document.querySelector('#result').textContent,
           matches ? 'Ran' : 'Waiting',
@@ -82,7 +82,7 @@ for (const library of [esm, umd]) {
         );
         cases += 1;
       } finally {
-        page.dlbDXP?.destroy();
+        page.visualDXP?.destroy();
         page.close();
       }
     }
@@ -143,7 +143,7 @@ for (const library of [esm, umd]) {
       dom.window.fetch = async () => new Response(JSON.stringify({ items: [{ price }] }));
       try {
         dom.window.eval(library.exportWorkflow(workflow));
-        await dom.window.dlbDXP.run();
+        await dom.window.visualDXP.run();
         assert.equal(
           dom.window.document.querySelector('#result').textContent,
           price > 10 ? 'yes' : 'no',
@@ -151,7 +151,7 @@ for (const library of [esm, umd]) {
         assert.equal(dom.window.document.querySelector('#price').textContent, String(price));
         dataCases += 1;
       } finally {
-        dom.window.dlbDXP?.destroy();
+        dom.window.visualDXP?.destroy();
         dom.window.close();
       }
     }

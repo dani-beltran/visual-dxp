@@ -63,7 +63,7 @@ it.each(['direct', 'exported'] as const)(
         if (mode === 'direct') runtime = createRuntime(workflow, { fetch: fetcher });
         else {
           new Function('window', 'document', exportWorkflow(workflow))(window, document);
-          runtime = (window as Window & { dlbDXP?: ReturnType<typeof createRuntime> }).dlbDXP!;
+          runtime = (window as Window & { visualDXP?: ReturnType<typeof createRuntime> }).visualDXP!;
         }
         instances.push(runtime);
         await runtime.run();
@@ -204,7 +204,7 @@ it('continues an exported flow with undefined output from a missing response pat
   );
   vi.spyOn(globalThis, 'fetch').mockImplementation(async () => new Response('{"items":[]}'));
   new Function('window', 'document', exportWorkflow(workflow))(window, document);
-  const runtime = (window as Window & { dlbDXP?: ReturnType<typeof createRuntime> }).dlbDXP;
+  const runtime = (window as Window & { visualDXP?: ReturnType<typeof createRuntime> }).visualDXP;
   if (!runtime) throw new Error('Expected exported runtime');
   instances.push(runtime);
   await runtime.run();
@@ -255,8 +255,8 @@ it.each(['direct', 'exported'] as const)(
         if (mode === 'direct') runtime = createRuntime(workflow);
         else {
           new Function('window', 'document', exportWorkflow(workflow))(window, document);
-          const exported = (window as Window & { dlbDXP?: ReturnType<typeof createRuntime> })
-            .dlbDXP;
+          const exported = (window as Window & { visualDXP?: ReturnType<typeof createRuntime> })
+            .visualDXP;
           if (!exported) throw new Error('Expected exported runtime');
           runtime = exported;
         }

@@ -9,7 +9,7 @@ Requires Node.js 22.12+ (tested with Node.js 24).
 ```sh
 npm install
 cp .env.example .env.local
-# Set OPENAI_API_KEY in .env.local to enable local AI execution.
+# Optional: set OPENAI_API_KEY for development, or configure a provider in AI Settings.
 npm run dev
 ```
 
@@ -107,7 +107,7 @@ The builder owns the toolbar, canvas, inspector, activity view, footer, element 
 | `persistenceKey`     | Optional localStorage key. A valid saved workflow takes precedence over `initialWorkflow`. Omit to disable browser persistence.                                   |
 | `activityStore`      | Optional external activity store. Reads and subscribes to entries and appends new editor actions. Defaults to an empty in-memory store for this builder.         |
 | `activityUser`       | Username attached to new activity entries; defaults to `"You"`. Pass the current user's display name.                                                             |
-| `ai`                 | Optional `{ endpoint, headers?, credentials? }` for your chat API. The AI button remains visible with setup guidance until an endpoint is provided. |
+| `ai`                 | Optional `{ endpoint, showSettings?, headers?, credentials? }` for your chat API. A nonempty endpoint enables the assistant and AI Settings; `showSettings: false` hides only the settings tab. Omit the endpoint to hide both. |
 | `className`, `style` | Customize the outer editor container. The parent must provide a height.                                                                                           |
 
 `VisualDXPBuilder` is both the default and a named package export. Import `dlb-dxp/styles.css` once in your application; it includes React Flow and all builder, inspector, dialog, picker, and activity styles. The package exposes the same stylesheet through its `style` field and marks CSS as a side effect so bundlers retain the import.
@@ -184,7 +184,7 @@ Targeting uses parsed URLs and path-segment boundaries. The protocol, hostname, 
 
 Relative preview URLs remain supported, including `/products`, `./products`, and `products.html`; preview keeps the entered URL and its normal iframe resolution. **For production export**, relative targets resolve from the editor origin's root, regardless of the editor route or any HTML `<base>` tag. Both the demo app's JSON export and generated JavaScript embed the normalized absolute target. A script exported for `https://editor.example/products` stays restricted to that origin even when loaded elsewhere. Enter an absolute URL when targeting a separate production website.
 
-The generated standalone JavaScript reads the actual page's `window.location.href` before replacing an existing `window.dlbDXP`, creating a runtime, registering listeners, starting timers, or running actions. On a nonmatching page it exits without side effects. The URL configuration and self-contained matching function are embedded; the editor is not required. This check happens when the script loads; it does not monitor client-side SPA navigation. The low-level `createRuntime`/`executeWorkflow` API remains usable for explicit preview/test execution without the production target gate.
+The generated standalone JavaScript reads the actual page's `window.location.href` before replacing an existing `window.visualDXP`, creating a runtime, registering listeners, starting timers, or running actions. On a nonmatching page it exits without side effects. The URL configuration and self-contained matching function are embedded; the editor is not required. This check happens when the script loads; it does not monitor client-side SPA navigation. The low-level `createRuntime`/`executeWorkflow` API remains usable for explicit preview/test execution without the production target gate.
 
 **Export workflow**, **Copy**, and **Download** require a nonempty HTTP(S) target URL, without embedded credentials, that is not the built-in demo. `/demo-site.html` is for preview only, including equivalent relative paths and same-editor-origin absolute URLs with queries, fragments, or trailing slashes. An external site's `demo-site.html` or a different path with that filename is allowed. Invalid export targets reopen the builder's existing configuration dialog. Saving a valid target returns to the export dialog; cancellation discards the draft and never exports. JavaScript also requires a valid executable graph. JSON retains the existing ability to export an incomplete graph once its target is configured.
 
@@ -200,7 +200,7 @@ Hosts can reuse the configuration dialog with `builder.configureWebsite({ requir
 | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Trigger        | Page ready, click, hover, submit, input change, element zoom-in, element swipe, exit intention, rage clicking, inactivity, scroll thrashing, or scroll down threshold. Element events use delegated listeners. |
 | HTTP request   | HTTP method, URL, JSON headers, raw request body, and optional response data path in Outputs. Non-success responses stop that run and produce an error. The target API must allow the site's origin through CORS.                |
-| Update element | Change text/HTML, add/remove classes, hide/show, or set an attribute on all matching elements.                                                                                   |
+| Update element | Change text/HTML, add/remove classes, hide/show, or set an attribute on all matching elements. Value-based actions accept a manual value or incoming data with an optional data path. |
 | Set cookie     | Creates or updates a cookie on the current website using a name, value, and session or persistent expiration. The next step runs after the value can be read back. |
 | Delay          | Wait 0–86,400,000 milliseconds.                                                                                                                                                  |
 | Condition      | Tests incoming data, element existence, device, language, referrer, date ranges, time of day, URL parameters, or cookies (including local and session storage). The upper `true` output runs on a match; otherwise the lower `false` output runs.                                                          |
@@ -210,6 +210,10 @@ Hosts can reuse the configuration dialog with `builder.configureWebsite({ requir
 
 Connections from a step execute in order. HTTP requests output their response body as incoming data for downstream nodes, including Conditions. Other nodes preserve that data. Each outgoing path receives the same input independently; requests on one path do not overwrite sibling paths or concurrent runs. Repeat sends its incoming data to each body iteration and its Done branch. Conditions do not evaluate JavaScript expressions. An execution limit protects against excessive loops.
 
+Select a node to see its setup guidance and **Outputs** in the step details panel. Outputs explain when the next step runs: **Next** for triggers and actions, **Data** for HTTP responses, **True**/**False** for conditions, and **Body**/**Done** for loops. Notes and frames show that they have no outputs. Trigger choices also include event-specific hints, and condition descriptions explain what each check matches.
+
+On the canvas, HTTP nodes show a blue output socket and **DATA OUT** label. Conditions configured for **Incoming data** and Update element nodes with **Use incoming data** show a blue input socket and **Uses incoming data** badge. A direct connection from an HTTP data output to either of these inputs is highlighted blue; changing the receiving node's configuration updates the highlighting automatically. Other connections can still pass data through intermediate steps, but only these direct data connections receive the blue highlight.
+
 HTTP responses always parse valid JSON into native values and otherwise preserve the complete body as text. **Response data path** lives in **Outputs** and selects a value from parsed JSON; non-JSON responses ignore the path. Previously saved response format settings are ignored. Empty paths output the whole body. Paths support properties and zero-based array indexes, such as `user.name`, `data.items[0].price`, `items[2].tags`, or `[0].name`. Properties use letters, digits, `_`, `$`, or `-` (starting with a letter, `_`, or `$`); quoted keys and wildcards are unsupported. Missing response paths pass `undefined` downstream without stopping the run; an explicit `null` stays `null`. Downstream Incoming data conditions can use Does not exist to check for missing output. Malformed path syntax still reports an error.
 
 **Update element** uses a manual value by default. Turn on **Use incoming data** to use connected data for text, HTML, CSS class, and attribute-value actions. Incoming mode shows a blue input socket and a **Uses incoming data** badge on the canvas. An optional **Incoming data path** selects a nested response value; leave it empty when HTTP already selected the value. Strings pass directly, numbers and booleans become text, and null or missing values become empty text. Arrays and objects become JSON text; CSS class actions instead accept arrays of class-name strings. Hide and Show do not need values. Targets and attribute names remain manually configured, and the original incoming data continues downstream unchanged.
@@ -217,6 +221,8 @@ HTTP responses always parse valid JSON into native values and otherwise preserve
 The **Incoming data** condition uses an optional **Incoming data path** with the same syntax; empty means all incoming data. Comparisons adapt to the actual value: numeric equality/order accepts finite decimal numbers (including exponents); strings use exact case-sensitive text and stay strings unless ordering requires numeric comparison. Boolean equality accepts `true`/`false`. Array and object equality uses JSON and compares deeply, ignoring object key order while preserving array order. Contains checks a substring, a deep-equal array item (JSON or plain text; quote numeric strings), or an exact own object key. Matches uses a case-sensitive regular expression without slash delimiters. Unsupported comparisons and invalid patterns stop the run and appear in the execution log.
 
 Exists checks whether the path resolves, including `null`. Is null and Is not null both require a resolved path; missing values match neither. Other operators report missing-path errors. Is empty checks empty strings, arrays, or objects; whitespace, `0`, and `false` are not empty. Use null operators for `null` and true/false operators for boolean data. Unary operators hide the comparison field. All new settings are retained by JSON persistence, AI editing, preview, and standalone export.
+
+For example, connect **HTTP request → Condition → Update element** to show a customer's name only when it exists. If the API returns `{ "user": { "name": "Ada" } }`, leave the HTTP response data path empty, set the condition to **Incoming data** with path `user.name` and operator **Exists**, then connect its **True** output to Update element. Choose the text action, enable **Use incoming data**, set its incoming data path to `user.name`, and target the element to update. The HTTP-to-condition connection is blue, and the condition preserves the response for Update element to display `Ada`.
 
 **Set cookie** (`kind: 'cookie'`) uses `cookieName`, `cookieValue`, and `cookieDays`. The name must be nonempty and contain no spaces or cookie separators; the value may be empty. `cookieDays` is a whole number from 0 to 400: zero or omitted uses a browser-session cookie, and a positive value sets `Max-Age` to that many days from execution. The inspector offers **Browser session** or **After a number of days**. For example, `{ "cookieName": "audience", "cookieValue": "returning", "cookieDays": 30 }` stores a value that a later Cookies condition can match with `conditionKey: 'audience'` and `conditionValue: 'returning'`.
 
@@ -370,7 +376,7 @@ Export produces a dependency-free script. Host the downloaded file and load it o
 <script src="/welcome-journey.js" defer></script>
 ```
 
-It registers triggers, executes actions, and exposes `window.dlbDXP`. Reinjecting an exported script first disposes of the previous Visual DXP runtime. Stop it with `window.dlbDXP.destroy()`.
+It registers triggers, executes actions, and exposes `window.visualDXP`. Reinjecting an exported script first disposes of the previous Visual DXP runtime. Stop it with `window.visualDXP.destroy()`.
 
 You can also use the runtime directly:
 

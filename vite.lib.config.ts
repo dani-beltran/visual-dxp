@@ -13,7 +13,7 @@ export default defineConfig({
   build: {
     lib: {
       entry: 'src/index.ts',
-      name: 'dlbDXP',
+      name: 'visualDXP',
       fileName: 'dlb-dxp',
       cssFileName: 'dlb-dxp',
     },

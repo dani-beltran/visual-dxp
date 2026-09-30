@@ -92,7 +92,7 @@ export function attachElementPicker(
   const view = doc.defaultView;
   if (!view || !doc.documentElement) throw new Error('The website is not ready yet.');
   const root = doc.createElement('div');
-  root.dataset.dlbDxpPicker = 'overlay';
+  root.dataset.visualDxpPicker = 'overlay';
   root.setAttribute('aria-hidden', 'true');
   root.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:2147483647;';
   const makeOutline = (selected: boolean) => {

@@ -33,9 +33,9 @@ afterEach(() => {
   runtimes.splice(0).forEach((instance) => {
     instance.destroy();
   });
-  const exported = (window as Window & { dlbDXP?: ReturnType<typeof createRuntime> }).dlbDXP;
+  const exported = (window as Window & { visualDXP?: ReturnType<typeof createRuntime> }).visualDXP;
   exported?.destroy();
-  delete (window as Window & { dlbDXP?: ReturnType<typeof createRuntime> }).dlbDXP;
+  delete (window as Window & { visualDXP?: ReturnType<typeof createRuntime> }).visualDXP;
   document.body.innerHTML = '';
   vi.useRealTimers();
   vi.restoreAllMocks();
@@ -544,7 +544,7 @@ describe('workflow export', () => {
     expect(script).toContain('\\u003c/script\\u003e');
     expect(script).not.toContain('import ');
     const previous = { destroy: vi.fn() };
-    Object.assign(window, { dlbDXP: previous });
+    Object.assign(window, { visualDXP: previous });
     new Function('window', 'document', script)(window, document);
     expect(previous.destroy).toHaveBeenCalledOnce();
     (document.querySelector('#result') as HTMLElement).click();
@@ -580,7 +580,7 @@ describe('workflow export', () => {
     );
 
     new Function('window', 'document', exportWorkflow(graph))(window, document);
-    const exported = (window as Window & { dlbDXP?: ReturnType<typeof createRuntime> }).dlbDXP;
+    const exported = (window as Window & { visualDXP?: ReturnType<typeof createRuntime> }).visualDXP;
     if (!exported) throw new Error('Expected the exported runtime to be installed.');
     const running = exported.run();
     expect(request).not.toHaveBeenCalled();

@@ -8,7 +8,7 @@ import type { Workflow, WorkflowNode } from '../src/lib/types';
 // Vitest exposes the environment's real jsdom instance for URL navigation.
 declare const jsdom: { reconfigure(options: { url: string }): void };
 const editorUrl = 'https://editor.example.test/editor';
-const page = window as Window & { dlbDXP?: Pick<WorkflowRuntime, 'destroy'> };
+const page = window as Window & { visualDXP?: Pick<WorkflowRuntime, 'destroy'> };
 function graph(websiteUrl: string, includeSubpages?: boolean): Workflow {
   const nodes: WorkflowNode[] = ['page-load', 'click', 'inactivity'].flatMap((event, index) => [
     {
@@ -54,8 +54,8 @@ beforeEach(() => {
   vi.spyOn(document, 'hidden', 'get').mockReturnValue(false);
 });
 afterEach(() => {
-  page.dlbDXP?.destroy();
-  delete page.dlbDXP;
+  page.visualDXP?.destroy();
+  delete page.visualDXP;
   vi.restoreAllMocks();
   vi.useRealTimers();
 });
@@ -93,19 +93,19 @@ describe('standalone script targeting on the actual page URL', () => {
     const script = exportWorkflow(graph(target, include));
     jsdom.reconfigure({ url });
     const previous = { destroy: vi.fn() };
-    page.dlbDXP = previous;
+    page.visualDXP = previous;
     const documentListen = vi.spyOn(document, 'addEventListener');
     const windowListen = vi.spyOn(window, 'addEventListener');
     const timer = vi.spyOn(window, 'setTimeout');
     new Function('window', 'document', script)(window, document);
     if (active) {
       expect(previous.destroy).toHaveBeenCalledOnce();
-      expect(page.dlbDXP).not.toBe(previous);
+      expect(page.visualDXP).not.toBe(previous);
       expect(documentListen).toHaveBeenCalled();
       expect(timer).toHaveBeenCalled();
     } else {
       expect(previous.destroy).not.toHaveBeenCalled();
-      expect(page.dlbDXP).toBe(previous);
+      expect(page.visualDXP).toBe(previous);
       expect(documentListen).not.toHaveBeenCalled();
       expect(windowListen).not.toHaveBeenCalled();
       expect(timer).not.toHaveBeenCalled();
@@ -127,7 +127,7 @@ describe('standalone script targeting on the actual page URL', () => {
     jsdom.reconfigure({ url: 'https://example.com/products/child' });
     new Function('window', 'document', script)(window, document);
     await vi.advanceTimersByTimeAsync(2000);
-    expect(page.dlbDXP).toBeUndefined();
+    expect(page.visualDXP).toBeUndefined();
     jsdom.reconfigure({ url: 'https://example.com/products' });
     new Function('window', 'document', script)(window, document);
     await vi.advanceTimersByTimeAsync(2000);
@@ -140,7 +140,7 @@ describe('standalone script targeting on the actual page URL', () => {
     expect(script).toContain('https://editor.example.test/products');
     jsdom.reconfigure({ url: 'https://other.example/products' });
     new Function('window', 'document', script)(window, document);
-    expect(page.dlbDXP).toBeUndefined();
+    expect(page.visualDXP).toBeUndefined();
     jsdom.reconfigure({ url: 'https://editor.example.test/products/item' });
     new Function('window', 'document', script)(window, document);
     await vi.advanceTimersByTimeAsync(1100);
