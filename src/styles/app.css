@@ -60,7 +60,7 @@
   align-items: center;
   gap: 5px;
   padding: 0 23px 11px;
-  border-bottom: 1px solid #e8eee9;
+  border-bottom: 1px solid var(--dxp-line);
 }
 .dxp-export-tabs button {
   display: flex;
@@ -68,36 +68,36 @@
   gap: 7px;
   border: 0;
   background: none;
-  color: #90a193;
+  color: var(--dxp-muted);
   padding: 8px 10px;
   border-radius: 5px;
   font-size: 11px;
 }
 .dxp-export-tabs button.active {
-  color: #397455;
-  background: #edf4ee;
+  color: var(--dxp-primary-color);
+  background: var(--dxp-primary-soft);
 }
 .dxp-export-tabs > span {
   flex: 1;
 }
 .dxp-code {
   margin: 0;
-  background: #f8faf9;
+  background: var(--dxp-canvas);
   padding: 23px 28px;
   max-height: 46vh;
   min-height: 250px;
   overflow: auto;
   font-size: 11px;
   line-height: 1.8;
-  color: #497359;
+  color: var(--dxp-text-secondary);
   tab-size: 2;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 .dxp-validation {
   padding: 12px 28px;
-  background: #fdf7e9;
-  border-bottom: 1px solid #eee1c2;
-  color: #967c43;
+  background: var(--dxp-warning-soft);
+  border-bottom: 1px solid var(--dxp-warning-border);
+  color: var(--dxp-warning);
   font-size: 11px;
 }
 .dxp-validation p {

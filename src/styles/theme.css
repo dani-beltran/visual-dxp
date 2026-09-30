@@ -1,6 +1,7 @@
 /* Public inputs intentionally use fallbacks so colors can inherit from a host container.
    Resolve derived tokens on each editor (and standalone picker), never on :root. */
 :where(.dxp-builder, .dxp-app, .dxp-picker-backdrop) {
+  color-scheme: light;
   --dxp-primary-color: var(--dxp-primary, #247252);
   --dxp-secondary-color: var(--dxp-secondary, #648bc4);
   --dxp-tertiary-color: var(--dxp-tertiary, #9d80c5);
@@ -41,4 +42,81 @@
   --dxp-danger: #ad5144;
   --dxp-danger-soft: #fcf3ef;
   --dxp-danger-border: #efd9d1;
+}
+
+/* Apply to the app or a host wrapper; nested builders and pickers resolve their
+   own tokens here as they do in the light theme. */
+:where(
+  [data-dxp-theme='dark'],
+  [data-dxp-theme='dark'] .dxp-builder,
+  [data-dxp-theme='dark'] .dxp-picker-backdrop
+) {
+  color-scheme: dark;
+  --dxp-primary-color: var(--dxp-primary, #79cba6);
+  --dxp-primary-hover: color-mix(in srgb, var(--dxp-primary-color) 85%, white);
+  --dxp-on-primary: #10251c;
+  --dxp-on-inverse: #14221c;
+  --dxp-surface: #19231f;
+  --dxp-canvas: #111815;
+  --dxp-surface-muted: #202d26;
+  --dxp-text: #e5eee8;
+  --dxp-text-secondary: #c0d0c6;
+  --dxp-muted: #a3b8aa;
+  --dxp-subtle: #8ca494;
+  --dxp-line: #304238;
+  --dxp-line-strong: #486052;
+  --dxp-grid: #354a3d;
+  --dxp-edge: #6a8c77;
+  --dxp-primary-soft: color-mix(in srgb, var(--dxp-primary-color) 12%, var(--dxp-surface));
+  --dxp-primary-tint: color-mix(in srgb, var(--dxp-primary-color) 20%, var(--dxp-surface));
+  --dxp-primary-border: color-mix(in srgb, var(--dxp-primary-color) 40%, var(--dxp-surface));
+  --dxp-secondary-soft: color-mix(in srgb, var(--dxp-secondary-color) 20%, var(--dxp-surface));
+  --dxp-tertiary-soft: color-mix(in srgb, var(--dxp-tertiary-color) 20%, var(--dxp-surface));
+  --dxp-accent-blend-soft: color-mix(in srgb, var(--dxp-accent-blend) 20%, var(--dxp-surface));
+  --dxp-shadow: #00000040;
+  --dxp-shadow-soft: #00000026;
+  --dxp-shadow-strong: #00000080;
+  --dxp-overlay: #00000099;
+  --dxp-success: #8cd4a0;
+  --dxp-data: #8bb8ff;
+  --dxp-warning: #e8c37c;
+  --dxp-warning-soft: #342c1d;
+  --dxp-warning-border: #625031;
+  --dxp-danger: #f2a494;
+  --dxp-danger-soft: #38241f;
+  --dxp-danger-border: #694239;
+}
+
+[data-dxp-theme='dark'] .dxp-node {
+  background: var(--dxp-surface);
+  color: var(--dxp-text);
+  border-color: var(--dxp-line-strong);
+  box-shadow: 0 5px 18px var(--dxp-shadow);
+}
+[data-dxp-theme='dark'] .dxp-brand-image {
+  filter: brightness(0) invert(0.9);
+}
+[data-dxp-theme='dark'] .dxp-node:hover {
+  border-color: var(--dxp-primary-border);
+}
+[data-dxp-theme='dark'] .dxp-node:is(.is-selected, .is-running) {
+  border-color: var(--dxp-focus);
+  box-shadow: 0 0 0 3px var(--dxp-focus-ring);
+}
+[data-dxp-theme='dark']
+  :is(
+    .dxp-node-kind,
+    .dxp-node-more,
+    .dxp-node > p,
+    .dxp-node-footer,
+    .dxp-node-footer > span:first-child
+  ) {
+  color: var(--dxp-muted);
+}
+[data-dxp-theme='dark'] .dxp-node-footer {
+  border-color: var(--dxp-line);
+}
+[data-dxp-theme='dark'] .dxp-node-incoming-value {
+  background: color-mix(in srgb, var(--dxp-data) 12%, var(--dxp-surface));
+  color: var(--dxp-data);
 }

@@ -1,4 +1,15 @@
-import { ArrowDownToLine, ArrowUpRight, Check, Code2, Copy, FileJson, Play, X } from 'lucide-react';
+import {
+  ArrowDownToLine,
+  ArrowUpRight,
+  Check,
+  Code2,
+  Copy,
+  FileJson,
+  Moon,
+  Play,
+  Sun,
+  X,
+} from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   VisualDXPBuilder,
@@ -43,6 +54,7 @@ export function App({
   const [exportOpen, setExportOpen] = useState(false);
   const [exportTab, setExportTab] = useState<'javascript' | 'json'>('javascript');
   const [toast, setToast] = useState('');
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const modalRef = useDialogFocus(exportOpen);
   const notify = useCallback((message: string) => setToast(message), []);
   const handleChange = useCallback(
@@ -173,7 +185,7 @@ export function App({
     notify('Your workflow is ready to go');
   }
   return (
-    <div className={`dxp-app ${className}`} style={style}>
+    <div className={`dxp-app ${className}`} style={style} data-dxp-theme={theme}>
       <main className="dxp-main">
         <header className="dxp-header">
           <div className="dxp-heading">
@@ -188,6 +200,17 @@ export function App({
               </p>
             </div>
             <div className="dxp-header-actions">
+              <button
+                type="button"
+                className="dxp-button"
+                aria-label="Dark mode"
+                aria-pressed={theme === 'dark'}
+                title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+                onClick={() => setTheme((current) => (current === 'light' ? 'dark' : 'light'))}
+              >
+                {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
+                {theme === 'dark' ? 'Light mode' : 'Dark mode'}
+              </button>
               <button
                 type="button"
                 className="dxp-button"
