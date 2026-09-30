@@ -178,7 +178,11 @@ const config = z.object({
     .optional(),
   iterations: z.number().int().min(1).max(1000).optional(),
   contentType: z.enum(['html', 'iframe']).optional(),
-  content: text.optional(),
+  content: text
+    .describe(
+      'Popover HTML. For colored anchored popovers, include a scoped <style> rule targeting the runtime > svg path with fill and stroke matching the adjoining surface/border. Scope by the actual [data-visual-dxp-popover="NODE_ID"] or :has(.unique-content-class), and include that exact unique class on the HTML wrapper. The arrow is outside the content; background/color alone do not recolor it. Preserve matching CSS/classes when updating. Do not generate a second arrow.',
+    )
+    .optional(),
   position: z
     .enum(['center', 'top-left', 'top-right', 'bottom-left', 'bottom-right', 'anchor'])
     .optional(),
