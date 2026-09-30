@@ -352,14 +352,18 @@ describe('preset execution with a mocked browser and network', () => {
     expect(request).toHaveBeenCalledTimes(1);
   });
   it.each([frustrationRecoveryPreset, segmentedOnboardingPreset])(
-    '$name stops on failed HTTP without claiming completion',
+    '$name continues after failed HTTP and records that guidance was displayed',
     async (preset) => {
       request.mockResolvedValue(new Response('Unavailable', { status: 503 }));
-      const failed = expect(runtime(preset).run()).rejects.toThrow('HTTP 503');
+      const completed = expect(runtime(preset).run()).resolves.toBeUndefined();
       await vi.advanceTimersByTimeAsync(2000);
-      await failed;
-      expect(document.cookie).toBe('');
-      expect(successful()).not.toContain(
+      await completed;
+      expect(document.cookie).toContain(
+        preset === frustrationRecoveryPreset
+          ? 'dxp_assistance_shown=shown'
+          : 'dxp_onboarding_delivered=yes',
+      );
+      expect(successful()).toContain(
         preset === frustrationRecoveryPreset ? 'recovery-cookie' : 'onboarding-cookie',
       );
     },

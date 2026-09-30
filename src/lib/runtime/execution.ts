@@ -69,6 +69,7 @@ export function createExecution(
       const config = node.data.config;
       // Data belongs to this path, never the shared runtime (runs may overlap).
       let output = input;
+      let requestError: string | undefined;
       let selectedHandle: string | undefined;
       let loopIterations = 0;
       log(nodeId, 'running', 'Running step');
@@ -115,19 +116,35 @@ export function createExecution(
               throw new Error('Request headers must be a JSON object with string values.');
             }
             const method = (config.method ?? 'GET').toUpperCase();
-            const response = await fetcher(url.href, {
-              method,
-              headers,
-              signal,
-              ...(method === 'GET' || method === 'HEAD' || !config.body
-                ? {}
-                : { body: config.body }),
-            });
-            if (!response.ok)
-              throw new Error(
-                `Request failed: HTTP ${response.status}${response.statusText ? ` ${response.statusText}` : ''}.`,
-              );
-            output = dataTools.parseResponse(await response.text(), config);
+            let body: string;
+            try {
+              const response = await fetcher(url.href, {
+                method,
+                headers,
+                signal,
+                ...(method === 'GET' || method === 'HEAD' || !config.body
+                  ? {}
+                  : { body: config.body }),
+              });
+              if (!response.ok) {
+                requestError = `Request failed: HTTP ${response.status}${response.statusText ? ` ${response.statusText}` : ''}.`;
+                output = {
+                  exists: true,
+                  value: { error: { message: requestError, code: response.status } },
+                };
+                break;
+              }
+              body = await response.text();
+            } catch (error) {
+              aborted();
+              requestError = error instanceof Error ? error.message : String(error);
+              output = {
+                exists: true,
+                value: { error: { message: requestError, code: 'NETWORK_ERROR' } },
+              };
+              break;
+            }
+            output = dataTools.parseResponse(body, config);
             break;
           }
           case 'dom': {
@@ -190,12 +207,13 @@ export function createExecution(
         aborted();
         log(
           nodeId,
-          'success',
-          selectedHandle
-            ? `Condition is ${selectedHandle}`
-            : loopIterations
-              ? `Repeating ${loopIterations} times`
-              : 'Step completed',
+          requestError !== undefined ? 'error' : 'success',
+          requestError ??
+            (selectedHandle
+              ? `Condition is ${selectedHandle}`
+              : loopIterations
+                ? `Repeating ${loopIterations} times`
+                : 'Step completed'),
         );
       } catch (error) {
         if (!signal.aborted)

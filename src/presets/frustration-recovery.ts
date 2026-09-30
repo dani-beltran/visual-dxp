@@ -171,7 +171,7 @@ export const frustrationRecoveryPreset = {
           label: 'Setup: Frequency limits',
           config: {
             noteText:
-              'dxp_assistance_shown is a session cookie written after HTTP success. Failure stops before the cookie; concurrent triggers before the response can repeat requests. This is best-effort frequency control, not an atomic rate limit.',
+              'dxp_assistance_shown is a session cookie written after the HTTP attempt, including failure. It records help display, not event delivery; concurrent triggers before the response can repeat requests. This is best-effort frequency control, not an atomic rate limit.',
             noteColor: '#fff4b8',
           },
         },

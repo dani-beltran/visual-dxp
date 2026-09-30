@@ -35,7 +35,7 @@ interface NodeInspectorProps {
 
 const nextOutputDescriptions = {
   trigger: 'Runs when the selected event occurs',
-  http: 'Passes response data to the next node',
+  http: 'Passes response data or an error object to the next node',
   dom: 'Runs after the elements are updated',
   cookie: 'Runs after the cookie is saved',
   delay: 'Runs after the pause',

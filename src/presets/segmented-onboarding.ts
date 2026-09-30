@@ -361,7 +361,7 @@ export const segmentedOnboardingPreset = {
           label: 'Setup: Completion meaning',
           config: {
             noteText:
-              'Completion means DOM copy updated, guidance rendered, and HTTP returned 2xx. It does not observe reading, dismissal, link clicks, signup, purchase, or server persistence. An HTTP failure leaves no completion cookie.',
+              'Completion means DOM copy updated, guidance rendered, and HTTP was attempted. It does not observe reading, dismissal, link clicks, signup, purchase, or server persistence. An HTTP failure still writes the completion cookie; it does not confirm event delivery.',
             noteColor: '#fff4b8',
           },
         },

@@ -46,6 +46,69 @@ afterEach(() => {
 });
 
 it.each(['direct', 'exported'] as const)(
+  'passes request errors as data and routes downstream conditions in the %s runtime',
+  async (mode) => {
+    const failures = [
+      {
+        fetch: async () => new Response('Unavailable', { status: 503, statusText: 'Unavailable' }),
+        code: 503,
+        message: 'Request failed: HTTP 503 Unavailable.',
+      },
+      {
+        fetch: async () => new Response('Missing', { status: 404 }),
+        code: 404,
+        message: 'Request failed: HTTP 404.',
+      },
+      {
+        fetch: async () => {
+          throw new TypeError('Failed to fetch');
+        },
+        code: 'NETWORK_ERROR',
+        message: 'Failed to fetch',
+      },
+      {
+        fetch: async () => {
+          const response = new Response('partial');
+          vi.spyOn(response, 'text').mockRejectedValue(new Error('Connection lost'));
+          return response;
+        },
+        code: 'NETWORK_ERROR',
+        message: 'Connection lost',
+      },
+    ];
+    for (const failure of failures) {
+      // A success-only response selection must not hide the error payload.
+      const workflow = graph(
+        { responseDataPath: 'data.items[0].price' },
+        {
+          conditionDataPath: 'error.code',
+          conditionOperator: 'equal',
+          conditionValue: String(failure.code),
+        },
+      );
+      workflow.nodes.find((item) => item.id === 'yes')!.data.config = {
+        selector: '#result',
+        valueSource: 'incoming-data',
+      };
+      const fetcher = vi.spyOn(globalThis, 'fetch').mockImplementation(failure.fetch);
+      let runtime: ReturnType<typeof createRuntime>;
+      if (mode === 'direct') runtime = createRuntime(workflow, { fetch: fetcher });
+      else {
+        new Function('window', 'document', exportWorkflow(workflow))(window, document);
+        runtime = (window as Window & { visualDXP?: ReturnType<typeof createRuntime> }).visualDXP!;
+      }
+      instances.push(runtime);
+      await expect(runtime.run()).resolves.toBeUndefined();
+      expect(JSON.parse(document.querySelector('#result')!.textContent!)).toEqual({
+        error: { message: failure.message, code: failure.code },
+      });
+      runtime.destroy();
+      fetcher.mockRestore();
+    }
+  },
+);
+
+it.each(['direct', 'exported'] as const)(
   'routes complete bodies and nested selections in the %s runtime',
   async (mode) => {
     for (const selected of [false, true]) {
@@ -63,7 +126,8 @@ it.each(['direct', 'exported'] as const)(
         if (mode === 'direct') runtime = createRuntime(workflow, { fetch: fetcher });
         else {
           new Function('window', 'document', exportWorkflow(workflow))(window, document);
-          runtime = (window as Window & { visualDXP?: ReturnType<typeof createRuntime> }).visualDXP!;
+          runtime = (window as Window & { visualDXP?: ReturnType<typeof createRuntime> })
+            .visualDXP!;
         }
         instances.push(runtime);
         await runtime.run();

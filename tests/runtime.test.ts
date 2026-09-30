@@ -293,7 +293,7 @@ describe('workflow runtime', () => {
     expect(document.querySelector('#result')!.textContent).toBe('Waiting');
   });
 
-  it('sends headers and body, reports HTTP failures, and does not execute downstream steps', async () => {
+  it('sends headers and body, reports HTTP failures, and executes downstream steps', async () => {
     document.body.innerHTML = '<p id="result">Waiting</p>';
     const request = vi
       .fn<typeof fetch>()
@@ -309,7 +309,7 @@ describe('workflow runtime', () => {
             headers: '{"Content-Type":"application/json"}',
             body: '{"hello":true}',
           }),
-          node('update', 'dom', { selector: '#result', value: 'Wrong' }),
+          node('update', 'dom', { selector: '#result', valueSource: 'incoming-data' }),
         ],
         [
           ['start', 'request'],
@@ -318,7 +318,7 @@ describe('workflow runtime', () => {
       ),
       { fetch: request, onLog: (entry) => logs.push(entry) },
     );
-    await expect(instance.run()).rejects.toThrow('HTTP 503 Unavailable');
+    await expect(instance.run()).resolves.toBeUndefined();
     expect(request).toHaveBeenCalledWith(
       'https://example.com/event',
       expect.objectContaining({
@@ -331,7 +331,12 @@ describe('workflow runtime', () => {
     expect(logs.filter((entry) => entry.status === 'error').map((entry) => entry.nodeId)).toEqual([
       'request',
     ]);
-    expect(document.querySelector('#result')!.textContent).toBe('Waiting');
+    expect(JSON.parse(document.querySelector('#result')!.textContent!)).toEqual({
+      error: { message: 'Request failed: HTTP 503 Unavailable.', code: 503 },
+    });
+    expect(logs.some((entry) => entry.nodeId === 'request' && entry.status === 'success')).toBe(
+      false,
+    );
     instance.destroy();
     expect((request.mock.calls[0][1]!.signal as AbortSignal).aborted).toBe(true);
   });
