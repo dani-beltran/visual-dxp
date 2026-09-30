@@ -46,7 +46,10 @@ function normalize(marks: NoteMark[], length: number): NoteMark[] {
     const end = Math.min(length, mark.end);
     const flags = style(mark);
     if (start >= end || !formats.some((format) => flags[format])) continue;
-    if (previous?.end === start && formats.every((format) => !!previous[format] === !!flags[format]))
+    if (
+      previous?.end === start &&
+      formats.every((format) => !!previous[format] === !!flags[format])
+    )
       previous.end = end;
     else result.push({ start, end, ...flags });
   }
@@ -57,7 +60,15 @@ export function getNoteMarks(config: StepConfig): NoteMark[] {
   const length = (config.noteText ?? '').length;
   if (config.noteMarks !== undefined) return normalize(config.noteMarks, length);
   return normalize(
-    [{ start: 0, end: length, bold: config.noteBold, italic: config.noteItalic, strikethrough: config.noteStrikethrough }],
+    [
+      {
+        start: 0,
+        end: length,
+        bold: config.noteBold,
+        italic: config.noteItalic,
+        strikethrough: config.noteStrikethrough,
+      },
+    ],
     length,
   );
 }
@@ -100,7 +111,9 @@ export function toggleNoteMark(
   const length = (config.noteText ?? '').length;
   const marks = getNoteMarks(config);
   const enabled = !selectionHasNoteMark(config, from, to, format);
-  const boundaries = [...new Set([0, length, from, to, ...marks.flatMap((mark) => [mark.start, mark.end])])].sort((a, b) => a - b);
+  const boundaries = [
+    ...new Set([0, length, from, to, ...marks.flatMap((mark) => [mark.start, mark.end])]),
+  ].sort((a, b) => a - b);
   const result: NoteMark[] = [];
   let index = 0;
   for (let part = 0; part < boundaries.length - 1; part += 1) {
@@ -119,7 +132,8 @@ export function editNoteText(config: StepConfig, newText: string): Partial<StepC
   const oldText = config.noteText ?? '';
   const marks = getNoteMarks(config);
   let start = 0;
-  while (start < oldText.length && start < newText.length && oldText[start] === newText[start]) start += 1;
+  while (start < oldText.length && start < newText.length && oldText[start] === newText[start])
+    start += 1;
   let oldEnd = oldText.length;
   let newEnd = newText.length;
   while (oldEnd > start && newEnd > start && oldText[oldEnd - 1] === newText[newEnd - 1]) {
@@ -132,7 +146,12 @@ export function editNoteText(config: StepConfig, newText: string): Partial<StepC
   const result: NoteMark[] = [];
   for (const mark of marks) {
     if (mark.start < start) result.push({ ...mark, end: Math.min(mark.end, start) });
-    if (mark.end > oldEnd) result.push({ ...mark, start: Math.max(mark.start, oldEnd) + offset, end: mark.end + offset });
+    if (mark.end > oldEnd)
+      result.push({
+        ...mark,
+        start: Math.max(mark.start, oldEnd) + offset,
+        end: mark.end + offset,
+      });
   }
   if (newEnd > start) result.push({ start, end: newEnd, ...style(inherited) });
   return { noteText: newText, ...clearedLegacy, noteMarks: normalize(result, newText.length) };

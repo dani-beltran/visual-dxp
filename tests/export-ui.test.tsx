@@ -115,6 +115,37 @@ function expectNoExport(
   ).toBe(false);
 }
 
+describe('website configuration', () => {
+  it.each(['', '   '])('uses the demo website when saving an empty URL (%j)', async (value) => {
+    const { onChange } = await renderApp('https://example.com/products');
+    await click('Change target website');
+    expect(host.textContent).toContain('Effective scope: https://example.com/products');
+    await editUrl(value);
+    expect(element<HTMLInputElement>('[aria-label="Target website"] input').placeholder).toBe(
+      'Leave empty to use the demo website',
+    );
+    expect(host.querySelector('.dxp-website-scope')).toBeNull();
+    await click('Save website');
+    expect(host.querySelector('[aria-label="Target website"]')).toBeNull();
+    expect(onChange.mock.lastCall?.[0].websiteUrl).toBe('/demo-site.html');
+  });
+
+  it.each(['/demo-site.html', `${window.location.origin}/demo-site.html?preview=1#intro`])(
+    'hides effective scope for the demo website (%s)',
+    async (url) => {
+      await renderApp(url);
+      await click('Change target website');
+      expect(element<HTMLInputElement>('[aria-label="Target website"] input').value).toBe('');
+      expect(host.querySelector('.dxp-website-scope')).toBeNull();
+      await editUrl('https://example.com/products');
+      expect(host.querySelector('.dxp-website-scope')).not.toBeNull();
+      await click('Use the demo website');
+      expect(element<HTMLInputElement>('[aria-label="Target website"] input').value).toBe('');
+      expect(host.querySelector('.dxp-website-scope')).toBeNull();
+    },
+  );
+});
+
 describe('host export flow', () => {
   it.each([
     '',
@@ -148,9 +179,7 @@ describe('host export flow', () => {
       else await click(method);
       expect(host.querySelector('[role="dialog"]')).toBeNull();
       await click('Change target website');
-      expect(element<HTMLInputElement>('[aria-label="Target website"] input').value).toBe(
-        '/demo-site.html',
-      );
+      expect(element<HTMLInputElement>('[aria-label="Target website"] input').value).toBe('');
       await editUrl('https://example.com/products');
       await click('Save website');
       expect(host.querySelector('[aria-label="Export workflow"]')).toBeNull();

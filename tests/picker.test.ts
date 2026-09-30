@@ -10,6 +10,7 @@ import {
   escapeCss,
   getElementSelector,
   normalizeWebsiteUrl,
+  PICKER_PROTOCOL,
 } from '../src/lib/picker';
 
 afterEach(() => {
@@ -149,6 +150,68 @@ describe('website element selection', () => {
     expect(post.mock.calls.at(-1)![0].type).toBe('stop');
     host.remove();
   });
+
+  it.each(['timeout', 'error'])(
+    'replaces a failed iframe after %s and reconnects on retry',
+    async (failure) => {
+      vi.useFakeTimers();
+      Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+      const host = document.createElement('div');
+      document.body.appendChild(host);
+      const root = createRoot(host);
+      await act(async () =>
+        root.render(
+          createElement(ElementPicker, {
+            url: 'https://preview.test',
+            initialSelector: '#shop-now',
+            onSelect: vi.fn(),
+            onClose: vi.fn(),
+          }),
+        ),
+      );
+      try {
+        const frame = host.querySelector('iframe')!;
+        await act(async () => {
+          if (failure === 'timeout') vi.advanceTimersByTime(8000);
+          else frame.dispatchEvent(new Event('error'));
+        });
+        expect(host.querySelector('iframe')).toBeNull();
+        expect(host.querySelectorAll('.dxp-website-setup')).toHaveLength(1);
+        expect(host.querySelector('.dxp-picker-frame-wrap .dxp-website-setup')).not.toBeNull();
+        expect(
+          host.querySelector<HTMLInputElement>('.dxp-picker-selector-field input')!.value,
+        ).toBe('#shop-now');
+
+        await act(async () => {
+          host
+            .querySelector('form')!
+            .dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+        });
+        const retry = host.querySelector('iframe')!;
+        expect(retry).not.toBeNull();
+        expect(retry).not.toBe(frame);
+        expect(host.querySelector('.dxp-website-setup')).toBeNull();
+        const post = vi.spyOn(retry.contentWindow!, 'postMessage').mockImplementation(() => {});
+        await act(async () => retry.dispatchEvent(new Event('load')));
+        const init = post.mock.calls.at(-1)![0];
+        await act(async () => {
+          window.dispatchEvent(
+            new MessageEvent('message', {
+              origin: 'null',
+              source: retry.contentWindow,
+              data: { protocol: PICKER_PROTOCOL, channel: init.channel, type: 'ready' },
+            }),
+          );
+        });
+        expect(host.textContent).toContain('Selection mode is on');
+        await act(async () => vi.advanceTimersByTime(8000));
+        expect(host.querySelector('iframe')).toBe(retry);
+      } finally {
+        await act(async () => root.unmount());
+        host.remove();
+      }
+    },
+  );
 });
 
 describe('cross-origin picker bridge', () => {

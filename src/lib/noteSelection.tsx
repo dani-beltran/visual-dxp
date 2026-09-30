@@ -63,7 +63,9 @@ export function restoreNoteSelection(editor: HTMLElement, start: number, end: nu
       last = text;
       text = walker.nextNode();
     }
-    return last ? { node: last, offset: last.textContent?.length ?? 0 } : { node: editor, offset: 0 };
+    return last
+      ? { node: last, offset: last.textContent?.length ?? 0 }
+      : { node: editor, offset: 0 };
   };
   const anchor = position(from);
   const focus = position(to);

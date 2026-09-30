@@ -19,6 +19,7 @@ import { catalog } from '../lib/catalog';
 import { dataTools } from '../lib/data';
 import { elementTriggerEvents, triggerOptions } from '../lib/triggers';
 import type { ConditionType, NodeKind, StepConfig, StepData, WorkflowNode } from '../lib/types';
+import { InfoBox } from './InfoBox';
 import { NoteControls } from './NoteControls';
 import { NoteTextEditor } from './NoteTextEditor';
 import '../styles/inspector.css';
@@ -41,15 +42,6 @@ const nextOutputDescriptions = {
   delay: 'Runs after the pause',
   popover: 'Runs after the popover is displayed',
 } satisfies Record<Exclude<NodeKind, 'fork' | 'loop' | 'note' | 'frame'>, string>;
-
-function InfoBox({ children, className = '' }: { children: ReactNode; className?: string }) {
-  return (
-    <div className={`dxp-inspector-note ${className}`}>
-      <Info size={15} aria-hidden="true" />
-      <p>{children}</p>
-    </div>
-  );
-}
 
 function Field({
   label,

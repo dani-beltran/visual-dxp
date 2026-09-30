@@ -56,7 +56,10 @@ describe('workflow import boundary', () => {
                 noteBold: true,
                 noteItalic: false,
                 noteStrikethrough: true,
-                noteMarks: [{ start: 0, end: 6, bold: true }, { start: 7, end: 11, italic: true, strikethrough: false }],
+                noteMarks: [
+                  { start: 0, end: 6, bold: true },
+                  { start: 7, end: 11, italic: true, strikethrough: false },
+                ],
               },
             },
           },
@@ -78,7 +81,13 @@ describe('workflow import boundary', () => {
       { noteItalic: 1 },
       { noteStrikethrough: null },
       { noteText: 'note', noteMarks: [{ start: 0, end: 5, bold: true }] },
-      { noteText: 'note', noteMarks: [{ start: 0, end: 2 }, { start: 1, end: 3 }] },
+      {
+        noteText: 'note',
+        noteMarks: [
+          { start: 0, end: 2 },
+          { start: 1, end: 3 },
+        ],
+      },
       { noteText: 'note', noteMarks: [{ start: 0, end: 2, italic: 'true' }] },
     ]) {
       expect(

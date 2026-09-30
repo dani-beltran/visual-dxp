@@ -115,14 +115,17 @@ function successIds(onLog: ReturnType<typeof vi.fn<(log: RunLog) => void>>) {
 }
 
 describe('workflow website preview', () => {
-  it.each([false, true])('keeps demo preview executable with includeSubpages=%s', async (includeSubpages) => {
-    const graph = { ...eventWorkflow({ event: 'page-load' }), includeSubpages };
-    const onLog = await renderPreview(graph);
-    const { doc } = await loadWebsite();
-    await clickButton('Run workflow');
-    expect(doc.querySelector('#result')?.textContent).toBe('Triggered');
-    expect(successIds(onLog)).toEqual(['start', 'update']);
-  });
+  it.each([false, true])(
+    'keeps demo preview executable with includeSubpages=%s',
+    async (includeSubpages) => {
+      const graph = { ...eventWorkflow({ event: 'page-load' }), includeSubpages };
+      const onLog = await renderPreview(graph);
+      const { doc } = await loadWebsite();
+      await clickButton('Run workflow');
+      expect(doc.querySelector('#result')?.textContent).toBe('Triggered');
+      expect(successIds(onLog)).toEqual(['start', 'update']);
+    },
+  );
 
   it.each([true, false])(
     'runs page-load triggers and the matching website branch when a member exists: %s',

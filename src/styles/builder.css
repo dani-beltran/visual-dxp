@@ -623,6 +623,9 @@
   background: var(--dxp-primary-color);
   margin: 0 1px;
 }
+.dxp-footer-link {
+  text-decoration: none;
+}
 .dxp-footer-label {
   font-size: 6.5px;
   letter-spacing: 1.25px;
@@ -789,20 +792,8 @@
 .dxp-website-scope strong {
   color: var(--dxp-text-secondary);
 }
-.dxp-website-note {
-  display: flex;
-  gap: 10px;
-  color: var(--dxp-muted);
-  background: var(--dxp-surface-muted);
-  border-radius: 7px;
+.dxp-website-settings > .dxp-website-setup {
   margin: 19px 29px 12px;
-  padding: 14px;
-  font-size: 11px;
-  line-height: 1.8;
-}
-.dxp-website-note svg {
-  flex-shrink: 0;
-  margin-top: 3px;
 }
 .dxp-demo-link {
   border: 0;

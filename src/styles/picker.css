@@ -200,17 +200,10 @@
 .dxp-picker-help code {
   font-size: 10px;
 }
-.dxp-picker-snippet {
-  display: block;
-  background: var(--dxp-primary-soft);
-  border: 1px solid var(--dxp-line);
-  border-radius: 5px;
-  padding: 8px 10px;
-  overflow: auto;
-  white-space: nowrap;
-  color: var(--dxp-text-secondary);
+.dxp-picker-help > .dxp-website-setup {
+  margin: 8px 0;
 }
-.dxp-picker-help button {
+.dxp-picker-help > button {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -233,6 +226,22 @@
   width: 100%;
   height: 100%;
   border: 0;
+}
+.dxp-picker-help-unavailable {
+  height: 100%;
+  max-height: none;
+  border-bottom: 0;
+}
+.dxp-picker-help-unavailable > * {
+  max-width: 640px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.dxp-picker-help-unavailable > .dxp-website-setup {
+  margin: 16px auto;
+}
+.dxp-picker-help-unavailable > p {
+  margin: 5px auto;
 }
 .dxp-picker-empty {
   height: 100%;

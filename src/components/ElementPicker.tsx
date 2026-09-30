@@ -2,6 +2,8 @@ import { ArrowRight, Check, Globe2, Info, MousePointer2, RefreshCw, X } from 'lu
 import { useEffect, useId, useRef, useState } from 'react';
 import type { PickedElement, PickerSession } from '../lib/picker';
 import { normalizeWebsiteUrl, PICKER_PROTOCOL } from '../lib/picker';
+import { websiteUrlInputValue } from '../lib/targeting';
+import { WebsiteSetup } from './WebsiteSetup';
 import '../styles/picker.css';
 
 export interface ElementPickerProps {
@@ -29,18 +31,21 @@ export function ElementPicker({
   const initRef = useRef<() => void>(() => undefined);
   const channelRef = useRef('');
   const selectorRef = useRef(initialSelector);
-  const [urlInput, setUrlInput] = useState(url || '/demo-site.html');
+  const [urlInput, setUrlInput] = useState(() => websiteUrlInputValue(url));
   const [frameUrl, setFrameUrl] = useState(() => {
     try {
-      return normalizeWebsiteUrl(url || '/demo-site.html', window.location.href);
+      return normalizeWebsiteUrl(url.trim() || '/demo-site.html', window.location.href);
     } catch {
       return '';
     }
   });
   const [demoHtml, setDemoHtml] = useState<string>();
+  const [reload, setReload] = useState(0);
   const isDemo = frameUrl === new URL('/demo-site.html', window.location.origin).href;
+  // biome-ignore lint/correctness/useExhaustiveDependencies: Retrying the demo must also retry a failed HTML fetch.
   useEffect(() => {
     if (!isDemo) return;
+    setDemoHtml(undefined);
     const controller = new AbortController();
     void fetch('/demo-site.html', {
       credentials: 'omit',
@@ -59,8 +64,7 @@ export function ElementPicker({
         if (!controller.signal.aborted) setStatus('unavailable');
       });
     return () => controller.abort();
-  }, [isDemo]);
-  const [reload, setReload] = useState(0);
+  }, [isDemo, reload]);
   const [selector, setSelector] = useState(initialSelector);
   const [hovered, setHovered] = useState<PickedElement | null>(null);
   const [selected, setSelected] = useState<PickedElement | null>(null);
@@ -68,6 +72,7 @@ export function ElementPicker({
   const [error, setError] = useState('');
   const [showHelp, setShowHelp] = useState(false);
   const [selectorHint, setSelectorHint] = useState('');
+  const unavailable = status === 'unavailable';
 
   useEffect(() => {
     const prior = document.activeElement as HTMLElement | null;
@@ -77,6 +82,7 @@ export function ElementPicker({
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: Reload replaces the iframe even when its URL stays unchanged, so its picker session must reconnect.
   useEffect(() => {
+    if (unavailable) return;
     if (!frameUrl) {
       setStatus('unavailable');
       return;
@@ -85,6 +91,7 @@ export function ElementPicker({
     let channel = crypto.randomUUID();
     channelRef.current = channel;
     const frame = frameRef.current;
+    const frameWindow = frame?.contentWindow;
     let attached = false;
     let finished = false;
     let retry: number | undefined;
@@ -100,10 +107,7 @@ export function ElementPicker({
       setSelectorHint('');
     };
     const send = (type: string, extra: Record<string, unknown> = {}) =>
-      frame?.contentWindow?.postMessage(
-        { protocol: PICKER_PROTOCOL, type, channel, ...extra },
-        origin,
-      );
+      frameWindow?.postMessage({ protocol: PICKER_PROTOCOL, type, channel, ...extra }, origin);
     const initialize = () => {
       if (attached) return;
       send('init', { selector: selectorRef.current });
@@ -136,7 +140,7 @@ export function ElementPicker({
       typeof (value as PickedElement).tagName === 'string' &&
       typeof (value as PickedElement).text === 'string';
     const message = (event: MessageEvent) => {
-      if (event.source !== frame?.contentWindow || event.origin !== 'null') return;
+      if (event.source !== frameWindow || event.origin !== 'null') return;
       const data = event.data;
       if (!data || data.protocol !== PICKER_PROTOCOL || data.channel !== channel) return;
       if (data.type === 'ready') {
@@ -154,23 +158,30 @@ export function ElementPicker({
             : 'No matching element found. You can still use this selector.',
         );
     };
+    const failed = () => setStatus('unavailable');
+    frame?.addEventListener('error', failed);
     window.addEventListener('message', message);
     reconnect();
     return () => {
       sessionRef.current?.destroy();
       sessionRef.current = null;
       send('stop');
+      frame?.removeEventListener('error', failed);
       window.removeEventListener('message', message);
       window.clearInterval(retry);
       window.clearTimeout(timeout);
       if (initRef.current === reconnect) initRef.current = () => undefined;
     };
-  }, [frameUrl, reload]);
+  }, [frameUrl, reload, unavailable]);
 
   const loadUrl = () => {
     try {
-      const normalized = normalizeWebsiteUrl(urlInput, window.location.href);
+      const normalized = normalizeWebsiteUrl(
+        urlInput.trim() || '/demo-site.html',
+        window.location.href,
+      );
       setError('');
+      setStatus('loading');
       setFrameUrl(normalized);
       setReload((value) => value + 1);
       onUrlChange?.(normalized);
@@ -213,7 +224,32 @@ export function ElementPicker({
     }
   };
   const isValid = validSelector();
-  const bridgeSnippet = `<script src="/picker-bridge.js" data-parent-origin="${typeof window !== 'undefined' ? window.location.origin : 'https://your-editor.example'}"></script>`;
+  const setup = (
+    <div className={`dxp-picker-help${unavailable ? ' dxp-picker-help-unavailable' : ''}`}>
+      {unavailable && (
+        <p role="status">
+          This website couldn’t connect to the picker. Check the setup below, then try Load website
+          again. You can also enter a CSS selector manually.
+        </p>
+      )}
+      <WebsiteSetup />
+      <button
+        type="button"
+        onClick={() => {
+          const demo = new URL('/demo-site.html', window.location.href).href;
+          setUrlInput('');
+          setFrameUrl(demo);
+          setStatus('loading');
+          setError('');
+          setReload((value) => value + 1);
+          onUrlChange?.(demo);
+          setShowHelp(false);
+        }}
+      >
+        Open demo website <ArrowRight size={13} />
+      </button>
+    </div>
+  );
 
   return (
     // biome-ignore lint/a11y/noStaticElementInteractions: The backdrop offers pointer dismissal; dialog controls and Escape provide keyboard dismissal.
@@ -282,7 +318,7 @@ export function ElementPicker({
             aria-label="Website URL"
             value={urlInput}
             onChange={(event) => setUrlInput(event.target.value)}
-            placeholder="https://your-website.com"
+            placeholder="Leave empty to use the demo website"
           />
           <button type="submit" className="dxp-picker-load">
             <RefreshCw size={14} /> Load website
@@ -305,45 +341,17 @@ export function ElementPicker({
           <span className="dxp-picker-hint">
             {hovered ? <code>{hovered.selector}</code> : 'Hover to inspect · Click to select'}
           </span>
-          <button type="button" onClick={() => setShowHelp(!showHelp)} aria-expanded={showHelp}>
-            <Info size={14} /> Website setup
-          </button>
-        </div>
-        {(showHelp || status === 'unavailable') && (
-          <div className="dxp-picker-help">
-            <strong>
-              {status === 'unavailable'
-                ? 'This website has not connected to the picker.'
-                : 'Connect your website'}
-            </strong>
-            <p>
-              Same-origin pages work automatically. For another domain, host{' '}
-              <code>picker-bridge.js</code> from this package on that site and add this script,
-              allowing this editor’s exact origin:
-            </p>
-            <code className="dxp-picker-snippet">{bridgeSnippet}</code>
-            <p>
-              The website must also allow embedding via its CSP <code>frame-ancestors</code> and{' '}
-              <code>X-Frame-Options</code> settings. Browser restrictions cannot be bypassed. You
-              can enter a CSS selector below or try the demo.
-            </p>
-            <button
-              type="button"
-              onClick={() => {
-                const demo = new URL('/demo-site.html', window.location.href).href;
-                setUrlInput(demo);
-                setFrameUrl(demo);
-                setReload((value) => value + 1);
-                onUrlChange?.(demo);
-                setShowHelp(false);
-              }}
-            >
-              Open demo website <ArrowRight size={13} />
+          {!unavailable && (
+            <button type="button" onClick={() => setShowHelp(!showHelp)} aria-expanded={showHelp}>
+              <Info size={14} /> Website setup
             </button>
-          </div>
-        )}
+          )}
+        </div>
+        {showHelp && !unavailable && setup}
         <div className="dxp-picker-frame-wrap">
-          {frameUrl ? (
+          {unavailable ? (
+            setup
+          ) : frameUrl ? (
             <iframe
               key={`${frameUrl}-${reload}`}
               ref={frameRef}

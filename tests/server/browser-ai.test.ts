@@ -13,7 +13,14 @@ import type { AIChatRequest } from '../../src/server/ai/workflow/ai';
 const input: AIChatRequest = {
   messages: [{ role: 'user', content: 'Explain' }],
   selectedNodeIds: [],
-  workflow: { version: 1, name: 'test', websiteUrl: 'https://site.test', includeSubpages: false, nodes: [], edges: [] },
+  workflow: {
+    version: 1,
+    name: 'test',
+    websiteUrl: 'https://site.test',
+    includeSubpages: false,
+    nodes: [],
+    edges: [],
+  },
 };
 const headers = {
   'Content-Type': 'application/json',

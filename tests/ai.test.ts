@@ -353,24 +353,64 @@ describe('atomic AI workflow edits', () => {
 describe('AI protocol boundaries', () => {
   it('retains selection formatting in requests, fingerprints, and merged mark-only updates', () => {
     const input = request();
-    input.workflow.nodes.push(step('note', 'note', {
-      noteText: 'Hello world',
-      noteMarks: [{ start: 6, end: 11, bold: true, italic: false }],
-    }));
+    input.workflow.nodes.push(
+      step('note', 'note', {
+        noteText: 'Hello world',
+        noteMarks: [{ start: 6, end: 11, bold: true, italic: false }],
+      }),
+    );
     const parsed = parseAIChatRequest(input);
-    expect(parsed.workflow.nodes.at(-1)?.data.config.noteMarks).toEqual([{ start: 6, end: 11, bold: true, italic: false }]);
-    const modified = applyWorkflowOperations(input.workflow, [{ type: 'update_node', id: 'note', config: { noteMarks: [{ start: 0, end: 5, italic: true, untrusted: '<script>' }] } }]);
-    expect(modified.nodes.at(-1)?.data.config.noteMarks).toEqual([{ start: 0, end: 5, italic: true }]);
+    expect(parsed.workflow.nodes.at(-1)?.data.config.noteMarks).toEqual([
+      { start: 6, end: 11, bold: true, italic: false },
+    ]);
+    const modified = applyWorkflowOperations(input.workflow, [
+      {
+        type: 'update_node',
+        id: 'note',
+        config: { noteMarks: [{ start: 0, end: 5, italic: true, untrusted: '<script>' }] },
+      },
+    ]);
+    expect(modified.nodes.at(-1)?.data.config.noteMarks).toEqual([
+      { start: 0, end: 5, italic: true },
+    ]);
     expect(workflowFingerprint(modified)).not.toBe(workflowFingerprint(input.workflow));
-    expect(() => applyWorkflowOperations(input.workflow, [{ type: 'update_node', id: 'note', config: { noteMarks: [{ start: 0, end: 12, bold: true }] } }])).toThrow(/ranges within the note text/);
+    expect(() =>
+      applyWorkflowOperations(input.workflow, [
+        {
+          type: 'update_node',
+          id: 'note',
+          config: { noteMarks: [{ start: 0, end: 12, bold: true }] },
+        },
+      ]),
+    ).toThrow(/ranges within the note text/);
   });
 
   it('clears stale selected and legacy formatting when AI replaces note text without marks', () => {
     const original = workflow();
-    original.nodes.push(step('note', 'note', { noteText: 'Old explanation', noteBold: true, noteMarks: [{ start: 4, end: 15, italic: true }] }));
-    const replaced = applyWorkflowOperations(original, [{ type: 'update_node', id: 'note', config: { noteText: 'New' } }]);
-    expect(replaced.nodes.at(-1)?.data.config).toEqual({ noteText: 'New', noteMarks: [], noteBold: false, noteItalic: false, noteStrikethrough: false });
-    const styled = applyWorkflowOperations(original, [{ type: 'update_node', id: 'note', config: { noteText: 'New', noteMarks: [{ start: 0, end: 3, bold: true }] } }]);
+    original.nodes.push(
+      step('note', 'note', {
+        noteText: 'Old explanation',
+        noteBold: true,
+        noteMarks: [{ start: 4, end: 15, italic: true }],
+      }),
+    );
+    const replaced = applyWorkflowOperations(original, [
+      { type: 'update_node', id: 'note', config: { noteText: 'New' } },
+    ]);
+    expect(replaced.nodes.at(-1)?.data.config).toEqual({
+      noteText: 'New',
+      noteMarks: [],
+      noteBold: false,
+      noteItalic: false,
+      noteStrikethrough: false,
+    });
+    const styled = applyWorkflowOperations(original, [
+      {
+        type: 'update_node',
+        id: 'note',
+        config: { noteText: 'New', noteMarks: [{ start: 0, end: 3, bold: true }] },
+      },
+    ]);
     expect(styled.nodes.at(-1)?.data.config.noteMarks).toEqual([{ start: 0, end: 3, bold: true }]);
   });
 
@@ -409,7 +449,12 @@ describe('AI protocol boundaries', () => {
       { noteItalic: 1 },
       { noteStrikethrough: null },
       { noteMarks: [{ start: 0, end: 1, bold: 'true' }] },
-      { noteMarks: [{ start: 2, end: 4 }, { start: 1, end: 2 }] },
+      {
+        noteMarks: [
+          { start: 2, end: 4 },
+          { start: 1, end: 2 },
+        ],
+      },
     ]) {
       expect(() =>
         parseAIChatResponse({

@@ -66,7 +66,12 @@ import { getNodeDataPorts } from '../lib/nodeData';
 import { NoteEditingContext } from '../lib/noteEditing';
 import { NoteSelectionProvider, useNoteSelection } from '../lib/noteSelection';
 import { isWorkflow } from '../lib/serialization';
-import { EXPORT_TARGET_MESSAGE, resolveWebsiteUrl, validateExportTarget } from '../lib/targeting';
+import {
+  EXPORT_TARGET_MESSAGE,
+  resolveWebsiteUrl,
+  validateExportTarget,
+  websiteUrlInputValue,
+} from '../lib/targeting';
 import type {
   NodeKind,
   RunLog,
@@ -84,11 +89,13 @@ import { CanvasChat } from './CanvasChat';
 import { CanvasHelp } from './CanvasHelp';
 import { EdgeInspector } from './EdgeInspector';
 import { ElementPicker } from './ElementPicker';
+import { InfoBox } from './InfoBox';
 import { NodeInspector } from './NodeInspector';
 import { NodeLibrary } from './NodeLibrary';
 import { PopoverPreview } from './PopoverPreview';
 import { PresetsPanel } from './PresetsPanel';
 import { Preview } from './Preview';
+import { WebsiteSetup } from './WebsiteSetup';
 import { WorkflowCard } from './WorkflowCard';
 import '@xyflow/react/dist/style.css';
 import '../styles/builder.css';
@@ -271,7 +278,7 @@ function Builder({
   const [statuses, setStatuses] = useState<Record<string, RunLog['status']>>({});
   const [showMinimap, setShowMinimap] = useState(false);
   const [zoom, setZoom] = useState(100);
-  const [websiteDraft, setWebsiteDraft] = useState(workflow.websiteUrl);
+  const [websiteDraft, setWebsiteDraft] = useState(() => websiteUrlInputValue(workflow.websiteUrl));
   const [includeSubpagesDraft, setIncludeSubpagesDraft] = useState(
     workflow.includeSubpages ?? false,
   );
@@ -279,7 +286,7 @@ function Builder({
   const websiteOptions = useRef<WebsiteConfigurationOptions>({});
   const configureWebsite = useCallback((options: WebsiteConfigurationOptions = {}) => {
     websiteOptions.current = options;
-    setWebsiteDraft(current.current.websiteUrl ?? '');
+    setWebsiteDraft(websiteUrlInputValue(current.current.websiteUrl ?? ''));
     setIncludeSubpagesDraft(current.current.includeSubpages ?? false);
     setWebsiteError('');
     setModal('website');
@@ -290,7 +297,8 @@ function Builder({
   }, []);
   let websiteScope: URL | undefined;
   try {
-    websiteScope = resolveWebsiteUrl(websiteDraft);
+    const target = resolveWebsiteUrl(websiteDraft.trim() || '/demo-site.html');
+    if (target.href !== resolveWebsiteUrl('/demo-site.html').href) websiteScope = target;
   } catch {
     // The save action reports invalid input; omit scope until it can be parsed.
   }
@@ -865,10 +873,11 @@ function Builder({
   }
   function saveWebsite() {
     try {
-      resolveWebsiteUrl(websiteDraft);
+      const websiteUrl = websiteDraft.trim() || '/demo-site.html';
+      resolveWebsiteUrl(websiteUrl);
       const next = {
         ...current.current,
-        websiteUrl: websiteDraft.trim(),
+        websiteUrl,
         includeSubpages: includeSubpagesDraft,
       };
       if (websiteOptions.current.requireExportable) validateExportTarget(next);
@@ -1316,7 +1325,9 @@ function Builder({
           {workflow.nodes.length} nodes <i /> {workflow.edges.length} connections
         </span>
         <span>
-          <span className="dxp-footer-label">MADE FOR THE MOMENTS THAT MATTER</span>
+          <a className="dxp-footer-link" href="https://github.com/dani-beltran" target="_blank" rel="noopener noreferrer">
+            <span className="dxp-footer-label">CREATED WITH LOVE BY DANIEL J.L. BELTRAN</span>
+          </a>
           <span className="dxp-footer-shortcut">
             <Command size={11} /> Z to undo
           </span>
@@ -1403,7 +1414,7 @@ function Builder({
                   aria-invalid={Boolean(websiteError)}
                   aria-describedby={websiteError ? `${viewId}-website-error` : undefined}
                   value={websiteDraft}
-                  placeholder="https://your-website.com"
+                  placeholder="Leave empty to use the demo website"
                   onChange={(e) => setWebsiteDraft(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') saveWebsite();
@@ -1412,6 +1423,20 @@ function Builder({
                   autoFocus
                 />
               </label>
+              {websiteScope && (
+                <div className="dxp-website-scope" role="status">
+                  <InfoBox>
+                    <strong>Effective scope: {websiteScope.href}</strong>
+                    <br />
+                    Trailing slashes, query parameters, and fragments do not change the scope.
+                  </InfoBox>
+                </div>
+              )}
+              {websiteError && (
+                <p id={`${viewId}-website-error`} className="dxp-error" role="alert">
+                  {websiteError}
+                </p>
+              )}
               <label className="dxp-subpages-option">
                 <input
                   type="checkbox"
@@ -1424,40 +1449,8 @@ function Builder({
               <p id={`${viewId}-subpages-help`} className="dxp-subpages-help">
                 Also run this experience on pages beneath this URL.
               </p>
-              {websiteScope && (
-                <div className="dxp-website-scope" role="status">
-                  <strong>Effective scope: {websiteScope.href}</strong>
-                  <p>
-                    {websiteScope.pathname === '/'
-                      ? includeSubpagesDraft
-                        ? 'The homepage and all subpages.'
-                        : 'The homepage only.'
-                      : includeSubpagesDraft
-                        ? `This page and descendants beneath ${websiteScope.pathname}/, excluding similarly named paths such as ${websiteScope.pathname}-sale.`
-                        : 'This page only.'}
-                  </p>
-                  <p>
-                    Trailing slashes, query parameters,
-                    and fragments do not change the scope.
-                  </p>
-                </div>
-              )}
-              {websiteError && (
-                <p id={`${viewId}-website-error`} className="dxp-error" role="alert">
-                  {websiteError}
-                </p>
-              )}
-              <div className="dxp-website-note">
-                <Globe2 size={18} />
-                <p>
-                  Your website need the picker bridge and permission to load in an iframe.
-                </p>
-              </div>
-              <button
-                type="button"
-                className="dxp-demo-link"
-                onClick={() => setWebsiteDraft('/demo-site.html')}
-              >
+              <WebsiteSetup />
+              <button type="button" className="dxp-demo-link" onClick={() => setWebsiteDraft('')}>
                 <RotateCcw size={13} /> Use the demo website
               </button>
               <div className="dxp-modal-footer">

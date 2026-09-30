@@ -8,6 +8,16 @@ export interface ExportOptions {
   baseUrl?: string;
 }
 
+/** Keep the built-in demo implicit in website URL inputs. */
+export function websiteUrlInputValue(value: string): string {
+  if (value.trim() === '/demo-site.html') return '';
+  try {
+    return resolveWebsiteUrl(value).href === resolveWebsiteUrl('/demo-site.html').href ? '' : value;
+  } catch {
+    return value;
+  }
+}
+
 /** Resolve target scope from the editor origin, never its current route or document base. */
 export function resolveWebsiteUrl(value: string, baseUrl?: string): URL {
   if (typeof value !== 'string' || !value.trim()) throw new Error('Enter a website URL.');

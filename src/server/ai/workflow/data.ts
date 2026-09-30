@@ -100,7 +100,9 @@ export function createDataTools() {
   }
 
   function usesIncomingValue(config: ElementValueConfig): boolean {
-    return config.valueSource === 'incoming-data' && !['hide', 'show'].includes(config.action ?? 'text');
+    return (
+      config.valueSource === 'incoming-data' && !['hide', 'show'].includes(config.action ?? 'text')
+    );
   }
 
   function validateElementValue(config: ElementValueConfig): void {
@@ -118,8 +120,11 @@ export function createDataTools() {
     if (typeof value === 'string') return value;
     if (typeof value === 'number' || typeof value === 'boolean') return String(value);
     if (config.action === 'add-class' || config.action === 'remove-class') {
-      if (Array.isArray(value) && value.every((item) => typeof item === 'string')) return value.join(' ');
-      throw new Error('Incoming CSS classes must be text, a number, a boolean, or an array of strings.');
+      if (Array.isArray(value) && value.every((item) => typeof item === 'string'))
+        return value.join(' ');
+      throw new Error(
+        'Incoming CSS classes must be text, a number, a boolean, or an array of strings.',
+      );
     }
     return JSON.stringify(value);
   }
