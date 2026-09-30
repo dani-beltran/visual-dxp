@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   description:
     'Build website workflows visually, test them live, and export standalone JavaScript.',
   icons: {
-    icon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='12' fill='%231c7556'/%3E%3Cpath d='M12 28V12h17v5H17v3h9v5h-9v3z' fill='white'/%3E%3C/svg%3E",
+    icon: '/visual-dxp-symbol.png',
   },
 };
 
