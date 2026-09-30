@@ -155,6 +155,8 @@ export interface RunLog {
   timestamp: number;
 }
 export interface ValidationIssue {
+  /** Stable identifier for issues that affect editor behavior. */
+  code?: string;
   nodeId?: string;
   message: string;
 }

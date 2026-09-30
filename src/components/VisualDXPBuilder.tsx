@@ -44,7 +44,13 @@ import {
   useState,
   useSyncExternalStore,
 } from 'react';
-import { type ActivityEntry, type ActivityStore, createActivityStore } from '../lib/activity';
+import {
+  type ActivityAction,
+  type ActivityEntry,
+  type ActivityStore,
+  activityAction,
+  createActivityStore,
+} from '../lib/activity';
 import {
   type AIChatConfig,
   type AIChatMessage,
@@ -59,20 +65,19 @@ import {
   resolveAIEndpoint,
 } from '../lib/aiCredentials';
 import { AISettingsStore } from '../lib/aiSettings';
-import { catalog, createNode, defaultWorkflow } from '../lib/catalog';
+import { createNode, defaultWorkflow, getCatalog } from '../lib/catalog';
 import { validateWorkflow } from '../lib/export';
+import { getFlowLabels } from '../lib/flowLabels';
 import { duplicateNode, framesFirst, groupNodes, nodeSize, removeNodes } from '../lib/frames';
+import type { BuilderI18n } from '../lib/i18n';
+import { formatBuilderError } from '../lib/i18n';
+import { BuilderI18nProvider, useBuilderI18n } from '../lib/i18nContext';
 import { getNodeDataPorts } from '../lib/nodeData';
 import { NoteEditingContext } from '../lib/noteEditing';
 import { NoteSelectionProvider, useNoteSelection } from '../lib/noteSelection';
 import { normalizeWebsiteUrl } from '../lib/picker';
 import { isWorkflow } from '../lib/serialization';
-import {
-  EXPORT_TARGET_MESSAGE,
-  resolveWebsiteUrl,
-  validateExportTarget,
-  websiteUrlInputValue,
-} from '../lib/targeting';
+import { resolveWebsiteUrl, validateExportTarget, websiteUrlInputValue } from '../lib/targeting';
 import type {
   NodeKind,
   RunLog,
@@ -130,6 +135,8 @@ export interface VisualDXPBuilderApi {
   flushActivity: () => void;
 }
 export interface VisualDXPBuilderProps {
+  /** Host-supplied translations; omitted messages fall back to English. */
+  i18n?: BuilderI18n;
   initialWorkflow?: Workflow;
   /** Optional configurations shown in Presets. Applying replaces the graph as one undoable edit. */
   presets?: readonly WorkflowPreset[];
@@ -161,11 +168,13 @@ function copyWorkflow(w: Workflow): Workflow {
 }
 export function VisualDXPBuilder(props: VisualDXPBuilderProps) {
   return (
-    <ReactFlowProvider>
-      <NoteSelectionProvider>
-        <Builder {...props} />
-      </NoteSelectionProvider>
-    </ReactFlowProvider>
+    <BuilderI18nProvider i18n={props.i18n}>
+      <ReactFlowProvider>
+        <NoteSelectionProvider>
+          <Builder {...props} />
+        </NoteSelectionProvider>
+      </ReactFlowProvider>
+    </BuilderI18nProvider>
   );
 }
 function Builder({
@@ -180,6 +189,8 @@ function Builder({
   activityUser = 'You',
   ai,
 }: VisualDXPBuilderProps) {
+  const { t, locale, direction } = useBuilderI18n();
+  const catalog = getCatalog(t);
   const [localActivityStore] = useState(() => createActivityStore());
   const store = activityStore ?? localActivityStore;
   const subscribeActivity = useCallback(
@@ -372,6 +383,8 @@ function Builder({
         : edge;
     });
   }, [workflow.nodes, workflow.edges]);
+  const translation = useRef(t);
+  translation.current = t;
   const notify = useCallback((message: string) => setToast(message), []);
   const pendingActivity = useRef<{
     key: string;
@@ -383,10 +396,10 @@ function Builder({
       try {
         targetStore.append(entry);
       } catch {
-        notify('The activity could not be saved. Your workflow edit is still applied.');
+        notify(t('builder.theActivityCouldNotBeSavedYourWorkflowEditIsStillApplied'));
       }
     },
-    [notify],
+    [notify, t],
   );
   const flushActivity = useCallback(() => {
     const pending = pendingActivity.current;
@@ -396,7 +409,7 @@ function Builder({
     appendActivity(pending.activity.store, pending.activity.entry);
   }, [appendActivity]);
   const recordActivity = useCallback(
-    (action: string, key?: string) => {
+    (action: ActivityAction, key?: string) => {
       const pending = pendingActivity.current;
       const username = activityUser.trim() || 'You';
       const coalesced =
@@ -413,7 +426,7 @@ function Builder({
       const entry: ActivityEntry = {
         id: coalesced?.activity.entry.id ?? crypto.randomUUID(),
         username,
-        action,
+        ...action,
         timestamp: new Date().toISOString(),
       };
       const recorded = coalesced?.activity ?? { entry, store };
@@ -452,7 +465,9 @@ function Builder({
         localStorage.setItem(persistenceKey, JSON.stringify(workflow));
         setSaved(true);
       } catch {
-        notify('Browser storage is unavailable. Export your workflow to keep a copy.');
+        notify(
+          translation.current('builder.browserStorageIsUnavailableExportYourWorkflowToKeepACopy'),
+        );
       }
     }, 550);
     return () => clearTimeout(timer);
@@ -480,7 +495,7 @@ function Builder({
     [store, activityUser],
   );
   const commit = useCallback(
-    (update: (w: Workflow) => Workflow, action: string, activityKey?: string) => {
+    (update: (w: Workflow) => Workflow, action: ActivityAction, activityKey?: string) => {
       const next = update(current.current);
       if (JSON.stringify(next) === JSON.stringify(current.current)) return;
       const entry = remember(activityKey);
@@ -499,10 +514,14 @@ function Builder({
         setStatuses({});
         setPicking(false);
         setModal('preview');
-        recordActivity(`Opened a test preview of “${current.current.name}”`);
+        recordActivity(activityAction('activity.previewOpened', { name: current.current.name }));
       },
       renameWorkflow: (name) => {
-        commit((w) => ({ ...w, name }), `Renamed the workflow to “${name}”`, 'workflow:name');
+        commit(
+          (w) => ({ ...w, name }),
+          activityAction('activity.workflowRenamed', { name }),
+          'workflow:name',
+        );
       },
       fitView: () => {
         void flow.fitView({ padding: 0.18, duration: 350 });
@@ -528,7 +547,7 @@ function Builder({
               : node,
           ),
         }),
-        `Updated settings for “${note.data.label}”`,
+        activityAction('activity.settingsUpdated', { label: note.data.label }),
         `node:${id}:config`,
       );
     },
@@ -559,10 +578,10 @@ function Builder({
       try {
         prev.activity.store.remove(prev.activity.entry.id);
       } catch {
-        notify('The change was undone, but its activity entry could not be removed.');
+        notify(t('builder.theChangeWasUndoneButItsActivityEntryCouldNotBeRemoved'));
       }
     }
-  }, [flushActivity, notify]);
+  }, [flushActivity, notify, t]);
   const redo = useCallback(() => {
     const next = history.current.future.pop();
     if (!next) return;
@@ -649,7 +668,9 @@ function Builder({
         );
         const entry = remember(undefined, resizeStartWorkflow.current);
         entry.activity = recordActivity(
-          `Resized “${next.nodes.find((node) => node.id === resize.id)?.data.label ?? 'Frame'}”`,
+          activityAction('activity.nodeResized', {
+            label: next.nodes.find((node) => node.id === resize.id)?.data.label ?? '',
+          }),
         );
         resizeStartWorkflow.current = null;
       }
@@ -658,8 +679,8 @@ function Builder({
       if (entry) {
         entry.activity = recordActivity(
           moved.length === 1
-            ? `Moved “${moved[0].data.label}” on the canvas`
-            : `Moved ${moved.length} steps on the canvas`,
+            ? activityAction('activity.nodeMoved', { label: moved[0].data.label })
+            : activityAction('activity.nodesMoved', { count: moved.length }),
           activityKey,
         );
       }
@@ -690,10 +711,17 @@ function Builder({
     const removedEdges = new Set(edges.map((edge) => edge.id));
     const label = (id: string) => current.current.nodes.find((node) => node.id === id)?.data.label;
     const action = nodes.length
-      ? `${nodes.length === 1 ? `Deleted “${nodes[0].data.label}”` : `Deleted ${nodes.length} steps`}${edges.length ? ` and ${edges.length} ${edges.length === 1 ? 'connection' : 'connections'}` : ''}`
+      ? activityAction('activity.deleted', {
+          count: nodes.length,
+          label: nodes[0].data.label,
+          connections: edges.length,
+        })
       : edges.length === 1
-        ? `Disconnected “${label(edges[0].source) ?? 'step'}” from “${label(edges[0].target) ?? 'step'}”`
-        : `Removed ${edges.length} connections`;
+        ? activityAction('activity.disconnected', {
+            source: label(edges[0].source) ?? '',
+            target: label(edges[0].target) ?? '',
+          })
+        : activityAction('activity.connectionsRemoved', { count: edges.length });
     commit(
       (w) => ({
         ...w,
@@ -714,35 +742,40 @@ function Builder({
   const onConnect = useCallback(
     (connection: Connection) => {
       if (connection.source === connection.target) {
-        notify('Connect this step to a different step.');
+        notify(t('builder.connectThisStepToADifferentStep'));
         return;
       }
       const target = current.current.nodes.find((n) => n.id === connection.target);
       const source = current.current.nodes.find((n) => n.id === connection.source);
       if (source?.data.kind === 'note' || target?.data.kind === 'note') {
-        notify('Notes are canvas annotations and cannot be connected.');
+        notify(t('builder.notesAreCanvasAnnotationsAndCannotBeConnected'));
         return;
       }
       if (source?.data.kind === 'frame' || target?.data.kind === 'frame') {
-        notify('Connect the steps inside a frame to build your workflow.');
+        notify(t('builder.connectTheStepsInsideAFrameToBuildYourWorkflow'));
         return;
       }
       if (target?.data.kind === 'trigger') {
-        notify('Triggers begin a journey and cannot receive connections.');
+        notify(t('builder.triggersBeginAJourneyAndCannotReceiveConnections'));
         return;
       }
       const candidate = { ...current.current, edges: addEdge(connection, current.current.edges) };
-      const problem = validateWorkflow(candidate).find((i) => /circular|cycle/i.test(i.message));
+      const problem = validateWorkflow(candidate, t).find(
+        (issue) => issue.code === 'workflow.cycle',
+      );
       if (problem) {
         notify(problem.message);
         return;
       }
       commit(
         (w) => ({ ...w, edges: addEdge({ ...connection, type: 'smoothstep' }, w.edges) }),
-        `Connected “${source?.data.label ?? 'step'}” to “${target?.data.label ?? 'step'}”`,
+        activityAction('activity.connected', {
+          source: source?.data.label ?? '',
+          target: target?.data.label ?? '',
+        }),
       );
     },
-    [commit, notify],
+    [commit, notify, t],
   );
   function add(kind: NodeKind, position?: { x: number; y: number }) {
     const rect = canvas.current?.getBoundingClientRect();
@@ -755,6 +788,7 @@ function Builder({
           })
         : { x: 200, y: 200 });
     const node = createNode(kind, point);
+    node.data.label = t(`nodes.${kind}.label`);
     commit(
       (w) => ({
         ...w,
@@ -768,11 +802,15 @@ function Builder({
           kind === 'frame' ? node.id : undefined,
         ),
       }),
-      `Added “${node.data.label}”`,
+      activityAction('activity.nodeAdded', { label: node.data.label }),
     );
     setSelectedId(node.id);
     setSelectedEdgeId(null);
-    notify(`${catalog.find((c) => c.kind === kind)!.label} added`);
+    notify(
+      t('builder.labelAdded', {
+        label: String(catalog.find((c) => c.kind === kind)!.label),
+      }),
+    );
   }
   function patchNode(patch: Partial<StepData>) {
     if (!selected) return;
@@ -784,21 +822,26 @@ function Builder({
         ),
       }),
       patch.label !== undefined
-        ? `Renamed a ${selected.data.kind === 'frame' ? 'frame' : 'step'} to “${patch.label}”`
-        : `Updated ${patch.description !== undefined ? 'the description of' : 'settings for'} “${selected.data.label}”`,
+        ? activityAction('activity.nodeRenamed', { kind: selected.data.kind, label: patch.label })
+        : patch.description !== undefined
+          ? activityAction('activity.descriptionUpdated', { label: selected.data.label })
+          : activityAction('activity.settingsUpdated', { label: selected.data.label }),
       `node:${selected.id}:${Object.keys(patch).sort().join(',')}`,
     );
   }
   function renameEdge(label: string) {
     if (!selectedEdge) return;
     const nodeLabel = (id: string) => workflow.nodes.find((node) => node.id === id)?.data.label;
-    const connection = `the connection from “${nodeLabel(selectedEdge.source) ?? 'step'}” to “${nodeLabel(selectedEdge.target) ?? 'step'}”`;
     commit(
       (w) => ({
         ...w,
         edges: w.edges.map((edge) => (edge.id === selectedEdge.id ? { ...edge, label } : edge)),
       }),
-      label ? `Renamed ${connection} to “${label}”` : `Removed the name of ${connection}`,
+      activityAction('activity.connectionRenamed', {
+        source: nodeLabel(selectedEdge.source) ?? '',
+        target: nodeLabel(selectedEdge.target) ?? '',
+        label,
+      }),
       `edge:${selectedEdge.id}:label`,
     );
   }
@@ -810,26 +853,32 @@ function Builder({
         nodes: removeNodes(w.nodes, new Set([selected.id])),
         edges: w.edges.filter((e) => e.source !== selectedId && e.target !== selectedId),
       }),
-      `Deleted “${selected.data.label}”`,
+      activityAction('activity.nodeDeleted', { label: selected.data.label }),
     );
     setSelectedId(null);
   }
   function duplicate() {
     if (!selected) return;
     const copy = duplicateNode(current.current, selected);
-    commit(() => copy.workflow, `Duplicated “${selected.data.label}”`);
+    commit(
+      () => copy.workflow,
+      activityAction('activity.nodeDuplicated', { label: selected.data.label }),
+    );
     setSelectedId(copy.selectedId);
     setSelectedEdgeId(null);
   }
   function applyPreset(preset: WorkflowPreset): string | undefined {
     let next: Workflow;
     try {
-      if (!isWorkflow(preset.workflow)) throw new Error('Invalid workflow structure.');
+      if (!isWorkflow(preset.workflow)) throw new Error(t('builder.invalidWorkflowStructure'));
       next = copyWorkflow(preset.workflow);
-      const issues = validateWorkflow(next);
+      const issues = validateWorkflow(next, t);
       if (issues.length) throw new Error(issues.map((issue) => issue.message).join(' '));
     } catch (error) {
-      return `Could not apply “${preset.name}”. ${error instanceof Error ? error.message : 'Invalid workflow.'}`;
+      return t('builder.couldNotApplyNameValue', {
+        name: String(preset.name),
+        value: String(error instanceof Error ? formatBuilderError(error, t) : 'Invalid workflow.'),
+      });
     }
     // Discard saved editor state as well as the current editor's transient state.
     for (const node of next.nodes) {
@@ -842,7 +891,7 @@ function Builder({
     for (const edge of next.edges) delete edge.selected;
     commit(
       (w) => ({ ...w, nodes: next.nodes, edges: next.edges }),
-      `Applied preset “${preset.name}”`,
+      activityAction('activity.presetApplied', { name: preset.name }),
     );
     setSelectedId(null);
     setSelectedEdgeId(null);
@@ -858,20 +907,27 @@ function Builder({
     changeView('canvas');
     document.getElementById(`${viewId}-canvas-tab`)?.focus();
     setFitPreset(true);
-    notify(`Applied “${preset.name}”. Use Undo to restore your previous workflow.`);
+    notify(
+      t('builder.appliedNameUseUndoToRestoreYourPreviousWorkflow', {
+        name: String(preset.name),
+      }),
+    );
   }
   async function importFile(file?: File) {
     if (!file) return;
     try {
       const value: unknown = JSON.parse(await file.text());
-      if (!isWorkflow(value)) throw new Error('Choose a valid Visual DXP workflow JSON file.');
-      commit(() => copyWorkflow(value), `Imported workflow “${value.name}”`);
+      if (!isWorkflow(value)) throw new Error(t('builder.chooseAValidVisualDxpWorkflowJsonFile'));
+      commit(
+        () => copyWorkflow(value),
+        activityAction('activity.workflowImported', { name: value.name }),
+      );
       setSelectedId(null);
       setSelectedEdgeId(null);
       setTimeout(() => void flow.fitView({ padding: 0.2, duration: 300 }), 80);
-      notify('Workflow imported');
+      notify(t('builder.workflowImported'));
     } catch (e) {
-      notify(e instanceof Error ? e.message : 'Could not import this file');
+      notify(e instanceof Error ? formatBuilderError(e, t) : t('builder.couldNotImportThisFile'));
     }
     if (upload.current) upload.current.value = '';
   }
@@ -887,18 +943,21 @@ function Builder({
       if (websiteOptions.current.requireExportable) validateExportTarget(next);
       commit(
         () => next,
-        `Changed the target website to “${next.websiteUrl}” (${includeSubpagesDraft ? 'including subpages' : 'this page only'})`,
+        activityAction('activity.websiteConfigured', {
+          url: next.websiteUrl,
+          includeSubpages: includeSubpagesDraft,
+        }),
       );
       const onSave = websiteOptions.current.onSave;
       closeWebsite();
-      notify('Target website updated');
+      notify(t('builder.targetWebsiteUpdated'));
       onSave?.(copyWorkflow(next));
     } catch (error) {
-      setWebsiteError((error as Error).message);
+      setWebsiteError(formatBuilderError(error, t));
     }
   }
   async function sendAIMessage(messages: AIChatMessage[], signal: AbortSignal) {
-    if (!aiEnabled || !ai) throw new Error('Connect the assistant service to start chatting.');
+    if (!aiEnabled || !ai) throw new Error(t('builder.connectTheAssistantServiceToStartChatting'));
     const snapshot = copyWorkflow(current.current);
     const baseline = workflowFingerprint(snapshot);
     const controller = new AbortController();
@@ -926,32 +985,30 @@ function Builder({
     signal.throwIfAborted();
     controller.signal.throwIfAborted();
     if (baseline !== workflowFingerprint(current.current)) {
-      throw new Error(
-        'The canvas changed while I was working. Send your message again to use the latest version.',
-      );
+      throw new Error(t('builder.theCanvasChangedWhileIWasWorkingSendYourMessageAgainTo'));
     }
     const updated = applyWorkflowOperations(current.current, response.operations);
     const changed = workflowFingerprint(updated) !== baseline;
     if (changed) {
       commit(
         () => updated,
-        `Applied ${response.operations.length} ${response.operations.length === 1 ? 'edit' : 'edits'} with the AI assistant`,
+        activityAction('activity.aiEditsApplied', { count: response.operations.length }),
       );
       if (selectedId && !updated.nodes.some((node) => node.id === selectedId)) setSelectedId(null);
       if (selectedEdgeId && !updated.edges.some((edge) => edge.id === selectedEdgeId))
         setSelectedEdgeId(null);
-      notify('AI updated your workflow. Use Undo to revert this change.');
+      notify(t('builder.aiUpdatedYourWorkflowUseUndoToRevertThisChange'));
       requestAnimationFrame(() => void flow.fitView({ padding: 0.2, duration: 300 }));
     }
     return { message: response.message, changeCount: changed ? response.operations.length : 0 };
   }
   return (
-    <div className={`dxp-builder ${className}`} style={style}>
+    <div lang={locale} dir={direction} className={`dxp-builder ${className}`} style={style}>
       <div className="dxp-toolbar">
         <div
           className="dxp-view-tabs"
           role="tablist"
-          aria-label="Builder views"
+          aria-label={t('builder.builderViews')}
           onKeyDown={(event) => {
             if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
             event.preventDefault();
@@ -966,7 +1023,11 @@ function Builder({
                 : event.key === 'End'
                   ? tabs[tabs.length - 1]
                   : tabs[
-                      (index + (event.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length
+                      (index +
+                        ((event.key === 'ArrowRight') === (direction === 'ltr')
+                          ? 1
+                          : tabs.length - 1)) %
+                        tabs.length
                     ];
             changeView(next);
             document.getElementById(`${viewId}-${next}-tab`)?.focus();
@@ -982,7 +1043,7 @@ function Builder({
             className={view === 'canvas' ? 'active' : ''}
             onClick={() => changeView('canvas')}
           >
-            <WorkflowIcon size={15} /> Canvas
+            <WorkflowIcon size={15} /> {t('builder.canvas')}
           </button>
           {showPresets && (
             <button
@@ -995,7 +1056,7 @@ function Builder({
               className={view === 'presets' ? 'active' : ''}
               onClick={() => changeView('presets')}
             >
-              <LayoutTemplate size={15} /> Presets
+              <LayoutTemplate size={15} /> {t('builder.presets')}
             </button>
           )}
           <button
@@ -1008,7 +1069,7 @@ function Builder({
             className={view === 'activity' ? 'active' : ''}
             onClick={() => changeView('activity')}
           >
-            <History size={15} /> Activity
+            <History size={15} /> {t('builder.activity')}
           </button>
           {showAISettings && (
             <button
@@ -1021,26 +1082,30 @@ function Builder({
               className={view === 'settings' ? 'active' : ''}
               onClick={() => changeView('settings')}
             >
-              <KeyRound size={15} /> AI Settings
+              <KeyRound size={15} /> {t('builder.aiSettings')}
             </button>
           )}
         </div>
         <span className="dxp-toolbar-divider" />
         <span className="dxp-save-state">
           <Check size={13} />
-          {persistenceKey ? (saved ? 'All changes saved' : 'Saving…') : 'Ready to build'}
+          {persistenceKey
+            ? saved
+              ? t('builder.allChangesSaved')
+              : t('builder.saving')
+            : t('builder.readyToBuild')}
         </span>
         <div className="dxp-toolbar-spacer" />
         <button
           type="button"
           className="dxp-website-button"
-          aria-label="Change target website"
+          aria-label={t('builder.changeTargetWebsite')}
           onClick={() => configureWebsite()}
         >
           <Globe2 size={14} />
           <span>
             {workflow.websiteUrl === '/demo-site.html'
-              ? 'Demo website'
+              ? t('builder.demoWebsite')
               : workflow.websiteUrl.replace(/^https?:\/\//, '')}
           </span>
           <ChevronDown size={12} />
@@ -1051,7 +1116,7 @@ function Builder({
           className="dxp-icon-button"
           onClick={undo}
           disabled={!history.current.past.length}
-          title="Undo (⌘Z)"
+          title={t('builder.undoZ')}
         >
           <Undo2 size={16} />
         </button>
@@ -1060,7 +1125,7 @@ function Builder({
           className="dxp-icon-button"
           onClick={redo}
           disabled={!history.current.future.length}
-          title="Redo (⌘⇧Z)"
+          title={t('builder.redoZ')}
         >
           <Redo2 size={16} />
         </button>
@@ -1089,6 +1154,7 @@ function Builder({
         >
           <NoteEditingContext.Provider value={editNote}>
             <ReactFlow
+              ariaLabelConfig={getFlowLabels(t)}
               nodes={nodes}
               edges={edges}
               nodeTypes={nodeTypes}
@@ -1133,8 +1199,8 @@ function Builder({
                   const entry = remember(undefined, dragStartWorkflow.current);
                   entry.activity = recordActivity(
                     moved.length === 1
-                      ? `Moved “${moved[0].data.label}” on the canvas`
-                      : `Moved ${moved.length} steps on the canvas`,
+                      ? activityAction('activity.nodeMoved', { label: moved[0].data.label })
+                      : activityAction('activity.nodesMoved', { count: moved.length }),
                   );
                 }
                 dragStartWorkflow.current = null;
@@ -1174,9 +1240,9 @@ function Builder({
                   type="button"
                   className="dxp-import-button"
                   onClick={() => upload.current?.click()}
-                  title="Import a workflow JSON file"
+                  title={t('builder.importAWorkflowJsonFile')}
                 >
-                  <Upload size={14} /> Import
+                  <Upload size={14} /> {t('builder.import')}
                 </button>
               </Panel>
               {showMinimap && (
@@ -1196,15 +1262,17 @@ function Builder({
                   <button
                     type="button"
                     onClick={() => void flow.zoomOut({ duration: 180 })}
-                    title="Zoom out"
+                    title={t('canvas.zoomOut')}
                   >
                     <ZoomOut size={17} />
                   </button>
-                  <span>{zoom}%</span>
+                  <span>
+                    {new Intl.NumberFormat(locale, { style: 'percent' }).format(zoom / 100)}
+                  </span>
                   <button
                     type="button"
                     onClick={() => void flow.zoomIn({ duration: 180 })}
-                    title="Zoom in"
+                    title={t('canvas.zoomIn')}
                   >
                     <ZoomIn size={17} />
                   </button>
@@ -1212,7 +1280,7 @@ function Builder({
                   <button
                     type="button"
                     onClick={() => void flow.fitView({ padding: 0.18, duration: 300 })}
-                    title="Fit all nodes"
+                    title={t('builder.fitAllNodes')}
                   >
                     <Maximize size={16} />
                   </button>
@@ -1220,7 +1288,7 @@ function Builder({
                     type="button"
                     className={showMinimap ? 'active' : ''}
                     onClick={() => setShowMinimap(!showMinimap)}
-                    title="Toggle minimap"
+                    title={t('builder.toggleMinimap')}
                   >
                     <Layers2 size={16} />
                   </button>
@@ -1248,14 +1316,14 @@ function Builder({
                   <span>
                     <Plus size={24} />
                   </span>
-                  <h2>Every experience starts somewhere.</h2>
-                  <p>Add a trigger from the library to begin your journey.</p>
+                  <h2>{t('builder.everyExperienceStartsSomewhere')}</h2>
+                  <p>{t('builder.addATriggerFromTheLibraryToBeginYourJourney')}</p>
                   <button
                     type="button"
                     className="dxp-button dxp-button-primary"
                     onClick={() => add('trigger')}
                   >
-                    Add your first trigger
+                    {t('builder.addYourFirstTrigger')}
                   </button>
                 </Panel>
               )}
@@ -1277,10 +1345,12 @@ function Builder({
           <EdgeInspector
             edge={selectedEdge}
             sourceLabel={
-              workflow.nodes.find((node) => node.id === selectedEdge.source)?.data.label ?? 'Step'
+              workflow.nodes.find((node) => node.id === selectedEdge.source)?.data.label ??
+              t('builder.step')
             }
             targetLabel={
-              workflow.nodes.find((node) => node.id === selectedEdge.target)?.data.label ?? 'Step'
+              workflow.nodes.find((node) => node.id === selectedEdge.target)?.data.label ??
+              t('builder.step')
             }
             onChange={renameEdge}
             onBlur={flushActivity}
@@ -1326,7 +1396,8 @@ function Builder({
       <footer className="dxp-footer">
         <span>
           <span className="dxp-status-dot" />
-          {workflow.nodes.length} nodes <i /> {workflow.edges.length} connections
+          {t('canvas.nodeCount', { count: workflow.nodes.length })} <i />{' '}
+          {t('canvas.connectionCount', { count: workflow.edges.length })}
         </span>
         <span>
           <a
@@ -1335,10 +1406,12 @@ function Builder({
             target="_blank"
             rel="noopener noreferrer"
           >
-            <span className="dxp-footer-label">CREATED WITH LOVE BY DANIEL J.L. BELTRAN</span>
+            <span className="dxp-footer-label">
+              {t('builder.createdWithLoveByDanielJLBeltran')}
+            </span>
           </a>
           <span className="dxp-footer-shortcut">
-            <Command size={11} /> Z to undo
+            <Command size={11} /> {t('builder.zToUndo')}
           </span>
         </span>
       </footer>
@@ -1353,7 +1426,11 @@ function Builder({
         <div className="dxp-toast" role="status">
           <Check size={16} />
           {toast}
-          <button type="button" onClick={() => setToast('')} aria-label="Dismiss notification">
+          <button
+            type="button"
+            onClick={() => setToast('')}
+            aria-label={t('builder.dismissNotification')}
+          >
             <X size={14} />
           </button>
         </div>
@@ -1364,12 +1441,15 @@ function Builder({
           initialSelector={selected.data.config.selector}
           onClose={() => setPicking(false)}
           onUrlChange={(url) =>
-            commit((w) => ({ ...w, websiteUrl: url }), `Changed the target website to “${url}”`)
+            commit(
+              (w) => ({ ...w, websiteUrl: url }),
+              activityAction('activity.websiteChanged', { url }),
+            )
           }
           onSelect={(selector) => {
             patchNode({ config: { ...selected.data.config, selector } });
             setPicking(false);
-            notify('Target element selected');
+            notify(t('builder.targetElementSelected'));
           }}
         />
       )}
@@ -1393,37 +1473,37 @@ function Builder({
             className="dxp-modal"
             role="dialog"
             aria-modal="true"
-            aria-label="Target website"
+            aria-label={t('builder.targetWebsite')}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="dxp-modal-header">
               <div>
-                <span className="dxp-eyebrow">YOUR DIGITAL EXPERIENCE</span>
-                <h2>Choose your website</h2>
+                <span className="dxp-eyebrow">{t('builder.yourDigitalExperience')}</span>
+                <h2>{t('builder.chooseYourWebsite')}</h2>
               </div>
               <button
                 type="button"
                 className="dxp-icon-button"
                 onClick={closeWebsite}
-                aria-label="Close dialog"
+                aria-label={t('builder.closeDialog')}
               >
                 <X size={20} />
               </button>
             </div>
             <div className="dxp-website-settings">
-              <p>This experience will run only on the page at this URL.</p>
+              <p>{t('builder.thisExperienceWillRunOnlyOnThePageAtThisUrl')}</p>
               {websiteOptions.current.requireExportable && (
                 <p className="dxp-error" role="alert">
-                  {EXPORT_TARGET_MESSAGE}
+                  {t('website.exportTargetRequired')}
                 </p>
               )}
               <label>
-                Website URL
+                {t('builder.websiteUrl')}
                 <input
                   aria-invalid={Boolean(websiteError)}
                   aria-describedby={websiteError ? `${viewId}-website-error` : undefined}
                   value={websiteDraft}
-                  placeholder="Leave empty to use the demo website"
+                  placeholder={t('builder.leaveEmptyToUseTheDemoWebsite')}
                   onChange={(e) => setWebsiteDraft(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') saveWebsite();
@@ -1435,9 +1515,11 @@ function Builder({
               {websiteScope && (
                 <div className="dxp-website-scope" role="status">
                   <InfoBox>
-                    <strong>Effective scope: {websiteScope.href}</strong>
+                    <strong>
+                      {t('builder.effectiveScope')} {websiteScope.href}
+                    </strong>
                     <br />
-                    Trailing slashes, query parameters, and fragments do not change the scope.
+                    {t('builder.trailingSlashesQueryParametersAndFragmentsDoNotChangeTheScope')}
                   </InfoBox>
                 </div>
               )}
@@ -1453,31 +1535,35 @@ function Builder({
                   onChange={(event) => setIncludeSubpagesDraft(event.target.checked)}
                   aria-describedby={`${viewId}-subpages-help`}
                 />
-                Include subpages
+                {t('builder.includeSubpages')}
               </label>
               <p id={`${viewId}-subpages-help`} className="dxp-subpages-help">
-                Also run this experience on pages beneath this URL.
+                {t('builder.alsoRunThisExperienceOnPagesBeneathThisUrl')}
               </p>
               {websiteConnectionUrl && (
                 <WebsiteConnectionCheck key={websiteConnectionUrl} url={websiteConnectionUrl} />
               )}
               {websiteConnectionUrl && (
                 <>
-                  <button type="button" className="dxp-demo-link" onClick={() => setWebsiteDraft('')}>
-                    <RotateCcw size={13} /> Use the demo website
+                  <button
+                    type="button"
+                    className="dxp-demo-link"
+                    onClick={() => setWebsiteDraft('')}
+                  >
+                    <RotateCcw size={13} /> {t('builder.useTheDemoWebsite')}
                   </button>
                 </>
               )}
               <div className="dxp-modal-footer">
                 <button type="button" className="dxp-button" onClick={closeWebsite}>
-                  Cancel
+                  {t('common.cancel')}
                 </button>
                 <button
                   type="button"
                   className="dxp-button dxp-button-primary"
                   onClick={saveWebsite}
                 >
-                  Save website <ArrowRight size={14} />
+                  {t('website.save')} <ArrowRight size={14} />
                 </button>
               </div>
             </div>

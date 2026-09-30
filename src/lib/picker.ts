@@ -74,12 +74,22 @@ export function getElementSelector(element: Element): string {
 }
 
 export function normalizeWebsiteUrl(value: string, base: string): string {
-  if (!value.trim()) throw new Error('Enter a website URL.');
+  if (!value.trim())
+    throw Object.assign(new Error('Enter a website URL.'), {
+      messageKey: 'errors.picker.enterAWebsiteUrl',
+      messageParams: {},
+    });
   const parsed = new URL(value.trim(), base);
   if (!['http:', 'https:'].includes(parsed.protocol))
-    throw new Error('Enter an http:// or https:// website URL.');
+    throw Object.assign(new Error('Enter an http:// or https:// website URL.'), {
+      messageKey: 'errors.picker.enterAnHttpOrHttpsWebsiteUrl',
+      messageParams: {},
+    });
   if (parsed.username || parsed.password)
-    throw new Error('Use a website URL without embedded credentials.');
+    throw Object.assign(new Error('Use a website URL without embedded credentials.'), {
+      messageKey: 'errors.picker.useAWebsiteUrlWithoutEmbeddedCredentials',
+      messageParams: {},
+    });
   return parsed.href;
 }
 
@@ -90,7 +100,11 @@ export function attachElementPicker(
   onSelect: (element: PickedElement) => void,
 ): PickerSession {
   const view = doc.defaultView;
-  if (!view || !doc.documentElement) throw new Error('The website is not ready yet.');
+  if (!view || !doc.documentElement)
+    throw Object.assign(new Error('The website is not ready yet.'), {
+      messageKey: 'errors.picker.theWebsiteIsNotReadyYet',
+      messageParams: {},
+    });
   const root = doc.createElement('div');
   root.dataset.visualDxpPicker = 'overlay';
   root.setAttribute('aria-hidden', 'true');

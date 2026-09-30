@@ -1,6 +1,7 @@
 import { Clock3, History } from 'lucide-react';
 import { useId } from 'react';
-import type { ActivityEntry } from '../lib/activity';
+import { type ActivityEntry, formatActivity } from '../lib/activity';
+import { useBuilderI18n } from '../lib/i18nContext';
 import '../styles/activity.css';
 
 export interface ActivityPanelProps {
@@ -11,13 +12,13 @@ function calendarDay(date: Date) {
   return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
 }
 
-function initials(username: string) {
+function initials(username: string, locale: string) {
   const parts = username.trim().split(/\s+/).filter(Boolean);
   return parts
     .slice(0, 2)
     .map((part) => Array.from(part)[0])
     .join('')
-    .toLocaleUpperCase();
+    .toLocaleUpperCase(locale);
 }
 
 function avatarColor(username: string) {
@@ -27,6 +28,7 @@ function avatarColor(username: string) {
 }
 
 export function ActivityPanel({ entries }: ActivityPanelProps) {
+  const { t, locale } = useBuilderI18n();
   const headingId = useId();
   const today = new Date();
   const yesterday = new Date(today);
@@ -51,14 +53,14 @@ export function ActivityPanel({ entries }: ActivityPanelProps) {
     if (!group) {
       const label =
         key === calendarDay(today)
-          ? 'Today'
+          ? t('activityPanel.today')
           : key === calendarDay(yesterday)
-            ? 'Yesterday'
-            : (item.date?.toLocaleDateString(undefined, {
+            ? t('activityPanel.yesterday')
+            : (item.date?.toLocaleDateString(locale, {
                 month: 'long',
                 day: 'numeric',
                 year: 'numeric',
-              }) ?? 'Unknown date');
+              }) ?? t('activityPanel.unknownDate'));
       group = { label, entries: [] };
       groups.set(key, group);
     }
@@ -79,11 +81,11 @@ export function ActivityPanel({ entries }: ActivityPanelProps) {
               <History size={21} strokeWidth={1.6} />
             </span>
             <div className="dxp-activity-heading">
-              <h2 id={headingId}>Recent activity</h2>
-              <p>See who changed this workflow and when.</p>
+              <h2 id={headingId}>{t('activityPanel.recentActivity')}</h2>
+              <p>{t('activityPanel.seeWhoChangedThisWorkflowAndWhen')}</p>
             </div>
             <span className="dxp-activity-count" aria-live="polite" aria-atomic="true">
-              {entries.length} {entries.length === 1 ? 'action' : 'actions'}
+              {t('activity.actionCount', { count: entries.length })}
             </span>
           </header>
           {entries.length ? (
@@ -98,44 +100,46 @@ export function ActivityPanel({ entries }: ActivityPanelProps) {
                           className={`dxp-activity-avatar dxp-activity-avatar-${avatarColor(entry.username)}`}
                           aria-hidden="true"
                         >
-                          {initials(entry.username) || '?'}
+                          {initials(entry.username, locale) || '?'}
                         </span>
                         <div className="dxp-activity-details">
                           <strong>{entry.username}</strong>
-                          <p>{entry.action}</p>
+                          <p>{formatActivity(entry, t)}</p>
                         </div>
                         {date ? (
                           <time
                             className="dxp-activity-time"
                             dateTime={entry.timestamp}
-                            title={date.toLocaleString(undefined, {
+                            title={date.toLocaleString(locale, {
                               dateStyle: 'full',
                               timeStyle: 'long',
                             })}
                           >
                             <Clock3 size={12} aria-hidden="true" />
-                            {date.toLocaleTimeString(undefined, {
+                            {date.toLocaleTimeString(locale, {
                               hour: 'numeric',
                               minute: '2-digit',
                             })}
                           </time>
                         ) : (
-                          <span className="dxp-activity-time">Unknown time</span>
+                          <span className="dxp-activity-time">
+                            {t('activityPanel.unknownTime')}
+                          </span>
                         )}
                       </li>
                     ))}
                   </ol>
                 </section>
               ))}
-              <p className="dxp-activity-end">You’re all caught up</p>
+              <p className="dxp-activity-end">{t('activityPanel.youReAllCaughtUp')}</p>
             </div>
           ) : (
             <div className="dxp-activity-empty">
               <span className="dxp-activity-empty-icon" aria-hidden="true">
                 <History size={27} strokeWidth={1.4} />
               </span>
-              <h3>No activity yet</h3>
-              <p>Changes to this workflow will appear here.</p>
+              <h3>{t('activityPanel.noActivityYet')}</h3>
+              <p>{t('activityPanel.changesToThisWorkflowWillAppearHere')}</p>
             </div>
           )}
         </div>

@@ -7,14 +7,20 @@ export function getTimeRange(config: StepConfig): [number, number] {
     config.conditionTimeZone !== 'local' &&
     config.conditionTimeZone !== 'utc'
   )
-    throw new Error('Choose visitor local time or UTC for the time of day.');
+    throw Object.assign(new Error('Choose visitor local time or UTC for the time of day.'), {
+      messageKey: 'errors.timeRange.chooseVisitorLocalTimeOrUtcForTheTimeOf',
+      messageParams: {},
+    });
   const minutes = (value: string | undefined, label: string): number => {
     if (
       typeof value !== 'string' ||
       value.length !== 5 ||
       !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(value)
     )
-      throw new Error(`Choose a valid ${label} time (HH:MM, from 00:00 to 23:59).`);
+      throw Object.assign(new Error(`Choose a valid ${label} time (HH:MM, from 00:00 to 23:59).`), {
+        messageKey: 'errors.timeRange.chooseAValidLabelTimeHhMmFrom0000',
+        messageParams: { label: String(label) },
+      });
     const [hours, minutes] = value.split(':').map(Number);
     return hours * 60 + minutes;
   };

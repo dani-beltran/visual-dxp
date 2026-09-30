@@ -105,6 +105,7 @@ The builder owns the toolbar, canvas, inspector, activity view, footer, element 
 
 | Prop                 | Behavior                                                                                                                                                          |
 | -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `i18n` | Optional `{ locale, direction, messages }`. The host supplies languages and translations; missing messages fall back to English. See [Internationalization](docs/i18n.md). |
 | `presets`            | Optional `readonly WorkflowPreset[]`. A nonempty array enables Presets; omitted or empty hides the tab and panel. |
 | `initialWorkflow`    | Initial workflow; defaults to the included welcome journey. Changes after mounting do not replace editor state; use a React `key` to open another workflow.       |
 | `onChange`           | Receives the initial or restored workflow and all subsequent edits as a JSON-serializable `Workflow` object. Use it for persistence or your own export dialog.                                                 |
@@ -369,7 +370,7 @@ export function ExperienceEditor() {
 // activityStore.replaceEntries(serverEntries);
 ```
 
-An `ActivityEntry` has `{ id: string, username: string, action: string, timestamp: string }`; `timestamp` is an ISO date string. The public `ActivityStore` contract is:
+An `ActivityEntry` has `{ id: string, username: string, action: string, timestamp: string }` and an optional structured `message: { key, params }`. Builder-generated entries include `message` so the activity panel can render them in the viewer’s language; persist it together with the English `action` snapshot. `timestamp` is an ISO date string. See [Internationalization](docs/i18n.md). The public `ActivityStore` contract is:
 
 ```ts
 interface ActivityStore {

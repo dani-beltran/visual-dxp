@@ -9,39 +9,7 @@ import {
   X,
 } from 'lucide-react';
 import { useId, useLayoutEffect, useRef, useState } from 'react';
-
-const instructions = [
-  {
-    icon: Plus,
-    title: 'Add a step',
-    text: 'Click an icon in the node library or drag it onto the canvas. Hover over an icon to see its name. Start your journey with a Trigger.',
-  },
-  {
-    icon: MousePointer2,
-    title: 'Arrange and configure',
-    text: 'Drag nodes to move them. Click a node to open its settings, where you can also duplicate or delete it.',
-  },
-  {
-    icon: StickyNote,
-    title: 'Leave a note',
-    text: 'Add a Note and type directly on the canvas. Select text, then use its settings to make that selection bold, italic, or struck through. You can also change the background or choose transparency. Drag its header to move it.',
-  },
-  {
-    icon: Frame,
-    title: 'Group nodes in a frame',
-    text: 'Add a Frame and give it a name in its settings. Drop nodes fully inside, or resize the frame around them. Drag its header to move the whole group. Drag a node outside to remove it from the group; deleting a frame keeps its nodes.',
-  },
-  {
-    icon: Workflow,
-    title: 'Connect your steps',
-    text: 'Drag from the circle on the right of one node to the circle on the left of another. Click a connection to edit its name. A Condition uses its top output when the condition matches and its bottom output otherwise.',
-  },
-  {
-    icon: Hand,
-    title: 'Move around the canvas',
-    text: 'Drag empty space to pan. Scroll, pinch, or use the zoom buttons to zoom. Fit all nodes brings the whole journey into view; the minimap gives you an overview.',
-  },
-];
+import { useBuilderI18n } from '../lib/i18nContext';
 
 export function CanvasHelp({
   open: controlledOpen,
@@ -50,6 +18,39 @@ export function CanvasHelp({
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
 } = {}) {
+  const { t } = useBuilderI18n();
+  const instructions = [
+    {
+      icon: Plus,
+      title: t('canvasHelp.addAStep'),
+      text: t('canvasHelp.clickAnIconInTheNodeLibraryOrDragItOntoThe'),
+    },
+    {
+      icon: MousePointer2,
+      title: t('canvasHelp.arrangeAndConfigure'),
+      text: t('canvasHelp.dragNodesToMoveThemClickANodeToOpenItsSettings'),
+    },
+    {
+      icon: StickyNote,
+      title: t('canvasHelp.leaveANote'),
+      text: t('canvasHelp.addANoteAndTypeDirectlyOnTheCanvasSelectTextThen'),
+    },
+    {
+      icon: Frame,
+      title: t('canvasHelp.groupNodesInAFrame'),
+      text: t('canvasHelp.addAFrameAndGiveItANameInItsSettingsDrop'),
+    },
+    {
+      icon: Workflow,
+      title: t('canvasHelp.connectYourSteps'),
+      text: t('canvasHelp.dragFromTheCircleOnTheRightOfOneNodeToThe'),
+    },
+    {
+      icon: Hand,
+      title: t('canvasHelp.moveAroundTheCanvas'),
+      text: t('canvasHelp.dragEmptySpaceToPanScrollPinchOrUseTheZoomButtons'),
+    },
+  ];
   const [internalOpen, setInternalOpen] = useState(false);
   const open = controlledOpen ?? internalOpen;
   const setOpen = onOpenChange ?? setInternalOpen;
@@ -120,8 +121,8 @@ export function CanvasHelp({
         ref={button}
         type="button"
         className={`dxp-canvas-help-button ${open ? 'active' : ''}`}
-        aria-label="Canvas help"
-        title="Canvas help"
+        aria-label={t('canvasHelp.canvasHelp')}
+        title={t('canvasHelp.canvasHelp')}
         aria-haspopup="dialog"
         aria-expanded={open}
         aria-controls={open ? id : undefined}
@@ -138,12 +139,12 @@ export function CanvasHelp({
           aria-labelledby={`${id}-title`}
         >
           <div className="dxp-canvas-help-header">
-            <h2 id={`${id}-title`}>How to use the canvas</h2>
+            <h2 id={`${id}-title`}>{t('canvasHelp.howToUseTheCanvas')}</h2>
             <button
               ref={closeButton}
               type="button"
               className="dxp-icon-button"
-              aria-label="Close canvas help"
+              aria-label={t('canvasHelp.closeCanvasHelp')}
               onClick={close}
             >
               <X size={16} aria-hidden="true" />
@@ -153,7 +154,7 @@ export function CanvasHelp({
             className="dxp-canvas-help-content"
             // biome-ignore lint/a11y/noNoninteractiveTabindex: The scrollable instructions must be keyboard-focusable for scrolling.
             tabIndex={0}
-            aria-label="Canvas instructions"
+            aria-label={t('canvasHelp.canvasInstructions')}
           >
             {instructions.map(({ icon: Icon, title, text }) => (
               <div className="dxp-canvas-help-step" key={title}>
@@ -166,21 +167,21 @@ export function CanvasHelp({
             ))}
             <dl className="dxp-canvas-help-shortcuts">
               <div>
-                <dt>Undo</dt>
+                <dt>{t('common.undo')}</dt>
                 <dd>
-                  <kbd>⌘ / Ctrl + Z</kbd>
+                  <kbd>{t('canvasHelp.ctrlZ')}</kbd>
                 </dd>
               </div>
               <div>
-                <dt>Redo</dt>
+                <dt>{t('common.redo')}</dt>
                 <dd>
-                  <kbd>⌘ / Ctrl + Shift + Z</kbd>
+                  <kbd>{t('canvasHelp.ctrlShiftZ')}</kbd>
                 </dd>
               </div>
               <div>
-                <dt>Remove selected</dt>
+                <dt>{t('canvasHelp.removeSelected')}</dt>
                 <dd>
-                  <kbd>Delete / Backspace</kbd>
+                  <kbd>{t('canvasHelp.deleteBackspace')}</kbd>
                 </dd>
               </div>
             </dl>

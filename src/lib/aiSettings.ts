@@ -39,6 +39,7 @@ export interface ProviderSettingsSnapshot {
   baseURL: string;
   hasCredential: boolean;
   error: string;
+  errorKey?: 'aiSettings.storageUnavailable' | 'aiSettings.providerDamaged';
 }
 export interface AISettingsSnapshot extends ProviderSettingsSnapshot {
   activeProvider: AIProvider;
@@ -154,7 +155,10 @@ function aad(config: SavedConfig, provider: AIProvider, version: number) {
 }
 async function derive(passphrase: string, salt: Uint8Array<ArrayBuffer>): Promise<CryptoKey> {
   if (!globalThis.crypto?.subtle)
-    throw new Error('Web Crypto is unavailable. Use a secure browser context.');
+    throw Object.assign(new Error('Web Crypto is unavailable. Use a secure browser context.'), {
+      messageKey: 'errors.aiSettings.webCryptoIsUnavailableUseASecureBrowserContext',
+      messageParams: {},
+    });
   const material = await crypto.subtle.importKey(
     'raw',
     new TextEncoder().encode(passphrase),
@@ -211,11 +215,18 @@ export class AISettingsStore {
             ...(saved?.damaged
               ? {
                   status: 'unavailable',
+                  errorKey: 'aiSettings.providerDamaged',
                   error:
                     'This provider’s browser settings are damaged. Remove or replace its configuration.',
                 }
               : {}),
-            ...(this.unavailable ? { status: 'unavailable', error: this.unavailable } : {}),
+            ...(this.unavailable
+              ? {
+                  status: 'unavailable',
+                  error: this.unavailable,
+                  errorKey: 'aiSettings.storageUnavailable',
+                }
+              : {}),
           },
         ];
       }),
@@ -235,7 +246,12 @@ export class AISettingsStore {
   private cancel() {
     this.effectiveRevision++;
     for (const controller of this.requests)
-      controller.abort(new Error('AI configuration changed. Send your message again.'));
+      controller.abort(
+        Object.assign(new Error('AI configuration changed. Send your message again.'), {
+          messageKey: 'errors.aiSettings.aiConfigurationChangedSendYourMessageAgain',
+          messageParams: {},
+        }),
+      );
     this.requests.clear();
   }
   refresh = () => {
@@ -275,8 +291,14 @@ export class AISettingsStore {
     try {
       this.storage().setItem(AI_SETTINGS_STORAGE_KEY, raw);
     } catch {
-      throw new Error(
-        'Browser settings could not be saved. Enable localStorage and try again. Previous active settings were preserved.',
+      throw Object.assign(
+        new Error(
+          'Browser settings could not be saved. Enable localStorage and try again. Previous active settings were preserved.',
+        ),
+        {
+          messageKey: 'errors.aiSettings.browserSettingsCouldNotBeSavedEnableLocalstorageAndTry',
+          messageParams: {},
+        },
       );
     }
     this.raw = raw;
@@ -320,14 +342,20 @@ export class AISettingsStore {
     if (this.unavailable) throw new Error(this.unavailable);
     const url = resolveAIEndpoint(endpoint);
     if (!allowsBrowserCredentials(url))
-      throw new Error('Use an HTTPS AI server before saving browser settings.');
+      throw Object.assign(new Error('Use an HTTPS AI server before saving browser settings.'), {
+        messageKey: 'errors.aiSettings.useAnHttpsAiServerBeforeSavingBrowserSettings',
+        messageParams: {},
+      });
     const apiKey = input.apiKey.trim();
     const model = input.model.trim();
     if (
       !validAIModel(model) ||
       (provider === 'local' ? !!apiKey && !validAIKey(apiKey) : !validAIKey(apiKey))
     )
-      throw new Error('Enter a valid API key and model ID.');
+      throw Object.assign(new Error('Enter a valid API key and model ID.'), {
+        messageKey: 'errors.aiSettings.enterAValidApiKeyAndModelId',
+        messageParams: {},
+      });
     const saved: SavedConfig = {
       model,
       origin: url.origin,
@@ -337,12 +365,22 @@ export class AISettingsStore {
       apiKey &&
       (model.includes(apiKey) || saved.baseURL?.includes(apiKey) || url.href.includes(apiKey))
     )
-      throw new Error('Keep credentials out of model IDs and URLs.');
+      throw Object.assign(new Error('Keep credentials out of model IDs and URLs.'), {
+        messageKey: 'errors.aiSettings.keepCredentialsOutOfModelIdsAndUrls',
+        messageParams: {},
+      });
     const revision = this.revision;
     if (apiKey) {
-      if (passphrase.length < 12) throw new Error('Use a passphrase with at least 12 characters.');
+      if (passphrase.length < 12)
+        throw Object.assign(new Error('Use a passphrase with at least 12 characters.'), {
+          messageKey: 'errors.aiSettings.useAPassphraseWithAtLeast12Characters',
+          messageParams: {},
+        });
       if (!globalThis.crypto?.subtle)
-        throw new Error('Web Crypto is unavailable. Use a secure browser context.');
+        throw Object.assign(new Error('Web Crypto is unavailable. Use a secure browser context.'), {
+          messageKey: 'errors.aiSettings.webCryptoIsUnavailableUseASecureBrowserContext',
+          messageParams: {},
+        });
       const salt = crypto.getRandomValues(new Uint8Array(16));
       const iv = crypto.getRandomValues(new Uint8Array(12));
       const key = await derive(passphrase, salt);
@@ -364,7 +402,11 @@ export class AISettingsStore {
       }
     }
     this.refresh();
-    if (revision !== this.revision) throw new Error('Settings changed. Save again.');
+    if (revision !== this.revision)
+      throw Object.assign(new Error('Settings changed. Save again.'), {
+        messageKey: 'errors.aiSettings.settingsChangedSaveAgain',
+        messageParams: {},
+      });
     this.persist({
       ...this.doc,
       activeProvider: provider,
@@ -380,7 +422,14 @@ export class AISettingsStore {
     this.refresh();
     const saved = this.doc.providers[provider];
     if (!saved?.credential || this.unavailable)
-      throw new Error('Browser settings are unavailable. Restore storage access or remove them.');
+      throw Object.assign(
+        new Error('Browser settings are unavailable. Restore storage access or remove them.'),
+        {
+          messageKey:
+            'errors.aiSettings.browserSettingsAreUnavailableRestoreStorageAccessOrRemoveThem',
+          messageParams: {},
+        },
+      );
     this.lockProvider(provider);
     const revision = this.revision;
     try {
@@ -409,8 +458,14 @@ export class AISettingsStore {
       if (provider === this.doc.activeProvider) this.cancel();
       this.emit();
     } catch {
-      throw new Error(
-        'Could not unlock settings. Check your passphrase, or remove settings and save a new key.',
+      throw Object.assign(
+        new Error(
+          'Could not unlock settings. Check your passphrase, or remove settings and save a new key.',
+        ),
+        {
+          messageKey: 'errors.aiSettings.couldNotUnlockSettingsCheckYourPassphraseOrRemoveSettings',
+          messageParams: {},
+        },
       );
     }
   }
@@ -418,9 +473,16 @@ export class AISettingsStore {
     this.refresh();
     const state = this.snapshot.providers[provider];
     if (state.status === 'unavailable') throw new Error(state.error);
-    if (state.status === 'locked') throw new Error('Unlock this provider before activating it.');
+    if (state.status === 'locked')
+      throw Object.assign(new Error('Unlock this provider before activating it.'), {
+        messageKey: 'errors.aiSettings.unlockThisProviderBeforeActivatingIt',
+        messageParams: {},
+      });
     if (state.status === 'server' && !serverDefaults)
-      throw new Error('Save a configuration before activating this provider.');
+      throw Object.assign(new Error('Save a configuration before activating this provider.'), {
+        messageKey: 'errors.aiSettings.saveAConfigurationBeforeActivatingThisProvider',
+        messageParams: {},
+      });
     if (provider === this.doc.activeProvider) return;
     this.persist({ ...this.doc, activeProvider: provider });
     this.cancel();
@@ -439,7 +501,10 @@ export class AISettingsStore {
   confirmOrigin(endpoint: string, provider = this.doc.activeProvider) {
     const url = resolveAIEndpoint(endpoint);
     if (!allowsBrowserCredentials(url))
-      throw new Error('Browser credentials require an HTTPS AI server.');
+      throw Object.assign(new Error('Browser credentials require an HTTPS AI server.'), {
+        messageKey: 'errors.aiSettings.browserCredentialsRequireAnHttpsAiServer',
+        messageParams: {},
+      });
     this.confirmations[provider] = url.origin;
     if (provider === this.doc.activeProvider) this.cancel();
     this.emit();
@@ -455,17 +520,32 @@ export class AISettingsStore {
     const state = this.snapshot.providers[provider];
     if (state.status === 'unavailable') throw new Error(state.error);
     if (state.status === 'locked')
-      throw new Error(`Unlock ${AI_PROVIDER_LABELS[provider]} in AI Settings before using AI.`);
+      throw Object.assign(
+        new Error(`Unlock ${AI_PROVIDER_LABELS[provider]} in AI Settings before using AI.`),
+        {
+          messageKey: 'errors.aiSettings.unlockValue1InAiSettingsBeforeUsingAi',
+          messageParams: { value1: String(AI_PROVIDER_LABELS[provider]) },
+        },
+      );
     if (state.status === 'server') {
       this.requests.add(controller);
       return provider === 'openai' ? undefined : { provider, source: 'server' };
     }
     const url = resolveAIEndpoint(endpoint);
     if (!allowsBrowserCredentials(url))
-      throw new Error('Browser credentials require an HTTPS AI server.');
+      throw Object.assign(new Error('Browser credentials require an HTTPS AI server.'), {
+        messageKey: 'errors.aiSettings.browserCredentialsRequireAnHttpsAiServer',
+        messageParams: {},
+      });
     if (this.needsConfirmation(endpoint))
-      throw new Error(
-        'The AI server origin changed. Confirm the new destination in AI settings or the assistant before sending.',
+      throw Object.assign(
+        new Error(
+          'The AI server origin changed. Confirm the new destination in AI settings or the assistant before sending.',
+        ),
+        {
+          messageKey: 'errors.aiSettings.theAiServerOriginChangedConfirmTheNewDestinationIn',
+          messageParams: {},
+        },
       );
     this.requests.add(controller);
     return {

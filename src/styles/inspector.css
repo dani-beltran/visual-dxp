@@ -6,7 +6,7 @@
   display: flex;
   flex-direction: column;
   background: var(--dxp-surface);
-  border-left: 1px solid var(--dxp-line);
+  border-inline-start: 1px solid var(--dxp-line);
   color: var(--dxp-text);
   font-family: inherit;
   font-size: 12px;
@@ -232,12 +232,12 @@
 }
 .dxp-inspector-select select {
   appearance: none;
-  padding-right: 30px;
+  padding-inline-end: 30px;
   cursor: pointer;
 }
 .dxp-inspector-select > svg {
   position: absolute;
-  right: 10px;
+  inset-inline-end: 10px;
   top: 12px;
   color: var(--dxp-muted);
   pointer-events: none;
@@ -269,13 +269,13 @@
   align-items: center;
 }
 .dxp-inspector-selector input {
-  padding-right: 37px;
+  padding-inline-end: 37px;
 }
 .dxp-inspector-selector > button {
   width: 29px;
   height: 28px;
   position: absolute;
-  right: 4px;
+  inset-inline-end: 4px;
   display: grid;
   place-items: center;
   border: 0;
@@ -291,7 +291,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  text-align: left;
+  text-align: start;
   border: 1px dashed var(--dxp-line-strong);
   border-radius: 6px;
   padding: 9px 10px;
@@ -302,7 +302,7 @@
   line-height: 1.4;
 }
 .dxp-inspector-pick span {
-  margin-left: auto;
+  margin-inline-start: auto;
   font-size: 12px;
   color: var(--dxp-muted);
 }
@@ -314,11 +314,11 @@
   position: relative;
 }
 .dxp-inspector-unit-field input {
-  padding-right: 54px;
+  padding-inline-end: 54px;
 }
 .dxp-inspector-unit-field span {
   position: absolute;
-  right: 11px;
+  inset-inline-end: 11px;
   top: 10px;
   font-size: 10px;
   color: var(--dxp-muted);
@@ -375,7 +375,7 @@
   color: var(--dxp-text-secondary);
 }
 .dxp-inspector-branches span {
-  margin-left: auto;
+  margin-inline-start: auto;
   color: var(--dxp-muted);
 }
 .dxp-inspector-branches i {

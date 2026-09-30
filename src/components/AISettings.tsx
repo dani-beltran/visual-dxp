@@ -8,6 +8,8 @@ import {
   resolveAIEndpoint,
 } from '../lib/aiCredentials';
 import type { AISettingsStore } from '../lib/aiSettings';
+import { formatBuilderError } from '../lib/i18n';
+import { useBuilderI18n } from '../lib/i18nContext';
 import { AIProviderIcon } from './AIProviderIcon';
 import '../styles/ai-settings.css';
 
@@ -23,6 +25,7 @@ export function AISettings({
   endpoint: string;
   compact?: boolean;
 }) {
+  const { t, direction } = useBuilderI18n();
   const state = useSyncExternalStore(store.subscribe, store.getSnapshot, store.getSnapshot);
   const id = useId();
   const [error, setError] = useState('');
@@ -33,33 +36,33 @@ export function AISettings({
       store.view(provider);
       setError('');
     } catch (cause) {
-      setError((cause as Error).message);
+      setError(formatBuilderError(cause, t));
     }
   }
   return (
     <section
       className={`dxp-ai-settings ${compact ? 'compact' : ''}`}
-      aria-label={compact ? 'Assistant credentials' : 'AI settings'}
+      aria-label={compact ? t('aiSettings.assistantCredentials') : t('aiSettings.aiSettings')}
     >
       {!compact && (
         <>
-          <span className="dxp-eyebrow">YOUR AI CONNECTION</span>
+          <span className="dxp-eyebrow">{t('aiSettings.yourAiConnection')}</span>
           <h2>
-            <KeyRound size={22} /> AI Settings
+            <KeyRound size={22} /> {t('aiSettings.aiSettings2')}
           </h2>
         </>
       )}
       <p role="status">
-        <strong>Active provider: {label}</strong> ·{' '}
+        <strong>{t('aiSettings.activeProvider', { label })}</strong> ·{' '}
         {state.status === 'locked'
-          ? 'Locked — unlock to use AI'
+          ? t('aiSettings.lockedUnlockToUseAi')
           : state.status === 'unavailable'
-            ? 'Unavailable — restore or remove browser settings'
+            ? t('aiSettings.unavailableRestoreOrRemoveBrowserSettings')
             : state.status === 'server'
-              ? 'No saved configuration'
-              : 'Browser settings ready'}
+              ? t('aiSettings.noSavedConfiguration')
+              : t('aiSettings.browserSettingsReady')}
       </p>
-      <div className="dxp-ai-provider-tabs" role="tablist" aria-label="AI providers">
+      <div className="dxp-ai-provider-tabs" role="tablist" aria-label={t('aiSettings.aiProviders')}>
         {AI_PROVIDERS.map((provider, index) => (
           <button
             key={provider}
@@ -73,9 +76,9 @@ export function AISettings({
             onKeyDown={(event) => {
               const next =
                 event.key === 'ArrowRight'
-                  ? (index + 1) % 3
+                  ? (index + (direction === 'ltr' ? 1 : 2)) % 3
                   : event.key === 'ArrowLeft'
-                    ? (index + 2) % 3
+                    ? (index + (direction === 'ltr' ? 2 : 1)) % 3
                     : event.key === 'Home'
                       ? 0
                       : event.key === 'End'
@@ -90,7 +93,7 @@ export function AISettings({
             <AIProviderIcon provider={provider} />
             <span>{AI_PROVIDER_LABELS[provider]}</span>
             {state.activeProvider === provider && (
-              <span className="dxp-ai-active-badge">Active</span>
+              <span className="dxp-ai-active-badge">{t('aiSettings.active')}</span>
             )}
           </button>
         ))}
@@ -134,8 +137,10 @@ function ProviderForm({
   endpoint: string;
   compact: boolean;
 }) {
+  const { t } = useBuilderI18n();
   const snapshot = useSyncExternalStore(store.subscribe, store.getSnapshot, store.getSnapshot);
   const state = snapshot.providers[provider];
+  const stateError = state.errorKey ? t(state.errorKey) : state.error;
   const label = AI_PROVIDER_LABELS[provider];
   const id = useId();
   const [apiKey, setApiKey] = useState('');
@@ -162,7 +167,7 @@ function ProviderForm({
     );
     setBaseURL(state.baseURL || '');
   }, [state.model, state.baseURL, provider]);
-  let origin = 'Invalid endpoint';
+  let origin = t('aiSettings.invalidEndpoint');
   let confirmation = false;
   let secure = false;
   try {
@@ -181,7 +186,9 @@ function ProviderForm({
       await work();
       setNotice(message);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Settings unavailable.');
+      setError(
+        cause instanceof Error ? formatBuilderError(cause, t) : t('aiSettings.settingsUnavailable'),
+      );
     } finally {
       setApiKey('');
       setPassphrase('');
@@ -191,29 +198,31 @@ function ProviderForm({
   }
   return (
     <>
-      {!secure && <p className="dxp-error">Browser credentials require an HTTPS AI server.</p>}
+      {!secure && (
+        <p className="dxp-error">{t('aiSettings.browserCredentialsRequireAnHttpsAiServer')}</p>
+      )}
       <p>
         {state.status === 'locked'
-          ? `${label} browser settings are locked. Unlock before using or activating them.`
+          ? t('aiSettings.labelBrowserSettingsAreLockedUnlockBeforeUsingOrActivatingThem', {
+              label: String(label),
+            })
           : state.status === 'unlocked'
-            ? `${label} saved configuration is ready. Saved model: ${state.model}.`
+            ? t('aiSettings.labelSavedConfigurationIsReadySavedModelModel', {
+                label: String(label),
+                model: String(state.model),
+              })
             : state.status === 'server'
-              ? `Configure ${label} below, then save and activate it.`
-              : state.error}
+              ? t('aiSettings.configureLabelBelowThenSaveAndActivateIt', { label: String(label) })
+              : stateError}
       </p>
       {provider === 'local' && (
         <div
           className="dxp-ai-settings-info"
           role="note"
-          aria-label="Self-Hosted setup information"
+          aria-label={t('aiSettings.selfHostedSetupInformation')}
         >
           <Info size={18} aria-hidden="true" />
-          <p>
-            Enter the API base URL of your self-hosted, OpenAI-compatible model server. The URL must
-            be reachable by the application backend and allowed by the administrator. A server
-            hosted locally on your computer won’t work because the backend won’t be able to reach
-            it. The selected model must support tool calls for workflow editing.
-          </p>
+          <p>{t('aiSettings.enterTheApiBaseUrlOfYourSelfHostedOpenaiCompatibleModel')}</p>
         </div>
       )}
       <form
@@ -231,8 +240,8 @@ function ProviderForm({
                     endpoint,
                   ),
             state.status === 'locked'
-              ? 'Unlocked. Use Activate saved configuration to select this provider.'
-              : `${label} saved and activated.`,
+              ? t('aiSettings.unlockedUseActivateSavedConfigurationToSelectThisProvider')
+              : t('aiSettings.labelSavedAndActivated', { label: String(label) }),
           );
         }}
       >
@@ -240,7 +249,7 @@ function ProviderForm({
           <>
             {provider === 'local' && (
               <>
-                <label htmlFor={`${id}-url`}>Self-Hosted API base URL</label>
+                <label htmlFor={`${id}-url`}>{t('aiSettings.selfHostedApiBaseUrl')}</label>
                 <input
                   id={`${id}-url`}
                   value={baseURL}
@@ -253,8 +262,10 @@ function ProviderForm({
               </>
             )}
             <label htmlFor={`${id}-key`}>
-              {provider === 'claude' ? 'Anthropic' : label} API key
-              {provider === 'local' ? ' (optional)' : ''}
+              {t('aiSettings.apiKeyLabel', {
+                provider: provider === 'claude' ? 'Anthropic' : label,
+                optional: provider === 'local',
+              })}
             </label>
             <div className="dxp-ai-key-input">
               <input
@@ -267,21 +278,21 @@ function ProviderForm({
                 spellCheck={false}
                 placeholder={
                   state.hasCredential
-                    ? 'Enter a key to replace settings; use Activate for saved settings'
+                    ? t('aiSettings.enterAKeyToReplaceSettingsUseActivateForSavedSettings')
                     : undefined
                 }
               />
               <button
                 className="dxp-icon-button"
                 type="button"
-                aria-label={visible ? 'Hide API key' : 'Show API key'}
+                aria-label={visible ? t('aiSettings.hideApiKey') : t('aiSettings.showApiKey')}
                 aria-pressed={visible}
                 onClick={() => setVisible(!visible)}
               >
                 {visible ? <EyeOff size={17} /> : <Eye size={17} />}
               </button>
             </div>
-            <label htmlFor={`${id}-model`}>{label} model ID</label>
+            <label htmlFor={`${id}-model`}>{t('aiSettings.modelLabel', { provider: label })}</label>
             <input
               id={`${id}-model`}
               value={model}
@@ -289,7 +300,7 @@ function ProviderForm({
               disabled={busy}
               autoComplete="off"
               spellCheck={false}
-              placeholder="Enter an available model ID"
+              placeholder={t('aiSettings.enterAnAvailableModelId')}
             />
           </>
         )}
@@ -297,8 +308,8 @@ function ProviderForm({
           <>
             <label htmlFor={`${id}-pass`}>
               {state.status === 'locked'
-                ? 'Passphrase to unlock'
-                : 'Encryption passphrase (at least 12 characters)'}
+                ? t('aiSettings.passphraseToUnlock')
+                : t('aiSettings.encryptionPassphraseAtLeast12Characters')}
             </label>
             <input
               id={`${id}-pass`}
@@ -321,7 +332,9 @@ function ProviderForm({
                 : !model || (provider !== 'local' && !apiKey) || (!!apiKey && !passphrase))
             }
           >
-            {state.status === 'locked' ? 'Unlock browser settings' : 'Save and activate'}
+            {state.status === 'locked'
+              ? t('aiSettings.unlockBrowserSettings')
+              : t('aiSettings.saveAndActivate')}
           </button>
           {state.status === 'unlocked' && snapshot.activeProvider !== provider && (
             <button
@@ -331,11 +344,11 @@ function ProviderForm({
               onClick={() =>
                 void action(
                   () => store.activate(provider),
-                  `${label} activated using saved settings.`,
+                  t('aiSettings.labelActivatedUsingSavedSettings', { label: String(label) }),
                 )
               }
             >
-              Activate saved configuration
+              {t('aiSettings.activateSavedConfiguration')}
             </button>
           )}
           {state.status === 'unlocked' && state.hasCredential && (
@@ -345,7 +358,7 @@ function ProviderForm({
               disabled={busy}
               onClick={() => void action(() => store.lockProvider(provider))}
             >
-              <LockKeyhole size={14} /> Lock
+              <LockKeyhole size={14} /> {t('aiSettings.lock')}
             </button>
           )}
           {state.status !== 'server' && (
@@ -356,44 +369,42 @@ function ProviderForm({
               onClick={() =>
                 void action(
                   () => store.remove(provider),
-                  `${label} configuration removed. Configure it again below when you’re ready.`,
+                  t('aiSettings.labelConfigurationRemovedConfigureItAgainBelowWhenYouReReady', {
+                    label: String(label),
+                  }),
                 )
               }
             >
-              Remove browser settings
+              {t('aiSettings.removeBrowserSettings')}
             </button>
           )}
         </div>
       </form>
       {!compact && (
         <>
-          <p>{AI_PRIVACY_TEXT}</p>
+          <p>{t('aiSettings.privacy')}</p>
           <p className="dxp-ai-settings-note">
-            Your browser normally keeps other websites from accessing your saved API key. While the
-            key is unlocked, harmful code in this app or browser extensions with special permissions
-            could still access it. Choose a strong passphrase you don’t use elsewhere, and keep it
-            safe—we can’t recover it if you forget it.
+            {t('aiSettings.yourBrowserNormallyKeepsOtherWebsitesFromAccessingYourSavedApiKey')}
           </p>
         </>
       )}
       {confirmation && (
         <div className="dxp-ai-origin-confirm" role="alert">
           <p>
-            Saved destination: <strong>{state.origin}</strong>. Allow this configuration to be sent
-            to <strong>{origin}</strong> for this unlocked session?
+            {t('aiSettings.confirmDestination', { previous: state.origin || '', next: origin })}
           </p>
           <button
             type="button"
             className="dxp-button"
             onClick={() => void action(() => store.confirmOrigin(endpoint, provider))}
           >
-            Confirm new server origin
+            {t('aiSettings.confirmNewServerOrigin')}
           </button>
         </div>
       )}
       {(error || state.error) && (
         <p className="dxp-error" role="alert">
-          {error || state.error}
+          {error || stateError}
         </p>
       )}
       {notice && <p role="status">{notice}</p>}

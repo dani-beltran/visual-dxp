@@ -10,6 +10,8 @@ import {
 } from 'lucide-react';
 import { type ReactNode, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import type { AIChatMessage } from '../lib/ai';
+import { formatBuilderError } from '../lib/i18n';
+import { useBuilderI18n } from '../lib/i18nContext';
 import '../styles/chat.css';
 
 export interface CanvasChatProps {
@@ -31,11 +33,6 @@ export interface CanvasChatProps {
 }
 
 type Message = AIChatMessage & { id: number; changeCount?: number };
-const suggestions = [
-  'Add a welcome popover after a 2-second delay',
-  'Explain the connections in this workflow',
-  'Change the selected step',
-];
 
 export function CanvasChat({
   configured,
@@ -48,6 +45,12 @@ export function CanvasChat({
   open: controlledOpen,
   onOpenChange,
 }: CanvasChatProps) {
+  const { t } = useBuilderI18n();
+  const suggestions = [
+    t('canvasChat.addAWelcomePopoverAfterA2SecondDelay'),
+    t('canvasChat.explainTheConnectionsInThisWorkflow'),
+    t('canvasChat.changeTheSelectedStep'),
+  ];
   const [internalOpen, setInternalOpen] = useState(false);
   const open = controlledOpen ?? internalOpen;
   const setOpen = onOpenChange ?? setInternalOpen;
@@ -142,8 +145,12 @@ export function CanvasChat({
       if (request.current !== controller) return;
       setError(
         controller.signal.aborted
-          ? 'Stopped. No changes were made.'
-          : `${cause instanceof Error ? cause.message : 'Unable to reach the AI assistant.'} No changes were made.`,
+          ? t('canvasChat.stoppedNoChangesWereMade')
+          : t('canvasChat.valueNoChangesWereMade', {
+              value: String(
+                cause instanceof Error ? formatBuilderError(cause, t) : t('canvasChat.unavailable'),
+              ),
+            }),
       );
       setDraft(content);
     } finally {
@@ -161,8 +168,8 @@ export function CanvasChat({
         ref={trigger}
         type="button"
         className={`dxp-canvas-help-button dxp-ai-button ${open ? 'active' : ''}`}
-        aria-label="AI chat"
-        title="AI chat"
+        aria-label={t('canvasChat.aiChat')}
+        title={t('canvasChat.aiChat')}
         aria-haspopup="dialog"
         aria-expanded={open}
         aria-controls={open ? id : undefined}
@@ -195,14 +202,14 @@ export function CanvasChat({
               <Sparkles size={18} aria-hidden="true" />
             </span>
             <div>
-              <h2 id={`${id}-title`}>Your workflow assistant</h2>
-              <p>Active provider: {activeProvider}</p>
+              <h2 id={`${id}-title`}>{t('canvasChat.yourWorkflowAssistant')}</h2>
+              <p>{t('aiSettings.activeProvider', { label: activeProvider })}</p>
             </div>
             <button
               type="button"
               className="dxp-icon-button"
-              aria-label="Start a new conversation"
-              title="New conversation"
+              aria-label={t('canvasChat.startANewConversation')}
+              title={t('canvasChat.newConversation')}
               disabled={busy || !messages.length}
               onClick={() => {
                 history.current = [];
@@ -218,7 +225,7 @@ export function CanvasChat({
               ref={closeButton}
               type="button"
               className="dxp-icon-button"
-              aria-label="Close AI chat"
+              aria-label={t('canvasChat.closeAiChat')}
               onClick={close}
             >
               <X size={17} aria-hidden="true" />
@@ -232,20 +239,22 @@ export function CanvasChat({
             {invalidConfiguration ? (
               <span>
                 {locked
-                  ? `Unlock ${activeProvider} in settings below to use AI`
-                  : `AI configuration is incorrect for ${activeProvider}. Check settings below.`}
+                  ? t('canvasChat.unlockActiveproviderInSettingsBelowToUseAi', {
+                      activeProvider: String(activeProvider),
+                    })
+                  : t('canvasChat.aiConfigurationIsIncorrectForActiveproviderCheckSettingsBelow', {
+                      activeProvider: String(activeProvider),
+                    })}
               </span>
             ) : selectedLabel ? (
-              <span>
-                Selected: <strong>{selectedLabel}</strong>
-              </span>
+              <span>{t('canvasChat.selectedStep', { label: selectedLabel })}</span>
             ) : (
-              <span>Working with your current canvas</span>
+              <span>{t('canvasChat.workingWithYourCurrentCanvas')}</span>
             )}
           </div>
           {settings && (
             <details className="dxp-ai-compact-settings" open={locked || undefined}>
-              <summary>AI provider settings</summary>
+              <summary>{t('canvasChat.aiProviderSettings')}</summary>
               {settings}
             </details>
           )}
@@ -253,7 +262,7 @@ export function CanvasChat({
             ref={transcript}
             className="dxp-ai-transcript"
             role="log"
-            aria-label="AI conversation"
+            aria-label={t('canvasChat.aiConversation')}
             aria-live="polite"
             // biome-ignore lint/a11y/noNoninteractiveTabindex: The scrollable transcript must be keyboard-focusable for scrolling.
             tabIndex={0}
@@ -261,8 +270,8 @@ export function CanvasChat({
             {!messages.length && configured && !locked && (
               <div className="dxp-ai-welcome">
                 <MessageCircle size={25} strokeWidth={1.5} aria-hidden="true" />
-                <h3>What would you like to create?</h3>
-                <p>Ask me to add steps, adjust their settings, or connect your journey.</p>
+                <h3>{t('canvasChat.whatWouldYouLikeToCreate')}</h3>
+                <p>{t('canvasChat.askMeToAddStepsAdjustTheirSettingsOrConnectYourJourney')}</p>
                 {configured && (
                   <div className="dxp-ai-suggestions">
                     {suggestions.map((suggestion) => (
@@ -285,24 +294,20 @@ export function CanvasChat({
             )}
             {!configured && (
               <div className="dxp-ai-setup" role="status">
-                <strong>Connect your AI assistant</strong>
-                <p>
-                  AI chat is ready for setup. Ask your workspace administrator to connect the
-                  assistant service to enable it.
-                </p>
+                <strong>{t('canvasChat.connectYourAiAssistant')}</strong>
+                <p>{t('canvasChat.aiChatIsReadyForSetupAskYourWorkspaceAdministratorToConnect')}</p>
               </div>
             )}
             {messages.map((message) => (
               <article key={message.id} className={`dxp-ai-message dxp-ai-message-${message.role}`}>
                 <span className="dxp-ai-message-author">
-                  {message.role === 'user' ? 'You' : 'Visual DXP AI'}
+                  {message.role === 'user' ? t('canvasChat.you') : t('canvasChat.visualDxpAi')}
                 </span>
                 <p>{message.content}</p>
                 {!!message.changeCount && (
                   <span className="dxp-ai-applied">
                     <Check size={12} aria-hidden="true" />
-                    {message.changeCount} {message.changeCount === 1 ? 'edit' : 'edits'} applied ·
-                    Undo on the canvas
+                    {t('canvasChat.editsApplied', { count: message.changeCount })}
                   </span>
                 )}
               </article>
@@ -310,7 +315,7 @@ export function CanvasChat({
             {busy && (
               <div className="dxp-ai-thinking" role="status">
                 <LoaderCircle size={14} className="dxp-ai-spin" aria-hidden="true" />
-                Working on your workflow…
+                {t('canvasChat.workingOnYourWorkflow')}
               </div>
             )}
             {error && (
@@ -329,11 +334,11 @@ export function CanvasChat({
             <div className="dxp-ai-input-wrap">
               <textarea
                 ref={input}
-                aria-label="Message the workflow assistant"
+                aria-label={t('canvasChat.messageTheWorkflowAssistant')}
                 placeholder={
                   configured
-                    ? 'Describe a change to your workflow…'
-                    : 'Connect the assistant to start chatting'
+                    ? t('canvasChat.describeAChangeToYourWorkflow')
+                    : t('canvasChat.connectTheAssistantToStartChatting')
                 }
                 value={draft}
                 disabled={!configured || busy}
@@ -351,8 +356,8 @@ export function CanvasChat({
                 <button
                   type="button"
                   className="dxp-ai-send"
-                  aria-label="Stop generating"
-                  title="Stop generating"
+                  aria-label={t('canvasChat.stopGenerating')}
+                  title={t('canvasChat.stopGenerating')}
                   onClick={() => request.current?.abort()}
                 >
                   <Square size={13} fill="currentColor" aria-hidden="true" />
@@ -361,15 +366,15 @@ export function CanvasChat({
                 <button
                   type="submit"
                   className="dxp-ai-send"
-                  aria-label="Send message"
-                  title="Send message"
+                  aria-label={t('canvasChat.sendMessage')}
+                  title={t('canvasChat.sendMessage')}
                   disabled={!configured || !draft.trim()}
                 >
                   <ArrowUp size={17} aria-hidden="true" />
                 </button>
               )}
             </div>
-            <p>Changes are undoable. Test your workflow before publishing.</p>
+            <p>{t('canvasChat.changesAreUndoableTestYourWorkflowBeforePublishing')}</p>
           </form>
         </section>
       )}

@@ -359,7 +359,7 @@
   font-weight: 500;
 }
 .dxp-node-more {
-  margin-left: auto;
+  margin-inline-start: auto;
   color: #abb5ad;
 }
 .dxp-node > strong {
@@ -630,7 +630,7 @@
   font-size: 6.5px;
   letter-spacing: 1.25px;
   color: var(--dxp-subtle);
-  margin-right: 25px;
+  margin-inline-end: 25px;
 }
 .dxp-footer-shortcut {
   display: flex;
@@ -665,7 +665,7 @@
   background: none;
   border: 0;
   color: var(--dxp-primary-border);
-  margin-left: auto;
+  margin-inline-start: auto;
   padding: 0 0 0 8px;
 }
 .dxp-empty-canvas {
@@ -1134,4 +1134,23 @@
   color: #2563eb;
   font-size: 10px;
   font-weight: 600;
+}
+
+/* Text follows the host locale; graph coordinates and handle positions do not mirror. */
+.dxp-builder[dir='rtl'] {
+  text-align: start;
+}
+.dxp-builder[dir='rtl'] .react-flow__renderer {
+  direction: ltr;
+}
+.dxp-builder[dir='rtl'] :is(.react-flow__node, .react-flow__panel) {
+  direction: rtl;
+}
+.dxp-builder[dir='rtl']
+  :is(.dxp-inspector-pick, .dxp-node-library-tooltip, .dxp-ai-message, .dxp-ai-suggestion) {
+  text-align: start;
+}
+.dxp-builder[dir='rtl'] :is(.dxp-inspector-code, input[type='url'], .dxp-website-setup-snippet) {
+  direction: ltr;
+  text-align: left;
 }

@@ -140,14 +140,27 @@ const own = (value: object, key: string) => Object.hasOwn(value, key);
 
 function record(value: unknown, label: string): Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value))
-    throw new Error(`${label} must be an object.`);
+    throw Object.assign(new Error(`${label} must be an object.`), {
+      messageKey: 'errors.ai.labelMustBeAnObject',
+      messageParams: { label: String(label) },
+    });
   return value as Record<string, unknown>;
 }
 
 function text(value: unknown, label: string, max: number, allowEmpty = false): string {
   if (typeof value !== 'string' || value.length > max || (!allowEmpty && !value.trim()))
-    throw new Error(
-      `${label} must be ${allowEmpty ? 'text' : 'nonempty text'} of at most ${max} characters.`,
+    throw Object.assign(
+      new Error(
+        `${label} must be ${allowEmpty ? 'text' : 'nonempty text'} of at most ${max} characters.`,
+      ),
+      {
+        messageKey: 'errors.ai.labelMustBeValue2OfAtMostMaxCharacters',
+        messageParams: {
+          label: String(label),
+          value2: String(allowEmpty ? 'text' : 'nonempty text'),
+          max: String(max),
+        },
+      },
     );
   return value;
 }
@@ -156,7 +169,13 @@ function id(value: unknown): string {
   const result = text(value, 'An ID', 200);
   // biome-ignore lint/suspicious/noControlCharactersInRegex: IDs must reject control characters.
   if (result.trim() !== result || /[\u0000-\u001f\u007f]/.test(result))
-    throw new Error('IDs cannot contain surrounding whitespace or control characters.');
+    throw Object.assign(
+      new Error('IDs cannot contain surrounding whitespace or control characters.'),
+      {
+        messageKey: 'errors.ai.idsCannotContainSurroundingWhitespaceOrControlCharacters',
+        messageParams: {},
+      },
+    );
   return result;
 }
 
@@ -170,7 +189,13 @@ function position(value: unknown): WorkflowNode['position'] {
     !Number.isFinite(input.y) ||
     Math.abs(input.y) > 1000000
   )
-    throw new Error('Step positions must contain finite coordinates within the canvas limits.');
+    throw Object.assign(
+      new Error('Step positions must contain finite coordinates within the canvas limits.'),
+      {
+        messageKey: 'errors.ai.stepPositionsMustContainFiniteCoordinatesWithinTheCanvasLimits',
+        messageParams: {},
+      },
+    );
   return { x: input.x, y: input.y };
 }
 
@@ -184,20 +209,32 @@ function config(value: unknown, complete = false): StepConfig {
   for (const key of configNumbers) {
     if (!own(input, key) || input[key] === undefined) continue;
     if (typeof input[key] !== 'number' || !Number.isFinite(input[key]))
-      throw new Error('Step configuration numbers must be finite.');
+      throw Object.assign(new Error('Step configuration numbers must be finite.'), {
+        messageKey: 'errors.ai.stepConfigurationNumbersMustBeFinite',
+        messageParams: {},
+      });
     output[key] = input[key];
   }
   for (const key of configBooleans) {
     if (!own(input, key) || input[key] === undefined) continue;
     if (typeof input[key] !== 'boolean')
-      throw new Error('Note text formatting must contain boolean values.');
+      throw Object.assign(new Error('Note text formatting must contain boolean values.'), {
+        messageKey: 'errors.ai.noteTextFormattingMustContainBooleanValues',
+        messageParams: {},
+      });
     output[key] = input[key];
   }
   if (input.noteMarks !== undefined) {
     const length = complete ? ((output.noteText as string | undefined) ?? '').length : Infinity;
     if (!isNoteMarks(input.noteMarks, length))
-      throw new Error(
-        'Note text formatting must use sorted, nonoverlapping ranges within the note text.',
+      throw Object.assign(
+        new Error(
+          'Note text formatting must use sorted, nonoverlapping ranges within the note text.',
+        ),
+        {
+          messageKey: 'errors.ai.noteTextFormattingMustUseSortedNonoverlappingRangesWithinThe',
+          messageParams: {},
+        },
       );
     output.noteMarks = input.noteMarks.map((mark) => ({
       start: mark.start,
@@ -212,7 +249,10 @@ function config(value: unknown, complete = false): StepConfig {
     output.noteColor !== 'transparent' &&
     !/^#[\da-f]{6}$/i.test(output.noteColor as string)
   )
-    throw new Error('Note colors must be a six-digit hex color or transparent.');
+    throw Object.assign(new Error('Note colors must be a six-digit hex color or transparent.'), {
+      messageKey: 'errors.ai.noteColorsMustBeASixDigitHexColorOr',
+      messageParams: {},
+    });
   return output as StepConfig;
 }
 
@@ -221,13 +261,19 @@ function node(value: unknown): WorkflowNode {
   const input = record(value, 'Step');
   const data = record(input.data, 'Step data');
   if (input.type !== 'workflow' || !kinds.has(data.kind as NodeKind))
-    throw new Error('Choose a supported workflow step type.');
+    throw Object.assign(new Error('Choose a supported workflow step type.'), {
+      messageKey: 'errors.ai.chooseASupportedWorkflowStepType',
+      messageParams: {},
+    });
   const dimensions: { width?: number; height?: number } = {};
   if (data.kind === 'frame') {
     for (const key of ['width', 'height'] as const) {
       if (input[key] === undefined) continue;
       if (typeof input[key] !== 'number' || !Number.isFinite(input[key]) || input[key] <= 0)
-        throw new Error('Frame dimensions must be positive numbers.');
+        throw Object.assign(new Error('Frame dimensions must be positive numbers.'), {
+          messageKey: 'errors.ai.frameDimensionsMustBePositiveNumbers',
+          messageParams: {},
+        });
       dimensions[key] = input[key];
     }
   }
@@ -251,13 +297,20 @@ function node(value: unknown): WorkflowNode {
 function handle(value: unknown): string | null {
   if (value === null) return null;
   if (!['true', 'false', 'body', 'done'].includes(value as string))
-    throw new Error('Connections must use a supported output handle.');
+    throw Object.assign(new Error('Connections must use a supported output handle.'), {
+      messageKey: 'errors.ai.connectionsMustUseASupportedOutputHandle',
+      messageParams: {},
+    });
   return value as string;
 }
 
 function edge(value: unknown): WorkflowEdge {
   const input = record(value, 'Connection');
-  if (input.targetHandle != null) throw new Error('Connections cannot specify target handles.');
+  if (input.targetHandle != null)
+    throw Object.assign(new Error('Connections cannot specify target handles.'), {
+      messageKey: 'errors.ai.connectionsCannotSpecifyTargetHandles',
+      messageParams: {},
+    });
   return {
     id: id(input.id),
     source: id(input.source),
@@ -272,7 +325,13 @@ function edge(value: unknown): WorkflowEdge {
 
 function operations(value: unknown): WorkflowOperation[] {
   if (!Array.isArray(value) || value.length > AI_LIMITS.operations)
-    throw new Error(`An AI response may contain at most ${AI_LIMITS.operations} changes.`);
+    throw Object.assign(
+      new Error(`An AI response may contain at most ${AI_LIMITS.operations} changes.`),
+      {
+        messageKey: 'errors.ai.anAiResponseMayContainAtMostOperationsChanges',
+        messageParams: { operations: String(AI_LIMITS.operations) },
+      },
+    );
   return value.map((entry): WorkflowOperation => {
     const input = record(entry, 'Workflow change');
     switch (input.type) {
@@ -285,7 +344,13 @@ function operations(value: unknown): WorkflowOperation[] {
         return { type: input.type, id: id(input.id) };
       case 'update_node': {
         if (own(input, 'kind') || own(input, 'data'))
-          throw new Error('An update cannot change a step type; remove and add a step instead.');
+          throw Object.assign(
+            new Error('An update cannot change a step type; remove and add a step instead.'),
+            {
+              messageKey: 'errors.ai.anUpdateCannotChangeAStepTypeRemoveAndAdd',
+              messageParams: {},
+            },
+          );
         const update: Extract<WorkflowOperation, { type: 'update_node' }> = {
           type: input.type,
           id: id(input.id),
@@ -296,12 +361,18 @@ function operations(value: unknown): WorkflowOperation[] {
         if (input.config !== undefined) update.config = config(input.config);
         if (input.position !== undefined) update.position = position(input.position);
         if (Object.keys(update).length === 2)
-          throw new Error('A step update must contain a change.');
+          throw Object.assign(new Error('A step update must contain a change.'), {
+            messageKey: 'errors.ai.aStepUpdateMustContainAChange',
+            messageParams: {},
+          });
         return update;
       }
       case 'update_edge': {
         if (input.targetHandle != null)
-          throw new Error('Connections cannot specify target handles.');
+          throw Object.assign(new Error('Connections cannot specify target handles.'), {
+            messageKey: 'errors.ai.connectionsCannotSpecifyTargetHandles',
+            messageParams: {},
+          });
         const update: Extract<WorkflowOperation, { type: 'update_edge' }> = {
           type: input.type,
           id: id(input.id),
@@ -312,11 +383,17 @@ function operations(value: unknown): WorkflowOperation[] {
         if (input.label !== undefined)
           update.label = text(input.label, 'Connection label', 200, true);
         if (Object.keys(update).length === 2)
-          throw new Error('A connection update must contain a change.');
+          throw Object.assign(new Error('A connection update must contain a change.'), {
+            messageKey: 'errors.ai.aConnectionUpdateMustContainAChange',
+            messageParams: {},
+          });
         return update;
       }
       default:
-        throw new Error('The AI response contains an unsupported workflow change.');
+        throw Object.assign(new Error('The AI response contains an unsupported workflow change.'), {
+          messageKey: 'errors.ai.theAiResponseContainsAnUnsupportedWorkflowChange',
+          messageParams: {},
+        });
     }
   });
 }
@@ -324,16 +401,29 @@ function operations(value: unknown): WorkflowOperation[] {
 function workflowShape(value: unknown): Workflow {
   const input = record(value, 'Workflow');
   if (input.includeSubpages !== undefined && typeof input.includeSubpages !== 'boolean')
-    throw new Error('Include subpages must be a boolean.');
-  if (input.version !== 1) throw new Error('This workflow version is not supported.');
+    throw Object.assign(new Error('Include subpages must be a boolean.'), {
+      messageKey: 'errors.ai.includeSubpagesMustBeABoolean',
+      messageParams: {},
+    });
+  if (input.version !== 1)
+    throw Object.assign(new Error('This workflow version is not supported.'), {
+      messageKey: 'errors.ai.thisWorkflowVersionIsNotSupported',
+      messageParams: {},
+    });
   if (
     !Array.isArray(input.nodes) ||
     input.nodes.length > AI_LIMITS.nodes ||
     !Array.isArray(input.edges) ||
     input.edges.length > AI_LIMITS.edges
   )
-    throw new Error(
-      `AI editing supports up to ${AI_LIMITS.nodes} steps and ${AI_LIMITS.edges} connections.`,
+    throw Object.assign(
+      new Error(
+        `AI editing supports up to ${AI_LIMITS.nodes} steps and ${AI_LIMITS.edges} connections.`,
+      ),
+      {
+        messageKey: 'errors.ai.aiEditingSupportsUpToNodesStepsAndEdgesConnections',
+        messageParams: { nodes: String(AI_LIMITS.nodes), edges: String(AI_LIMITS.edges) },
+      },
     );
   return {
     version: 1,
@@ -347,30 +437,54 @@ function workflowShape(value: unknown): Workflow {
 
 function assertGraph(workflow: Workflow): void {
   const nodes = new Map(workflow.nodes.map((entry) => [entry.id, entry]));
-  if (nodes.size !== workflow.nodes.length) throw new Error('Every step must have a unique ID.');
+  if (nodes.size !== workflow.nodes.length)
+    throw Object.assign(new Error('Every step must have a unique ID.'), {
+      messageKey: 'errors.ai.everyStepMustHaveAUniqueId',
+      messageParams: {},
+    });
   for (const entry of workflow.nodes) {
     if (
       entry.parentId !== undefined &&
       (entry.data.kind === 'frame' || nodes.get(entry.parentId)?.data.kind !== 'frame')
     )
-      throw new Error('Nodes must belong to an existing top-level frame.');
+      throw Object.assign(new Error('Nodes must belong to an existing top-level frame.'), {
+        messageKey: 'errors.ai.nodesMustBelongToAnExistingTopLevelFrame',
+        messageParams: {},
+      });
   }
   const edgeIds = new Set<string>();
   const connections = new Set<string>();
   const incoming = new Map(workflow.nodes.map((entry) => [entry.id, 0]));
   const outgoing = new Map<string, string[]>();
   for (const entry of workflow.edges) {
-    if (edgeIds.has(entry.id)) throw new Error('Every connection must have a unique ID.');
+    if (edgeIds.has(entry.id))
+      throw Object.assign(new Error('Every connection must have a unique ID.'), {
+        messageKey: 'errors.ai.everyConnectionMustHaveAUniqueId',
+        messageParams: {},
+      });
     edgeIds.add(entry.id);
     const source = nodes.get(entry.source);
     const target = nodes.get(entry.target);
-    if (!source || !target) throw new Error('A connection refers to a missing step.');
+    if (!source || !target)
+      throw Object.assign(new Error('A connection refers to a missing step.'), {
+        messageKey: 'errors.ai.aConnectionRefersToAMissingStep',
+        messageParams: {},
+      });
     if (source.data.kind === 'note' || target.data.kind === 'note')
-      throw new Error('Notes cannot have workflow connections.');
+      throw Object.assign(new Error('Notes cannot have workflow connections.'), {
+        messageKey: 'errors.ai.notesCannotHaveWorkflowConnections',
+        messageParams: {},
+      });
     if (source.data.kind === 'frame' || target.data.kind === 'frame')
-      throw new Error('Frames cannot have workflow connections.');
+      throw Object.assign(new Error('Frames cannot have workflow connections.'), {
+        messageKey: 'errors.ai.framesCannotHaveWorkflowConnections',
+        messageParams: {},
+      });
     if (target.data.kind === 'trigger')
-      throw new Error('Triggers cannot receive incoming connections.');
+      throw Object.assign(new Error('Triggers cannot receive incoming connections.'), {
+        messageKey: 'errors.ai.triggersCannotReceiveIncomingConnections',
+        messageParams: {},
+      });
     const allowed =
       source.data.kind === 'fork'
         ? ['true', 'false']
@@ -378,10 +492,21 @@ function assertGraph(workflow: Workflow): void {
           ? ['body', 'done']
           : [];
     if (allowed.length ? !allowed.includes(entry.sourceHandle ?? '') : entry.sourceHandle != null)
-      throw new Error('A connection uses an invalid output for its source step.');
-    if (entry.targetHandle != null) throw new Error('Connections cannot specify target handles.');
+      throw Object.assign(new Error('A connection uses an invalid output for its source step.'), {
+        messageKey: 'errors.ai.aConnectionUsesAnInvalidOutputForItsSourceStep',
+        messageParams: {},
+      });
+    if (entry.targetHandle != null)
+      throw Object.assign(new Error('Connections cannot specify target handles.'), {
+        messageKey: 'errors.ai.connectionsCannotSpecifyTargetHandles',
+        messageParams: {},
+      });
     const key = JSON.stringify([entry.source, entry.target, entry.sourceHandle ?? null]);
-    if (connections.has(key)) throw new Error('Duplicate connections are not allowed.');
+    if (connections.has(key))
+      throw Object.assign(new Error('Duplicate connections are not allowed.'), {
+        messageKey: 'errors.ai.duplicateConnectionsAreNotAllowed',
+        messageParams: {},
+      });
     connections.add(key);
     incoming.set(entry.target, incoming.get(entry.target)! + 1);
     const targets = outgoing.get(entry.source) ?? [];
@@ -397,7 +522,13 @@ function assertGraph(workflow: Workflow): void {
     }
   }
   if (ready.length !== nodes.size)
-    throw new Error('Circular connections are not supported. Use a Repeat step instead.');
+    throw Object.assign(
+      new Error('Circular connections are not supported. Use a Repeat step instead.'),
+      {
+        messageKey: 'errors.ai.circularConnectionsAreNotSupportedUseARepeatStepInstead',
+        messageParams: {},
+      },
+    );
 }
 
 /** Apply all changes together, or throw without changing the caller's workflow. */
@@ -417,12 +548,19 @@ export function applyWorkflowOperations(workflow: Workflow, value: unknown): Wor
     switch (change.type) {
       case 'add_node':
         if (nodes.some((entry) => entry.id === change.node.id))
-          throw new Error('A step with that ID already exists.');
+          throw Object.assign(new Error('A step with that ID already exists.'), {
+            messageKey: 'errors.ai.aStepWithThatIdAlreadyExists',
+            messageParams: {},
+          });
         nodes.push(change.node);
         break;
       case 'update_node': {
         const index = nodes.findIndex((entry) => entry.id === change.id);
-        if (index < 0) throw new Error('The step to update does not exist.');
+        if (index < 0)
+          throw Object.assign(new Error('The step to update does not exist.'), {
+            messageKey: 'errors.ai.theStepToUpdateDoesNotExist',
+            messageParams: {},
+          });
         const current = nodes[index];
         nodes[index] = {
           ...current,
@@ -446,25 +584,38 @@ export function applyWorkflowOperations(workflow: Workflow, value: unknown): Wor
       }
       case 'remove_node':
         if (!nodes.some((entry) => entry.id === change.id))
-          throw new Error('The step to remove does not exist.');
+          throw Object.assign(new Error('The step to remove does not exist.'), {
+            messageKey: 'errors.ai.theStepToRemoveDoesNotExist',
+            messageParams: {},
+          });
         nodes = removeNodes(nodes, new Set([change.id]));
         edges = edges.filter((entry) => entry.source !== change.id && entry.target !== change.id);
         break;
       case 'add_edge':
         if (edges.some((entry) => entry.id === change.edge.id))
-          throw new Error('A connection with that ID already exists.');
+          throw Object.assign(new Error('A connection with that ID already exists.'), {
+            messageKey: 'errors.ai.aConnectionWithThatIdAlreadyExists',
+            messageParams: {},
+          });
         edges.push(change.edge);
         break;
       case 'update_edge': {
         const index = edges.findIndex((entry) => entry.id === change.id);
-        if (index < 0) throw new Error('The connection to update does not exist.');
+        if (index < 0)
+          throw Object.assign(new Error('The connection to update does not exist.'), {
+            messageKey: 'errors.ai.theConnectionToUpdateDoesNotExist',
+            messageParams: {},
+          });
         const { type: _type, id: _id, ...patch } = change;
         edges[index] = { ...edges[index], ...patch };
         break;
       }
       case 'remove_edge':
         if (!edges.some((entry) => entry.id === change.id))
-          throw new Error('The connection to remove does not exist.');
+          throw Object.assign(new Error('The connection to remove does not exist.'), {
+            messageKey: 'errors.ai.theConnectionToRemoveDoesNotExist',
+            messageParams: {},
+          });
         edges = edges.filter((entry) => entry.id !== change.id);
         break;
     }
@@ -482,7 +633,13 @@ export function applyWorkflowOperations(workflow: Workflow, value: unknown): Wor
       )
     : undefined;
   if (introduced)
-    throw new Error(`The proposed changes are incomplete or invalid: ${introduced.message}`);
+    throw Object.assign(
+      new Error(`The proposed changes are incomplete or invalid: ${introduced.message}`),
+      {
+        messageKey: 'errors.ai.theProposedChangesAreIncompleteOrInvalidMessage',
+        messageParams: { message: String(introduced.message) },
+      },
+    );
   return result;
 }
 
@@ -501,32 +658,56 @@ export function parseAIChatRequest(value: unknown): AIChatRequest {
     !input.messages.length ||
     input.messages.length > AI_LIMITS.messages
   )
-    throw new Error(`An AI request needs between 1 and ${AI_LIMITS.messages} messages.`);
+    throw Object.assign(
+      new Error(`An AI request needs between 1 and ${AI_LIMITS.messages} messages.`),
+      {
+        messageKey: 'errors.ai.anAiRequestNeedsBetween1AndMessagesMessages',
+        messageParams: { messages: String(AI_LIMITS.messages) },
+      },
+    );
   const messages = input.messages.map((entry): AIChatMessage => {
     const message = record(entry, 'Chat message');
     if (message.role !== 'user' && message.role !== 'assistant')
-      throw new Error('Chat messages must have a user or assistant role.');
+      throw Object.assign(new Error('Chat messages must have a user or assistant role.'), {
+        messageKey: 'errors.ai.chatMessagesMustHaveAUserOrAssistantRole',
+        messageParams: {},
+      });
     return {
       role: message.role,
       content: text(message.content, 'Chat message', AI_LIMITS.messageCharacters),
     };
   });
   if (messages.at(-1)?.role !== 'user')
-    throw new Error('The last chat message must be from the user.');
+    throw Object.assign(new Error('The last chat message must be from the user.'), {
+      messageKey: 'errors.ai.theLastChatMessageMustBeFromTheUser',
+      messageParams: {},
+    });
   const workflow = workflowShape(input.workflow);
   assertGraph(workflow);
   if (!Array.isArray(input.selectedNodeIds) || input.selectedNodeIds.length > AI_LIMITS.nodes)
-    throw new Error('Selected steps must be an array of step IDs.');
+    throw Object.assign(new Error('Selected steps must be an array of step IDs.'), {
+      messageKey: 'errors.ai.selectedStepsMustBeAnArrayOfStepIds',
+      messageParams: {},
+    });
   const selectedNodeIds = input.selectedNodeIds.map(id);
   const nodeIds = new Set(workflow.nodes.map((entry) => entry.id));
   if (
     new Set(selectedNodeIds).size !== selectedNodeIds.length ||
     selectedNodeIds.some((key) => !nodeIds.has(key))
   )
-    throw new Error('Selected steps must identify existing steps without duplicates.');
+    throw Object.assign(
+      new Error('Selected steps must identify existing steps without duplicates.'),
+      {
+        messageKey: 'errors.ai.selectedStepsMustIdentifyExistingStepsWithoutDuplicates',
+        messageParams: {},
+      },
+    );
   const request = { messages, workflow, selectedNodeIds };
   if (new TextEncoder().encode(JSON.stringify(request)).byteLength > AI_LIMITS.payloadBytes)
-    throw new Error('This workflow and conversation are too large for an AI request.');
+    throw Object.assign(
+      new Error('This workflow and conversation are too large for an AI request.'),
+      { messageKey: 'errors.ai.thisWorkflowAndConversationAreTooLargeForAnAi', messageParams: {} },
+    );
   return request;
 }
 
@@ -539,7 +720,10 @@ export function workflowFingerprint(workflow: Workflow): string {
 async function boundedResponse(response: Response): Promise<unknown> {
   if (Number(response.headers.get('content-length')) > AI_LIMITS.payloadBytes) {
     await response.body?.cancel();
-    throw new Error('The AI assistant returned a response that is too large.');
+    throw Object.assign(new Error('The AI assistant returned a response that is too large.'), {
+      messageKey: 'errors.ai.theAiAssistantReturnedAResponseThatIsTooLarge',
+      messageParams: {},
+    });
   }
   const reader = response.body?.getReader();
   let body = '';
@@ -553,7 +737,13 @@ async function boundedResponse(response: Response): Promise<unknown> {
         size += chunk.value.byteLength;
         if (size > AI_LIMITS.payloadBytes) {
           await reader.cancel();
-          throw new Error('The AI assistant returned a response that is too large.');
+          throw Object.assign(
+            new Error('The AI assistant returned a response that is too large.'),
+            {
+              messageKey: 'errors.ai.theAiAssistantReturnedAResponseThatIsTooLarge',
+              messageParams: {},
+            },
+          );
         }
         body += decoder.decode(chunk.value, { stream: true });
       }
@@ -564,12 +754,18 @@ async function boundedResponse(response: Response): Promise<unknown> {
   } else {
     body = await response.text();
     if (new TextEncoder().encode(body).byteLength > AI_LIMITS.payloadBytes)
-      throw new Error('The AI assistant returned a response that is too large.');
+      throw Object.assign(new Error('The AI assistant returned a response that is too large.'), {
+        messageKey: 'errors.ai.theAiAssistantReturnedAResponseThatIsTooLarge',
+        messageParams: {},
+      });
   }
   try {
     return JSON.parse(body) as unknown;
   } catch {
-    throw new Error('The AI assistant returned an invalid response. Try again.');
+    throw Object.assign(new Error('The AI assistant returned an invalid response. Try again.'), {
+      messageKey: 'errors.ai.theAiAssistantReturnedAnInvalidResponseTryAgain',
+      messageParams: {},
+    });
   }
 }
 
@@ -583,32 +779,60 @@ export async function requestAIChat(
   const override =
     configuration && isBrowserConfiguration(configuration) ? configuration : undefined;
   const provider = configuration?.provider ?? 'openai';
-  if (!isAIProvider(provider)) throw new AIConfigurationError('Choose a supported AI provider.');
+  if (!isAIProvider(provider))
+    throw Object.assign(new AIConfigurationError('Choose a supported AI provider.'), {
+      messageKey: 'errors.ai.chooseASupportedAiProvider',
+      messageParams: {},
+    });
   const endpoint = text(settings.endpoint, 'AI endpoint', 4000);
   const url = resolveAIEndpoint(
     endpoint,
     typeof window === 'undefined' ? undefined : window.location.origin,
   );
   if (override && (!allowsBrowserCredentials(url) || override.origin !== url.origin))
-    throw new AIConfigurationError(
-      'Browser credentials require HTTPS and confirmation of this server origin.',
+    throw Object.assign(
+      new AIConfigurationError(
+        'Browser credentials require HTTPS and confirmation of this server origin.',
+      ),
+      {
+        messageKey: 'errors.ai.browserCredentialsRequireHttpsAndConfirmationOfThisServerOrigin',
+        messageParams: {},
+      },
     );
   if (override && !validBrowserConfiguration(override))
-    throw new AIConfigurationError(
-      'Browser AI settings are incomplete or invalid. Save a complete key and model pair.',
+    throw Object.assign(
+      new AIConfigurationError(
+        'Browser AI settings are incomplete or invalid. Save a complete key and model pair.',
+      ),
+      {
+        messageKey: 'errors.ai.browserAiSettingsAreIncompleteOrInvalidSaveAComplete',
+        messageParams: {},
+      },
     );
   const body = JSON.stringify(parseAIChatRequest(request));
   const deadline = AbortSignal.timeout(AI_LIMITS.timeoutMs);
   const requestSignal = signal ? AbortSignal.any([signal, deadline]) : deadline;
   const headers = new Headers(settings.headers);
   if (AI_RESERVED_HEADERS.some((header) => headers.has(header)))
-    throw new AIConfigurationError(
-      'Use browser AI settings for provider credentials; reserve ai.headers for application authentication.',
+    throw Object.assign(
+      new AIConfigurationError(
+        'Use browser AI settings for provider credentials; reserve ai.headers for application authentication.',
+      ),
+      {
+        messageKey: 'errors.ai.useBrowserAiSettingsForProviderCredentialsReserveAiHeaders',
+        messageParams: {},
+      },
     );
   headers.set(AI_PROVIDER_HEADER, provider);
   if (override) {
     if (override.apiKey && (body.includes(override.apiKey) || url.href.includes(override.apiKey)))
-      throw new Error('Remove credentials from your conversation or workflow before sending.');
+      throw Object.assign(
+        new Error('Remove credentials from your conversation or workflow before sending.'),
+        {
+          messageKey: 'errors.ai.removeCredentialsFromYourConversationOrWorkflowBeforeSending',
+          messageParams: {},
+        },
+      );
     // Retain the legacy OpenAI wire protocol for existing embedding backends.
     if (override.apiKey)
       headers.set(provider === 'openai' ? OPENAI_KEY_HEADER : AI_KEY_HEADER, override.apiKey);
@@ -634,15 +858,33 @@ export async function requestAIChat(
     } catch (error) {
       if (requestSignal.aborted || (error instanceof Error && error.name === 'AbortError'))
         throw error;
-      throw new Error('Could not reach the AI assistant. Check the connection and try again.');
+      throw Object.assign(
+        new Error('Could not reach the AI assistant. Check the connection and try again.'),
+        {
+          messageKey: 'errors.ai.couldNotReachTheAiAssistantCheckTheConnectionAnd',
+          messageParams: {},
+        },
+      );
     }
     if (response.redirected)
-      throw new Error('AI server redirects are not allowed. Configure the final HTTPS endpoint.');
+      throw Object.assign(
+        new Error('AI server redirects are not allowed. Configure the final HTTPS endpoint.'),
+        {
+          messageKey: 'errors.ai.aiServerRedirectsAreNotAllowedConfigureTheFinalHttps',
+          messageParams: {},
+        },
+      );
     if (!response.ok) {
       void response.body?.cancel().catch(() => {});
       if (response.status === 401 || response.status === 403)
-        throw new AIConfigurationError(
-          'The AI endpoint rejected the request. Check your endpoint configuration.',
+        throw Object.assign(
+          new AIConfigurationError(
+            'The AI endpoint rejected the request. Check your endpoint configuration.',
+          ),
+          {
+            messageKey: 'errors.ai.theAiEndpointRejectedTheRequestCheckYourEndpointConfiguration',
+            messageParams: {},
+          },
         );
       if (override && (response.status === 400 || response.status === 422))
         throw new AIConfigurationError(
@@ -651,31 +893,65 @@ export async function requestAIChat(
             : 'Check your browser API key and model in AI Settings. The override was rejected; no server fallback was used.',
         );
       if (response.status === 409)
-        throw new AIConfigurationError(
-          'This provider is unavailable in the current execution mode. Save its configuration in AI Settings.',
+        throw Object.assign(
+          new AIConfigurationError(
+            'This provider is unavailable in the current execution mode. Save its configuration in AI Settings.',
+          ),
+          {
+            messageKey: 'errors.ai.thisProviderIsUnavailableInTheCurrentExecutionModeSave',
+            messageParams: {},
+          },
         );
       if (response.status === 429)
-        throw new Error('The AI assistant is busy. Try again in a moment.');
+        throw Object.assign(new Error('The AI assistant is busy. Try again in a moment.'), {
+          messageKey: 'errors.ai.theAiAssistantIsBusyTryAgainInAMoment',
+          messageParams: {},
+        });
       if (response.status === 503)
-        throw new AIConfigurationError(
-          'The AI assistant is not configured or is temporarily unavailable.',
+        throw Object.assign(
+          new AIConfigurationError(
+            'The AI assistant is not configured or is temporarily unavailable.',
+          ),
+          {
+            messageKey: 'errors.ai.theAiAssistantIsNotConfiguredOrIsTemporarilyUnavailable',
+            messageParams: {},
+          },
         );
       if (response.status === 502)
-        throw new AIConfigurationError('Check your API key and model in AI Settings.');
-      throw new Error('The AI request failed. Try again or check AI Settings.');
+        throw Object.assign(
+          new AIConfigurationError('Check your API key and model in AI Settings.'),
+          { messageKey: 'errors.ai.checkYourApiKeyAndModelInAiSettings', messageParams: {} },
+        );
+      throw Object.assign(new Error('The AI request failed. Try again or check AI Settings.'), {
+        messageKey: 'errors.ai.theAiRequestFailedTryAgainOrCheckAiSettings',
+        messageParams: {},
+      });
     }
     const value = await boundedResponse(response);
     requestSignal.throwIfAborted();
     if (override?.apiKey && JSON.stringify(value).includes(override.apiKey))
-      throw new Error('The AI server returned an unsafe response. No changes were applied.');
+      throw Object.assign(
+        new Error('The AI server returned an unsafe response. No changes were applied.'),
+        {
+          messageKey: 'errors.ai.theAiServerReturnedAnUnsafeResponseNoChangesWere',
+          messageParams: {},
+        },
+      );
     try {
       return parseAIChatResponse(value);
     } catch {
-      throw new Error('The AI assistant returned an invalid response. Try again.');
+      throw Object.assign(new Error('The AI assistant returned an invalid response. Try again.'), {
+        messageKey: 'errors.ai.theAiAssistantReturnedAnInvalidResponseTryAgain',
+        messageParams: {},
+      });
     }
   } catch (error) {
     if (signal?.aborted) throw error;
-    if (deadline.aborted) throw new Error('The AI assistant took too long to respond. Try again.');
+    if (deadline.aborted)
+      throw Object.assign(new Error('The AI assistant took too long to respond. Try again.'), {
+        messageKey: 'errors.ai.theAiAssistantTookTooLongToRespondTryAgain',
+        messageParams: {},
+      });
     throw error;
   }
 }

@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { validateWorkflow } from '../lib/export';
+import { useBuilderI18n } from '../lib/i18nContext';
 import type { RunLog, Workflow } from '../lib/types';
 import { useDialogFocus } from '../lib/useDialogFocus';
 import { IsolatedPreview } from './IsolatedPreview';
@@ -22,6 +23,7 @@ export function Preview({
   onClose: () => void;
   onLog: (log: RunLog) => void;
 }) {
+  const { t } = useBuilderI18n();
   const modalRef = useDialogFocus(true);
   const [ready, setReady] = useState(false);
   const [running, setRunning] = useState(false);
@@ -39,7 +41,7 @@ export function Preview({
   function run() {
     setLogs([]);
     setError('');
-    const issues = validateWorkflow(workflow);
+    const issues = validateWorkflow(workflow, t);
     if (issues.length) {
       setError(issues.map((issue) => issue.message).join(' '));
       return;
@@ -57,19 +59,19 @@ export function Preview({
         className="dxp-modal dxp-preview"
         role="dialog"
         aria-modal="true"
-        aria-label="Preview workflow"
+        aria-label={t('preview.previewWorkflow')}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="dxp-modal-header">
           <div>
-            <span className="dxp-eyebrow">TEST YOUR EXPERIENCE</span>
-            <h2>See your journey in action</h2>
+            <span className="dxp-eyebrow">{t('preview.testYourExperience')}</span>
+            <h2>{t('preview.seeYourJourneyInAction')}</h2>
           </div>
           <button
             type="button"
             className="dxp-icon-button"
             onClick={onClose}
-            aria-label="Close preview"
+            aria-label={t('preview.closePreview')}
           >
             <X size={20} />
           </button>
@@ -89,14 +91,14 @@ export function Preview({
               setError('');
               setKey((x) => x + 1);
             }}
-            title="Reload website"
-            aria-label="Reload website"
+            title={t('preview.reloadWebsite')}
+            aria-label={t('preview.reloadWebsite')}
           >
             <RotateCcw size={14} />
           </button>
           {running && (
             <button type="button" className="dxp-button" onClick={stop}>
-              <Square size={14} /> Stop workflow
+              <Square size={14} /> {t('preview.stopWorkflow')}
             </button>
           )}
           <button
@@ -106,7 +108,7 @@ export function Preview({
             disabled={!ready}
           >
             {running ? <RotateCcw size={14} /> : <Play size={14} />}{' '}
-            {running ? 'Restart workflow' : 'Run workflow'}
+            {running ? t('preview.restartWorkflow') : t('preview.runWorkflow')}
           </button>
         </div>
         <div className="dxp-preview-body">
@@ -116,7 +118,7 @@ export function Preview({
             workflow={workflow}
             running={running}
             revision={revision}
-            title="Workflow preview website"
+            title={t('preview.workflowPreviewWebsite')}
             onReady={(value) => {
               setReady(value);
               if (!value) setRunning(false);
@@ -131,16 +133,21 @@ export function Preview({
           />
           <aside className="dxp-run-log">
             <h3>
-              Execution log <span>{logs.filter((x) => x.status === 'success').length}</span>
+              {t('preview.executionLog')}{' '}
+              <span>{logs.filter((x) => x.status === 'success').length}</span>
             </h3>
             {!logs.length && (
               <div className="dxp-log-empty">
                 <Play size={25} />
-                <p>{running ? 'Listening for your triggers.' : 'Your journey, step by step.'}</p>
+                <p>
+                  {running
+                    ? t('preview.listeningForYourTriggers')
+                    : t('preview.yourJourneyStepByStep')}
+                </p>
                 <small>
                   {running
-                    ? 'Interact with the website to trigger your workflow.'
-                    : 'Run the workflow to see each action happen on the page.'}
+                    ? t('preview.interactWithTheWebsiteToTriggerYourWorkflow')
+                    : t('preview.runTheWorkflowToSeeEachActionHappenOnThePage')}
                 </small>
               </div>
             )}
@@ -166,10 +173,10 @@ export function Preview({
               </p>
             )}
             <p className="dxp-log-note">
-              <ExternalLink size={13} /> External websites need the preview bridge configured for
-              this builder origin. Previews run in a separate sandbox origin. Page-load triggers run
-              when you start. Other triggers respond to this website, just like the exported script.
-              Reload to reset page changes.
+              <ExternalLink size={13} />{' '}
+              {t(
+                'preview.externalWebsitesNeedThePreviewBridgeConfiguredForThisBuilderOriginPreviews',
+              )}
             </p>
           </aside>
         </div>

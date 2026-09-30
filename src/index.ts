@@ -6,8 +6,8 @@ export type {
   WebsiteConfigurationOptions,
 } from './components/VisualDXPBuilder';
 export { VisualDXPBuilder, VisualDXPBuilder as default } from './components/VisualDXPBuilder';
-export type { ActivityEntry, ActivityStore } from './lib/activity';
-export { createActivityStore } from './lib/activity';
+export type { ActivityAction, ActivityEntry, ActivityMessage, ActivityStore } from './lib/activity';
+export { createActivityStore, formatActivity } from './lib/activity';
 export type {
   AIChatConfig,
   AIChatMessage,
@@ -24,6 +24,15 @@ export {
 } from './lib/ai';
 export { createNode, defaultWorkflow } from './lib/catalog';
 export { exportWorkflow, validateWorkflow } from './lib/export';
+export type {
+  BuilderI18n,
+  BuilderMessageKey,
+  BuilderMessages,
+  BuilderTranslator,
+} from './lib/i18n';
+export { createBuilderTranslator, formatBuilderError } from './lib/i18n';
+export { BuilderI18nProvider } from './lib/i18nContext';
+export { englishMessages } from './lib/messages';
 export { installPreviewBridge } from './lib/previewBridge';
 export type { RuntimeOptions, WorkflowRuntime } from './lib/runtime';
 export { createRuntime, executeWorkflow } from './lib/runtime';

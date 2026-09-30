@@ -1,7 +1,39 @@
-export interface ActivityEntry {
+import {
+  type BuilderMessageArgs,
+  type BuilderMessageKey,
+  type BuilderTranslator,
+  translateEnglish,
+} from './i18n';
+
+export type ActivityMessageKey = Extract<BuilderMessageKey, `activity.${string}`>;
+export type ActivityMessage = {
+  [K in ActivityMessageKey]: { key: K; params: BuilderMessageArgs<K>[0] };
+}[ActivityMessageKey];
+export interface ActivityAction {
+  /** English snapshot for storage/search and host-authored activity. */
+  readonly action: string;
+  /** Builder-generated activity is formatted in the viewer's language at render time. */
+  readonly message?: ActivityMessage;
+}
+export function activityAction<K extends ActivityMessageKey>(
+  key: K,
+  ...args: BuilderMessageArgs<K>
+): ActivityAction {
+  return {
+    action: translateEnglish(key, ...args),
+    message: { key, params: args[0] } as ActivityMessage,
+  };
+}
+export function formatActivity(entry: ActivityAction, t: BuilderTranslator): string {
+  if (!entry.message) return entry.action;
+  const { key, params } = entry.message;
+  // The discriminated union guarantees that params belong to this key.
+  return (t as (key: ActivityMessageKey, params: ActivityMessage['params']) => string)(key, params);
+}
+
+export interface ActivityEntry extends ActivityAction {
   readonly id: string;
   readonly username: string;
-  readonly action: string;
   /** ISO 8601 timestamp, including a timezone. */
   readonly timestamp: string;
 }
@@ -24,7 +56,24 @@ export function createActivityStore(
 } {
   const snapshot = (entries: readonly ActivityEntry[]) =>
     Object.freeze(
-      Array.from(new Map(entries.map((entry) => [entry.id, Object.freeze({ ...entry })])).values()),
+      Array.from(
+        new Map(
+          entries.map((entry) => [
+            entry.id,
+            Object.freeze({
+              ...entry,
+              ...(entry.message
+                ? {
+                    message: Object.freeze({
+                      ...entry.message,
+                      params: Object.freeze({ ...entry.message.params }),
+                    }) as ActivityMessage,
+                  }
+                : {}),
+            }),
+          ]),
+        ).values(),
+      ),
     );
   let entries = snapshot(initialEntries);
   const listeners = new Set<() => void>();

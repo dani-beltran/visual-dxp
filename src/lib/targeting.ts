@@ -20,20 +20,37 @@ export function websiteUrlInputValue(value: string): string {
 
 /** Resolve target scope from the editor origin, never its current route or document base. */
 export function resolveWebsiteUrl(value: string, baseUrl?: string): URL {
-  if (typeof value !== 'string' || !value.trim()) throw new Error('Enter a website URL.');
+  if (typeof value !== 'string' || !value.trim())
+    throw Object.assign(new Error('Enter a website URL.'), {
+      messageKey: 'errors.targeting.enterAWebsiteUrl',
+      messageParams: {},
+    });
   const input = value.trim();
-  if (/\s/.test(input)) throw new Error('Encode spaces in the website URL.');
+  if (/\s/.test(input))
+    throw Object.assign(new Error('Encode spaces in the website URL.'), {
+      messageKey: 'errors.targeting.encodeSpacesInTheWebsiteUrl',
+      messageParams: {},
+    });
   const base = baseUrl ?? (typeof window !== 'undefined' ? window.location.origin : undefined);
   let url: URL;
   try {
     url = new URL(input, base ? `${new URL(base).origin}/` : undefined);
   } catch {
-    throw new Error(
-      'Enter a valid HTTP or HTTPS URL. For a relative path, provide the editor baseUrl.',
+    throw Object.assign(
+      new Error(
+        'Enter a valid HTTP or HTTPS URL. For a relative path, provide the editor baseUrl.',
+      ),
+      { messageKey: 'errors.targeting.enterAValidHttpOrHttpsUrlForARelative', messageParams: {} },
     );
   }
   if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password)
-    throw new Error('Enter an HTTP or HTTPS website URL without embedded credentials.');
+    throw Object.assign(
+      new Error('Enter an HTTP or HTTPS website URL without embedded credentials.'),
+      {
+        messageKey: 'errors.targeting.enterAnHttpOrHttpsWebsiteUrlWithoutEmbeddedCredentials',
+        messageParams: {},
+      },
+    );
   // Queries and fragments do not define scope; trailing slashes are equivalent.
   url.pathname = url.pathname.replace(/\/+$/, '') || '/';
   url.search = '';
@@ -55,12 +72,26 @@ export function validateExportTarget(workflow: Workflow, options: ExportOptions 
         )
         .replace(/\/+$/, '') || '/';
     if (base && target.origin === new URL(base).origin && demoPath === '/demo-site.html')
-      throw new Error('Choose your own website instead of the built-in demo.');
+      throw Object.assign(new Error('Choose your own website instead of the built-in demo.'), {
+        messageKey: 'errors.targeting.chooseYourOwnWebsiteInsteadOfTheBuiltInDemo',
+        messageParams: {},
+      });
     if (workflow.includeSubpages !== undefined && typeof workflow.includeSubpages !== 'boolean')
-      throw new Error('Include subpages must be a boolean.');
+      throw Object.assign(new Error('Include subpages must be a boolean.'), {
+        messageKey: 'errors.targeting.includeSubpagesMustBeABoolean',
+        messageParams: {},
+      });
     return target;
   } catch (error) {
-    throw new Error(`${EXPORT_TARGET_MESSAGE} ${(error as Error).message}`);
+    throw Object.assign(
+      new Error(`${EXPORT_TARGET_MESSAGE} ${(error as Error).message}`, { cause: error }),
+      {
+        messageKey: 'website.exportTargetFailure',
+        messageParams: {
+          reason: String((error as Error).message),
+        },
+      },
+    );
   }
 }
 

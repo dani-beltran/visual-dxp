@@ -59,7 +59,11 @@ export function createDataTools() {
   }
 
   function parsePath(path = ''): (string | number)[] {
-    if (typeof path !== 'string') throw new Error('Data path must be text.');
+    if (typeof path !== 'string')
+      throw Object.assign(new Error('Data path must be text.'), {
+        messageKey: 'errors.data.dataPathMustBeText',
+        messageParams: {},
+      });
     const source = path.trim();
     if (!source) return [];
     const tokens: (string | number)[] = [];
@@ -73,8 +77,14 @@ export function createDataTools() {
       end += match[0].length;
     }
     if (source.startsWith('.') || end !== source.length)
-      throw new Error(
-        `Invalid data path “${path}”. Use properties and array indexes, e.g. data.items[0].price.`,
+      throw Object.assign(
+        new Error(
+          `Invalid data path “${path}”. Use properties and array indexes, e.g. data.items[0].price.`,
+        ),
+        {
+          messageKey: 'errors.data.invalidDataPathPathUsePropertiesAndArrayIndexesE',
+          messageParams: { path: String(path) },
+        },
       );
     return tokens;
   }
@@ -108,7 +118,10 @@ export function createDataTools() {
   function validateElementValue(config: ElementValueConfig): void {
     if (['hide', 'show'].includes(config.action ?? 'text')) return;
     if (!['manual', 'incoming-data'].includes(config.valueSource ?? 'manual'))
-      throw new Error('Choose Manual value or Incoming data as the value source.');
+      throw Object.assign(new Error('Choose Manual value or Incoming data as the value source.'), {
+        messageKey: 'errors.data.chooseManualValueOrIncomingDataAsTheValueSource',
+        messageParams: {},
+      });
     if (usesIncomingValue(config)) parsePath(config.valueDataPath);
   }
 
@@ -122,8 +135,14 @@ export function createDataTools() {
     if (config.action === 'add-class' || config.action === 'remove-class') {
       if (Array.isArray(value) && value.every((item) => typeof item === 'string'))
         return value.join(' ');
-      throw new Error(
-        'Incoming CSS classes must be text, a number, a boolean, or an array of strings.',
+      throw Object.assign(
+        new Error(
+          'Incoming CSS classes must be text, a number, a boolean, or an array of strings.',
+        ),
+        {
+          messageKey: 'errors.data.incomingCssClassesMustBeTextANumberABoolean',
+          messageParams: {},
+        },
       );
     }
     return JSON.stringify(value);
@@ -150,15 +169,27 @@ export function createDataTools() {
     parsePath(config.conditionDataPath);
     const operator = config.conditionOperator ?? 'equal';
     if (!Object.hasOwn(operators, operator))
-      throw new Error('Choose a supported Incoming data condition operator.');
+      throw Object.assign(new Error('Choose a supported Incoming data condition operator.'), {
+        messageKey: 'errors.data.chooseASupportedIncomingDataConditionOperator',
+        messageParams: {},
+      });
     if (needsValue(operator) && typeof config.conditionValue !== 'string')
-      throw new Error('Enter a comparison value for the Incoming data condition.');
+      throw Object.assign(new Error('Enter a comparison value for the Incoming data condition.'), {
+        messageKey: 'errors.data.enterAComparisonValueForTheIncomingDataCondition',
+        messageParams: {},
+      });
     if (operator === 'matches' || operator === 'not-matches') {
       try {
         new RegExp(config.conditionValue ?? '');
       } catch {
-        throw new Error(
-          'Invalid regular expression. Enter a pattern such as ^premium, without / delimiters.',
+        throw Object.assign(
+          new Error(
+            'Invalid regular expression. Enter a pattern such as ^premium, without / delimiters.',
+          ),
+          {
+            messageKey: 'errors.data.invalidRegularExpressionEnterAPatternSuchAsPremiumWithout',
+            messageParams: {},
+          },
         );
       }
     }
@@ -196,7 +227,13 @@ export function createDataTools() {
       Number.isFinite(Number(value))
     )
       return Number(value);
-    throw new Error('Numeric comparisons require valid finite numbers on both sides.');
+    throw Object.assign(
+      new Error('Numeric comparisons require valid finite numbers on both sides.'),
+      {
+        messageKey: 'errors.data.numericComparisonsRequireValidFiniteNumbersOnBothSides',
+        messageParams: {},
+      },
+    );
   }
 
   function jsonOrText(value: string): unknown {
@@ -216,13 +253,28 @@ export function createDataTools() {
     if (operator === 'is-null') return exists && value === null;
     if (operator === 'is-not-null') return exists && value !== null;
     if (!exists)
-      throw new Error(
-        `Data path “${config.conditionDataPath?.trim() || '(incoming data)'}” could not be resolved. Use Exists or Does not exist to check missing data.`,
+      throw Object.assign(
+        new Error(
+          `Data path “${config.conditionDataPath?.trim() || '(incoming data)'}” could not be resolved. Use Exists or Does not exist to check missing data.`,
+        ),
+        {
+          messageKey: 'errors.data.dataPathValue1CouldNotBeResolvedUseExistsOr',
+          messageParams: { value1: String(config.conditionDataPath?.trim() || '(incoming data)') },
+        },
       );
     const type = value === null ? 'null' : Array.isArray(value) ? 'array' : typeof value;
     const unsupported = () =>
-      new Error(
-        `“${operators[operator as keyof typeof operators]}” is not supported for ${type} data.`,
+      Object.assign(
+        new Error(
+          `“${operators[operator as keyof typeof operators]}” is not supported for ${type} data.`,
+        ),
+        {
+          messageKey: 'errors.data.value1IsNotSupportedForTypeData',
+          messageParams: {
+            value1: String(operators[operator as keyof typeof operators]),
+            type: String(type),
+          },
+        },
       );
     const expected = config.conditionValue ?? '';
     if (operator === 'is-true' || operator === 'is-false') {
@@ -255,20 +307,32 @@ export function createDataTools() {
       if (typeof value === 'number') comparison = number(expected);
       else if (typeof value === 'boolean') {
         if (!['true', 'false'].includes(expected.trim()))
-          throw new Error('Boolean comparisons require true or false.');
+          throw Object.assign(new Error('Boolean comparisons require true or false.'), {
+            messageKey: 'errors.data.booleanComparisonsRequireTrueOrFalse',
+            messageParams: {},
+          });
         comparison = expected.trim() === 'true';
       } else if (value !== null && typeof value === 'object') {
         try {
           comparison = JSON.parse(expected);
         } catch {
-          throw new Error('Array and object equality requires a valid JSON comparison value.');
+          throw Object.assign(
+            new Error('Array and object equality requires a valid JSON comparison value.'),
+            {
+              messageKey: 'errors.data.arrayAndObjectEqualityRequiresAValidJsonComparisonValue',
+              messageParams: {},
+            },
+          );
         }
         if (
           comparison === null ||
           typeof comparison !== 'object' ||
           Array.isArray(value) !== Array.isArray(comparison)
         )
-          throw new Error(`Enter a JSON ${type} to compare with ${type} data.`);
+          throw Object.assign(new Error(`Enter a JSON ${type} to compare with ${type} data.`), {
+            messageKey: 'errors.data.enterAJsonTypeToCompareWithType2Data',
+            messageParams: { type: String(type), type2: String(type) },
+          });
       } else if (value === null) comparison = jsonOrText(expected);
       else if (typeof value !== 'string') throw unsupported();
       const equal = deepEqual(value, comparison);

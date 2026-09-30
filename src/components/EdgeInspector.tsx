@@ -1,5 +1,6 @@
 import { ArrowRight, Trash2, X } from 'lucide-react';
 import { useId } from 'react';
+import { useBuilderI18n } from '../lib/i18nContext';
 import type { WorkflowEdge } from '../lib/types';
 import '../styles/inspector.css';
 
@@ -20,17 +21,18 @@ export function EdgeInspector({
   onClose: () => void;
   onDelete: () => void;
 }) {
+  const { t } = useBuilderI18n();
   const id = useId();
 
   return (
-    <aside className="dxp-inspector" aria-label="Connection configuration">
+    <aside className="dxp-inspector" aria-label={t('edgeInspector.connectionConfiguration')}>
       <header className="dxp-inspector-header">
-        <div className="dxp-inspector-eyebrow">CONNECTION DETAILS</div>
+        <div className="dxp-inspector-eyebrow">{t('edgeInspector.connectionDetails')}</div>
         <button
           type="button"
           className="dxp-inspector-icon-button"
-          title="Close connection details"
-          aria-label="Close connection details"
+          title={t('edgeInspector.closeConnectionDetails')}
+          aria-label={t('edgeInspector.closeConnectionDetails')}
           onClick={onClose}
         >
           <X size={17} />
@@ -42,31 +44,31 @@ export function EdgeInspector({
             <ArrowRight size={21} strokeWidth={1.8} />
           </div>
           <div>
-            <h2>Connection</h2>
-            <span>Between workflow steps</span>
+            <h2>{t('edgeInspector.connection')}</h2>
+            <span>{t('edgeInspector.betweenWorkflowSteps')}</span>
           </div>
         </div>
         <p className="dxp-inspector-description dxp-inspector-connection-summary">
           {sourceLabel} → {targetLabel}
         </p>
         <div className="dxp-inspector-field">
-          <label htmlFor={`${id}-name`}>Connection name</label>
+          <label htmlFor={`${id}-name`}>{t('edgeInspector.connectionName')}</label>
           <input
             id={`${id}-name`}
             value={typeof edge.label === 'string' ? edge.label : ''}
-            placeholder="e.g. Continue to welcome"
+            placeholder={t('edgeInspector.eGContinueToWelcome')}
             aria-describedby={`${id}-hint`}
             onChange={(event) => onChange(event.target.value)}
             onBlur={onBlur}
           />
           <p id={`${id}-hint`} className="dxp-inspector-hint">
-            Shown on the connection. Leave empty to hide the name.
+            {t('edgeInspector.shownOnTheConnectionLeaveEmptyToHideTheName')}
           </p>
         </div>
       </div>
       <footer className="dxp-inspector-footer">
         <button type="button" className="dxp-inspector-delete" onClick={onDelete}>
-          <Trash2 size={14} aria-hidden="true" /> Delete connection
+          <Trash2 size={14} aria-hidden="true" /> {t('edgeInspector.deleteConnection')}
         </button>
       </footer>
     </aside>

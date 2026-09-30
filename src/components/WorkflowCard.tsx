@@ -1,7 +1,8 @@
 import { Handle, type NodeProps, Position } from '@xyflow/react';
 import { ArrowRight, Check, Circle, Ellipsis, LoaderCircle } from 'lucide-react';
 import { useContext } from 'react';
-import { catalog, stepSummary } from '../lib/catalog';
+import { getCatalog, stepSummary } from '../lib/catalog';
+import { useBuilderI18n } from '../lib/i18nContext';
 import { getNodeDataPorts } from '../lib/nodeData';
 import { NoteEditingContext } from '../lib/noteEditing';
 import type { WorkflowNode } from '../lib/types';
@@ -9,6 +10,8 @@ import { FrameCard } from './FrameCard';
 import { NoteCard } from './NoteCard';
 
 export function WorkflowCard({ id, data, selected }: NodeProps<WorkflowNode>) {
+  const { t } = useBuilderI18n();
+  const catalog = getCatalog(t);
   const editNote = useContext(NoteEditingContext);
   if (data.kind === 'frame') return <FrameCard data={data} selected={selected} />;
   if (data.kind === 'note')
@@ -26,8 +29,8 @@ export function WorkflowCard({ id, data, selected }: NodeProps<WorkflowNode>) {
           type="target"
           position={Position.Left}
           className={acceptsData ? 'dxp-handle-data' : undefined}
-          title={acceptsData ? 'Incoming data' : undefined}
-          aria-label={acceptsData ? 'Incoming data' : undefined}
+          title={acceptsData ? t('workflowCard.incomingData') : undefined}
+          aria-label={acceptsData ? t('workflowCard.incomingData') : undefined}
         />
       )}
       <div className="dxp-node-top">
@@ -38,17 +41,19 @@ export function WorkflowCard({ id, data, selected }: NodeProps<WorkflowNode>) {
         <Ellipsis size={17} className="dxp-node-more" />
       </div>
       <strong>{data.label}</strong>
-      <p>{stepSummary(data.kind, data.config)}</p>
+      <p>{stepSummary(data.kind, data.config, t)}</p>
       {acceptsData && (
         <div
           className="dxp-node-incoming-value"
           title={
             incomingDataPath
-              ? `Incoming data: ${incomingDataPath}`
-              : 'Uses the whole incoming value'
+              ? t('workflowCard.incomingDataIncomingdatapath', {
+                  incomingDataPath: String(incomingDataPath),
+                })
+              : t('workflowCard.usesTheWholeIncomingValue')
           }
         >
-          <ArrowRight size={12} aria-hidden="true" /> Uses incoming data
+          <ArrowRight size={12} aria-hidden="true" /> {t('workflowCard.usesIncomingData')}
         </div>
       )}
       <div className="dxp-node-footer">
@@ -61,20 +66,20 @@ export function WorkflowCard({ id, data, selected }: NodeProps<WorkflowNode>) {
             <Check size={12} />
           )}{' '}
           {data.status === 'running'
-            ? 'Running'
+            ? t('workflowCard.running')
             : data.status === 'error'
-              ? 'Needs attention'
+              ? t('workflowCard.needsAttention')
               : data.status === 'success'
-                ? 'Completed'
-                : 'Configured'}
+                ? t('workflowCard.completed')
+                : t('workflowCard.configured')}
         </span>
         <span className={outputsData ? 'dxp-node-data-output' : undefined}>
           {data.kind === 'trigger'
             ? 'START'
             : split
-              ? '2 PATHS'
+              ? t('workflowCard.2Paths')
               : outputsData
-                ? 'DATA OUT'
+                ? t('workflowCard.dataOut')
                 : 'ACTION'}
         </span>
       </div>
@@ -83,14 +88,22 @@ export function WorkflowCard({ id, data, selected }: NodeProps<WorkflowNode>) {
           <Handle
             type="source"
             id={data.kind === 'fork' ? 'true' : 'body'}
-            title={data.kind === 'fork' ? 'True — passes incoming data unchanged' : 'Body'}
+            title={
+              data.kind === 'fork'
+                ? t('workflowCard.truePassesIncomingDataUnchanged')
+                : t('workflowCard.body')
+            }
             position={Position.Right}
             style={{ top: '37%' }}
           />
           <Handle
             type="source"
             id={data.kind === 'fork' ? 'false' : 'done'}
-            title={data.kind === 'fork' ? 'False — passes incoming data unchanged' : 'Done'}
+            title={
+              data.kind === 'fork'
+                ? t('workflowCard.falsePassesIncomingDataUnchanged')
+                : t('workflowCard.done')
+            }
             position={Position.Right}
             style={{ top: '73%' }}
           />
@@ -100,8 +113,8 @@ export function WorkflowCard({ id, data, selected }: NodeProps<WorkflowNode>) {
           type="source"
           position={Position.Right}
           className={outputsData ? 'dxp-handle-data' : undefined}
-          title={outputsData ? 'Response data output' : undefined}
-          aria-label={outputsData ? 'Response data output' : undefined}
+          title={outputsData ? t('workflowCard.responseDataOutput') : undefined}
+          aria-label={outputsData ? t('workflowCard.responseDataOutput') : undefined}
         />
       )}
     </div>

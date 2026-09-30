@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useBuilderI18n } from '../lib/i18nContext';
 import { PREVIEW_PROTOCOL, previewBridgeSource } from '../lib/previewBridge';
 import type { RunLog, Workflow } from '../lib/types';
 
@@ -24,6 +25,7 @@ export function IsolatedPreview({
   onError: (error: string) => void;
   onClose: () => void;
 }) {
+  const { t } = useBuilderI18n();
   const frame = useRef<HTMLIFrameElement>(null);
   const [html, setHtml] = useState<string>();
   const [ready, setReady] = useState(false);
@@ -66,7 +68,7 @@ export function IsolatedPreview({
         })
         .catch(() => {
           if (!controller.signal.aborted)
-            callbacks.current.onError('The demo could not load. Reload to try again.');
+            callbacks.current.onError(t('isolatedPreview.theDemoCouldNotLoadReloadToTryAgain'));
         });
     }
     const receive = (event: MessageEvent) => {
@@ -83,7 +85,7 @@ export function IsolatedPreview({
       }
       if (data.type === 'close') callbacks.current.onClose();
       if (data.type === 'error')
-        callbacks.current.onError('The isolated preview could not run this workflow.');
+        callbacks.current.onError(t('isolatedPreview.theIsolatedPreviewCouldNotRunThisWorkflow'));
       if (data.type === 'log') {
         const log = data.log as RunLog;
         if (
@@ -97,7 +99,9 @@ export function IsolatedPreview({
         // Take known fields only; iframe messages are untrusted data.
         callbacks.current.onLog?.({
           nodeId: log.nodeId,
-          label: current.current.nodes.find((node) => node.id === log.nodeId)?.data.label ?? 'Step',
+          label:
+            current.current.nodes.find((node) => node.id === log.nodeId)?.data.label ??
+            t('isolatedPreview.step'),
           status: log.status,
           message: log.message,
           timestamp: Date.now(),
@@ -129,7 +133,7 @@ export function IsolatedPreview({
         callbacks.current.onReady(false);
         send('init');
       }}
-      onError={() => callbacks.current.onError('The website could not load.')}
+      onError={() => callbacks.current.onError(t('isolatedPreview.theWebsiteCouldNotLoad'))}
     />
   );
 }

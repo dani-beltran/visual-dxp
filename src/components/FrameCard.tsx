@@ -1,10 +1,12 @@
 import { type NodeProps, NodeResizer } from '@xyflow/react';
 import { Frame, GripHorizontal } from 'lucide-react';
 import { FRAME_MIN_HEIGHT, FRAME_MIN_WIDTH } from '../lib/frames';
+import { useBuilderI18n } from '../lib/i18nContext';
 import type { WorkflowNode } from '../lib/types';
 import '../styles/frames.css';
 
 export function FrameCard({ data, selected }: Pick<NodeProps<WorkflowNode>, 'data' | 'selected'>) {
+  const { t } = useBuilderI18n();
   return (
     <div className={`dxp-frame-card ${selected ? 'is-selected' : ''}`}>
       <NodeResizer
@@ -13,12 +15,12 @@ export function FrameCard({ data, selected }: Pick<NodeProps<WorkflowNode>, 'dat
         minHeight={FRAME_MIN_HEIGHT}
         color="#789bb1"
       />
-      <div className="dxp-frame-header" title="Drag to move this frame and its nodes">
+      <div className="dxp-frame-header" title={t('frameCard.dragToMoveThisFrameAndItsNodes')}>
         <Frame size={16} aria-hidden="true" />
-        <strong>{data.label || 'Frame'}</strong>
+        <strong>{data.label || t('frameCard.frame')}</strong>
         <GripHorizontal size={16} aria-hidden="true" />
       </div>
-      <span className="dxp-frame-hint">Drop nodes inside to group them</span>
+      <span className="dxp-frame-hint">{t('frameCard.dropNodesInsideToGroupThem')}</span>
     </div>
   );
 }

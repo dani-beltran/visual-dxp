@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { dataTools } from './data';
 import { FRAME_HEIGHT, FRAME_WIDTH } from './frames';
+import { type BuilderTranslator, translateEnglish } from './i18n';
 import { nodeDescriptions } from './nodeDescriptions';
 import type { NodeKind, StepConfig, Workflow, WorkflowNode } from './types';
 export const catalog: {
@@ -204,75 +205,119 @@ export const defaultWorkflow: Workflow = {
     },
   ],
 };
-export function stepSummary(kind: NodeKind, c: StepConfig): string {
+/** A summary is presentation text; configuration values are never rewritten. */
+export function stepSummary(
+  kind: NodeKind,
+  c: StepConfig,
+  t: BuilderTranslator = translateEnglish,
+): string {
+  const element = c.selector || t('summary.chooseElement');
   switch (kind) {
-    case 'trigger':
-      switch (c.event ?? 'page-load') {
+    case 'trigger': {
+      const event = c.event ?? 'page-load';
+      switch (event) {
         case 'page-load':
-          return 'When a visitor lands on your site';
-        case 'zoom-in':
-          return `Zoom in · ${c.selector || 'Choose an element'}`;
-        case 'swipe':
-          return `Swipe · ${c.selector || 'Choose an element'}`;
+          return t('summary.pageLoad');
         case 'exit-intent':
-          return 'When a visitor intends to leave';
+          return t('summary.exitIntent');
         case 'rage-click':
-          return `${c.rageClickCount ?? 3} nearby clicks within ${(c.rageClickWindow ?? 1000) / 1000}s`;
+          return t('summary.rageClick', {
+            count: c.rageClickCount ?? 3,
+            seconds: (c.rageClickWindow ?? 1000) / 1000,
+          });
         case 'inactivity':
-          return `After ${(c.duration ?? 30000) / 1000}s of inactivity`;
+          return t('summary.inactivity', { seconds: (c.duration ?? 30000) / 1000 });
         case 'scroll-thrashing':
-          return `${c.scrollDirectionChanges ?? 4} scroll reversals within ${(c.scrollThrashWindow ?? 2000) / 1000}s`;
+          return t('summary.scrollThrashing', {
+            count: c.scrollDirectionChanges ?? 4,
+            seconds: (c.scrollThrashWindow ?? 2000) / 1000,
+          });
         case 'scroll-depth':
-          return `Scroll down to ${c.scrollThreshold ?? 75}%`;
+          return t('summary.scrollDepth', { percent: c.scrollThreshold ?? 75 });
         default:
-          return `${c.event} · ${c.selector || 'Choose an element'}`;
+          return t('summary.elementEvent', { event, element });
       }
+    }
     case 'http':
-      return `${c.method || 'GET'}  ${c.url ? c.url.replace(/^https?:\/\//, '') : 'Configure a URL'}`;
+      return t('summary.http', {
+        method: c.method || 'GET',
+        url: c.url ? c.url.replace(/^https?:\/\//, '') : t('summary.configureUrl'),
+      });
     case 'dom':
-      return `${c.action === 'text' ? 'Change text' : c.action || 'Update'} · ${c.selector || 'Choose an element'}${dataTools.usesIncomingValue(c) ? ` · Incoming data${c.valueDataPath ? `: ${c.valueDataPath}` : ''}` : ''}`;
+      return t('summary.dom', {
+        action: c.action || 'text',
+        element,
+        incoming: dataTools.usesIncomingValue(c),
+        path: c.valueDataPath || '',
+      });
     case 'cookie':
-      return `${c.cookieName || 'Choose a cookie name'} = ${JSON.stringify(c.cookieValue ?? '')} · ${c.cookieDays ? `${c.cookieDays} days` : 'Session'}`;
+      return t('summary.cookie', {
+        name: c.cookieName || t('summary.chooseCookie'),
+        value: JSON.stringify(c.cookieValue ?? ''),
+        days: c.cookieDays || 0,
+      });
     case 'delay':
-      return `Wait ${(c.duration ?? 1000) / 1000} seconds`;
+      return t('summary.delay', { seconds: (c.duration ?? 1000) / 1000 });
     case 'fork': {
-      const conditionType = c.conditionType ?? 'selector';
-      switch (conditionType) {
-        case 'data': {
-          const operator = c.conditionOperator ?? 'equal';
-          return `${c.conditionDataPath || 'Data'} · ${dataTools.operators[operator].toLocaleLowerCase() ?? 'Choose an operator'}${dataTools.needsValue(operator) ? ` ${JSON.stringify(c.conditionValue ?? '')}` : ''}`;
-        }
+      switch (c.conditionType ?? 'selector') {
+        case 'data':
+          return t('summary.data', {
+            path: c.conditionDataPath || t('summary.dataLabel'),
+            operator: t(`data.operator.${c.conditionOperator ?? 'equal'}`),
+            value: dataTools.needsValue(c.conditionOperator ?? 'equal')
+              ? JSON.stringify(c.conditionValue ?? '')
+              : '',
+          });
         case 'time-of-day':
-          return `Time ${c.conditionStartTime || '…'}–${c.conditionEndTime || '…'} · ${c.conditionTimeZone === 'utc' ? 'UTC' : 'Visitor local'}`;
+          return t('summary.time', {
+            start: c.conditionStartTime || '…',
+            end: c.conditionEndTime || '…',
+            zone: c.conditionTimeZone || 'local',
+          });
         case 'date-range':
-          return `Within ${c.conditionStartDate || '…'} to ${c.conditionEndDate || '…'} · ${c.conditionTimeZone === 'utc' ? 'UTC' : 'Visitor local'}`;
+          return t('summary.date', {
+            start: c.conditionStartDate || '…',
+            end: c.conditionEndDate || '…',
+            zone: c.conditionTimeZone || 'local',
+          });
         case 'selector':
-          return `${c.condition || 'Choose a selector'} exists on the page`;
+          return t('summary.selector', { selector: c.condition || t('summary.chooseSelector') });
         case 'device':
-          return `Device is ${c.conditionValue || '…'}`;
+          return t('summary.device', { value: c.conditionValue || '…' });
         case 'language':
-          return `Language is ${c.conditionValue || '…'}`;
+          return t('summary.language', { value: c.conditionValue || '…' });
         case 'referrer':
-          return `Referrer domain equals ${c.conditionValue || '…'}`;
+          return t('summary.referrer', { value: c.conditionValue || '…' });
         case 'query-param':
-        case 'cookie': {
-          const source = {
-            'query-param': 'URL parameter',
-            cookie: 'Cookie',
-          }[conditionType];
-          return `${source} ${c.conditionKey || '…'} = ${JSON.stringify(c.conditionValue ?? '')}`;
-        }
+        case 'cookie':
+          return t('summary.variable', {
+            source: c.conditionType ?? 'query-param',
+            name: c.conditionKey || '…',
+            value: JSON.stringify(c.conditionValue ?? ''),
+          });
         default:
-          return 'Choose a condition type';
+          return t('summary.chooseCondition');
       }
     }
     case 'loop':
-      return `Repeat ${c.iterations ?? 3} times`;
+      return t('summary.loop', { count: c.iterations ?? 3 });
     case 'popover':
-      return `${c.contentType === 'iframe' ? 'Embedded page' : 'Custom HTML'} · ${(c.position || 'center').replaceAll('-', ' ')}`;
+      return t('summary.popover', {
+        contentType: c.contentType || 'html',
+        position: c.position || 'center',
+      });
     case 'note':
-      return c.noteText || 'Write a note…';
+      return c.noteText || t('summary.writeNote');
     case 'frame':
-      return 'Move grouped nodes together';
+      return t('summary.frame');
   }
+}
+
+/** Presentation metadata; never mutates the shared catalog or saved node labels. */
+export function getCatalog(t: BuilderTranslator = translateEnglish) {
+  return catalog.map((entry) => ({
+    ...entry,
+    label: t(`nodes.${entry.kind}.label`),
+    description: t(`nodes.${entry.kind}.description`),
+  }));
 }

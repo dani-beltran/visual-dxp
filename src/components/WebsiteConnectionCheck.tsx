@@ -1,10 +1,12 @@
 import { Check, LoaderCircle } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { useBuilderI18n } from '../lib/i18nContext';
 import { PICKER_PROTOCOL } from '../lib/picker';
 import { WebsiteSetup } from './WebsiteSetup';
 
 /** Mount with a URL key so edits immediately discard the previous connection result. */
 export function WebsiteConnectionCheck({ url }: { url: string }) {
+  const { t } = useBuilderI18n();
   const [started, setStarted] = useState(false);
   const [status, setStatus] = useState<'loading' | 'connected' | 'unavailable'>('loading');
   const frameRef = useRef<HTMLIFrameElement>(null);
@@ -64,7 +66,7 @@ export function WebsiteConnectionCheck({ url }: { url: string }) {
         <iframe
           ref={frameRef}
           src={url}
-          title="Website connection check"
+          title={t('websiteConnectionCheck.websiteConnectionCheck')}
           sandbox="allow-scripts"
           referrerPolicy="no-referrer"
           hidden
@@ -76,14 +78,16 @@ export function WebsiteConnectionCheck({ url }: { url: string }) {
       >
         {status === 'loading' ? (
           <>
-            <LoaderCircle size={16} aria-hidden="true" /> Connecting to your website…
+            <LoaderCircle size={16} aria-hidden="true" />{' '}
+            {t('websiteConnectionCheck.connectingToYourWebsite')}
           </>
         ) : status === 'connected' ? (
           <>
-            <Check size={16} aria-hidden="true" /> Website connected successfully
+            <Check size={16} aria-hidden="true" />{' '}
+            {t('websiteConnectionCheck.websiteConnectedSuccessfully')}
           </>
         ) : (
-          'Couldn’t connect to your website. Complete the setup below.'
+          t('websiteConnectionCheck.couldnTConnectToYourWebsiteCompleteTheSetupBelow')
         )}
       </div>
       {status === 'unavailable' && <WebsiteSetup />}

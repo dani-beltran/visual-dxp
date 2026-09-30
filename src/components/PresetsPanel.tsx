@@ -1,4 +1,5 @@
 import { useId, useState } from 'react';
+import { useBuilderI18n } from '../lib/i18nContext';
 import type { WorkflowPreset } from '../lib/types';
 import '../styles/presets.css';
 
@@ -9,6 +10,7 @@ export function PresetsPanel({
   presets: readonly WorkflowPreset[];
   onApply: (preset: WorkflowPreset) => string | undefined;
 }) {
+  const { t } = useBuilderI18n();
   const id = useId();
   const [error, setError] = useState('');
   return (
@@ -16,10 +18,9 @@ export function PresetsPanel({
     <section className="dxp-presets" aria-labelledby={`${id}-heading`} tabIndex={0}>
       <div className="dxp-presets-content">
         <header className="dxp-presets-header">
-          <h2 id={`${id}-heading`}>Workflow presets</h2>
+          <h2 id={`${id}-heading`}>{t('presetsPanel.workflowPresets')}</h2>
           <p>
-            Applying a preset replaces all current nodes and connections. Your workflow name, target
-            website, and subpage settings stay the same. You can undo this change.
+            {t('presetsPanel.applyingAPresetReplacesAllCurrentNodesAndConnectionsYourWorkflowName')}
           </p>
         </header>
         {error && (
@@ -39,14 +40,18 @@ export function PresetsPanel({
                 <div className="dxp-preset-meta">
                   <span className="dxp-preset-complexity">{preset.complexity}</span>
                   <span>
-                    {Array.isArray(preset.workflow?.nodes) ? preset.workflow.nodes.length : 0} nodes
+                    {t('canvas.nodeCount', {
+                      count: Array.isArray(preset.workflow?.nodes)
+                        ? preset.workflow.nodes.length
+                        : 0,
+                    })}
                   </span>
                 </div>
                 <h3 id={`${id}-${index}`}>{preset.name}</h3>
                 <p>{preset.description}</p>
                 {!!preset.setupInstructions?.length && (
                   <div className="dxp-preset-setup">
-                    <h4>Setup instructions</h4>
+                    <h4>{t('presetsPanel.setupInstructions')}</h4>
                     <ol>
                       {preset.setupInstructions.map((instruction, step) => (
                         // biome-ignore lint/suspicious/noArrayIndexKey: Instructions are static text within a preset, with no item state.
@@ -58,10 +63,10 @@ export function PresetsPanel({
                 <button
                   type="button"
                   className="dxp-button dxp-button-primary"
-                  aria-label={`Apply preset: ${preset.name}`}
+                  aria-label={t('presetsPanel.applyPresetName', { name: String(preset.name) })}
                   onClick={() => setError(onApply(preset) ?? '')}
                 >
-                  Apply preset
+                  {t('presetsPanel.applyPreset')}
                 </button>
               </article>
             ))}

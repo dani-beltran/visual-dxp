@@ -1,8 +1,11 @@
 import { useId, useState } from 'react';
-import { catalog } from '../lib/catalog';
+import { getCatalog } from '../lib/catalog';
+import { useBuilderI18n } from '../lib/i18nContext';
 import type { NodeKind } from '../lib/types';
 
 export function NodeLibrary({ onAdd }: { onAdd: (kind: NodeKind) => void }) {
+  const { t } = useBuilderI18n();
+  const catalog = getCatalog(t);
   const tooltipPrefix = useId();
   const [activeTooltip, setActiveTooltip] = useState<NodeKind | null>(null);
 
@@ -11,7 +14,7 @@ export function NodeLibrary({ onAdd }: { onAdd: (kind: NodeKind) => void }) {
     <div
       className="dxp-node-library-root nodrag nopan nowheel"
       role="group"
-      aria-label="Node library"
+      aria-label={t('nodeLibrary.nodeLibrary')}
       onBlur={(event) => {
         if (!event.currentTarget.contains(event.relatedTarget)) {
           setActiveTooltip(null);
@@ -30,7 +33,7 @@ export function NodeLibrary({ onAdd }: { onAdd: (kind: NodeKind) => void }) {
             type="button"
             className={`dxp-node-library-button dxp-color-${color}`}
             key={kind}
-            aria-label={`Add ${label}`}
+            aria-label={t('nodeLibrary.addLabel', { label: String(label) })}
             aria-describedby={activeTooltip === kind ? `${tooltipPrefix}-${kind}` : undefined}
             onClick={() => {
               setActiveTooltip(null);

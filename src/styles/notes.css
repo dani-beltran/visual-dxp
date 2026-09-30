@@ -45,7 +45,7 @@
   opacity: 0.8;
 }
 .dxp-note-grip {
-  margin-left: auto;
+  margin-inline-start: auto;
 }
 .dxp-note-card .dxp-note-text {
   display: block;
@@ -205,7 +205,7 @@
   border-radius: 2px;
 }
 .dxp-note-color-value {
-  margin-left: auto;
+  margin-inline-start: auto;
   color: var(--dxp-muted);
   font-size: 9px;
 }

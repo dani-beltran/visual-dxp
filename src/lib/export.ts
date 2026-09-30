@@ -1,6 +1,7 @@
 import { buildCookie } from './cookies';
 import { dataTools } from './data';
 import { getDateRange } from './dateRange';
+import { type BuilderTranslator, formatBuilderError, translateEnglish } from './i18n';
 import { isNoteMarks } from './noteText';
 import { getRuntimeSource } from './runtime';
 import { type ExportOptions, matchesTargetUrl, validateExportTarget } from './targeting';
@@ -8,7 +9,10 @@ import { getTimeRange } from './timeRange';
 import { elementTriggerEvents, validateTriggerConfig } from './triggers';
 import type { ValidationIssue, Workflow } from './types';
 
-export function validateWorkflow(workflow: Workflow): ValidationIssue[] {
+export function validateWorkflow(
+  workflow: Workflow,
+  t: BuilderTranslator = translateEnglish,
+): ValidationIssue[] {
   const issues: ValidationIssue[] = [];
   // JSON importers and JavaScript consumers can bypass TypeScript. Report bad
   // input instead of throwing while the editor is trying to display issues.
@@ -18,7 +22,7 @@ export function validateWorkflow(workflow: Workflow): ValidationIssue[] {
     !Array.isArray(workflow.nodes) ||
     !Array.isArray(workflow.edges)
   ) {
-    return [{ message: 'A workflow must contain arrays of steps and connections.' }];
+    return [{ message: t('validation.aWorkflowMustContainArraysOfStepsAndConnections') }];
   }
   if (
     workflow.nodes.some(
@@ -34,7 +38,7 @@ export function validateWorkflow(workflow: Workflow): ValidationIssue[] {
         Array.isArray(node.data.config),
     )
   ) {
-    return [{ message: 'Every step must have an ID, type, label, and configuration object.' }];
+    return [{ message: t('validation.everyStepMustHaveAnIdTypeLabelAndConfiguration') }];
   }
   if (
     workflow.edges.some(
@@ -46,9 +50,7 @@ export function validateWorkflow(workflow: Workflow): ValidationIssue[] {
         (edge.sourceHandle != null && typeof edge.sourceHandle !== 'string'),
     )
   ) {
-    return [
-      { message: 'Every connection must have an ID, source, target, and valid output handle.' },
-    ];
+    return [{ message: t('validation.everyConnectionMustHaveAnIdSourceTargetAndValid') }];
   }
   const knownKinds = new Set([
     'trigger',
@@ -64,8 +66,8 @@ export function validateWorkflow(workflow: Workflow): ValidationIssue[] {
   ]);
   const ids = new Set<string>();
   const nodeMap = new Map(workflow.nodes.map((node) => [node.id, node]));
-  const add = (message: string, nodeId?: string) =>
-    issues.push({ message, ...(nodeId ? { nodeId } : {}) });
+  const add = (message: string, nodeId?: string, code?: string) =>
+    issues.push({ message, ...(nodeId ? { nodeId } : {}), ...(code ? { code } : {}) });
   const selector = (value: string | undefined, nodeId: string, message: string) => {
     if (!value?.trim()) {
       add(message, nodeId);
@@ -75,7 +77,7 @@ export function validateWorkflow(workflow: Workflow): ValidationIssue[] {
       try {
         document.querySelector(value);
       } catch {
-        add(`Invalid CSS selector: ${value}`, nodeId);
+        add(t('validation.invalidSelector', { value }), nodeId);
       }
     }
   };
@@ -94,28 +96,28 @@ export function validateWorkflow(workflow: Workflow): ValidationIssue[] {
     }
   };
   if (workflow.includeSubpages !== undefined && typeof workflow.includeSubpages !== 'boolean')
-    add('Include subpages must be a boolean.');
-  if (workflow.version !== 1) add('This workflow version is not supported.');
-  if (!workflow.nodes.length) add('Add a trigger and a step to get started.');
+    add(t('validation.includeSubpagesMustBeABoolean'));
+  if (workflow.version !== 1) add(t('validation.thisWorkflowVersionIsNotSupported'));
+  if (!workflow.nodes.length) add(t('validation.addATriggerAndAStepToGetStarted'));
   if (!workflow.nodes.some((node) => node.data.kind === 'trigger'))
-    add('Add at least one trigger.');
+    add(t('validation.addAtLeastOneTrigger'));
   for (const node of workflow.nodes) {
     const config = node.data.config;
-    if (!node.id || ids.has(node.id)) add('Every step must have a unique ID.', node.id);
+    if (!node.id || ids.has(node.id)) add(t('validation.everyStepMustHaveAUniqueId'), node.id);
     ids.add(node.id);
-    if (!knownKinds.has(node.data.kind)) add('Unknown step type.', node.id);
+    if (!knownKinds.has(node.data.kind)) add(t('validation.unknownStepType'), node.id);
     if (
       node.parentId !== undefined &&
       (node.data.kind === 'frame' || nodeMap.get(node.parentId)?.data.kind !== 'frame')
     )
-      add('Nodes must belong to an existing top-level frame.', node.id);
+      add(t('validation.nodesMustBelongToAnExistingTopLevelFrame'), node.id);
     if (
       node.data.kind === 'frame' &&
       [node.width, node.height].some(
         (size) => size !== undefined && (!Number.isFinite(size) || size <= 0),
       )
     )
-      add('Frame dimensions must be positive numbers.', node.id);
+      add(t('validation.frameDimensionsMustBePositiveNumbers'), node.id);
     const textFields = [
       'event',
       'selector',
@@ -151,23 +153,20 @@ export function validateWorkflow(workflow: Workflow): ValidationIssue[] {
     if (
       textFields.some((field) => config[field] !== undefined && typeof config[field] !== 'string')
     ) {
-      add('Step text parameters must contain strings.', node.id);
+      add(t('validation.stepTextParametersMustContainStrings'), node.id);
       continue;
     }
     if (
       config.noteMarks !== undefined &&
       !isNoteMarks(config.noteMarks, (config.noteText ?? '').length)
     )
-      add(
-        'Note text formatting must use sorted, nonoverlapping ranges within the note text.',
-        node.id,
-      );
+      add(t('validation.noteTextFormattingMustUseSortedNonoverlappingRangesWithinThe'), node.id);
     switch (node.data.kind) {
       case 'cookie':
         try {
           buildCookie(config);
         } catch (error) {
-          add((error as Error).message, node.id);
+          add(formatBuilderError(error, t), node.id);
         }
         break;
       case 'note':
@@ -176,18 +175,18 @@ export function validateWorkflow(workflow: Workflow): ValidationIssue[] {
             (field) => config[field] !== undefined && typeof config[field] !== 'boolean',
           )
         )
-          add('Note text formatting must contain boolean values.', node.id);
+          add(t('validation.noteTextFormattingMustContainBooleanValues'), node.id);
         if (
           config.noteColor !== undefined &&
           config.noteColor !== 'transparent' &&
           !/^#[\da-f]{6}$/i.test(config.noteColor)
         )
-          add('Note colors must be a six-digit hex color or transparent.', node.id);
+          add(t('validation.noteColorsMustBeASixDigitHexColorOr'), node.id);
         break;
       case 'trigger':
-        for (const message of validateTriggerConfig(config)) add(message, node.id);
+        for (const message of validateTriggerConfig(config, t)) add(message, node.id);
         if (elementTriggerEvents.includes(config.event ?? 'page-load'))
-          selector(config.selector, node.id, 'Choose a target element for this trigger.');
+          selector(config.selector, node.id, t('validation.chooseATargetElementForThisTrigger'));
         break;
       case 'http':
         try {
@@ -195,14 +194,14 @@ export function validateWorkflow(workflow: Workflow): ValidationIssue[] {
         } catch (error) {
           add((error as Error).message, node.id);
         }
-        url(config.url, node.id, 'Enter a valid HTTP or HTTPS request URL.', true);
+        url(config.url, node.id, t('validation.enterAValidHttpOrHttpsRequestUrl'), true);
         if (
           config.method &&
           !['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'].includes(
             config.method.toUpperCase(),
           )
         )
-          add('Choose a supported HTTP method.', node.id);
+          add(t('validation.chooseASupportedHttpMethod'), node.id);
         if (config.headers?.trim()) {
           try {
             const parsed: unknown = JSON.parse(config.headers);
@@ -214,7 +213,7 @@ export function validateWorkflow(workflow: Workflow): ValidationIssue[] {
             )
               throw new Error();
           } catch {
-            add('Headers must be a JSON object with string values.', node.id);
+            add(t('validation.headersMustBeAJsonObjectWithStringValues'), node.id);
           }
         }
         break;
@@ -224,23 +223,23 @@ export function validateWorkflow(workflow: Workflow): ValidationIssue[] {
         } catch (error) {
           add((error as Error).message, node.id);
         }
-        selector(config.selector, node.id, 'Choose an element to update.');
+        selector(config.selector, node.id, t('validation.chooseAnElementToUpdate'));
         if (
           config.action &&
           !['text', 'html', 'add-class', 'remove-class', 'hide', 'show', 'attribute'].includes(
             config.action,
           )
         )
-          add('Choose a supported element action.', node.id);
+          add(t('validation.chooseASupportedElementAction'), node.id);
         if (config.action === 'attribute' && !config.attribute?.trim())
-          add('Enter an attribute name.', node.id);
+          add(t('validation.enterAnAttributeName'), node.id);
         break;
       case 'delay':
         if (
           config.duration !== undefined &&
           (!Number.isFinite(config.duration) || config.duration < 0 || config.duration > 86400000)
         )
-          add('Delay must be between 0 and 86,400,000 milliseconds.', node.id);
+          add(t('validation.delayMustBeBetween0And86400000Milliseconds'), node.id);
         break;
       case 'fork':
         switch (config.conditionType ?? 'selector') {
@@ -266,18 +265,22 @@ export function validateWorkflow(workflow: Workflow): ValidationIssue[] {
             }
             break;
           case 'selector':
-            selector(config.condition, node.id, 'Choose a CSS selector for the branch condition.');
+            selector(
+              config.condition,
+              node.id,
+              t('validation.chooseACssSelectorForTheBranchCondition'),
+            );
             break;
           case 'device':
             if (!['desktop', 'mobile'].includes(config.conditionValue ?? ''))
-              add('Choose desktop or mobile for the device condition.', node.id);
+              add(t('validation.chooseDesktopOrMobileForTheDeviceCondition'), node.id);
             break;
           case 'language':
             try {
               if (!config.conditionValue?.trim()) throw new Error();
               Intl.getCanonicalLocales(config.conditionValue.trim());
             } catch {
-              add('Enter a language code such as en, es, or en-US.', node.id);
+              add(t('validation.enterALanguageCodeSuchAsEnEsOrEn'), node.id);
             }
             break;
           case 'referrer':
@@ -299,21 +302,18 @@ export function validateWorkflow(workflow: Workflow): ValidationIssue[] {
               )
                 throw new Error();
             } catch {
-              add('Enter a valid referrer domain such as example.com.', node.id);
+              add(t('validation.enterAValidReferrerDomainSuchAsExampleCom'), node.id);
             }
             break;
           case 'query-param':
           case 'cookie':
             if (!config.conditionKey?.trim())
-              add('Enter a name for the condition variable.', node.id);
+              add(t('validation.enterANameForTheConditionVariable'), node.id);
             if (config.conditionValue === undefined)
-              add(
-                'Enter an expected value for the condition (an empty string is allowed).',
-                node.id,
-              );
+              add(t('validation.enterAnExpectedValueForTheConditionAnEmptyString'), node.id);
             break;
           default:
-            add('Choose a supported condition type.', node.id);
+            add(t('validation.chooseASupportedConditionType'), node.id);
         }
         break;
       case 'loop':
@@ -323,60 +323,60 @@ export function validateWorkflow(workflow: Workflow): ValidationIssue[] {
             config.iterations < 1 ||
             config.iterations > 1000)
         )
-          add('Repeat count must be an integer from 1 to 1,000.', node.id);
+          add(t('validation.repeatCountMustBeAnIntegerFrom1To1'), node.id);
         break;
       case 'popover':
         if (config.contentType && !['html', 'iframe'].includes(config.contentType))
-          add('Choose HTML or an iframe for the popover content.', node.id);
+          add(t('validation.chooseHtmlOrAnIframeForThePopoverContent'), node.id);
         if (
           config.position &&
           !['center', 'top-left', 'top-right', 'bottom-left', 'bottom-right', 'anchor'].includes(
             config.position,
           )
         )
-          add('Choose a supported popover position.', node.id);
+          add(t('validation.chooseASupportedPopoverPosition'), node.id);
         if (config.contentType === 'iframe')
-          url(config.url, node.id, 'Enter a valid HTTP or HTTPS URL for the popover iframe.');
+          url(config.url, node.id, t('validation.enterAValidHttpOrHttpsUrlForThePopover'));
         if (config.position === 'anchor')
-          selector(config.selector, node.id, 'Choose an anchor element for the popover.');
+          selector(config.selector, node.id, t('validation.chooseAnAnchorElementForThePopover'));
         if (
           config.width !== undefined &&
           (!Number.isFinite(config.width) || config.width < 240 || config.width > 960)
         )
-          add('Popover width must be between 240 and 960 pixels.', node.id);
+          add(t('validation.popoverWidthMustBeBetween240And960Pixels'), node.id);
         break;
     }
   }
   const edgeIds = new Set<string>();
   for (const edge of workflow.edges) {
-    if (edgeIds.has(edge.id)) add('Every connection must have a unique ID.');
+    if (edgeIds.has(edge.id)) add(t('validation.everyConnectionMustHaveAUniqueId'));
     edgeIds.add(edge.id);
     const source = nodeMap.get(edge.source);
     const target = nodeMap.get(edge.target);
     if (!source || !target) {
-      add('A connection refers to a missing step.');
+      add(t('validation.aConnectionRefersToAMissingStep'));
       continue;
     }
     if (source.data.kind === 'note' || target.data.kind === 'note') {
       add(
-        'Notes cannot have workflow connections.',
+        t('validation.notesCannotHaveWorkflowConnections'),
         source.data.kind === 'note' ? source.id : target.id,
       );
       continue;
     }
     if (source.data.kind === 'frame' || target.data.kind === 'frame') {
       add(
-        'Frames cannot have workflow connections.',
+        t('validation.framesCannotHaveWorkflowConnections'),
         source.data.kind === 'frame' ? source.id : target.id,
       );
       continue;
     }
     if (target.data.kind === 'trigger')
-      add('Triggers cannot receive incoming connections.', target.id);
+      add(t('validation.triggersCannotReceiveIncomingConnections'), target.id);
     if (source.data.kind === 'fork' && !['true', 'false'].includes(edge.sourceHandle ?? ''))
-      add('Connect branches using the Yes or No outputs.', source.id);
+      add(t('validation.connectBranchesUsingTheYesOrNoOutputs'), source.id);
     if (source.data.kind === 'loop' && !['body', 'done'].includes(edge.sourceHandle ?? ''))
-      add('Connect repeats using the Repeat or Done outputs.', source.id);
+      add(t('validation.connectRepeatsUsingTheRepeatOrDoneOutputs'), source.id);
   }
   const pending = new Map(workflow.nodes.map((node) => [node.id, 0]));
   const outgoing = new Map<string, string[]>();
@@ -401,7 +401,9 @@ export function validateWorkflow(workflow: Workflow): ValidationIssue[] {
   }
   if (visited !== pending.size)
     add(
-      'Circular connections are not supported. Use a Repeat step with separate Repeat and Done outputs.',
+      t('validation.circularConnectionsAreNotSupportedUseARepeatStepWith'),
+      undefined,
+      'workflow.cycle',
     );
   return issues;
 }

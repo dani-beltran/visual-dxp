@@ -15,9 +15,12 @@ import {
   X,
 } from 'lucide-react';
 import { type ReactNode, type SelectHTMLAttributes, useEffect, useId, useState } from 'react';
-import { catalog } from '../lib/catalog';
+import { getCatalog } from '../lib/catalog';
 import { dataTools } from '../lib/data';
-import { elementTriggerEvents, triggerOptions } from '../lib/triggers';
+import { dataHint, getDataOperators } from '../lib/dataLabels';
+import { formatBuilderError } from '../lib/i18n';
+import { useBuilderI18n } from '../lib/i18nContext';
+import { elementTriggerEvents, getTriggerOptions } from '../lib/triggers';
 import type { ConditionType, NodeKind, StepConfig, StepData, WorkflowNode } from '../lib/types';
 import { InfoBox } from './InfoBox';
 import { NoteControls } from './NoteControls';
@@ -33,15 +36,6 @@ interface NodeInspectorProps {
   onDuplicate: () => void;
   onPreviewContent: () => void;
 }
-
-const nextOutputDescriptions = {
-  trigger: 'Runs when the selected event occurs',
-  http: 'Passes response data or an error object to the next node',
-  dom: 'Runs after the elements are updated',
-  cookie: 'Runs after the cookie is saved',
-  delay: 'Runs after the pause',
-  popover: 'Runs after the popover is displayed',
-} satisfies Record<Exclude<NodeKind, 'fork' | 'loop' | 'note' | 'frame'>, string>;
 
 function Field({
   label,
@@ -125,6 +119,17 @@ export function NodeInspector({
   onDuplicate,
   onPreviewContent,
 }: NodeInspectorProps) {
+  const { t } = useBuilderI18n();
+  const catalog = getCatalog(t);
+  const nextOutputDescriptions = {
+    trigger: t('nodeInspector.runsWhenTheSelectedEventOccurs'),
+    http: t('nodeInspector.passesResponseDataOrAnErrorObjectToTheNextNode'),
+    dom: t('nodeInspector.runsAfterTheElementsAreUpdated'),
+    cookie: t('nodeInspector.runsAfterTheCookieIsSaved'),
+    delay: t('nodeInspector.runsAfterThePause'),
+    popover: t('nodeInspector.runsAfterThePopoverIsDisplayed'),
+  } satisfies Record<Exclude<NodeKind, 'fork' | 'loop' | 'note' | 'frame'>, string>;
+  const triggerOptions = getTriggerOptions(t);
   const prefix = useId();
   const config = node.data.config;
   const trigger = Object.hasOwn(triggerOptions, config.event ?? 'page-load')
@@ -138,7 +143,7 @@ export function NodeInspector({
     if (node.data.kind === 'dom') dataTools.validateElementValue(config);
     if (node.data.kind === 'fork' && conditionType === 'data') dataTools.validateCondition(config);
   } catch (error) {
-    dataError = (error as Error).message;
+    dataError = formatBuilderError(error, t);
   }
   const variableCondition = ['query-param', 'cookie'].includes(conditionType);
   const metadata = catalog.find((entry) => entry.kind === node.data.kind);
@@ -149,14 +154,14 @@ export function NodeInspector({
   const Icon = metadata.icon;
   const id = (name: string) => `${prefix}-${name}`;
   const update = (patch: Partial<StepConfig>) => onChange({ config: { ...config, ...patch } });
-  const targetField = (label = 'Target element', optional = false) => (
+  const targetField = (label = t('nodeInspector.targetElement'), optional = false) => (
     <Field
       label={label}
       htmlFor={id('selector')}
       hint={
         optional
-          ? 'Optional. Without an anchor, choose a fixed screen position.'
-          : 'Use a CSS selector or pick an element from your website.'
+          ? t('nodeInspector.optionalWithoutAnAnchorChooseAFixedScreenPosition')
+          : t('nodeInspector.useACssSelectorOrPickAnElementFromYourWebsite')
       }
     >
       <div className="dxp-inspector-selector">
@@ -164,35 +169,40 @@ export function NodeInspector({
           id={id('selector')}
           className="dxp-inspector-code"
           value={config.selector ?? ''}
-          placeholder="e.g. #signup-button"
+          placeholder={t('nodeInspector.eGSignupButton')}
           onChange={(event) => update({ selector: event.target.value })}
           spellCheck={false}
           autoComplete="off"
         />
         <button
           type="button"
-          title="Pick an element from your website"
-          aria-label="Pick an element from your website"
+          title={t('nodeInspector.pickAnElementFromYourWebsite')}
+          aria-label={t('nodeInspector.pickAnElementFromYourWebsite')}
           onClick={onPickElement}
         >
           <ScanLine size={16} />
         </button>
       </div>
       <button type="button" className="dxp-inspector-pick" onClick={onPickElement}>
-        <MousePointer2 size={13} /> Select on website <span>↗</span>
+        <MousePointer2 size={13} /> {t('nodeInspector.selectOnWebsite')} <span>↗</span>
       </button>
     </Field>
   );
 
   return (
-    <aside className="dxp-inspector" aria-label={`${metadata.label} configuration`}>
+    <aside
+      className="dxp-inspector"
+      aria-label={t('nodeInspector.labelConfiguration', { label: String(metadata.label) })}
+    >
       <header className="dxp-inspector-header">
-        <div className="dxp-inspector-eyebrow">{itemName.toUpperCase()} DETAILS</div>
+        <div className="dxp-inspector-eyebrow">
+          {t('nodeInspector.detailsHeading', { kind: itemName })}
+        </div>
         <button
           type="button"
           className="dxp-inspector-icon-button"
-          title={`Close ${itemName} details`}
-          aria-label={`Close ${itemName} details`}
+          title={t('nodeInspector.closeItemnameDetails', { itemName: String(itemName) })}
+          aria-label={t('nodeInspector.closeItemnameDetails', { itemName: String(itemName) })}
           onClick={onClose}
         >
           <X size={17} />
@@ -205,12 +215,24 @@ export function NodeInspector({
           </div>
           <div>
             <h2>{metadata.label}</h2>
-            <span>{isFrame ? 'Canvas group' : isNote ? 'Canvas annotation' : 'Workflow step'}</span>
+            <span>
+              {isFrame
+                ? t('nodeInspector.canvasGroup')
+                : isNote
+                  ? t('nodeInspector.canvasAnnotation')
+                  : t('nodeInspector.workflowStep')}
+            </span>
           </div>
         </div>
         <p className="dxp-inspector-description">{metadata.description}</p>
         <Field
-          label={isFrame ? 'Frame name' : isNote ? 'Note name' : 'Step name'}
+          label={
+            isFrame
+              ? t('nodeInspector.frameName')
+              : isNote
+                ? t('nodeInspector.noteName')
+                : t('nodeInspector.stepName')
+          }
           htmlFor={id('name')}
         >
           <input
@@ -222,26 +244,26 @@ export function NodeInspector({
         </Field>
         <div className="dxp-inspector-section-label">
           {isFrame ? <Frame size={14} /> : isNote ? <StickyNote size={14} /> : <Braces size={14} />}
-          {isFrame ? 'Grouping nodes' : isNote ? 'Text & appearance' : 'Parameters'}
+          {isFrame
+            ? t('nodeInspector.groupingNodes')
+            : isNote
+              ? t('nodeInspector.textAppearance')
+              : t('nodeInspector.parameters')}
         </div>
 
         {isFrame && (
           <div className="dxp-inspector-note">
             <Info size={15} />
-            <p>
-              Drop nodes fully inside this frame to group them. Drag its header to move the group,
-              or resize its edges to surround existing nodes. Drag a node outside to release it.
-              Deleting the frame keeps its nodes and connections.
-            </p>
+            <p>{t('nodeInspector.dropNodesFullyInsideThisFrameToGroupThemDragItsHeader')}</p>
           </div>
         )}
 
         {isNote && (
           <>
             <Field
-              label="Note text"
+              label={t('nodeInspector.noteText')}
               htmlFor={id('note-text')}
-              hint="You can also edit this text directly on the canvas."
+              hint={t('nodeInspector.youCanAlsoEditThisTextDirectlyOnTheCanvas')}
             >
               <NoteTextEditor
                 key={node.id}
@@ -259,7 +281,7 @@ export function NodeInspector({
 
         {node.data.kind === 'trigger' && (
           <>
-            <Field label="Start when" htmlFor={id('event')}>
+            <Field label={t('nodeInspector.startWhen')} htmlFor={id('event')}>
               <Select
                 id={id('event')}
                 value={config.event ?? 'page-load'}
@@ -272,7 +294,7 @@ export function NodeInspector({
                 ))}
               </Select>
             </Field>
-            <InfoBox>{trigger?.hint ?? 'Choose a supported trigger event.'}</InfoBox>
+            <InfoBox>{trigger?.hint ?? t('nodeInspector.chooseASupportedTriggerEvent')}</InfoBox>
             {trigger?.settings.map(({ key, label, defaultValue, min, max }) => (
               <Field key={key} label={label} htmlFor={id(key)}>
                 <NumberInput
@@ -291,7 +313,7 @@ export function NodeInspector({
 
         {node.data.kind === 'http' && (
           <>
-            <Field label="Method" htmlFor={id('method')}>
+            <Field label={t('nodeInspector.method')} htmlFor={id('method')}>
               <Select
                 id={id('method')}
                 value={config.method ?? 'GET'}
@@ -302,7 +324,7 @@ export function NodeInspector({
                 ))}
               </Select>
             </Field>
-            <Field label="Request URL" htmlFor={id('url')}>
+            <Field label={t('nodeInspector.requestUrl')} htmlFor={id('url')}>
               <input
                 id={id('url')}
                 type="url"
@@ -313,9 +335,9 @@ export function NodeInspector({
               />
             </Field>
             <Field
-              label="Headers"
+              label={t('nodeInspector.headers')}
               htmlFor={id('headers')}
-              hint="Enter a JSON object. Leave empty for default headers."
+              hint={t('nodeInspector.enterAJsonObjectLeaveEmptyForDefaultHeaders')}
             >
               <textarea
                 id={id('headers')}
@@ -328,7 +350,11 @@ export function NodeInspector({
               />
             </Field>
             {!['GET', 'HEAD'].includes(config.method ?? 'GET') && (
-              <Field label="Request body" htmlFor={id('body')} hint="Sent as the raw request body.">
+              <Field
+                label={t('nodeInspector.requestBody')}
+                htmlFor={id('body')}
+                hint={t('nodeInspector.sentAsTheRawRequestBody')}
+              >
                 <textarea
                   id={id('body')}
                   className="dxp-inspector-code"
@@ -342,7 +368,7 @@ export function NodeInspector({
             )}
             <div className="dxp-inspector-note">
               <Info size={15} />
-              <p>The API must allow requests from your website through CORS.</p>
+              <p>{t('nodeInspector.theApiMustAllowRequestsFromYourWebsiteThroughCors')}</p>
             </div>
           </>
         )}
@@ -350,27 +376,27 @@ export function NodeInspector({
         {node.data.kind === 'dom' && (
           <>
             {targetField()}
-            <Field label="Action" htmlFor={id('action')}>
+            <Field label={t('nodeInspector.action')} htmlFor={id('action')}>
               <Select
                 id={id('action')}
                 value={config.action ?? 'text'}
                 onChange={(event) => update({ action: event.target.value as StepConfig['action'] })}
               >
-                <option value="text">Change text</option>
-                <option value="html">Replace HTML</option>
-                <option value="add-class">Add CSS class</option>
-                <option value="remove-class">Remove CSS class</option>
-                <option value="hide">Hide element</option>
-                <option value="show">Show element</option>
-                <option value="attribute">Set attribute</option>
+                <option value="text">{t('nodeInspector.changeText')}</option>
+                <option value="html">{t('nodeInspector.replaceHtml')}</option>
+                <option value="add-class">{t('nodeInspector.addCssClass')}</option>
+                <option value="remove-class">{t('nodeInspector.removeCssClass')}</option>
+                <option value="hide">{t('nodeInspector.hideElement')}</option>
+                <option value="show">{t('nodeInspector.showElement')}</option>
+                <option value="attribute">{t('nodeInspector.setAttribute')}</option>
               </Select>
             </Field>
             {config.action === 'attribute' && (
-              <Field label="Attribute name" htmlFor={id('attribute')}>
+              <Field label={t('nodeInspector.attributeName')} htmlFor={id('attribute')}>
                 <input
                   id={id('attribute')}
                   value={config.attribute ?? ''}
-                  placeholder="e.g. aria-label"
+                  placeholder={t('nodeInspector.eGAriaLabel')}
                   onChange={(event) => update({ attribute: event.target.value })}
                   spellCheck={false}
                 />
@@ -379,7 +405,7 @@ export function NodeInspector({
             {!['hide', 'show'].includes(config.action ?? 'text') && (
               <>
                 <div className="dxp-inspector-toggle">
-                  <label htmlFor={id('value-source')}>Use incoming data</label>
+                  <label htmlFor={id('value-source')}>{t('nodeInspector.useIncomingData')}</label>
                   <input
                     id={id('value-source')}
                     type="checkbox"
@@ -394,43 +420,46 @@ export function NodeInspector({
                 {dataTools.usesIncomingValue(config) ? (
                   <>
                     <InfoBox className="dxp-inspector-incoming-data">
-                      Uses the value received through the blue input connection, such as an HTTP
-                      response, for this action. The target element and attribute name stay as
-                      configured.
+                      {t('nodeInspector.usesTheValueReceivedThroughTheBlueInputConnectionSuchAsAn')}
                     </InfoBox>
-                    <Field label="Incoming data path" htmlFor={id('value-data-path')}>
+                    <Field
+                      label={t('nodeInspector.incomingDataPath')}
+                      htmlFor={id('value-data-path')}
+                    >
                       <input
                         id={id('value-data-path')}
                         value={config.valueDataPath ?? ''}
-                        placeholder="e.g. user.name"
+                        placeholder={t('nodeInspector.eGUserName')}
                         onChange={(event) => update({ valueDataPath: event.target.value })}
                         spellCheck={false}
                       />
                     </Field>
                     <InfoBox>
-                      Optional. Leave empty to use the whole incoming value. Examples: user.name or
-                      data.items[0].price. Strings, numbers, and booleans become text; null and
-                      missing values become empty text.
+                      {t(
+                        'nodeInspector.optionalLeaveEmptyToUseTheWholeIncomingValueExamplesUserName',
+                      )}
                       {['add-class', 'remove-class'].includes(config.action ?? '')
-                        ? ' Class names can also be an array of strings. Separate multiple names in text with spaces.'
-                        : ' Arrays and objects become JSON text.'}
+                        ? t(
+                            'nodeInspector.classNamesCanAlsoBeAnArrayOfStringsSeparateMultipleNames',
+                          )
+                        : t('nodeInspector.arraysAndObjectsBecomeJsonText')}
                     </InfoBox>
                   </>
                 ) : (
                   <Field
                     label={
                       config.action === 'html'
-                        ? 'HTML content'
+                        ? t('nodeInspector.htmlContent')
                         : ['add-class', 'remove-class'].includes(config.action ?? '')
-                          ? 'CSS class names'
+                          ? t('nodeInspector.cssClassNames')
                           : config.action === 'attribute'
-                            ? 'Attribute value'
-                            : 'New text'
+                            ? t('nodeInspector.attributeValue')
+                            : t('nodeInspector.newText')
                     }
                     htmlFor={id('value')}
                     hint={
                       ['add-class', 'remove-class'].includes(config.action ?? '')
-                        ? 'Separate multiple class names with spaces.'
+                        ? t('nodeInspector.separateMultipleClassNamesWithSpaces')
                         : undefined
                     }
                   >
@@ -440,7 +469,9 @@ export function NodeInspector({
                       rows={config.action === 'html' ? 5 : 3}
                       value={config.value ?? ''}
                       placeholder={
-                        config.action === 'html' ? '<p>Your new content</p>' : 'Enter a value…'
+                        config.action === 'html'
+                          ? '<p>Your new content</p>'
+                          : t('nodeInspector.enterAValue')
                       }
                       onChange={(event) => update({ value: event.target.value })}
                       spellCheck={config.action !== 'html'}
@@ -459,29 +490,29 @@ export function NodeInspector({
 
         {node.data.kind === 'cookie' && (
           <>
-            <Field label="Cookie name" htmlFor={id('cookie-name')}>
+            <Field label={t('nodeInspector.cookieName')} htmlFor={id('cookie-name')}>
               <input
                 id={id('cookie-name')}
                 value={config.cookieName ?? ''}
-                placeholder="e.g. audience"
+                placeholder={t('nodeInspector.eGAudience')}
                 onChange={(event) => update({ cookieName: event.target.value })}
                 spellCheck={false}
               />
             </Field>
             <Field
-              label="Cookie value"
+              label={t('nodeInspector.cookieValue')}
               htmlFor={id('cookie-value')}
-              hint="An empty value is allowed."
+              hint={t('nodeInspector.anEmptyValueIsAllowed')}
             >
               <input
                 id={id('cookie-value')}
                 value={config.cookieValue ?? ''}
-                placeholder="e.g. returning"
+                placeholder={t('nodeInspector.eGReturning')}
                 onChange={(event) => update({ cookieValue: event.target.value })}
                 spellCheck={false}
               />
             </Field>
-            <Field label="Expiration" htmlFor={id('cookie-expiration')}>
+            <Field label={t('nodeInspector.expiration')} htmlFor={id('cookie-expiration')}>
               <Select
                 id={id('cookie-expiration')}
                 value={config.cookieDays ? 'days' : 'session'}
@@ -489,12 +520,16 @@ export function NodeInspector({
                   update({ cookieDays: event.target.value === 'session' ? 0 : 30 })
                 }
               >
-                <option value="session">Browser session</option>
-                <option value="days">After a number of days</option>
+                <option value="session">{t('nodeInspector.browserSession')}</option>
+                <option value="days">{t('nodeInspector.afterANumberOfDays')}</option>
               </Select>
             </Field>
             {!!config.cookieDays && (
-              <Field label="Expires after" htmlFor={id('cookie-days')} hint="From 1 to 400 days.">
+              <Field
+                label={t('nodeInspector.expiresAfter')}
+                htmlFor={id('cookie-days')}
+                hint={t('nodeInspector.from1To400Days')}
+              >
                 <div className="dxp-inspector-unit-field">
                   <NumberInput
                     key={node.id}
@@ -505,22 +540,21 @@ export function NodeInspector({
                     value={config.cookieDays}
                     onChange={(cookieDays) => update({ cookieDays })}
                   />
-                  <span>days</span>
+                  <span>{t('nodeInspector.days')}</span>
                 </div>
               </Field>
             )}
             <p className="dxp-inspector-hint">
-              Saves the cookie for all pages on this website. A later Condition can check its name
-              and value. Browser cookie settings may prevent it from being saved.
+              {t('nodeInspector.savesTheCookieForAllPagesOnThisWebsiteALaterCondition')}
             </p>
           </>
         )}
 
         {node.data.kind === 'delay' && (
           <Field
-            label="Wait for"
+            label={t('nodeInspector.waitFor')}
             htmlFor={id('duration')}
-            hint="1,000 milliseconds = 1 second. Maximum 24 hours."
+            hint={t('nodeInspector.1000Milliseconds1SecondMaximum24Hours')}
           >
             <div className="dxp-inspector-unit-field">
               <NumberInput
@@ -532,14 +566,14 @@ export function NodeInspector({
                 value={config.duration ?? 1000}
                 onChange={(duration) => update({ duration })}
               />
-              <span>ms</span>
+              <span>{t('nodeInspector.ms')}</span>
             </div>
           </Field>
         )}
 
         {node.data.kind === 'fork' && (
           <>
-            <Field label="Condition type" htmlFor={id('condition-type')}>
+            <Field label={t('nodeInspector.conditionType')} htmlFor={id('condition-type')}>
               <Select
                 id={id('condition-type')}
                 value={conditionType}
@@ -551,37 +585,40 @@ export function NodeInspector({
                   });
                 }}
               >
-                <option value="selector">Element exists</option>
-                <option value="data">Incoming data</option>
-                <option value="device">User device</option>
-                <option value="language">User language</option>
-                <option value="referrer">Referrer domain</option>
-                <option value="date-range">Within date range</option>
-                <option value="time-of-day">Time of day</option>
-                <option value="query-param">URL search parameter</option>
-                <option value="cookie">Cookies</option>
+                <option value="selector">{t('nodeInspector.elementExists')}</option>
+                <option value="data">{t('nodeInspector.incomingData')}</option>
+                <option value="device">{t('nodeInspector.userDevice')}</option>
+                <option value="language">{t('nodeInspector.userLanguage')}</option>
+                <option value="referrer">{t('nodeInspector.referrerDomain')}</option>
+                <option value="date-range">{t('nodeInspector.withinDateRange')}</option>
+                <option value="time-of-day">{t('nodeInspector.timeOfDay')}</option>
+                <option value="query-param">{t('nodeInspector.urlSearchParameter')}</option>
+                <option value="cookie">{t('nodeInspector.cookies')}</option>
               </Select>
             </Field>
             {conditionType === 'data' && (
               <>
                 <InfoBox>
-                  Evaluates data received through the incoming connection, such as an HTTP response.
-                  Choose a value and an operator to route execution through True or False.
+                  {t(
+                    'nodeInspector.evaluatesDataReceivedThroughTheIncomingConnectionSuchAsAnHttpResponse',
+                  )}
                 </InfoBox>
                 <Field
-                  label="Incoming data path"
+                  label={t('nodeInspector.incomingDataPath')}
                   htmlFor={id('condition-data-path')}
-                  hint="Optional. Leave empty to evaluate all incoming data. Examples: user.name, data.items[0].price, items[2].tags."
+                  hint={t(
+                    'nodeInspector.optionalLeaveEmptyToEvaluateAllIncomingDataExamplesUserNameData',
+                  )}
                 >
                   <input
                     id={id('condition-data-path')}
                     value={config.conditionDataPath ?? ''}
-                    placeholder="e.g. user.name"
+                    placeholder={t('nodeInspector.eGUserName')}
                     onChange={(event) => update({ conditionDataPath: event.target.value })}
                     spellCheck={false}
                   />
                 </Field>
-                <Field label="Operator" htmlFor={id('condition-operator')}>
+                <Field label={t('nodeInspector.operator')} htmlFor={id('condition-operator')}>
                   <Select
                     id={id('condition-operator')}
                     value={dataOperator}
@@ -591,7 +628,7 @@ export function NodeInspector({
                       })
                     }
                   >
-                    {Object.entries(dataTools.operators).map(([value, label]) => (
+                    {Object.entries(getDataOperators(t)).map(([value, label]) => (
                       <option key={value} value={value}>
                         {label}
                       </option>
@@ -599,7 +636,7 @@ export function NodeInspector({
                   </Select>
                 </Field>
                 {dataTools.needsValue(dataOperator) && (
-                  <Field label="Comparison value" htmlFor={id('condition-value')}>
+                  <Field label={t('nodeInspector.comparisonValue')} htmlFor={id('condition-value')}>
                     <input
                       id={id('condition-value')}
                       value={config.conditionValue ?? ''}
@@ -608,7 +645,7 @@ export function NodeInspector({
                     />
                   </Field>
                 )}
-                <InfoBox>{dataTools.hint(dataOperator)}</InfoBox>
+                <InfoBox>{dataHint(dataOperator, t)}</InfoBox>
                 {dataError && (
                   <p role="alert" className="dxp-inspector-hint">
                     {dataError}
@@ -617,92 +654,93 @@ export function NodeInspector({
               </>
             )}
             {conditionType === 'selector' && (
-              <InfoBox>True when this CSS selector matches an element.</InfoBox>
+              <InfoBox>{t('nodeInspector.trueWhenThisCssSelectorMatchesAnElement')}</InfoBox>
             )}
             {conditionType === 'device' && (
               <InfoBox>
-                Uses the browser’s device information, with user agent detection as a fallback.
+                {t('nodeInspector.usesTheBrowserSDeviceInformationWithUserAgentDetectionAsA')}
               </InfoBox>
             )}
             {conditionType === 'language' && (
               <InfoBox>
-                Checks the primary browser language. Use en for any English variant, or en-US for an
-                exact locale.
+                {t('nodeInspector.checksThePrimaryBrowserLanguageUseEnForAnyEnglishVariantOr')}
               </InfoBox>
             )}
             {conditionType === 'referrer' && (
               <InfoBox>
-                Matches the exact domain, ignoring protocol, port and path. Subdomains are distinct:
-                example.com does not match www.example.com. A missing referrer takes the False path.
+                {t(
+                  'nodeInspector.matchesTheExactDomainIgnoringProtocolPortAndPathSubdomainsAreDistinct',
+                )}
               </InfoBox>
             )}
             {conditionType === 'date-range' && (
               <InfoBox>
-                True when the current date is within this range. Both dates are included, using{' '}
-                {config.conditionTimeZone === 'utc' ? 'UTC' : 'the visitor’s local time zone'}.
+                {t('nodeInspector.dateRangeHelp', { zone: config.conditionTimeZone || 'local' })}
               </InfoBox>
             )}
             {conditionType === 'time-of-day' && (
               <InfoBox>
-                Checks the current time using{' '}
-                {config.conditionTimeZone === 'utc' ? 'UTC' : 'the visitor’s local time zone'}. Both
-                selected minutes are included. An earlier end time crosses midnight; equal times
-                match only that minute.
+                {t('nodeInspector.timeRangeHelp', { zone: config.conditionTimeZone || 'local' })}
               </InfoBox>
             )}
             {variableCondition && (
               <InfoBox>
                 {conditionType === 'query-param'
-                  ? 'Checks the current page URL. Any matching value in a repeated parameter counts.'
-                  : 'Checks cookies, localStorage and sessionStorage on this website. True if any source contains the name and value. Cookie names and values are URL-decoded. If none match, the False path runs.'}{' '}
-                Exact, case-sensitive match. An empty value matches only a present, empty variable.
+                  ? t('nodeInspector.checksTheCurrentPageUrlAnyMatchingValueInARepeatedParameter')
+                  : t(
+                      'nodeInspector.checksCookiesLocalstorageAndSessionstorageOnThisWebsiteTrueIfAnySource',
+                    )}{' '}
+                {t('nodeInspector.exactCaseSensitiveMatchAnEmptyValueMatchesOnlyAPresentEmpty')}
               </InfoBox>
             )}
             {conditionType === 'selector' && (
-              <Field label="Element exists" htmlFor={id('condition')}>
+              <Field label={t('nodeInspector.elementExists')} htmlFor={id('condition')}>
                 <input
                   id={id('condition')}
                   className="dxp-inspector-code"
                   value={config.condition ?? ''}
-                  placeholder="e.g. .logged-in"
+                  placeholder={t('nodeInspector.eGLoggedIn')}
                   onChange={(event) => update({ condition: event.target.value })}
                   spellCheck={false}
                 />
               </Field>
             )}
             {conditionType === 'device' && (
-              <Field label="Device is" htmlFor={id('condition-value')}>
+              <Field label={t('nodeInspector.deviceIs')} htmlFor={id('condition-value')}>
                 <Select
                   id={id('condition-value')}
                   value={config.conditionValue ?? ''}
                   onChange={(event) => update({ conditionValue: event.target.value })}
                 >
                   <option value="" disabled>
-                    Choose a device
+                    {t('nodeInspector.chooseADevice')}
                   </option>
-                  <option value="desktop">Desktop</option>
-                  <option value="mobile">Mobile</option>
+                  <option value="desktop">{t('nodeInspector.desktop')}</option>
+                  <option value="mobile">{t('nodeInspector.mobile')}</option>
                 </Select>
               </Field>
             )}
             {conditionType === 'language' && (
-              <Field label="Language is" htmlFor={id('condition-value')}>
+              <Field label={t('nodeInspector.languageIs')} htmlFor={id('condition-value')}>
                 <input
                   id={id('condition-value')}
                   value={config.conditionValue ?? ''}
-                  placeholder="e.g. en, es, en-US"
+                  placeholder={t('nodeInspector.eGEnEsEnUs')}
                   onChange={(event) => update({ conditionValue: event.target.value })}
                   spellCheck={false}
                 />
               </Field>
             )}
             {conditionType === 'referrer' && (
-              <Field label="Referrer domain equals" htmlFor={id('condition-value')}>
+              <Field
+                label={t('nodeInspector.referrerDomainEquals')}
+                htmlFor={id('condition-value')}
+              >
                 <input
                   id={id('condition-value')}
                   type="text"
                   value={config.conditionValue ?? ''}
-                  placeholder="example.com"
+                  placeholder={t('nodeInspector.exampleCom')}
                   onChange={(event) => update({ conditionValue: event.target.value })}
                   spellCheck={false}
                 />
@@ -710,7 +748,11 @@ export function NodeInspector({
             )}
             {(conditionType === 'date-range' || conditionType === 'time-of-day') && (
               <Field
-                label={conditionType === 'date-range' ? 'Date based on' : 'Time based on'}
+                label={
+                  conditionType === 'date-range'
+                    ? t('nodeInspector.dateBasedOn')
+                    : t('nodeInspector.timeBasedOn')
+                }
                 htmlFor={id('condition-time-zone')}
               >
                 <Select
@@ -723,15 +765,17 @@ export function NodeInspector({
                   }
                 >
                   <option value="local">
-                    {conditionType === 'date-range' ? 'Visitor local date' : 'Visitor local time'}
+                    {conditionType === 'date-range'
+                      ? t('nodeInspector.visitorLocalDate')
+                      : t('nodeInspector.visitorLocalTime')}
                   </option>
-                  <option value="utc">UTC</option>
+                  <option value="utc">{t('nodeInspector.utc')}</option>
                 </Select>
               </Field>
             )}
             {conditionType === 'date-range' && (
               <>
-                <Field label="Start date" htmlFor={id('condition-start-date')}>
+                <Field label={t('nodeInspector.startDate')} htmlFor={id('condition-start-date')}>
                   <input
                     id={id('condition-start-date')}
                     type="date"
@@ -741,7 +785,7 @@ export function NodeInspector({
                     onChange={(event) => update({ conditionStartDate: event.target.value })}
                   />
                 </Field>
-                <Field label="End date" htmlFor={id('condition-end-date')}>
+                <Field label={t('nodeInspector.endDate')} htmlFor={id('condition-end-date')}>
                   <input
                     id={id('condition-end-date')}
                     type="date"
@@ -755,7 +799,7 @@ export function NodeInspector({
             )}
             {conditionType === 'time-of-day' && (
               <>
-                <Field label="Start time" htmlFor={id('condition-start-time')}>
+                <Field label={t('nodeInspector.startTime')} htmlFor={id('condition-start-time')}>
                   <input
                     id={id('condition-start-time')}
                     type="time"
@@ -764,7 +808,7 @@ export function NodeInspector({
                     onChange={(event) => update({ conditionStartTime: event.target.value })}
                   />
                 </Field>
-                <Field label="End time" htmlFor={id('condition-end-time')}>
+                <Field label={t('nodeInspector.endTime')} htmlFor={id('condition-end-time')}>
                   <input
                     id={id('condition-end-time')}
                     type="time"
@@ -779,7 +823,9 @@ export function NodeInspector({
               <>
                 <Field
                   label={
-                    conditionType === 'query-param' ? 'Parameter name' : 'Cookie or storage key'
+                    conditionType === 'query-param'
+                      ? t('nodeInspector.parameterName')
+                      : t('nodeInspector.cookieOrStorageKey')
                   }
                   htmlFor={id('condition-key')}
                 >
@@ -788,17 +834,19 @@ export function NodeInspector({
                     className="dxp-inspector-code"
                     value={config.conditionKey ?? ''}
                     placeholder={
-                      conditionType === 'query-param' ? 'e.g. utm_source' : 'e.g. audience'
+                      conditionType === 'query-param'
+                        ? t('nodeInspector.eGUtmSource')
+                        : t('nodeInspector.eGAudience')
                     }
                     onChange={(event) => update({ conditionKey: event.target.value })}
                     spellCheck={false}
                   />
                 </Field>
-                <Field label="Value equals" htmlFor={id('condition-value')}>
+                <Field label={t('nodeInspector.valueEquals')} htmlFor={id('condition-value')}>
                   <input
                     id={id('condition-value')}
                     value={config.conditionValue ?? ''}
-                    placeholder="e.g. newsletter"
+                    placeholder={t('nodeInspector.eGNewsletter')}
                     onChange={(event) => update({ conditionValue: event.target.value })}
                     spellCheck={false}
                   />
@@ -809,7 +857,7 @@ export function NodeInspector({
         )}
 
         {node.data.kind === 'loop' && (
-          <Field label="Number of repetitions" htmlFor={id('iterations')}>
+          <Field label={t('nodeInspector.numberOfRepetitions')} htmlFor={id('iterations')}>
             <div className="dxp-inspector-unit-field">
               <NumberInput
                 key={node.id}
@@ -820,14 +868,14 @@ export function NodeInspector({
                 value={config.iterations ?? 3}
                 onChange={(iterations) => update({ iterations })}
               />
-              <span>times</span>
+              <span>{t('nodeInspector.times')}</span>
             </div>
           </Field>
         )}
 
         {node.data.kind === 'popover' && (
           <>
-            <Field label="Content type" htmlFor={id('content-type')}>
+            <Field label={t('nodeInspector.contentType')} htmlFor={id('content-type')}>
               <Select
                 id={id('content-type')}
                 value={config.contentType ?? 'html'}
@@ -835,15 +883,15 @@ export function NodeInspector({
                   update({ contentType: event.target.value as StepConfig['contentType'] })
                 }
               >
-                <option value="html">Custom HTML</option>
-                <option value="iframe">Embedded website</option>
+                <option value="html">{t('nodeInspector.customHtml')}</option>
+                <option value="iframe">{t('nodeInspector.embeddedWebsite')}</option>
               </Select>
             </Field>
             {config.contentType === 'iframe' ? (
               <Field
-                label="Website URL"
+                label={t('nodeInspector.websiteUrl')}
                 htmlFor={id('url')}
-                hint="The website must allow embedding in an iframe."
+                hint={t('nodeInspector.theWebsiteMustAllowEmbeddingInAnIframe')}
               >
                 <input
                   id={id('url')}
@@ -855,7 +903,7 @@ export function NodeInspector({
                 />
               </Field>
             ) : (
-              <Field label="HTML content" htmlFor={id('content')}>
+              <Field label={t('nodeInspector.htmlContent')} htmlFor={id('content')}>
                 <textarea
                   id={id('content')}
                   className="dxp-inspector-code"
@@ -867,7 +915,7 @@ export function NodeInspector({
                 />
               </Field>
             )}
-            <Field label="Position" htmlFor={id('position')}>
+            <Field label={t('nodeInspector.position')} htmlFor={id('position')}>
               <Select
                 id={id('position')}
                 value={config.position ?? 'bottom-right'}
@@ -875,19 +923,19 @@ export function NodeInspector({
                   update({ position: event.target.value as StepConfig['position'] })
                 }
               >
-                <option value="center">Center of screen</option>
-                <option value="top-left">Top left</option>
-                <option value="top-right">Top right</option>
-                <option value="bottom-left">Bottom left</option>
-                <option value="bottom-right">Bottom right</option>
-                <option value="anchor">Next to an element</option>
+                <option value="center">{t('nodeInspector.centerOfScreen')}</option>
+                <option value="top-left">{t('nodeInspector.topLeft')}</option>
+                <option value="top-right">{t('nodeInspector.topRight')}</option>
+                <option value="bottom-left">{t('nodeInspector.bottomLeft')}</option>
+                <option value="bottom-right">{t('nodeInspector.bottomRight')}</option>
+                <option value="anchor">{t('nodeInspector.nextToAnElement')}</option>
               </Select>
             </Field>
-            {config.position === 'anchor' && targetField('Anchor element')}
+            {config.position === 'anchor' && targetField(t('nodeInspector.anchorElement'))}
             <Field
-              label="Popover width"
+              label={t('nodeInspector.popoverWidth')}
               htmlFor={id('width')}
-              hint="Choose a width between 240 and 960 pixels."
+              hint={t('nodeInspector.chooseAWidthBetween240And960Pixels')}
             >
               <div className="dxp-inspector-unit-field">
                 <NumberInput
@@ -899,31 +947,31 @@ export function NodeInspector({
                   value={config.width ?? 360}
                   onChange={(width) => update({ width })}
                 />
-                <span>px</span>
+                <span>{t('nodeInspector.px')}</span>
               </div>
             </Field>
             <div className="dxp-inspector-preview">
               <div>
-                <span>CONTENT PREVIEW</span>
+                <span>{t('nodeInspector.contentPreview')}</span>
                 <button
                   type="button"
                   className="dxp-inspector-preview-expand"
                   onClick={onPreviewContent}
-                  aria-label="Open fullscreen content preview"
-                  title="Preview on the demo website"
+                  aria-label={t('nodeInspector.openFullscreenContentPreview')}
+                  title={t('nodeInspector.previewOnTheDemoWebsite')}
                 >
-                  <Maximize2 size={12} /> Fullscreen
+                  <Maximize2 size={12} /> {t('nodeInspector.fullscreen')}
                 </button>
               </div>
               {(config.contentType ?? 'html') === 'html' && config.content ? (
                 <iframe
-                  title="Popover HTML preview"
+                  title={t('nodeInspector.popoverHtmlPreview')}
                   sandbox=""
                   srcDoc={`<!doctype html><html><head><meta name="viewport" content="width=device-width, initial-scale=1"><style>body{font-family:system-ui,sans-serif;font-size:13px;color:#243c31;padding:8px;overflow-wrap:anywhere}h1,h2,h3{font-size:17px;margin:8px 0}p{line-height:1.6}img{max-width:100%}button{font:inherit}</style></head><body>${config.content}</body></html>`}
                 />
               ) : (
                 <p className="dxp-inspector-preview-hint">
-                  Preview your popover in position on the demo website.
+                  {t('nodeInspector.previewYourPopoverInPositionOnTheDemoWebsite')}
                 </p>
               )}
             </div>
@@ -931,25 +979,24 @@ export function NodeInspector({
         )}
         <section aria-labelledby={id('outputs-heading')}>
           <h3 id={id('outputs-heading')} className="dxp-inspector-section-label">
-            <ArrowRight size={14} aria-hidden="true" /> Outputs
+            <ArrowRight size={14} aria-hidden="true" /> {t('nodeInspector.outputs')}
           </h3>
           {node.data.kind === 'fork' ? (
             <>
               <div className="dxp-inspector-branches">
                 <div>
                   <i className="dxp-inspector-dot-true" />
-                  <strong>True</strong>
-                  <span>Condition matches</span>
+                  <strong>{t('nodeInspector.true')}</strong>
+                  <span>{t('nodeInspector.conditionMatches')}</span>
                 </div>
                 <div>
                   <i className="dxp-inspector-dot-false" />
-                  <strong>False</strong>
-                  <span>Condition does not match</span>
+                  <strong>{t('nodeInspector.false')}</strong>
+                  <span>{t('nodeInspector.conditionDoesNotMatch')}</span>
                 </div>
               </div>
               <p className="dxp-inspector-hint">
-                The matching output passes all incoming data unchanged to the next step. The
-                condition’s data path only selects what to compare.
+                {t('nodeInspector.theMatchingOutputPassesAllIncomingDataUnchangedToTheNextStep')}
               </p>
             </>
           ) : node.data.kind === 'loop' ? (
@@ -957,24 +1004,21 @@ export function NodeInspector({
               <div className="dxp-inspector-branches">
                 <div>
                   <Repeat2 size={13} />
-                  <strong>Body</strong>
-                  <span>Runs each repetition</span>
+                  <strong>{t('nodeInspector.body')}</strong>
+                  <span>{t('nodeInspector.runsEachRepetition')}</span>
                 </div>
                 <div>
                   <ArrowDown size={13} />
-                  <strong>Done</strong>
-                  <span>Runs after the last one</span>
+                  <strong>{t('nodeInspector.done')}</strong>
+                  <span>{t('nodeInspector.runsAfterTheLastOne')}</span>
                 </div>
               </div>
               <p className="dxp-inspector-hint">
-                Connect the steps to repeat to Body. Connect the next step to Done.
+                {t('nodeInspector.connectTheStepsToRepeatToBodyConnectTheNextStepTo')}
               </p>
             </>
           ) : node.data.kind === 'note' || node.data.kind === 'frame' ? (
-            <InfoBox>
-              No outputs. {isNote ? 'Notes' : 'Frames'} organize the canvas and do not run workflow
-              steps.
-            </InfoBox>
+            <InfoBox>{t('nodeInspector.annotationOutputs', { kind: itemName })}</InfoBox>
           ) : (
             <div
               className={`dxp-inspector-branches${node.data.kind === 'http' ? ' dxp-inspector-data-output' : ''}`}
@@ -985,27 +1029,28 @@ export function NodeInspector({
                 ) : (
                   <ArrowRight size={13} aria-hidden="true" />
                 )}
-                <strong>{node.data.kind === 'http' ? 'Data' : 'Next'}</strong>
+                <strong>
+                  {node.data.kind === 'http' ? t('nodeInspector.data') : t('nodeInspector.next')}
+                </strong>
                 <span>{nextOutputDescriptions[node.data.kind]}</span>
               </div>
             </div>
           )}
           {node.data.kind === 'http' && (
             <>
-              <Field label="Response data path" htmlFor={id('response-data-path')}>
+              <Field label={t('nodeInspector.responseDataPath')} htmlFor={id('response-data-path')}>
                 <input
                   id={id('response-data-path')}
                   value={config.responseDataPath ?? ''}
-                  placeholder="e.g. data.items[0].price"
+                  placeholder={t('nodeInspector.eGDataItems0Price')}
                   onChange={(event) => update({ responseDataPath: event.target.value })}
                   spellCheck={false}
                 />
               </Field>
               <InfoBox>
-                Responses are automatically parsed as JSON when possible. Optionally select a value
-                using a path such as user.name, data.items[0].price, or items[2].tags; leave empty
-                for the whole body. A missing JSON path returns undefined; null is passed as null.
-                Non-JSON responses ignore the path and pass as complete text.
+                {t(
+                  'nodeInspector.responsesAreAutomaticallyParsedAsJsonWhenPossibleOptionallySelectAValue',
+                )}
               </InfoBox>
               {dataError && (
                 <p role="alert" className="dxp-inspector-hint">
@@ -1017,16 +1062,20 @@ export function NodeInspector({
         </section>
       </div>
       <footer className="dxp-inspector-footer">
-        <button type="button" onClick={onDuplicate} title={`Duplicate ${itemName}`}>
-          <Copy size={14} /> Duplicate
+        <button
+          type="button"
+          onClick={onDuplicate}
+          title={t('nodeInspector.duplicateItemname', { itemName: String(itemName) })}
+        >
+          <Copy size={14} /> {t('nodeInspector.duplicate')}
         </button>
         <button
           type="button"
           className="dxp-inspector-delete"
           onClick={onDelete}
-          title={`Delete ${itemName}`}
+          title={t('nodeInspector.deleteItemname', { itemName: String(itemName) })}
         >
-          <Trash2 size={14} /> Delete
+          <Trash2 size={14} /> {t('nodeInspector.delete')}
         </button>
       </footer>
     </aside>

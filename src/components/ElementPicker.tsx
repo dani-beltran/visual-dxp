@@ -1,5 +1,7 @@
 import { ArrowRight, Check, Globe2, Info, MousePointer2, RefreshCw, X } from 'lucide-react';
 import { useEffect, useId, useRef, useState } from 'react';
+import { formatBuilderError } from '../lib/i18n';
+import { useBuilderI18n } from '../lib/i18nContext';
 import type { PickedElement, PickerSession } from '../lib/picker';
 import { normalizeWebsiteUrl, PICKER_PROTOCOL } from '../lib/picker';
 import { websiteUrlInputValue } from '../lib/targeting';
@@ -23,6 +25,7 @@ export function ElementPicker({
   onClose,
   onUrlChange,
 }: ElementPickerProps) {
+  const { t } = useBuilderI18n();
   const headingId = useId();
   const selectorId = useId();
   const frameRef = useRef<HTMLIFrameElement>(null);
@@ -154,8 +157,8 @@ export function ElementPicker({
       if (data.type === 'selector-result')
         setSelectorHint(
           data.found
-            ? 'Element found on the page.'
-            : 'No matching element found. You can still use this selector.',
+            ? t('elementPicker.elementFoundOnThePage')
+            : t('elementPicker.noMatchingElementFoundYouCanStillUseThisSelector'),
         );
     };
     const failed = () => setStatus('unavailable');
@@ -186,7 +189,11 @@ export function ElementPicker({
       setReload((value) => value + 1);
       onUrlChange?.(normalized);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Enter a valid website URL.');
+      setError(
+        cause instanceof Error
+          ? formatBuilderError(cause, t)
+          : t('elementPicker.enterAValidWebsiteUrl'),
+      );
     }
   };
   const updateSelector = (value: string) => {
@@ -199,8 +206,8 @@ export function ElementPicker({
       if (value.trim())
         setSelectorHint(
           found
-            ? 'Element found on the page.'
-            : 'No matching element found. You can still use this selector.',
+            ? t('elementPicker.elementFoundOnThePage')
+            : t('elementPicker.noMatchingElementFoundYouCanStillUseThisSelector'),
         );
     } else if (frameUrl && status === 'bridge') {
       frameRef.current?.contentWindow?.postMessage(
@@ -228,8 +235,7 @@ export function ElementPicker({
     <div className={`dxp-picker-help${unavailable ? ' dxp-picker-help-unavailable' : ''}`}>
       {unavailable && (
         <p role="status">
-          This website couldn’t connect to the picker. Check the setup below, then try Load website
-          again.
+          {t('elementPicker.thisWebsiteCouldnTConnectToThePickerCheckTheSetupBelow')}
         </p>
       )}
       <WebsiteSetup />
@@ -246,7 +252,7 @@ export function ElementPicker({
           setShowHelp(false);
         }}
       >
-        Open demo website <ArrowRight size={13} />
+        {t('elementPicker.openDemoWebsite')} <ArrowRight size={13} />
       </button>
     </div>
   );
@@ -294,13 +300,13 @@ export function ElementPicker({
             <MousePointer2 size={19} />
           </div>
           <div>
-            <h2 id={headingId}>Select an element</h2>
-            <p>Point, click, and connect your experience.</p>
+            <h2 id={headingId}>{t('elementPicker.selectAnElement')}</h2>
+            <p>{t('elementPicker.pointClickAndConnectYourExperience')}</p>
           </div>
           <button
             type="button"
             className="dxp-picker-icon-button"
-            aria-label="Close element picker"
+            aria-label={t('elementPicker.closeElementPicker')}
             onClick={onClose}
           >
             <X size={20} />
@@ -315,13 +321,13 @@ export function ElementPicker({
         >
           <Globe2 size={16} aria-hidden="true" />
           <input
-            aria-label="Website URL"
+            aria-label={t('elementPicker.websiteUrl')}
             value={urlInput}
             onChange={(event) => setUrlInput(event.target.value)}
-            placeholder="Leave empty to use the demo website"
+            placeholder={t('elementPicker.leaveEmptyToUseTheDemoWebsite')}
           />
           <button type="submit" className="dxp-picker-load">
-            <RefreshCw size={14} /> Load website
+            <RefreshCw size={14} /> {t('elementPicker.loadWebsite')}
           </button>
         </form>
         {error && (
@@ -333,17 +339,21 @@ export function ElementPicker({
           <span className={`dxp-picker-status dxp-picker-status-${status}`}>
             <i />
             {status === 'connected' || status === 'bridge'
-              ? 'Selection mode is on'
+              ? t('elementPicker.selectionModeIsOn')
               : status === 'loading'
-                ? 'Connecting to website…'
-                : 'Connection required'}
+                ? t('elementPicker.connectingToWebsite')
+                : t('elementPicker.connectionRequired')}
           </span>
           <span className="dxp-picker-hint">
-            {hovered ? <code>{hovered.selector}</code> : 'Hover to inspect · Click to select'}
+            {hovered ? (
+              <code>{hovered.selector}</code>
+            ) : (
+              t('elementPicker.hoverToInspectClickToSelect')
+            )}
           </span>
           {!unavailable && (
             <button type="button" onClick={() => setShowHelp(!showHelp)} aria-expanded={showHelp}>
-              <Info size={14} /> Website setup
+              <Info size={14} /> {t('elementPicker.websiteSetup')}
             </button>
           )}
         </div>
@@ -357,19 +367,21 @@ export function ElementPicker({
               ref={frameRef}
               src={isDemo ? undefined : frameUrl}
               srcDoc={isDemo ? demoHtml : undefined}
-              title="Website element selection preview"
+              title={t('elementPicker.websiteElementSelectionPreview')}
               className="dxp-picker-frame"
               onLoad={() => initRef.current()}
               sandbox="allow-scripts"
               referrerPolicy="no-referrer"
             />
           ) : (
-            <div className="dxp-picker-empty">Enter a website URL to get started.</div>
+            <div className="dxp-picker-empty">
+              {t('elementPicker.enterAWebsiteUrlToGetStarted')}
+            </div>
           )}
           {status === 'loading' && (
             <div className="dxp-picker-connecting">
               <span />
-              Connecting element picker
+              {t('elementPicker.connectingElementPicker')}
             </div>
           )}
         </div>
@@ -378,31 +390,31 @@ export function ElementPicker({
             <label htmlFor={selectorId}>
               {selected ? (
                 <>
-                  <Check size={13} /> Element selected
+                  <Check size={13} /> {t('elementPicker.elementSelected')}
                 </>
               ) : (
-                'CSS selector'
+                t('elementPicker.cssSelector')
               )}
             </label>
             <input
               id={selectorId}
               value={selector}
               onChange={(event) => updateSelector(event.target.value)}
-              placeholder="Click an element or enter a CSS selector"
+              placeholder={t('elementPicker.clickAnElementOrEnterACssSelector')}
               spellCheck={false}
               aria-invalid={!!selector && !isValid}
             />
             <span className="dxp-picker-selector-hint" aria-live="polite">
               {selector && !isValid
-                ? 'Enter a valid CSS selector.'
+                ? t('elementPicker.enterAValidCssSelector')
                 : selectorHint ||
                   (selected?.text
                     ? `“${selected.text.slice(0, 65)}${selected.text.length > 65 ? '…' : ''}”`
-                    : 'Your selector will be saved to this step.')}
+                    : t('elementPicker.yourSelectorWillBeSavedToThisStep'))}
             </span>
           </div>
           <button type="button" className="dxp-picker-cancel" onClick={onClose}>
-            Cancel
+            {t('common.cancel')}
           </button>
           <button
             type="button"
@@ -410,7 +422,7 @@ export function ElementPicker({
             disabled={!isValid}
             onClick={() => onSelect(selector.trim())}
           >
-            Use element <ArrowRight size={15} />
+            {t('elementPicker.useElement')} <ArrowRight size={15} />
           </button>
         </footer>
       </div>

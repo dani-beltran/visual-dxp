@@ -7,7 +7,10 @@ export function getDateRange(config: StepConfig): [string, string] {
     config.conditionTimeZone !== 'local' &&
     config.conditionTimeZone !== 'utc'
   )
-    throw new Error('Choose visitor local time or UTC for the date range.');
+    throw Object.assign(new Error('Choose visitor local time or UTC for the date range.'), {
+      messageKey: 'errors.dateRange.chooseVisitorLocalTimeOrUtcForTheDateRange',
+      messageParams: {},
+    });
   const date = (value: string | undefined, label: string): string => {
     if (
       typeof value === 'string' &&
@@ -19,10 +22,17 @@ export function getDateRange(config: StepConfig): [string, string] {
       if (Number.isFinite(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value)
         return value;
     }
-    throw new Error(`Choose a valid ${label} date (YYYY-MM-DD).`);
+    throw Object.assign(new Error(`Choose a valid ${label} date (YYYY-MM-DD).`), {
+      messageKey: 'errors.dateRange.chooseAValidLabelDateYyyyMmDd',
+      messageParams: { label: String(label) },
+    });
   };
   const start = date(config.conditionStartDate, 'start');
   const end = date(config.conditionEndDate, 'end');
-  if (end < start) throw new Error('End date must be on or after the start date.');
+  if (end < start)
+    throw Object.assign(new Error('End date must be on or after the start date.'), {
+      messageKey: 'errors.dateRange.endDateMustBeOnOrAfterTheStartDate',
+      messageParams: {},
+    });
   return [start, end];
 }

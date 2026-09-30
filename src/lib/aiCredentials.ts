@@ -70,8 +70,14 @@ export function normalizeLocalBaseURL(value: string): string {
       throw new Error();
     return url.href.replace(/\/+$/, '');
   } catch {
-    throw new AIConfigurationError(
-      'Enter a valid HTTP(S) local API base URL without credentials, query, or fragment.',
+    throw Object.assign(
+      new AIConfigurationError(
+        'Enter a valid HTTP(S) local API base URL without credentials, query, or fragment.',
+      ),
+      {
+        messageKey: 'errors.aiCredentials.enterAValidHttpSLocalApiBaseUrlWithout',
+        messageParams: {},
+      },
     );
   }
 }
@@ -103,8 +109,14 @@ export function resolveAIEndpoint(
       throw new Error();
     return url;
   } catch {
-    throw new AIConfigurationError(
-      'Configure a valid HTTP or HTTPS AI endpoint without embedded credentials.',
+    throw Object.assign(
+      new AIConfigurationError(
+        'Configure a valid HTTP or HTTPS AI endpoint without embedded credentials.',
+      ),
+      {
+        messageKey: 'errors.aiCredentials.configureAValidHttpOrHttpsAiEndpointWithoutEmbedded',
+        messageParams: {},
+      },
     );
   }
 }

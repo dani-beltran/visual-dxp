@@ -1,4 +1,5 @@
 import { type KeyboardEvent, useLayoutEffect, useRef } from 'react';
+import { useBuilderI18n } from '../lib/i18nContext';
 import { readNoteSelection, restoreNoteSelection, useNoteSelection } from '../lib/noteSelection';
 import { editNoteText, getNoteSegments, type NoteFormat, toggleNoteMark } from '../lib/noteText';
 import type { StepConfig } from '../lib/types';
@@ -85,6 +86,7 @@ export function NoteTextEditor({
   id?: string;
   className?: string;
 }) {
+  const { t } = useBuilderI18n();
   const editor = useRef<HTMLDivElement>(null);
   const latest = useRef(config);
   latest.current = config;
@@ -194,7 +196,7 @@ export function NoteTextEditor({
       role="textbox"
       aria-label={ariaLabel}
       aria-multiline="true"
-      data-placeholder="Write a note…"
+      data-placeholder={t('noteTextEditor.writeANote')}
       data-empty={!(config.noteText ?? '').length}
       style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}
       onInput={input}

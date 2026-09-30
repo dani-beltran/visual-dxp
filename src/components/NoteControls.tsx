@@ -1,19 +1,10 @@
 import { Bold, Check, Italic, Strikethrough } from 'lucide-react';
 import { useId } from 'react';
+import { useBuilderI18n } from '../lib/i18nContext';
 import { restoreNoteSelection, useNoteSelection } from '../lib/noteSelection';
 import { selectionHasNoteMark, toggleNoteMark } from '../lib/noteText';
 import type { StepConfig } from '../lib/types';
 import '../styles/notes.css';
-
-const noteColors = [
-  { label: 'Yellow', value: '#fff4b8' },
-  { label: 'Green', value: '#def0d8' },
-  { label: 'Blue', value: '#dcecfb' },
-  { label: 'Purple', value: '#ede2fa' },
-  { label: 'Pink', value: '#fbe0e8' },
-  { label: 'White', value: '#ffffff' },
-  { label: 'Transparent', value: 'transparent' },
-];
 
 export function noteBackground(config: StepConfig): string {
   const color = config.noteColor?.toLowerCase();
@@ -39,20 +30,30 @@ export function NoteControls({
   config: StepConfig;
   onChange: (patch: Partial<StepConfig>) => void;
 }) {
+  const { t } = useBuilderI18n();
+  const noteColors = [
+    { label: t('noteControls.yellow'), value: '#fff4b8' },
+    { label: t('noteControls.green'), value: '#def0d8' },
+    { label: t('noteControls.blue'), value: '#dcecfb' },
+    { label: t('noteControls.purple'), value: '#ede2fa' },
+    { label: t('noteControls.pink'), value: '#fbe0e8' },
+    { label: t('noteControls.white'), value: '#ffffff' },
+    { label: t('noteControls.transparent'), value: 'transparent' },
+  ];
   const colorId = useId();
   const { selection } = useNoteSelection();
   const range = selection?.noteId === noteId && selection.start < selection.end ? selection : null;
   const background = noteBackground(config);
   const formats = [
-    { key: 'bold', label: 'Bold', icon: Bold },
-    { key: 'italic', label: 'Italic', icon: Italic },
-    { key: 'strikethrough', label: 'Strikethrough', icon: Strikethrough },
+    { key: 'bold', label: t('noteControls.bold'), icon: Bold },
+    { key: 'italic', label: t('noteControls.italic'), icon: Italic },
+    { key: 'strikethrough', label: t('noteControls.strikethrough'), icon: Strikethrough },
   ] as const;
 
   return (
     <div className="dxp-note-controls">
       <fieldset className="dxp-note-control-group">
-        <legend>Text style</legend>
+        <legend>{t('noteControls.textStyle')}</legend>
         <div className="dxp-note-format-buttons" data-note-format-toolbar>
           {formats.map(({ key, label, icon: Icon }) => (
             <button
@@ -77,10 +78,12 @@ export function NoteControls({
             </button>
           ))}
         </div>
-        <p className="dxp-inspector-hint">Select text in the note or above, then choose a style.</p>
+        <p className="dxp-inspector-hint">
+          {t('noteControls.selectTextInTheNoteOrAboveThenChooseAStyle')}
+        </p>
       </fieldset>
       <fieldset className="dxp-note-control-group">
-        <legend>Background</legend>
+        <legend>{t('noteControls.background')}</legend>
         <div className="dxp-note-color-palette">
           {noteColors.map(({ label, value }) => (
             <button
@@ -88,7 +91,7 @@ export function NoteControls({
               type="button"
               className={`dxp-note-color-swatch ${value === 'transparent' ? 'is-transparent' : ''}`}
               style={{ backgroundColor: value }}
-              aria-label={`${label} background`}
+              aria-label={t('noteControls.labelBackground', { label: String(label) })}
               aria-pressed={background === value}
               title={label}
               onClick={() => onChange({ noteColor: value })}
@@ -101,13 +104,15 @@ export function NoteControls({
           <input
             id={colorId}
             type="color"
-            aria-label="Custom background color"
+            aria-label={t('noteControls.customBackgroundColor')}
             value={background === 'transparent' ? '#fff4b8' : background}
             onChange={(event) => onChange({ noteColor: event.target.value })}
           />
-          <span>Custom color</span>
+          <span>{t('noteControls.customColor')}</span>
           <span className="dxp-note-color-value">
-            {background === 'transparent' ? 'Transparent' : background.toUpperCase()}
+            {background === 'transparent'
+              ? t('noteControls.transparent')
+              : background.toUpperCase()}
           </span>
         </label>
       </fieldset>
