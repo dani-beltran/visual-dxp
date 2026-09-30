@@ -6,6 +6,8 @@ Each preset carries its setup instructions as editable, disconnected note nodes 
 
 Every canvas also has a green overview note to the left of the workflow, containing the preset title in bold followed by its description.
 
+Popover HTML follows the Atelier demo branding: cream surfaces, olive accents and links styled as buttons, Georgia headings, and an Atelier wordmark. Each snippet includes its own inline styles, so it also works in isolated previews and exports without loading the demo stylesheet. Customize the wordmark, copy, and colors when adapting these examples to another brand.
+
 ```tsx
 import { VisualDXPBuilder, commonDXPPresets } from 'dlb-dxp';
 

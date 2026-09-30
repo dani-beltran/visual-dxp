@@ -258,7 +258,7 @@ export function stepSummary(kind: NodeKind, c: StepConfig): string {
         case 'cookie': {
           const source = {
             'query-param': 'URL parameter',
-            cookie: 'Cookie or browser storage',
+            cookie: 'Cookie',
           }[conditionType];
           return `${source} ${c.conditionKey || '…'} = ${JSON.stringify(c.conditionValue ?? '')}`;
         }

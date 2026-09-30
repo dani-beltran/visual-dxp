@@ -73,8 +73,12 @@ export const inactivityAssistancePreset = {
           label: 'Newsletter guidance',
           config: {
             contentType: 'html',
-            content:
-              '<h2>Need a hand?</h2><p>The newsletter form is here whenever you want occasional updates. No need to rush.</p>',
+            content: `<div style="margin:-28px -24px -24px;padding:36px 24px 28px;background:#f8f6f1;color:#353b32;font-family:Arial,Helvetica,sans-serif;box-sizing:border-box;overflow-wrap:anywhere">
+  <div style="padding:0 0 16px;border-bottom:1px solid #dedfd4"><span style="font-family:Georgia,serif;font-size:25px;font-weight:400;letter-spacing:-1px;line-height:1">atelier<span aria-hidden="true" style="font-family:Arial,Helvetica,sans-serif;font-size:9px;vertical-align:top;margin-left:3px;letter-spacing:0">®</span></span></div>
+  <p style="margin:22px 0 12px;font-size:10px;font-weight:400;line-height:1.5;letter-spacing:1.7px;text-transform:uppercase;color:#697856">Here to help</p>
+  <h2 style="margin:0 0 14px;font-family:Georgia,serif;font-size:29px;font-weight:400;line-height:1.15;letter-spacing:-0.7px;color:#353b32">Need a hand?</h2>
+  <p style="margin:0;font-size:13px;line-height:1.75;color:#626b59">The newsletter form is here whenever you want occasional updates. No need to rush.</p>
+</div>`,
             position: 'anchor',
             width: 340,
             selector: '#newsletter form',
@@ -93,8 +97,12 @@ export const inactivityAssistancePreset = {
           label: 'General browsing help',
           config: {
             contentType: 'html',
-            content:
-              '<h2>Take your time</h2><p>Use the page navigation to keep exploring. You can close this tip whenever you like.</p>',
+            content: `<div style="margin:-28px -24px -24px;padding:36px 24px 28px;background:#f8f6f1;color:#353b32;font-family:Arial,Helvetica,sans-serif;box-sizing:border-box;overflow-wrap:anywhere">
+  <div style="padding:0 0 16px;border-bottom:1px solid #dedfd4"><span style="font-family:Georgia,serif;font-size:25px;font-weight:400;letter-spacing:-1px;line-height:1">atelier<span aria-hidden="true" style="font-family:Arial,Helvetica,sans-serif;font-size:9px;vertical-align:top;margin-left:3px;letter-spacing:0">®</span></span></div>
+  <p style="margin:22px 0 12px;font-size:10px;font-weight:400;line-height:1.5;letter-spacing:1.7px;text-transform:uppercase;color:#697856">At your own pace</p>
+  <h2 style="margin:0 0 14px;font-family:Georgia,serif;font-size:29px;font-weight:400;line-height:1.15;letter-spacing:-0.7px;color:#353b32">Take your time</h2>
+  <p style="margin:0;font-size:13px;line-height:1.75;color:#626b59">Use the page navigation to keep exploring. You can close this tip whenever you like.</p>
+</div>`,
             position: 'bottom-right',
             width: 340,
           },
