@@ -2,6 +2,10 @@
 
 A Next.js App Router application and embeddable React 19 workflow editor powered by React Flow. Build website experiences visually, pick elements inside an iframe, test the journey, and export a standalone JavaScript file.
 
+## Common DXP presets
+
+Import `commonDXPPresets` from `dlb-dxp` and pass it as `<VisualDXPBuilder presets={commonDXPPresets} />` to enable twelve editable examples, ordered from basic help to segmented onboarding. The demo opts in explicitly; builders without presets still have no Presets tab. See the [preset reference and setup guide](docs/common-dxp-presets.md) for every scenario, selectors, HTTP placeholders, CSS, and runtime limits.
+
 ## Run the demo
 
 Requires Node.js 22.12+ (tested with Node.js 24).
@@ -130,7 +134,7 @@ interface WorkflowPreset {
 }
 ```
 
-Store each preset in its own `.ts` file as a JSON-serializable object literal with `satisfies WorkflowPreset`. Use fixed node/edge IDs and type-only imports; preset definitions must not contain functions, JSX, generated IDs, or runtime dependencies. For example, `presets/welcome.ts`:
+Store each preset in its own `.ts` file as a JSON-serializable object literal with `satisfies WorkflowPreset`. Use fixed node/edge IDs and type-only imports; preset definitions must not contain functions, JSX, generated IDs, or runtime dependencies. The common campaign headline preset calculates its current UTC week at module load and stores only the resulting date strings in its exported object. For example, `presets/welcome.ts`:
 
 ```ts
 import type { WorkflowPreset } from 'dlb-dxp';

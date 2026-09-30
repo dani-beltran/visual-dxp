@@ -33,6 +33,7 @@ export function App({
   style,
   activityStore,
   activityUser = 'You',
+  presets,
   ...builderProps
 }: AppProps) {
   const [localActivityStore] = useState(() => createActivityStore());
@@ -204,6 +205,7 @@ export function App({
         </header>
         <VisualDXPBuilder
           {...builderProps}
+          presets={presets}
           initialWorkflow={initialWorkflow}
           activityStore={store}
           activityUser={activityUser}

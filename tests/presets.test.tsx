@@ -7,6 +7,7 @@ import { remoteContentPreset } from '../examples/presets/remote-content';
 import { returningVisitorPreset } from '../examples/presets/returning-visitor';
 import { welcomePreset } from '../examples/presets/welcome';
 import VisualDXPBuilder, {
+  commonDXPPresets,
   createActivityStore,
   isWorkflow,
   type VisualDXPBuilderApi,
@@ -120,6 +121,53 @@ function freeze<T>(value: T): T {
 }
 
 describe('optional builder presets', () => {
+  it.each(commonDXPPresets)(
+    'applies and edits $name without mutating its source',
+    async (preset) => {
+      freeze(preset);
+      const before = JSON.stringify(preset);
+      const onChange = vi.fn<(workflow: Workflow) => void>();
+      await render({ presets: commonDXPPresets, onChange });
+      await apply(preset.name);
+      const applied = onChange.mock.lastCall?.[0];
+      if (!applied) throw new Error('Expected an applied workflow');
+      expect(applied.nodes).toEqual(preset.workflow.nodes);
+      expect(applied.edges).toEqual(preset.workflow.edges);
+      expect(applied.websiteUrl).toBe(initialWorkflow().websiteUrl);
+      const notes = applied.nodes.filter((node) => node.data.kind === 'note');
+      expect(notes.length).toBeGreaterThan(0);
+      for (const note of notes) {
+        const editor = element(`[data-id="${note.id}"] .dxp-note-text`);
+        expect(editor.textContent).toBe(note.data.config.noteText);
+        expect(editor.getAttribute('contenteditable')).toBe('true');
+      }
+      const editable = applied.nodes.find(
+        (node) => node.data.kind === 'dom' || node.data.kind === 'popover',
+      );
+      if (!editable) throw new Error('Expected an editable action');
+      await click(element(`[data-id="${editable.id}"]`));
+      const input = element<HTMLInputElement>('.dxp-inspector input');
+      await act(async () => {
+        const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
+        if (!setter) throw new Error('Missing input value setter');
+        setter.call(input, 'My edited step');
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+      });
+      expect(
+        onChange.mock.lastCall?.[0].nodes.find((node) => node.id === editable.id)?.data.label,
+      ).toBe('My edited step');
+      for (const [index, node] of applied.nodes.entries()) {
+        expect(node.data.config).not.toBe(preset.workflow.nodes[index].data.config);
+        expect(node.position).not.toBe(preset.workflow.nodes[index].position);
+        node.data.config.value = 'external edit';
+        node.position.x += 10;
+      }
+      applied.edges[0].label = 'External edge edit';
+      expect(JSON.stringify(preset)).toBe(before);
+      expect(fetch).not.toHaveBeenCalled();
+    },
+  );
+
   it('hides the tab and panel when omitted or empty, responds to additions and removals, and restores focus', async () => {
     const onChange = vi.fn();
     await render({ onChange });

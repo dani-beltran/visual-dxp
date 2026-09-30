@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createLocalStorageActivityStore } from '../src/demo/activityStore';
 import Demo from '../src/demo/Demo';
 import type { ActivityEntry } from '../src/lib/activity';
+import { commonDXPPresets } from '../src/presets';
 
 const persistenceKey = 'dlb-dxp-activity-v1';
 const entry: ActivityEntry = {
@@ -112,6 +113,12 @@ describe('demo activity persistence', () => {
 
     try {
       await render();
+      await click('button[role="tab"][id$="-presets-tab"]');
+      expect(
+        [...host.querySelectorAll('.dxp-preset-card h3')].map((card) => card.textContent),
+      ).toEqual(commonDXPPresets.map((preset) => preset.name));
+      expect(host.querySelector('.dxp-preset-setup')).toBeNull();
+      await click('button[role="tab"][id$="-canvas-tab"]');
       await click('button[aria-label="Add Delay"]');
       const added = savedEntries();
       expect(added).toHaveLength(1);
