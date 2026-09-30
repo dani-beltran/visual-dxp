@@ -1,16 +1,36 @@
 import type { WorkflowPreset } from '../lib/types';
-import { boundedCtaAttentionPreset } from './bounded-cta-attention';
-import { campaignHeadlinePreset } from './campaign-headline';
-import { campaignUrlPersonalizationPreset } from './campaign-url-personalization';
-import { clickToOpenHelpPreset } from './click-to-open-help';
-import { delayedWelcomePreset } from './delayed-welcome';
-import { engagedReaderInvitationPreset } from './engaged-reader-invitation';
-import { exitIntentOfferPreset } from './exit-intent-offer';
-import { frustrationRecoveryPreset } from './frustration-recovery';
-import { inactivityAssistancePreset } from './inactivity-assistance';
-import { mobileSpecificMessagingPreset } from './mobile-specific-messaging';
-import { returningVisitorExperiencePreset } from './returning-visitor-experience';
-import { segmentedOnboardingPreset } from './segmented-onboarding';
+import {
+  boundedCtaAttentionPreset,
+  createBoundedCtaAttentionPreset,
+} from './bounded-cta-attention';
+import { campaignHeadlinePreset, createCampaignHeadlinePreset } from './campaign-headline';
+import {
+  campaignUrlPersonalizationPreset,
+  createCampaignUrlPersonalizationPreset,
+} from './campaign-url-personalization';
+import { clickToOpenHelpPreset, createClickToOpenHelpPreset } from './click-to-open-help';
+import { createDelayedWelcomePreset, delayedWelcomePreset } from './delayed-welcome';
+import {
+  createEngagedReaderInvitationPreset,
+  engagedReaderInvitationPreset,
+} from './engaged-reader-invitation';
+import { createExitIntentOfferPreset, exitIntentOfferPreset } from './exit-intent-offer';
+import { createFrustrationRecoveryPreset, frustrationRecoveryPreset } from './frustration-recovery';
+import {
+  createInactivityAssistancePreset,
+  inactivityAssistancePreset,
+} from './inactivity-assistance';
+import { englishPresetMessages, type PresetMessages } from './locale/en';
+import { spanishPresetMessages } from './locale/es';
+import {
+  createMobileSpecificMessagingPreset,
+  mobileSpecificMessagingPreset,
+} from './mobile-specific-messaging';
+import {
+  createReturningVisitorExperiencePreset,
+  returningVisitorExperiencePreset,
+} from './returning-visitor-experience';
+import { createSegmentedOnboardingPreset, segmentedOnboardingPreset } from './segmented-onboarding';
 
 export {
   boundedCtaAttentionPreset,
@@ -42,3 +62,40 @@ export const commonDXPPresets: readonly WorkflowPreset[] = [
   boundedCtaAttentionPreset,
   segmentedOnboardingPreset,
 ];
+
+export { englishPresetMessages, type PresetMessages } from './locale/en';
+export { spanishPresetMessages } from './locale/es';
+
+const spanishPresets: readonly WorkflowPreset[] = [
+  createBoundedCtaAttentionPreset(spanishPresetMessages),
+  createCampaignHeadlinePreset(spanishPresetMessages),
+  createCampaignUrlPersonalizationPreset(spanishPresetMessages),
+  createClickToOpenHelpPreset(spanishPresetMessages),
+  createDelayedWelcomePreset(spanishPresetMessages),
+  createEngagedReaderInvitationPreset(spanishPresetMessages),
+  createExitIntentOfferPreset(spanishPresetMessages),
+  createFrustrationRecoveryPreset(spanishPresetMessages),
+  createInactivityAssistancePreset(spanishPresetMessages),
+  createMobileSpecificMessagingPreset(spanishPresetMessages),
+  createReturningVisitorExperiencePreset(spanishPresetMessages),
+  createSegmentedOnboardingPreset(spanishPresetMessages),
+].sort((a, b) => a.order - b.order);
+
+/** Select bundled preset content by BCP 47 locale; unsupported languages use English. */
+export function getCommonDXPPresets(locale = 'en'): readonly WorkflowPreset[] {
+  return getPresetMessages(locale) === spanishPresetMessages ? spanishPresets : commonDXPPresets;
+}
+
+/** Only translate bundled objects, preserving host-authored or customized presets. */
+export function localizeCommonDXPPreset(preset: WorkflowPreset, locale: string): WorkflowPreset {
+  const index = commonDXPPresets.indexOf(preset);
+  const bundledIndex = index === -1 ? spanishPresets.indexOf(preset) : index;
+  return bundledIndex === -1 ? preset : getCommonDXPPresets(locale)[bundledIndex];
+}
+
+/** Resolve bundled preset copy independently of editor chrome translations. */
+export function getPresetMessages(locale = 'en'): PresetMessages {
+  return locale.toLowerCase().split('-')[0] === 'es'
+    ? spanishPresetMessages
+    : englishPresetMessages;
+}

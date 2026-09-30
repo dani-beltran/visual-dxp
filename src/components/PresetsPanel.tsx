@@ -1,6 +1,7 @@
 import { useId, useState } from 'react';
 import { useBuilderI18n } from '../lib/i18nContext';
 import type { WorkflowPreset } from '../lib/types';
+import { getPresetMessages, localizeCommonDXPPreset } from '../presets';
 import '../styles/presets.css';
 
 export function PresetsPanel({
@@ -10,7 +11,8 @@ export function PresetsPanel({
   presets: readonly WorkflowPreset[];
   onApply: (preset: WorkflowPreset) => string | undefined;
 }) {
-  const { t } = useBuilderI18n();
+  const { t, locale } = useBuilderI18n();
+  const messages = getPresetMessages(locale);
   const id = useId();
   const [error, setError] = useState('');
   return (
@@ -30,6 +32,7 @@ export function PresetsPanel({
         )}
         <div className="dxp-presets-grid">
           {[...presets]
+            .map((preset) => localizeCommonDXPPreset(preset, locale))
             .sort((a, b) => a.order - b.order)
             .map((preset, index) => (
               <article
@@ -38,7 +41,9 @@ export function PresetsPanel({
                 aria-labelledby={`${id}-${index}`}
               >
                 <div className="dxp-preset-meta">
-                  <span className="dxp-preset-complexity">{preset.complexity}</span>
+                  <span className="dxp-preset-complexity">
+                    {messages[`complexity.${preset.complexity}`]}
+                  </span>
                   <span>
                     {t('canvas.nodeCount', {
                       count: Array.isArray(preset.workflow?.nodes)
