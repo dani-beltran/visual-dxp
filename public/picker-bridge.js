@@ -20,7 +20,7 @@
     return;
   }
 
-  const protocol = 'dlb-dxp:element-picker';
+  const protocol = 'visual-dxp:element-picker';
   let activeChannel = null;
   let session = null;
   function send(type, values) {
@@ -89,7 +89,7 @@
   }
   function attach() {
     const root = document.createElement('div');
-    root.setAttribute('data-dlb-dxp-picker', 'overlay');
+    root.setAttribute('data-visual-dxp-picker', 'overlay');
     root.setAttribute('aria-hidden', 'true');
     root.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:2147483647;';
     function outline(selected) {
@@ -140,7 +140,7 @@
     }
     function valid(target) {
       return (
-        target && typeof target.closest === 'function' && !target.closest('[data-dlb-dxp-picker]')
+        target && typeof target.closest === 'function' && !target.closest('[data-visual-dxp-picker]')
       );
     }
     function move(event) {

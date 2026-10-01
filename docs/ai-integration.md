@@ -1,6 +1,6 @@
 # Same-origin AI integration
 
-The Next.js App Router serves the demo and `/api/ai/*` in one process. `src/server/ai/` contains the Vercel AI SDK Core provider factory, shared tool loop, workflow validation, and optional remote LangGraph deployment graph. The original `dlb-dxp-server` directory is untouched and is not needed to build, test, or run this application.
+The Next.js App Router serves the demo and `/api/ai/*` in one process. `src/server/ai/` contains the Vercel AI SDK Core provider factory, shared tool loop, workflow validation, and optional remote LangGraph deployment graph. The original `visual-dxp-server` directory is untouched and is not needed to build, test, or run this application.
 
 ## Local setup
 
@@ -25,10 +25,10 @@ The library remains reusable without Next.js or a backend. Other hosts can pass 
 
 ## HTTP contract
 
-The client sends `POST` to the configured endpoint with JSON and expects a JSON response. Public TypeScript types are exported from `dlb-dxp`:
+The client sends `POST` to the configured endpoint with JSON and expects a JSON response. Public TypeScript types are exported from `visual-dxp`:
 
 ```ts
-import type { AIChatRequest, AIChatResponse } from 'dlb-dxp';
+import type { AIChatRequest, AIChatResponse } from 'visual-dxp';
 ```
 
 The request contains:
@@ -159,7 +159,7 @@ The server canonicalizes URLs and compares the entire base URL against `AI_LOCAL
 
 ## Encryption and isolation
 
-The historical `dlb-dxp-ai-settings-v1` localStorage key now holds a version-2 document with `activeProvider`, `viewedProvider`, and independent provider records. Non-secret records hold model, application origin, and optional local base URL. A credential envelope holds 16 random salt bytes, 12 random IV bytes and AES-GCM ciphertext. Keyless local configurations contain no credential envelope and require neither a passphrase nor Web Crypto.
+The historical `visual-dxp-ai-settings-v1` localStorage key now holds a version-2 document with `activeProvider`, `viewedProvider`, and independent provider records. Non-secret records hold model, application origin, and optional local base URL. A credential envelope holds 16 random salt bytes, 12 random IV bytes and AES-GCM ciphertext. Keyless local configurations contain no credential envelope and require neither a passphrase nor Web Crypto.
 
 Legacy version-1 OpenAI envelopes are read without alteration, defaulting both selection fields to OpenAI. The next successful store write atomically wraps the legacy envelope in version 2, preserving its ciphertext and original authenticated metadata. It remains decryptable with the existing passphrase. New keys use AES-256-GCM with a non-extractable Web Crypto PBKDF2-HMAC-SHA-256 key, 600,000 iterations, and fresh salt/IV. Version-2 authenticated data binds provider, model, application origin and local destination; moving ciphertext to another provider/destination invalidates decryption. No API key or passphrase is persisted in plaintext or exposed in React snapshots.
 

@@ -2,7 +2,7 @@ import type { WorkflowRuntime } from './runtime';
 import { createRuntime, getRuntimeSource } from './runtime';
 import type { Workflow } from './types';
 
-export const PREVIEW_PROTOCOL = 'dlb-dxp:preview';
+export const PREVIEW_PROTOCOL = 'visual-dxp:preview';
 /** Runs only inside an isolated preview. Never receives builder settings. */
 export function installPreviewBridge(
   parentOrigin: string,
@@ -18,13 +18,13 @@ export function installPreviewBridge(
   let channel = '';
   const send = (type: string, detail: Record<string, unknown> = {}) =>
     window.parent.postMessage(
-      { protocol: 'dlb-dxp:preview', type, channel, ...detail },
+      { protocol: 'visual-dxp:preview', type, channel, ...detail },
       parentOrigin,
     );
   window.addEventListener('message', (event) => {
     if (event.source !== window.parent || event.origin !== parentOrigin) return;
     const data = event.data;
-    if (!data || data.protocol !== 'dlb-dxp:preview' || typeof data.channel !== 'string') return;
+    if (!data || data.protocol !== 'visual-dxp:preview' || typeof data.channel !== 'string') return;
     if (data.type === 'init') {
       runtime?.destroy();
       runtime = undefined;

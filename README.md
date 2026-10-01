@@ -4,7 +4,7 @@ A Next.js App Router application and embeddable React 19 workflow editor powered
 
 ## Common DXP presets
 
-Import `commonDXPPresets` from `dlb-dxp` and pass it as `<VisualDXPBuilder presets={commonDXPPresets} />` to enable Blank followed by twelve editable examples, ordered from basic help to segmented onboarding. The demo opts in explicitly; builders without presets still have no Presets tab. See the [preset reference and setup guide](docs/common-dxp-presets.md) for every scenario, selectors, HTTP placeholders, CSS, and runtime limits.
+Import `commonDXPPresets` from `visual-dxp` and pass it as `<VisualDXPBuilder presets={commonDXPPresets} />` to enable Blank followed by twelve editable examples, ordered from basic help to segmented onboarding. The demo opts in explicitly; builders without presets still have no Presets tab. See the [preset reference and setup guide](docs/common-dxp-presets.md) for every scenario, selectors, HTTP placeholders, CSS, and runtime limits.
 
 ## Run the demo
 
@@ -47,15 +47,15 @@ npm run build:lib
 npm pack
 
 # In your application, using the archive produced above
-npm install /absolute/path/to/dlb-dxp-0.1.0.tgz
+npm install /absolute/path/to/visual-dxp-0.1.0.tgz
 ```
 
 React and React DOM 19 are peer dependencies. React Flow and icons are included in the built library.
 
 ```tsx
 import { useState } from 'react';
-import VisualDXPBuilder, { type VisualDXPBuilderApi, type Workflow } from 'dlb-dxp';
-import 'dlb-dxp/styles.css';
+import VisualDXPBuilder, { type VisualDXPBuilderApi, type Workflow } from 'visual-dxp';
+import 'visual-dxp/styles.css';
 
 const initialWorkflow: Workflow = {
   version: 1,
@@ -116,11 +116,11 @@ The builder owns the toolbar, canvas, inspector, activity view, footer, element 
 | `ai`                 | Optional `{ endpoint, showSettings?, headers?, credentials? }` for your chat API. A nonempty endpoint enables the assistant and AI Settings; `showSettings: false` hides only the settings tab. Omit the endpoint to hide both. |
 | `className`, `style` | Customize the outer editor container. The parent must provide a height.                                                                                           |
 
-`VisualDXPBuilder` is both the default and a named package export. Import `dlb-dxp/styles.css` once in your application; it includes React Flow and all builder, inspector, dialog, picker, and activity styles. The package exposes the same stylesheet through its `style` field and marks CSS as a side effect so bundlers retain the import.
+`VisualDXPBuilder` is both the default and a named package export. Import `visual-dxp/styles.css` once in your application; it includes React Flow and all builder, inspector, dialog, picker, and activity styles. The package exposes the same stylesheet through its `style` field and marks CSS as a side effect so bundlers retain the import.
 
 ### Optional workflow presets
 
-Import the public `WorkflowPreset` type from `dlb-dxp`. It uses the existing `Workflow` schema:
+Import the public `WorkflowPreset` type from `visual-dxp`. It uses the existing `Workflow` schema:
 
 ```ts
 interface WorkflowPreset {
@@ -140,8 +140,8 @@ Bundled examples of increasing complexity live in [`src/presets`](src/presets). 
 Pass a bundled preset explicitly from your host:
 
 ```tsx
-import VisualDXPBuilder, { clickToOpenHelpPreset } from 'dlb-dxp';
-import 'dlb-dxp/styles.css';
+import VisualDXPBuilder, { clickToOpenHelpPreset } from 'visual-dxp';
+import 'visual-dxp/styles.css';
 
 export function ExperienceEditor() {
   return <VisualDXPBuilder presets={[clickToOpenHelpPreset]} style={{ height: 600 }} />;
@@ -172,8 +172,8 @@ Create a `theme.css` file in your application and define the three CSS custom pr
 Import your theme after the package stylesheet in your application's entry point or global stylesheet entry. No color props are needed on `VisualDXPBuilder`:
 
 ```tsx
-import VisualDXPBuilder from 'dlb-dxp';
-import 'dlb-dxp/styles.css';
+import VisualDXPBuilder from 'visual-dxp';
+import 'visual-dxp/styles.css';
 import './theme.css';
 
 export function ExperienceEditor() {
@@ -326,7 +326,7 @@ The **Activity** tab shows recent actions with the username, action, and time. T
 Pass a stable store instance to connect the activity feed to your application. Create a separate store for each workflow so their histories remain separate:
 
 ```tsx
-import { createActivityStore, VisualDXPBuilder, type ActivityEntry } from 'dlb-dxp';
+import { createActivityStore, VisualDXPBuilder, type ActivityEntry } from 'visual-dxp';
 
 const initialActivity: ActivityEntry[] = [];
 const activityStore = createActivityStore(initialActivity);
@@ -352,7 +352,7 @@ interface ActivityStore {
 
 `getSnapshot` must return the same array reference until entries change. Publish a new immutable snapshot and notify subscribers when local or server updates arrive; `subscribe` returns an unsubscribe function. `append` and `remove` should update the local snapshot synchronously. A production adapter can then persist entries or their deletion asynchronously through the host's API, handling retries and reconciling server updates by entry ID. Undo targets the original entry's ID and store, leaving unrelated activity untouched. Edits undone before their activity is saved cancel the pending entry. The included `createActivityStore` supplies these in-memory operations plus `replaceEntries` to accept a complete updated history from the server.
 
-The builder does not contact an activity server or store activity in localStorage itself; embedded builders start with an empty in-memory activity history unless the host supplies a store. This project's demo supplies a localStorage-backed store under `dlb-dxp-activity-v1`, alongside the workflow saved under `dlb-dxp-workflow-v1`. Activity updates, including Undo removals and Redo restorations, are saved automatically. Missing or invalid saved history starts empty; if browser storage is unavailable or full, activity continues in memory.
+The builder does not contact an activity server or store activity in localStorage itself; embedded builders start with an empty in-memory activity history unless the host supplies a store. This project's demo supplies a localStorage-backed store under `visual-dxp-activity-v1`, alongside the workflow saved under `visual-dxp-workflow-v1`. Activity updates, including Undo removals and Redo restorations, are saved automatically. Missing or invalid saved history starts empty; if browser storage is unavailable or full, activity continues in memory.
 
 ## AI workflow assistant
 
@@ -381,7 +381,7 @@ AI Settings has accessible **OpenAI**, **Claude**, and **Self-Hosted** tabs with
 
 Each provider retains its own editable model ID and encrypted credentials. Self-Hosted uses an OpenAI-compatible API base URL and optional API key; no encryption passphrase is needed without a key. Local model servers must be reachable from the application backend, explicitly allowed by `AI_LOCAL_ALLOWED_BASE_URLS`, and support workflow tool calls. Localhost refers to the backend machine. See [provider and local runtime setup](docs/ai-integration.md).
 
-Browser settings require HTTPS except on localhost, 127.0.0.1 and [::1]. Version-2 settings safely migrate existing OpenAI ciphertext under the historical `dlb-dxp-ai-settings-v1` key. Active provider, viewed tab and non-secret configurations are stored separately from workflow data; API keys use AES-256-GCM/PBKDF2-SHA-256 encryption with provider/destination binding. No plaintext keys or passphrases are persisted. Reload locks credentials. Origin changes need session confirmation. Unsaved edits and tab browsing do not affect requests; effective configuration changes cancel requests and block stale edits.
+Browser settings require HTTPS except on localhost, 127.0.0.1 and [::1]. Version-2 settings safely migrate existing OpenAI ciphertext under the historical `visual-dxp-ai-settings-v1` key. Active provider, viewed tab and non-secret configurations are stored separately from workflow data; API keys use AES-256-GCM/PBKDF2-SHA-256 encryption with provider/destination binding. No plaintext keys or passphrases are persisted. Reload locks credentials. Origin changes need session confirmation. Unsaved edits and tab browsing do not affect requests; effective configuration changes cancel requests and block stale edits.
 
 > Your API key is stored encrypted in this browser. The application backend uses it only for the selected provider. It is never included in published sites or workflow exports.
 
@@ -408,7 +408,7 @@ See [MDN: iframe contentDocument](https://developer.mozilla.org/en-US/docs/Web/A
 **Live previews run in an isolated sandbox origin.** The included demo works automatically. On an external preview website, install the runtime bridge in that website's bundle:
 
 ```ts
-import { installPreviewBridge } from 'dlb-dxp';
+import { installPreviewBridge } from 'visual-dxp';
 installPreviewBridge('https://your-editor.example');
 ```
 
@@ -427,7 +427,7 @@ It registers triggers, executes actions, and exposes `window.visualDXP`. Reinjec
 You can also use the runtime directly:
 
 ```ts
-import { createRuntime, exportWorkflow, validateWorkflow } from 'dlb-dxp';
+import { createRuntime, exportWorkflow, validateWorkflow } from 'visual-dxp';
 
 const issues = validateWorkflow(workflow);
 if (issues.length) throw new Error(issues.map((issue) => issue.message).join('\n'));

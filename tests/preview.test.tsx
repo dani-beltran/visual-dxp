@@ -246,7 +246,7 @@ describe('workflow website preview', () => {
       if (!target || !result) throw new Error('Expected the website action fixture.');
       await clickButton('Run workflow');
       await dispatch(doc, '#target', new MouseEvent('click', { bubbles: true }));
-      expect(doc.querySelector('[data-dlb-dxp-popover="offer"]')).not.toBeNull();
+      expect(doc.querySelector('[data-visual-dxp-popover="offer"]')).not.toBeNull();
       const logsBeforeDisposal = onLog.mock.calls.length;
 
       if (operation === 'unmount') {
@@ -259,12 +259,12 @@ describe('workflow website preview', () => {
         await clickButton(operation === 'stop' ? 'Stop workflow' : 'Reload website');
         expect(button('Run workflow').disabled).toBe(operation === 'reload');
       }
-      expect(doc.querySelector('[data-dlb-dxp-popover]')).toBeNull();
+      expect(doc.querySelector('[data-visual-dxp-popover]')).toBeNull();
       // Keep references because jsdom empties a removed iframe document.
       await act(async () => target.dispatchEvent(new MouseEvent('click', { bubbles: true })));
       await act(async () => vi.advanceTimersByTimeAsync(2000));
       expect(result.textContent).toBe('Waiting');
-      expect(doc.querySelector('[data-dlb-dxp-popover]')).toBeNull();
+      expect(doc.querySelector('[data-visual-dxp-popover]')).toBeNull();
       expect(onLog).toHaveBeenCalledTimes(logsBeforeDisposal);
 
       if (operation === 'reload' || operation === 'navigation') {
@@ -279,7 +279,7 @@ describe('workflow website preview', () => {
         expect(onLog).toHaveBeenCalledTimes(logsBeforeDisposal);
         await clickButton('Run workflow');
         await dispatch(refreshed.doc, '#target', new MouseEvent('click', { bubbles: true }));
-        expect(refreshed.doc.querySelector('[data-dlb-dxp-popover="offer"]')).not.toBeNull();
+        expect(refreshed.doc.querySelector('[data-visual-dxp-popover="offer"]')).not.toBeNull();
       }
     },
   );
@@ -292,7 +292,7 @@ describe('workflow website preview', () => {
     );
     await clickButton('Run workflow');
     await dispatch(doc, '#target', new MouseEvent('click', { bubbles: true }));
-    const original = doc.querySelector('[data-dlb-dxp-popover="offer"]');
+    const original = doc.querySelector('[data-visual-dxp-popover="offer"]');
     expect(original).not.toBeNull();
     onLog.mockClear();
 
@@ -305,7 +305,7 @@ describe('workflow website preview', () => {
 
     await dispatch(doc, '#target', new MouseEvent('click', { bubbles: true }));
     await act(async () => vi.advanceTimersByTimeAsync(1000));
-    expect(doc.querySelectorAll('[data-dlb-dxp-popover]')).toHaveLength(1);
+    expect(doc.querySelectorAll('[data-visual-dxp-popover]')).toHaveLength(1);
     expect(doc.querySelector('#result')?.textContent).toBe('Finished');
     expect(successIds(onLog)).toEqual(['start', 'offer', 'wait', 'update']);
   });
@@ -331,7 +331,7 @@ describe('workflow website preview', () => {
       onLog,
     );
     expect(button('Run workflow').disabled).toBe(false);
-    expect(doc.querySelector('[data-dlb-dxp-popover]')).toBeNull();
+    expect(doc.querySelector('[data-visual-dxp-popover]')).toBeNull();
     expect(document.querySelectorAll('.dxp-log-item')).toHaveLength(0);
     onLog.mockClear();
     await act(async () => vi.advanceTimersByTimeAsync(2000));

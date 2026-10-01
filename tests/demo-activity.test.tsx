@@ -8,7 +8,7 @@ import Demo from '../src/demo/Demo';
 import type { ActivityEntry } from '../src/lib/activity';
 import { commonDXPPresets } from '../src/presets';
 
-const persistenceKey = 'dlb-dxp-activity-v1';
+const persistenceKey = 'visual-dxp-activity-v1';
 const entry: ActivityEntry = {
   id: 'saved-action',
   username: 'Ada',

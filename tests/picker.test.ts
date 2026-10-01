@@ -61,7 +61,7 @@ describe('website element selection', () => {
     expect(session.select('[')).toBe(false);
     expect(session.select('#shop-now')).toBe(true);
     session.destroy();
-    expect(document.querySelector('[data-dlb-dxp-picker]')).toBeNull();
+    expect(document.querySelector('[data-visual-dxp-picker]')).toBeNull();
     target.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
     expect(navigate).toHaveBeenCalledOnce();
   });
@@ -87,7 +87,7 @@ describe('website element selection', () => {
     );
     const session = attachElementPicker(document, vi.fn(), vi.fn());
     session.select('#target');
-    const outline = document.querySelector<HTMLElement>('[data-dlb-dxp-picker] > div:last-child')!;
+    const outline = document.querySelector<HTMLElement>('[data-visual-dxp-picker] > div:last-child')!;
     expect(outline.style.top).toBe('120px');
     expect(outline.style.display).toBe('block');
     top = 55;
@@ -231,24 +231,24 @@ describe('cross-origin picker bridge', () => {
     };
     const source = readFileSync('public/picker-bridge.js', 'utf8');
     new Function('window', 'document', 'URL', source)(bridgeWindow, document, URL);
-    const init = { protocol: 'dlb-dxp:element-picker', channel: 'editor-session', type: 'init' };
+    const init = { protocol: 'visual-dxp:element-picker', channel: 'editor-session', type: 'init' };
     receive({ origin: 'https://untrusted.example', source: parent, data: init });
     receive({ origin: 'https://editor.example', source: {}, data: init });
     expect(parent.postMessage).not.toHaveBeenCalled();
-    expect(document.querySelector('[data-dlb-dxp-picker]')).toBeNull();
+    expect(document.querySelector('[data-visual-dxp-picker]')).toBeNull();
 
     receive({ origin: 'https://editor.example', source: parent, data: init });
     expect(parent.postMessage).toHaveBeenCalledWith(
-      { protocol: 'dlb-dxp:element-picker', channel: 'editor-session', type: 'ready' },
+      { protocol: 'visual-dxp:element-picker', channel: 'editor-session', type: 'ready' },
       'https://editor.example',
     );
-    expect(document.querySelector('[data-dlb-dxp-picker]')).not.toBeNull();
+    expect(document.querySelector('[data-visual-dxp-picker]')).not.toBeNull();
     document
       .querySelector('button')!
       .dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
     expect(parent.postMessage).toHaveBeenLastCalledWith(
       {
-        protocol: 'dlb-dxp:element-picker',
+        protocol: 'visual-dxp:element-picker',
         channel: 'editor-session',
         type: 'select',
         element: { selector: '#shop-now', tagName: 'button', text: 'Shop now' },
@@ -274,7 +274,7 @@ describe('cross-origin picker bridge', () => {
       () => ({ left: 20, top, width: 80, height: 25 }) as DOMRect,
     );
     document.dispatchEvent(new Event('scroll'));
-    const outline = document.querySelector<HTMLElement>('[data-dlb-dxp-picker] > div:last-child')!;
+    const outline = document.querySelector<HTMLElement>('[data-visual-dxp-picker] > div:last-child')!;
     expect(outline.style.top).toBe('180px');
     top = 70;
     document.dispatchEvent(new Event('scroll'));
@@ -292,8 +292,8 @@ describe('cross-origin picker bridge', () => {
       source: parent,
       data: { ...init, type: 'stop', channel: 'another-session' },
     });
-    expect(document.querySelector('[data-dlb-dxp-picker]')).not.toBeNull();
+    expect(document.querySelector('[data-visual-dxp-picker]')).not.toBeNull();
     receive({ origin: 'https://editor.example', source: parent, data: { ...init, type: 'stop' } });
-    expect(document.querySelector('[data-dlb-dxp-picker]')).toBeNull();
+    expect(document.querySelector('[data-visual-dxp-picker]')).toBeNull();
   });
 });

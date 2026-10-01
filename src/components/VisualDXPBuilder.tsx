@@ -1149,7 +1149,7 @@ function Builder({
           }}
           onDrop={(e) => {
             e.preventDefault();
-            const kind = e.dataTransfer.getData('application/dlb-dxp-node') as NodeKind;
+            const kind = e.dataTransfer.getData('application/visual-dxp-node') as NodeKind;
             if (catalog.some((c) => c.kind === kind))
               add(kind, flow.screenToFlowPosition({ x: e.clientX, y: e.clientY }));
           }}

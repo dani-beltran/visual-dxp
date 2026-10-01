@@ -1,6 +1,6 @@
 # Multi-provider AI verification
 
-The implementation updates the active Next.js backend in `src/server/ai/` and `/api/ai/*`. The sibling `dlb-dxp-server` project and `.env.local` were not edited.
+The implementation updates the active Next.js backend in `src/server/ai/` and `/api/ai/*`. The sibling `visual-dxp-server` project and `.env.local` were not edited.
 
 ## Automated coverage
 

@@ -2,10 +2,10 @@
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { JSDOM } from 'jsdom';
-import * as esm from '../dist/dlb-dxp.js';
+import * as esm from '../dist/visual-dxp.js';
 
 const require = createRequire(import.meta.url);
-const umd = require('../dist/dlb-dxp.umd.cjs');
+const umd = require('../dist/visual-dxp.umd.cjs');
 let cases = 0;
 for (const library of [esm, umd]) {
   for (const includeSubpages of [false, true]) {

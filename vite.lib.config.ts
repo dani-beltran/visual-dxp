@@ -14,8 +14,8 @@ export default defineConfig({
     lib: {
       entry: 'src/index.ts',
       name: 'visualDXP',
-      fileName: 'dlb-dxp',
-      cssFileName: 'dlb-dxp',
+      fileName: 'visual-dxp',
+      cssFileName: 'visual-dxp',
     },
     rollupOptions: {
       external: ['react', 'react-dom', 'react/jsx-runtime'],

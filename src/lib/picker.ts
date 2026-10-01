@@ -1,5 +1,5 @@
 /** A deliberately small, serializable protocol shared with picker-bridge.js. */
-export const PICKER_PROTOCOL = 'dlb-dxp:element-picker';
+export const PICKER_PROTOCOL = 'visual-dxp:element-picker';
 
 export interface PickedElement {
   selector: string;
@@ -157,7 +157,7 @@ export function attachElementPicker(
   const validTarget = (target: EventTarget | null): target is Element =>
     !!target &&
     typeof (target as Element).closest === 'function' &&
-    !(target as Element).closest('[data-dlb-dxp-picker]');
+    !(target as Element).closest('[data-visual-dxp-picker]');
   const move = (event: MouseEvent) => {
     if (!validTarget(event.target) || event.target === hovered) return;
     hovered = event.target;

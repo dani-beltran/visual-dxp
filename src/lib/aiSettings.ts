@@ -12,7 +12,7 @@ import {
 } from './aiCredentials';
 
 // Keep the historical key: replacing a v1 record with v2 is one atomic storage write.
-export const AI_SETTINGS_STORAGE_KEY = 'dlb-dxp-ai-settings-v1';
+export const AI_SETTINGS_STORAGE_KEY = 'visual-dxp-ai-settings-v1';
 interface Cipher {
   version: 1 | 2;
   salt: number[];

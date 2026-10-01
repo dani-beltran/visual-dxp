@@ -9,7 +9,7 @@ Every nonempty preset canvas also has a green overview note to the left of the w
 Unanchored popover HTML follows the Atelier demo branding: cream surfaces, olive accents and links styled as buttons, Georgia headings, and an Atelier wordmark. Each snippet includes its own inline styles, so it also works in isolated previews and exports without loading the demo stylesheet. Anchored popovers are compact 240px tooltip-style hints with lightweight white Georgia serif text on an olive (#697856) background, a decorative emoji, and a single sentence explaining the target control, without a wordmark, heading, or extra link. Their runtime arrow fill, arrow stroke, surface background, and surface border all match the olive content background (#697856), using CSS scoped to each popover ID. They retain a white runtime close button. When changing the background, update these scoped colors together. Customize the wordmark, copy, and colors when adapting these examples to another brand.
 
 ```tsx
-import { VisualDXPBuilder, commonDXPPresets } from 'dlb-dxp';
+import { VisualDXPBuilder, commonDXPPresets } from 'visual-dxp';
 
 <VisualDXPBuilder presets={commonDXPPresets} />;
 ```
@@ -45,7 +45,7 @@ The two request nodes use **`https://events.example.invalid/dxp-events`**, a res
 For a local mock, supply `fetch` through `createRuntime` and return a successful response, without any network access:
 
 ```ts
-import { createRuntime, frustrationRecoveryPreset } from 'dlb-dxp';
+import { createRuntime, frustrationRecoveryPreset } from 'visual-dxp';
 
 const runtime = createRuntime(frustrationRecoveryPreset.workflow, {
   fetch: async (_url, init) => {
