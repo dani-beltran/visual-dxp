@@ -173,13 +173,6 @@ export function createReturningVisitorExperiencePreset(
                   'returning-visitor-experience.workflow.nodes.returning-visitor-experience-overview.data.config.noteText'
                 ],
               noteColor: '#def0d8',
-              noteMarks: [
-                {
-                  start: 0,
-                  end: messages['returning-visitor-experience.name'].length,
-                  bold: true,
-                },
-              ],
             },
           },
         },

@@ -4,7 +4,7 @@
 
 Each nonempty preset carries its setup instructions as editable, disconnected note nodes on the canvas, beside the steps they explain. Onboarding places these notes inside the corresponding stage frames. The common presets omit the optional `setupInstructions` metadata, so their cards show the scenario summary while setup guidance appears when applied. Other consumers can still supply that optional metadata for their own preset cards.
 
-Every nonempty preset canvas also has a green overview note to the left of the workflow, containing the preset title in bold followed by its description.
+Every nonempty preset canvas also has a green overview note to the left of the workflow, containing only the preset description.
 
 Unanchored popover HTML follows the Atelier demo branding: cream surfaces, olive accents and links styled as buttons, Georgia headings, and an Atelier wordmark. Each snippet includes its own inline styles, so it also works in isolated previews and exports without loading the demo stylesheet. Anchored popovers are compact 240px tooltip-style hints with lightweight white Georgia serif text on an olive (#697856) background, a decorative emoji, and a single sentence explaining the target control, without a wordmark, heading, or extra link. Their runtime arrow fill, arrow stroke, surface background, and surface border all match the olive content background (#697856), using CSS scoped to each popover ID. They retain a white runtime close button. When changing the background, update these scoped colors together. Customize the wordmark, copy, and colors when adapting these examples to another brand.
 

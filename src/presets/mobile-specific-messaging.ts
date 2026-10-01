@@ -129,13 +129,6 @@ export function createMobileSpecificMessagingPreset(
                   'mobile-specific-messaging.workflow.nodes.mobile-specific-messaging-overview.data.config.noteText'
                 ],
               noteColor: '#def0d8',
-              noteMarks: [
-                {
-                  start: 0,
-                  end: messages['mobile-specific-messaging.name'].length,
-                  bold: true,
-                },
-              ],
             },
           },
         },

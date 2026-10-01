@@ -417,13 +417,6 @@ export function createSegmentedOnboardingPreset(messages: PresetMessages = engli
                   'segmented-onboarding.workflow.nodes.segmented-onboarding-overview.data.config.noteText'
                 ],
               noteColor: '#def0d8',
-              noteMarks: [
-                {
-                  start: 0,
-                  end: messages['segmented-onboarding.name'].length,
-                  bold: true,
-                },
-              ],
             },
           },
         },

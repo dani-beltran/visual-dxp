@@ -155,13 +155,6 @@ export function createCampaignUrlPersonalizationPreset(
                   'campaign-url-personalization.workflow.nodes.campaign-url-personalization-overview.data.config.noteText'
                 ],
               noteColor: '#def0d8',
-              noteMarks: [
-                {
-                  start: 0,
-                  end: messages['campaign-url-personalization.name'].length,
-                  bold: true,
-                },
-              ],
             },
           },
         },

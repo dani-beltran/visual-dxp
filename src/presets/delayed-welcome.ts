@@ -118,13 +118,6 @@ export function createDelayedWelcomePreset(messages: PresetMessages = englishPre
                   'delayed-welcome.workflow.nodes.delayed-welcome-overview.data.config.noteText'
                 ],
               noteColor: '#def0d8',
-              noteMarks: [
-                {
-                  start: 0,
-                  end: messages['delayed-welcome.name'].length,
-                  bold: true,
-                },
-              ],
             },
           },
         },

@@ -23,9 +23,8 @@ export function createWelcomeJourneyPreset(messages: PresetMessages = englishPre
             kind: 'note',
             label: messages['welcome-journey.overview'],
             config: {
-              noteText: `${messages['welcome-journey.name']}\n\n${messages['welcome-journey.description']}`,
+              noteText: messages['welcome-journey.description'],
               noteColor: '#def0d8',
-              noteMarks: [{ start: 0, end: messages['welcome-journey.name'].length, bold: true }],
             },
           },
         },

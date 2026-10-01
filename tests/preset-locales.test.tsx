@@ -57,10 +57,8 @@ it.each(commonDXPPresets)('localizes $id while preserving executable configurati
       data: { ...original.data, label: '', config: originalConfig },
     });
     if (node.id.endsWith('-overview')) {
-      expect(node.data.config.noteText).toBe(`${spanish.name}\n\n${spanish.description}`);
-      expect(node.data.config.noteMarks).toEqual([
-        { start: 0, end: spanish.name.length, bold: true },
-      ]);
+      expect(node.data.config.noteText).toBe(spanish.description);
+      expect(node.data.config.noteMarks).toBeUndefined();
     }
   }
   expect(spanish.workflow.edges.map((edge) => ({ ...edge, label: undefined }))).toEqual(

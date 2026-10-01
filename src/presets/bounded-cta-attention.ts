@@ -214,13 +214,6 @@ export function createBoundedCtaAttentionPreset(messages: PresetMessages = engli
                   'bounded-cta-attention.workflow.nodes.bounded-cta-attention-overview.data.config.noteText'
                 ],
               noteColor: '#def0d8',
-              noteMarks: [
-                {
-                  start: 0,
-                  end: messages['bounded-cta-attention.name'].length,
-                  bold: true,
-                },
-              ],
             },
           },
         },

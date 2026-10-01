@@ -211,13 +211,6 @@ export function createFrustrationRecoveryPreset(messages: PresetMessages = engli
                   'frustration-recovery.workflow.nodes.frustration-recovery-overview.data.config.noteText'
                 ],
               noteColor: '#def0d8',
-              noteMarks: [
-                {
-                  start: 0,
-                  end: messages['frustration-recovery.name'].length,
-                  bold: true,
-                },
-              ],
             },
           },
         },

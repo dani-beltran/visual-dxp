@@ -160,13 +160,6 @@ export function createExitIntentOfferPreset(messages: PresetMessages = englishPr
                   'exit-intent-offer.workflow.nodes.exit-intent-offer-overview.data.config.noteText'
                 ],
               noteColor: '#def0d8',
-              noteMarks: [
-                {
-                  start: 0,
-                  end: messages['exit-intent-offer.name'].length,
-                  bold: true,
-                },
-              ],
             },
           },
         },

@@ -108,13 +108,6 @@ export function createClickToOpenHelpPreset(messages: PresetMessages = englishPr
                   'click-to-open-help.workflow.nodes.click-to-open-help-overview.data.config.noteText'
                 ],
               noteColor: '#def0d8',
-              noteMarks: [
-                {
-                  start: 0,
-                  end: messages['click-to-open-help.name'].length,
-                  bold: true,
-                },
-              ],
             },
           },
         },

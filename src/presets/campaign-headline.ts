@@ -130,13 +130,6 @@ export function createCampaignHeadlinePreset(messages: PresetMessages = englishP
                   'campaign-headline.workflow.nodes.campaign-headline-overview.data.config.noteText'
                 ],
               noteColor: '#def0d8',
-              noteMarks: [
-                {
-                  start: 0,
-                  end: messages['campaign-headline.name'].length,
-                  bold: true,
-                },
-              ],
             },
           },
         },

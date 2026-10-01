@@ -113,9 +113,8 @@ describe('common DXP preset contracts and layout', () => {
       const overview = notes.filter((node) => node.data.label === 'Preset overview');
       expect(overview).toHaveLength(1);
       expect(overview[0].data.config).toEqual({
-        noteText: `${preset.name}\n\n${preset.description}`,
+        noteText: preset.description,
         noteColor: '#def0d8',
-        noteMarks: [{ start: 0, end: preset.name.length, bold: true }],
       });
       const setupNotes = notes.filter((node) => node.id !== overview[0].id);
       expect(setupNotes.length).toBeGreaterThan(0);

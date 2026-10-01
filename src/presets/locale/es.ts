@@ -52,7 +52,7 @@ export const spanishPresetMessages = {
   'bounded-cta-attention.workflow.nodes.bounded-cta-attention-overview.data.label':
     'Resumen del preajuste',
   'bounded-cta-attention.workflow.nodes.bounded-cta-attention-overview.data.config.noteText':
-    'Secuencia limitada para destacar la llamada a la acción\n\nDestaca dos veces el encabezado de la colección al hacer clic en la llamada a la acción principal y después muestra un aviso de finalización.',
+    'Destaca dos veces el encabezado de la colección al hacer clic en la llamada a la acción principal y después muestra un aviso de finalización.',
   'bounded-cta-attention.workflow.edges.attention-loop-to-attention-add.label': 'Repetir el cuerpo',
   'bounded-cta-attention.workflow.edges.attention-loop-to-attention-done.label':
     'Tras ambas repeticiones',
@@ -75,7 +75,7 @@ export const spanishPresetMessages = {
     'Usa .hero h1. La sustitución del texto elimina su marcado anidado. La salida false termina intencionadamente sin modificar la página.',
   'campaign-headline.workflow.nodes.campaign-headline-overview.data.label': 'Resumen del preajuste',
   'campaign-headline.workflow.nodes.campaign-headline-overview.data.config.noteText':
-    'Titular de campaña\n\nSustituye el titular principal durante la semana UTC actual, de lunes a domingo; fuera de ese periodo, lo deja sin cambios.',
+    'Sustituye el titular principal durante la semana UTC actual, de lunes a domingo; fuera de ese periodo, lo deja sin cambios.',
   'campaign-headline.workflow.edges.headline-day-to-headline-update.label': 'Semana de campaña',
   'campaign-url-personalization.name': 'Personalización por URL de campaña',
   'campaign-url-personalization.description':
@@ -102,7 +102,7 @@ export const spanishPresetMessages = {
   'campaign-url-personalization.workflow.nodes.campaign-url-personalization-overview.data.label':
     'Resumen del preajuste',
   'campaign-url-personalization.workflow.nodes.campaign-url-personalization-overview.data.config.noteText':
-    'Personalización por URL de campaña\n\nDa la bienvenida a los visitantes de la campaña everyday-edit con un texto personalizado y conserva un mensaje predeterminado.',
+    'Da la bienvenida a los visitantes de la campaña everyday-edit con un texto personalizado y conserva un mensaje predeterminado.',
   'campaign-url-personalization.workflow.edges.campaign-check-to-campaign-matched.label':
     'Coincidencia de campaña',
   'campaign-url-personalization.workflow.edges.campaign-check-to-campaign-default.label':
@@ -126,7 +126,7 @@ export const spanishPresetMessages = {
   'click-to-open-help.workflow.nodes.click-to-open-help-overview.data.label':
     'Resumen del preajuste',
   'click-to-open-help.workflow.nodes.click-to-open-help-overview.data.config.noteText':
-    'Ayuda al hacer clic\n\nOfrece ayuda sobre el boletín junto al formulario cuando se hace clic en el enlace del boletín.',
+    'Ofrece ayuda sobre el boletín junto al formulario cuando se hace clic en el enlace del boletín.',
   'delayed-welcome.name': 'Bienvenida con espera',
   'delayed-welcome.description':
     'Da a los visitantes dos segundos para acomodarse antes de mostrar un breve mensaje de bienvenida.',
@@ -146,7 +146,7 @@ export const spanishPresetMessages = {
     'Se ejecuta una vez por carga de página; no hay control de frecuencia entre visitas.',
   'delayed-welcome.workflow.nodes.delayed-welcome-overview.data.label': 'Resumen del preajuste',
   'delayed-welcome.workflow.nodes.delayed-welcome-overview.data.config.noteText':
-    'Bienvenida con espera\n\nDa a los visitantes dos segundos para acomodarse antes de mostrar un breve mensaje de bienvenida.',
+    'Da a los visitantes dos segundos para acomodarse antes de mostrar un breve mensaje de bienvenida.',
   'engaged-reader-invitation.name': 'Invitación para lectores interesados',
   'engaged-reader-invitation.description':
     'Invita a los visitantes que se desplazan hasta el 70 % de la página a descubrir el boletín.',
@@ -169,7 +169,7 @@ export const spanishPresetMessages = {
   'engaged-reader-invitation.workflow.nodes.engaged-reader-invitation-overview.data.label':
     'Resumen del preajuste',
   'engaged-reader-invitation.workflow.nodes.engaged-reader-invitation-overview.data.config.noteText':
-    'Invitación para lectores interesados\n\nInvita a los visitantes que se desplazan hasta el 70 % de la página a descubrir el boletín.',
+    'Invita a los visitantes que se desplazan hasta el 70 % de la página a descubrir el boletín.',
   'exit-intent-offer.name': 'Oferta al intentar salir con control de frecuencia',
   'exit-intent-offer.description':
     'Muestra un recordatorio de envío al intentar salir solo si no existe su marcador de sesión.',
@@ -194,7 +194,7 @@ export const spanishPresetMessages = {
     'La intención de salida se detecta cuando el puntero abandona el borde superior, una vez por instalación del motor de ejecución; no detecta la navegación hacia atrás en móviles.',
   'exit-intent-offer.workflow.nodes.exit-intent-offer-overview.data.label': 'Resumen del preajuste',
   'exit-intent-offer.workflow.nodes.exit-intent-offer-overview.data.config.noteText':
-    'Oferta al intentar salir con control de frecuencia\n\nMuestra un recordatorio de envío al intentar salir solo si no existe su marcador de sesión.',
+    'Muestra un recordatorio de envío al intentar salir solo si no existe su marcador de sesión.',
   'exit-intent-offer.workflow.edges.exit-check-to-exit-popover.label': 'Aún no se ha mostrado',
   'frustration-recovery.name': 'Ayuda ante la frustración',
   'frustration-recovery.description':
@@ -226,7 +226,7 @@ export const spanishPresetMessages = {
   'frustration-recovery.workflow.nodes.frustration-recovery-overview.data.label':
     'Resumen del preajuste',
   'frustration-recovery.workflow.nodes.frustration-recovery-overview.data.config.noteText':
-    'Ayuda ante la frustración\n\nOfrece ayuda para navegar tras varios clics cercanos y registra un evento genérico de asistencia.',
+    'Ofrece ayuda para navegar tras varios clics cercanos y registra un evento genérico de asistencia.',
   'frustration-recovery.workflow.edges.recovery-check-to-recovery-help.label':
     'Aún no se ha mostrado',
   'inactivity-assistance.name': 'Ayuda por inactividad',
@@ -254,7 +254,7 @@ export const spanishPresetMessages = {
   'inactivity-assistance.workflow.nodes.inactivity-assistance-overview.data.label':
     'Resumen del preajuste',
   'inactivity-assistance.workflow.nodes.inactivity-assistance-overview.data.config.noteText':
-    'Ayuda por inactividad\n\nTras 30 segundos sin actividad, ofrece orientación sobre el boletín si existe el formulario o ayuda general en caso contrario.',
+    'Tras 30 segundos sin actividad, ofrece orientación sobre el boletín si existe el formulario o ayuda general en caso contrario.',
   'inactivity-assistance.workflow.edges.idle-check-to-idle-delay.label': 'Formulario disponible',
   'inactivity-assistance.workflow.edges.idle-check-to-idle-fallback.label': 'Sin formulario',
   'mobile-specific-messaging.name': 'Mensajes específicos para móviles',
@@ -276,7 +276,7 @@ export const spanishPresetMessages = {
   'mobile-specific-messaging.workflow.nodes.mobile-specific-messaging-overview.data.label':
     'Resumen del preajuste',
   'mobile-specific-messaging.workflow.nodes.mobile-specific-messaging-overview.data.config.noteText':
-    'Mensajes específicos para móviles\n\nElige un texto breve para móviles o uno más completo para ordenadores en la descripción principal.',
+    'Elige un texto breve para móviles o uno más completo para ordenadores en la descripción principal.',
   'mobile-specific-messaging.workflow.edges.device-check-to-device-mobile.label': 'Móvil',
   'mobile-specific-messaging.workflow.edges.device-check-to-device-desktop.label': 'Ordenador',
   'returning-visitor-experience.name': 'Experiencia para visitantes recurrentes',
@@ -307,7 +307,7 @@ export const spanishPresetMessages = {
   'returning-visitor-experience.workflow.nodes.returning-visitor-experience-overview.data.label':
     'Resumen del preajuste',
   'returning-visitor-experience.workflow.nodes.returning-visitor-experience-overview.data.config.noteText':
-    'Experiencia para visitantes recurrentes\n\nSaluda a quienes regresan o da la bienvenida a los nuevos visitantes y recuerda que se mostró la bienvenida.',
+    'Saluda a quienes regresan o da la bienvenida a los nuevos visitantes y recuerda que se mostró la bienvenida.',
   'returning-visitor-experience.workflow.edges.visitor-check-to-visitor-returning.label':
     'Visitante recurrente',
   'returning-visitor-experience.workflow.edges.visitor-check-to-visitor-welcome.label':
@@ -372,7 +372,7 @@ export const spanishPresetMessages = {
   'segmented-onboarding.workflow.nodes.segmented-onboarding-overview.data.label':
     'Resumen del preajuste',
   'segmented-onboarding.workflow.nodes.segmented-onboarding-overview.data.config.noteText':
-    'Recorrido de bienvenida segmentado\n\nReconoce las visitas anteriores; para los nuevos visitantes, adapta la orientación según la campaña y registra la entrega de la orientación.',
+    'Reconoce las visitas anteriores; para los nuevos visitantes, adapta la orientación según la campaña y registra la entrega de la orientación.',
   'segmented-onboarding.workflow.edges.onboarding-seen-to-onboarding-return.label':
     'Visitante recurrente',
   'segmented-onboarding.workflow.edges.onboarding-seen-to-onboarding-campaign.label':

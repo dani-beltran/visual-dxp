@@ -50,7 +50,7 @@ export const englishPresetMessages = {
   'bounded-cta-attention.workflow.nodes.bounded-cta-attention-overview.data.label':
     'Preset overview',
   'bounded-cta-attention.workflow.nodes.bounded-cta-attention-overview.data.config.noteText':
-    'Bounded CTA attention sequence\n\nHighlight the collection heading twice after the main CTA is clicked, then show a completion tip.',
+    'Highlight the collection heading twice after the main CTA is clicked, then show a completion tip.',
   'bounded-cta-attention.workflow.edges.attention-loop-to-attention-add.label': 'Repeat body',
   'bounded-cta-attention.workflow.edges.attention-loop-to-attention-done.label':
     'After both repetitions',
@@ -71,7 +71,7 @@ export const englishPresetMessages = {
     'Uses .hero h1. Text replacement removes its nested markup. The false output intentionally ends without changing the page.',
   'campaign-headline.workflow.nodes.campaign-headline-overview.data.label': 'Preset overview',
   'campaign-headline.workflow.nodes.campaign-headline-overview.data.config.noteText':
-    'Campaign headline\n\nReplace the hero headline during the current UTC week, Monday through Sunday; leave it unchanged otherwise.',
+    'Replace the hero headline during the current UTC week, Monday through Sunday; leave it unchanged otherwise.',
   'campaign-headline.workflow.edges.headline-day-to-headline-update.label': 'Campaign week',
   'campaign-url-personalization.name': 'Campaign URL personalization',
   'campaign-url-personalization.description':
@@ -97,7 +97,7 @@ export const englishPresetMessages = {
   'campaign-url-personalization.workflow.nodes.campaign-url-personalization-overview.data.label':
     'Preset overview',
   'campaign-url-personalization.workflow.nodes.campaign-url-personalization-overview.data.config.noteText':
-    'Campaign URL personalization\n\nWelcome everyday-edit campaign visitors with tailored copy while retaining a default message.',
+    'Welcome everyday-edit campaign visitors with tailored copy while retaining a default message.',
   'campaign-url-personalization.workflow.edges.campaign-check-to-campaign-matched.label':
     'Campaign match',
   'campaign-url-personalization.workflow.edges.campaign-check-to-campaign-default.label': 'Default',
@@ -117,7 +117,7 @@ export const englishPresetMessages = {
     'Edit the copy to match your newsletter terms. Opening help does not submit or confirm a subscription.',
   'click-to-open-help.workflow.nodes.click-to-open-help-overview.data.label': 'Preset overview',
   'click-to-open-help.workflow.nodes.click-to-open-help-overview.data.config.noteText':
-    'Click-to-open help\n\nOffer newsletter help next to the form when the newsletter link is clicked.',
+    'Offer newsletter help next to the form when the newsletter link is clicked.',
   'delayed-welcome.name': 'Delayed welcome',
   'delayed-welcome.description':
     'Give visitors two seconds to settle in before a small welcome message.',
@@ -135,7 +135,7 @@ export const englishPresetMessages = {
     'Runs once per page load; there is no cross-visit frequency gate.',
   'delayed-welcome.workflow.nodes.delayed-welcome-overview.data.label': 'Preset overview',
   'delayed-welcome.workflow.nodes.delayed-welcome-overview.data.config.noteText':
-    'Delayed welcome\n\nGive visitors two seconds to settle in before a small welcome message.',
+    'Give visitors two seconds to settle in before a small welcome message.',
   'engaged-reader-invitation.name': 'Engaged-reader invitation',
   'engaged-reader-invitation.description':
     'Invite visitors who scroll through 70% of the page to explore the newsletter.',
@@ -156,7 +156,7 @@ export const englishPresetMessages = {
   'engaged-reader-invitation.workflow.nodes.engaged-reader-invitation-overview.data.label':
     'Preset overview',
   'engaged-reader-invitation.workflow.nodes.engaged-reader-invitation-overview.data.config.noteText':
-    'Engaged-reader invitation\n\nInvite visitors who scroll through 70% of the page to explore the newsletter.',
+    'Invite visitors who scroll through 70% of the page to explore the newsletter.',
   'exit-intent-offer.name': 'Exit-intent offer with frequency control',
   'exit-intent-offer.description':
     'Show a shipping reminder on exit intent only when its session marker is absent.',
@@ -178,7 +178,7 @@ export const englishPresetMessages = {
     'Exit intent is a pointer leaving the top edge, once per runtime installation; it is not a mobile back-navigation detector.',
   'exit-intent-offer.workflow.nodes.exit-intent-offer-overview.data.label': 'Preset overview',
   'exit-intent-offer.workflow.nodes.exit-intent-offer-overview.data.config.noteText':
-    'Exit-intent offer with frequency control\n\nShow a shipping reminder on exit intent only when its session marker is absent.',
+    'Show a shipping reminder on exit intent only when its session marker is absent.',
   'exit-intent-offer.workflow.edges.exit-check-to-exit-popover.label': 'Not yet shown',
   'frustration-recovery.name': 'Frustration recovery',
   'frustration-recovery.description':
@@ -209,7 +209,7 @@ export const englishPresetMessages = {
     'dxp_assistance_shown is a session cookie written after the HTTP attempt, including failure. It records help display, not event delivery; concurrent triggers before the response can repeat requests. This is best-effort frequency control, not an atomic rate limit.',
   'frustration-recovery.workflow.nodes.frustration-recovery-overview.data.label': 'Preset overview',
   'frustration-recovery.workflow.nodes.frustration-recovery-overview.data.config.noteText':
-    'Frustration recovery\n\nOffer browsing assistance after repeated nearby clicks and record a generic assistance event.',
+    'Offer browsing assistance after repeated nearby clicks and record a generic assistance event.',
   'frustration-recovery.workflow.edges.recovery-check-to-recovery-help.label': 'Not yet shown',
   'inactivity-assistance.name': 'Inactivity assistance',
   'inactivity-assistance.description':
@@ -235,7 +235,7 @@ export const englishPresetMessages = {
   'inactivity-assistance.workflow.nodes.inactivity-assistance-overview.data.label':
     'Preset overview',
   'inactivity-assistance.workflow.nodes.inactivity-assistance-overview.data.config.noteText':
-    'Inactivity assistance\n\nAfter 30 seconds without activity, offer newsletter guidance if the form exists or general guidance otherwise.',
+    'After 30 seconds without activity, offer newsletter guidance if the form exists or general guidance otherwise.',
   'inactivity-assistance.workflow.edges.idle-check-to-idle-delay.label': 'Form available',
   'inactivity-assistance.workflow.edges.idle-check-to-idle-fallback.label': 'No form',
   'mobile-specific-messaging.name': 'Mobile-specific messaging',
@@ -257,7 +257,7 @@ export const englishPresetMessages = {
   'mobile-specific-messaging.workflow.nodes.mobile-specific-messaging-overview.data.label':
     'Preset overview',
   'mobile-specific-messaging.workflow.nodes.mobile-specific-messaging-overview.data.config.noteText':
-    'Mobile-specific messaging\n\nChoose concise mobile copy or fuller desktop copy for the hero description.',
+    'Choose concise mobile copy or fuller desktop copy for the hero description.',
   'mobile-specific-messaging.workflow.edges.device-check-to-device-mobile.label': 'Mobile',
   'mobile-specific-messaging.workflow.edges.device-check-to-device-desktop.label': 'Desktop',
   'returning-visitor-experience.name': 'Returning-visitor experience',
@@ -285,7 +285,7 @@ export const englishPresetMessages = {
   'returning-visitor-experience.workflow.nodes.returning-visitor-experience-overview.data.label':
     'Preset overview',
   'returning-visitor-experience.workflow.nodes.returning-visitor-experience-overview.data.config.noteText':
-    'Returning-visitor experience\n\nGreet repeat visitors, or welcome new visitors and remember that the welcome was displayed.',
+    'Greet repeat visitors, or welcome new visitors and remember that the welcome was displayed.',
   'returning-visitor-experience.workflow.edges.visitor-check-to-visitor-returning.label':
     'Returning',
   'returning-visitor-experience.workflow.edges.visitor-check-to-visitor-welcome.label':
@@ -343,7 +343,7 @@ export const englishPresetMessages = {
     'Completion means DOM copy updated, guidance rendered, and HTTP was attempted. It does not observe reading, dismissal, link clicks, signup, purchase, or server persistence. An HTTP failure still writes the completion cookie; it does not confirm event delivery.',
   'segmented-onboarding.workflow.nodes.segmented-onboarding-overview.data.label': 'Preset overview',
   'segmented-onboarding.workflow.nodes.segmented-onboarding-overview.data.config.noteText':
-    'Segmented onboarding journey\n\nRecognize prior visits; for new visitors, tailor guidance by campaign and record successful guidance delivery.',
+    'Recognize prior visits; for new visitors, tailor guidance by campaign and record successful guidance delivery.',
   'segmented-onboarding.workflow.edges.onboarding-seen-to-onboarding-return.label': 'Returning',
   'segmented-onboarding.workflow.edges.onboarding-seen-to-onboarding-campaign.label':
     'First guidance',

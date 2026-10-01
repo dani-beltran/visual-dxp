@@ -164,13 +164,6 @@ export function createInactivityAssistancePreset(messages: PresetMessages = engl
                   'inactivity-assistance.workflow.nodes.inactivity-assistance-overview.data.config.noteText'
                 ],
               noteColor: '#def0d8',
-              noteMarks: [
-                {
-                  start: 0,
-                  end: messages['inactivity-assistance.name'].length,
-                  bold: true,
-                },
-              ],
             },
           },
         },

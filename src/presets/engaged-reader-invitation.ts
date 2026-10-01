@@ -134,13 +134,6 @@ export function createEngagedReaderInvitationPreset(
                   'engaged-reader-invitation.workflow.nodes.engaged-reader-invitation-overview.data.config.noteText'
                 ],
               noteColor: '#def0d8',
-              noteMarks: [
-                {
-                  start: 0,
-                  end: messages['engaged-reader-invitation.name'].length,
-                  bold: true,
-                },
-              ],
             },
           },
         },
