@@ -3,6 +3,8 @@ import {
   CircleAlert,
   ExternalLink,
   LoaderCircle,
+  Maximize2,
+  Minimize2,
   Play,
   RotateCcw,
   Square,
@@ -26,6 +28,7 @@ export function Preview({
   const { t } = useBuilderI18n();
   const modalRef = useDialogFocus(true);
   const [ready, setReady] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [running, setRunning] = useState(false);
   const [logs, setLogs] = useState<RunLog[]>([]);
   const [error, setError] = useState('');
@@ -52,7 +55,10 @@ export function Preview({
   return (
     // biome-ignore lint/a11y/useKeyWithClickEvents: The close button and the builder's Escape handler provide keyboard dismissal.
     // biome-ignore lint/a11y/noStaticElementInteractions: Only the backdrop uses clicks to dismiss the dialog.
-    <div className="dxp-modal-backdrop" onClick={onClose}>
+    <div
+      className={`dxp-modal-backdrop${isFullscreen ? ' dxp-preview-backdrop-fullscreen' : ''}`}
+      onClick={onClose}
+    >
       {/* biome-ignore lint/a11y/useKeyWithClickEvents: This handler only prevents dialog clicks from reaching the backdrop. */}
       <section
         ref={modalRef}
@@ -67,14 +73,25 @@ export function Preview({
             <span className="dxp-eyebrow">{t('preview.testYourExperience')}</span>
             <h2>{t('preview.seeYourJourneyInAction')}</h2>
           </div>
-          <button
-            type="button"
-            className="dxp-icon-button"
-            onClick={onClose}
-            aria-label={t('preview.closePreview')}
-          >
-            <X size={20} />
-          </button>
+          <div className="dxp-preview-header-actions">
+            <button
+              type="button"
+              className="dxp-icon-button"
+              aria-label={t(isFullscreen ? 'common.exitFullscreen' : 'common.enterFullscreen')}
+              title={t(isFullscreen ? 'common.exitFullscreen' : 'common.enterFullscreen')}
+              onClick={() => setIsFullscreen((value) => !value)}
+            >
+              {isFullscreen ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
+            </button>
+            <button
+              type="button"
+              className="dxp-icon-button"
+              onClick={onClose}
+              aria-label={t('preview.closePreview')}
+            >
+              <X size={20} />
+            </button>
+          </div>
         </div>
         <div className="dxp-preview-bar">
           <span className="dxp-preview-url">

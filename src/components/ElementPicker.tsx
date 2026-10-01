@@ -1,4 +1,14 @@
-import { ArrowRight, Check, Globe2, Info, MousePointer2, RefreshCw, X } from 'lucide-react';
+import {
+  ArrowRight,
+  Check,
+  Globe2,
+  Info,
+  Maximize2,
+  Minimize2,
+  MousePointer2,
+  RefreshCw,
+  X,
+} from 'lucide-react';
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useBuilderI18n } from '../lib/i18nContext';
 import type { PickedElement, PickerSession } from '../lib/picker';
@@ -68,6 +78,7 @@ export function ElementPicker({
   const [selected, setSelected] = useState<PickedElement | null>(null);
   const [status, setStatus] = useState<ConnectionStatus>('loading');
   const [showHelp, setShowHelp] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [selectorHint, setSelectorHint] = useState('');
   const unavailable = status === 'unavailable';
 
@@ -232,7 +243,7 @@ export function ElementPicker({
   return (
     // biome-ignore lint/a11y/noStaticElementInteractions: The backdrop offers pointer dismissal; dialog controls and Escape provide keyboard dismissal.
     <div
-      className="dxp-picker-backdrop"
+      className={`dxp-picker-backdrop${isFullscreen ? ' dxp-picker-backdrop-fullscreen' : ''}`}
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
@@ -275,14 +286,25 @@ export function ElementPicker({
             <h2 id={headingId}>{t('elementPicker.selectAnElement')}</h2>
             <p>{t('elementPicker.pointClickAndConnectYourExperience')}</p>
           </div>
-          <button
-            type="button"
-            className="dxp-picker-icon-button"
-            aria-label={t('elementPicker.closeElementPicker')}
-            onClick={onClose}
-          >
-            <X size={20} />
-          </button>
+          <div className="dxp-picker-header-actions">
+            <button
+              type="button"
+              className="dxp-picker-icon-button"
+              aria-label={t(isFullscreen ? 'common.exitFullscreen' : 'common.enterFullscreen')}
+              title={t(isFullscreen ? 'common.exitFullscreen' : 'common.enterFullscreen')}
+              onClick={() => setIsFullscreen((value) => !value)}
+            >
+              {isFullscreen ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
+            </button>
+            <button
+              type="button"
+              className="dxp-picker-icon-button"
+              aria-label={t('elementPicker.closeElementPicker')}
+              onClick={onClose}
+            >
+              <X size={20} />
+            </button>
+          </div>
         </header>
         <div className="dxp-picker-address">
           <Globe2 size={16} aria-hidden="true" />

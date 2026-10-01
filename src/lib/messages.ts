@@ -1,5 +1,7 @@
 /** English defaults and the public translation contract. Keys remain stable when copy changes. */
 export const englishMessages = {
+  'common.enterFullscreen': 'Enter full screen',
+  'common.exitFullscreen': 'Exit full screen',
   'nodeInspector.requestTemplates':
     'Use incoming data in the URL or body with {{variableName}} or {{key.subKey.variableName}}. Array indexes such as {{items[0].id}} also work. Connect an HTTP response to this input to chain requests. Missing variables stop the request.',
   'errors.data.emptyRequestTemplatePath': 'Enter a data path inside request template braces.',

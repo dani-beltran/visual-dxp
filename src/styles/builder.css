@@ -845,6 +845,24 @@
 .dxp-preview {
   width: 1200px;
 }
+.dxp-preview-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.dxp-modal-backdrop.dxp-preview-backdrop-fullscreen {
+  padding: 0;
+}
+.dxp-preview-backdrop-fullscreen .dxp-preview {
+  width: 100%;
+  height: 100%;
+  max-height: none;
+  border-radius: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
 .dxp-preview-bar {
   display: flex;
   align-items: center;
@@ -876,6 +894,16 @@
   background: var(--dxp-surface);
   min-width: 0;
   width: 100%;
+}
+.dxp-preview-backdrop-fullscreen .dxp-modal-header,
+.dxp-preview-backdrop-fullscreen .dxp-preview-bar {
+  flex-shrink: 0;
+}
+.dxp-preview-backdrop-fullscreen .dxp-preview-body {
+  flex: 1;
+  height: auto;
+  min-height: 0;
+  overflow: auto;
 }
 .dxp-run-log {
   width: 244px;

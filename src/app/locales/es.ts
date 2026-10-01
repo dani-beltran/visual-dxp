@@ -2,6 +2,8 @@ import type { BuilderMessages } from '../../lib/i18n';
 
 /** Complete Spanish builder catalog supplied by the demo app. */
 export const spanishMessages = {
+  'common.enterFullscreen': 'Entrar en pantalla completa',
+  'common.exitFullscreen': 'Salir de pantalla completa',
   'nodeInspector.requestTemplates':
     'Usa datos de entrada en la URL o el cuerpo con {{variableName}} o {{key.subKey.variableName}}. También puedes usar índices como {{items[0].id}}. Conecta una respuesta HTTP a esta entrada para encadenar solicitudes. Las variables que faltan detienen la solicitud.',
   'errors.data.emptyRequestTemplatePath':
