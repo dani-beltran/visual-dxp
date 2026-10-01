@@ -7,16 +7,31 @@
 (() => {
   // biome-ignore lint/suspicious/noRedundantUseStrict: This bridge is loaded as a classic script by external sites.
   'use strict';
+  const logPrefix = '[Visual DXP picker bridge]';
+  console.info(logPrefix, 'Script loaded.');
   const script = document.currentScript;
   const configuredOrigin = script && script.getAttribute('data-parent-origin');
-  if (!configuredOrigin || window.parent === window) return;
+  if (!configuredOrigin) {
+    console.warn(logPrefix, 'Inactive: add data-parent-origin with the exact editor origin.');
+    return;
+  }
   let parentOrigin;
   try {
     const parsedOrigin = new URL(configuredOrigin);
-    if (!/^https?:$/.test(parsedOrigin.protocol) || parsedOrigin.origin !== configuredOrigin)
+    if (!/^https?:$/.test(parsedOrigin.protocol) || parsedOrigin.origin !== configuredOrigin) {
+      console.warn(
+        logPrefix,
+        'Inactive: data-parent-origin must be an exact HTTP(S) origin without a trailing slash.',
+      );
       return;
+    }
     parentOrigin = parsedOrigin.origin;
   } catch (_) {
+    console.warn(logPrefix, 'Inactive: data-parent-origin is not a valid URL.');
+    return;
+  }
+  if (window.parent === window) {
+    console.info(logPrefix, 'Inactive: open this website in the editor picker iframe to connect.');
     return;
   }
 
@@ -140,7 +155,9 @@
     }
     function valid(target) {
       return (
-        target && typeof target.closest === 'function' && !target.closest('[data-visual-dxp-picker]')
+        target &&
+        typeof target.closest === 'function' &&
+        !target.closest('[data-visual-dxp-picker]')
       );
     }
     function move(event) {
@@ -161,6 +178,7 @@
       selected = event.target;
       refresh();
       send('select', { element: detail(selected) });
+      console.info(logPrefix, 'Element selected and sent to the editor.');
     }
     document.addEventListener('mousemove', move, true);
     document.addEventListener('click', click, true);
@@ -172,10 +190,12 @@
         try {
           selected = selector.trim() ? document.querySelector(selector) : null;
           refresh();
+          console.info(logPrefix, 'Selector lookup completed.', { found: !!selected });
           return !!selected;
         } catch (_) {
           selected = null;
           refresh();
+          console.warn(logPrefix, 'Selector lookup failed: invalid CSS selector.');
           return false;
         }
       },
@@ -200,13 +220,18 @@
     )
       return;
     if (data.type === 'init') {
-      if (!document.documentElement) return;
+      if (!document.documentElement) {
+        console.warn(logPrefix, 'Initialization deferred: the document root is not available yet.');
+        return;
+      }
+      console.info(logPrefix, session ? 'Restarting picker session.' : 'Starting picker session.');
       if (session) session.destroy();
       activeChannel = data.channel;
       session = attach();
       if (typeof data.selector === 'string' && data.selector.length <= 4000)
         session.select(data.selector);
       send('ready');
+      console.info(logPrefix, 'Picker ready; acknowledgment sent to the editor.');
       return;
     }
     if (!session || data.channel !== activeChannel) return;
@@ -220,6 +245,8 @@
       session.destroy();
       session = null;
       activeChannel = null;
+      console.info(logPrefix, 'Picker stopped; overlays and selection listeners removed.');
     }
   });
+  console.info(logPrefix, 'Listening for editor initialization.', { parentOrigin: parentOrigin });
 })();
