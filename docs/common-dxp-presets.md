@@ -1,6 +1,6 @@
 # Common DXP workflow presets
 
-`commonDXPPresets` contains Blank followed by twelve independent examples, ordered by implementation complexity. Every preset is an editable, JSON-serializable object literal in its own file under `src/presets/`, checked with `satisfies WorkflowPreset`. The catalog covers all ten current node kinds. Static IDs remain stable when the workflow is applied; annotation IDs are never used in connections.
+`commonDXPPresets` contains Blank followed by thirteen independent examples, ordered by implementation complexity. Every preset is an editable, JSON-serializable object literal in its own file under `src/presets/`, checked with `satisfies WorkflowPreset`. The catalog covers all ten current node kinds. Static IDs remain stable when the workflow is applied; annotation IDs are never used in connections.
 
 Each nonempty preset carries its setup instructions as editable, disconnected note nodes on the canvas, beside the steps they explain. Onboarding places these notes inside the corresponding stage frames. The common presets omit the optional `setupInstructions` metadata, so their cards show the scenario summary while setup guidance appears when applied. Other consumers can still supply that optional metadata for their own preset cards.
 
@@ -13,6 +13,8 @@ import { VisualDXPBuilder, commonDXPPresets } from 'visual-dxp';
 
 <VisualDXPBuilder presets={commonDXPPresets} />;
 ```
+
+`defaultWorkflow` uses `welcomeJourneyPreset.workflow`, keeping the first-load graph and selectable preset in sync.
 
 The demo explicitly passes the collection through `App` to `VisualDXPBuilder`. The builder imports no preset collection: omitting `presets`, or passing an empty array, leaves the Presets tab hidden. Each preset is also a named public export (for example, `campaignHeadlinePreset` and `segmentedOnboardingPreset`). The collection's array order and each preset's `order` agree.
 
@@ -31,6 +33,7 @@ After Blank, the first three examples are ordered by their final implementation:
 | 40 | Engaged-reader invitation / `engagedReaderInvitationPreset` | Beginner | Downward scroll to 70% → invitation → display marker. `trigger`, `popover`, `cookie`. | A scrollable page with `#newsletter`; `dxp_reader_invitation=shown` lasts 7 days. This records display and does not suppress invitations on later page loads. |
 | 50 | Mobile-specific messaging / `mobileSpecificMessagingPreset` | Intermediate | Page load → mobile/desktop → distinct hero copy. `trigger`, `fork`, `dom`. | Target `.hero .description`; test browser device hints/user agents. Resizing alone does not change the branch. |
 | 60 | Campaign URL personalization / `campaignUrlPersonalizationPreset` | Intermediate | Page load → exact query match → campaign/default copy. `trigger`, `fork`, `dom`. | Set `utm_campaign=everyday-edit`, or replace the key/value. Target `.hero .description`. Values are case-sensitive. |
+| 65 | Welcome journey / `welcomeJourneyPreset` | Intermediate | The first-load workflow: page load → 1.5-second pause → element check → welcome offer or newsletter heading. `trigger`, `delay`, `fork`, `popover`, `dom`. | Check `#shop-now`, `#newsletter h2`, and the `#collection` link. Customize the offer and discount code. |
 | 70 | Exit-intent offer with frequency control / `exitIntentOfferPreset` | Intermediate | Exit intent → prior display check → offer → session marker. Matching true ends silently. `trigger`, `fork`, `popover`, `cookie`. | Verify the sample shipping offer and `#collection` link. `dxp_exit_offer=shown` is a session cookie. Retest with a new runtime and cleared marker. |
 | 80 | Returning-visitor experience / `returningVisitorExperiencePreset` | Intermediate | Prior welcome → returning copy; otherwise welcome and remember. `trigger`, `fork`, `dom`, `popover`, `cookie`. | `.hero .description`, `#collection`, and `dxp_visitor_welcome=shown` (30 days). The marker records welcome display, not visitor identity. |
 | 90 | Inactivity assistance / `inactivityAssistancePreset` | Intermediate | 30 seconds idle → form existence → 1-second pause → anchored help; absent form → general help. `trigger`, `fork`, `delay`, `popover`. | `#newsletter form` must still exist after the pause. Remove it to test fallback. Activity can restart the inactivity timer but does not cancel an already-started delay. |

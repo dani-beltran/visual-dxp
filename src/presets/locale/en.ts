@@ -3,6 +3,23 @@ export const englishPresetMessages = {
   'complexity.beginner': 'beginner',
   'complexity.intermediate': 'intermediate',
   'complexity.advanced': 'advanced',
+  'welcome-journey.name': 'Welcome journey',
+  'welcome-journey.description':
+    'Wait briefly after page load, then show a welcome offer when the shop button exists or personalize the newsletter heading otherwise.',
+  'welcome-journey.welcome': 'Page visited',
+  'welcome-journey.pause': 'Give it a moment',
+  'welcome-journey.check': 'Find the right moment',
+  'welcome-journey.offer': 'A little welcome gift',
+  'welcome-journey.update': 'Make it personal',
+  'welcome-journey.value': 'A little inspiration, just for you.',
+  'welcome-journey.true': 'Element found',
+  'welcome-journey.false': 'Otherwise',
+  'welcome-journey.overview': 'Preset overview',
+  'welcome-journey.setup': 'Setup: Welcome offer and fallback',
+  'welcome-journey.instructions':
+    'Check #shop-now and #newsletter h2 on your target website. Customize the welcome offer, discount code, and #collection link before publishing. Runs on every page load after 1.5 seconds.',
+  'welcome-journey.content':
+    '<div style="padding:28px;font-family:system-ui;color:#203a30"><span style="font-size:11px;letter-spacing:2px;color:#277457">A LITTLE SOMETHING FOR YOU</span><h2 style="font-size:29px;line-height:1.15;font-weight:500;margin:14px 0">Good things start here.</h2><p style="color:#6b7770;line-height:1.6">Welcome to Atelier. Enjoy 15% off your first order with code <strong>HELLO15</strong>.</p><a href="#collection" style="display:inline-block;background:#267456;color:white;padding:12px 20px;text-decoration:none;border-radius:6px;margin-top:8px">Find your everyday favorite ↗</a></div>',
   'blank.name': 'Blank',
   'blank.description': 'Start from an empty canvas and build your own workflow.',
   'bounded-cta-attention.name': 'Bounded CTA attention sequence',

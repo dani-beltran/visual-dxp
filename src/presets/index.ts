@@ -32,6 +32,7 @@ import {
   returningVisitorExperiencePreset,
 } from './returning-visitor-experience';
 import { createSegmentedOnboardingPreset, segmentedOnboardingPreset } from './segmented-onboarding';
+import { createWelcomeJourneyPreset, welcomeJourneyPreset } from './welcome-journey';
 
 export {
   blankPreset,
@@ -47,6 +48,7 @@ export {
   mobileSpecificMessagingPreset,
   returningVisitorExperiencePreset,
   segmentedOnboardingPreset,
+  welcomeJourneyPreset,
 };
 
 /** Curated examples in ascending implementation complexity; opt in through the presets prop. */
@@ -58,6 +60,7 @@ export const commonDXPPresets: readonly WorkflowPreset[] = [
   engagedReaderInvitationPreset,
   mobileSpecificMessagingPreset,
   campaignUrlPersonalizationPreset,
+  welcomeJourneyPreset,
   exitIntentOfferPreset,
   returningVisitorExperiencePreset,
   inactivityAssistancePreset,
@@ -70,6 +73,7 @@ export { englishPresetMessages, type PresetMessages } from './locale/en';
 export { spanishPresetMessages } from './locale/es';
 
 const spanishPresets: readonly WorkflowPreset[] = [
+  createWelcomeJourneyPreset(spanishPresetMessages),
   createBlankPreset(spanishPresetMessages),
   createBoundedCtaAttentionPreset(spanishPresetMessages),
   createCampaignHeadlinePreset(spanishPresetMessages),

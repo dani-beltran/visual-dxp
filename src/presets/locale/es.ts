@@ -4,6 +4,23 @@ export const spanishPresetMessages = {
   'complexity.beginner': 'principiante',
   'complexity.intermediate': 'intermedio',
   'complexity.advanced': 'avanzado',
+  'welcome-journey.name': 'Recorrido de bienvenida',
+  'welcome-journey.description':
+    'Espera un momento después de cargar la página y muestra una oferta de bienvenida si existe el botón de compra; si no, personaliza el título del boletín.',
+  'welcome-journey.welcome': 'Página visitada',
+  'welcome-journey.pause': 'Espera un momento',
+  'welcome-journey.check': 'Encuentra el momento adecuado',
+  'welcome-journey.offer': 'Un pequeño regalo de bienvenida',
+  'welcome-journey.update': 'Dale un toque personal',
+  'welcome-journey.value': 'Un poco de inspiración, solo para ti.',
+  'welcome-journey.true': 'Elemento encontrado',
+  'welcome-journey.false': 'En caso contrario',
+  'welcome-journey.overview': 'Resumen de la plantilla',
+  'welcome-journey.setup': 'Configuración: Oferta de bienvenida y alternativa',
+  'welcome-journey.instructions':
+    'Comprueba #shop-now y #newsletter h2 en tu sitio web. Personaliza la oferta, el código de descuento y el enlace #collection antes de publicar. Se ejecuta en cada carga después de 1,5 segundos.',
+  'welcome-journey.content':
+    '<div style="padding:28px;font-family:system-ui;color:#203a30"><span style="font-size:11px;letter-spacing:2px;color:#277457">UN PEQUEÑO DETALLE PARA TI</span><h2 style="font-size:29px;line-height:1.15;font-weight:500;margin:14px 0">Lo bueno empieza aquí.</h2><p style="color:#6b7770;line-height:1.6">Te damos la bienvenida a Atelier. Disfruta de un 15% de descuento en tu primer pedido con el código <strong>HELLO15</strong>.</p><a href="#collection" style="display:inline-block;background:#267456;color:white;padding:12px 20px;text-decoration:none;border-radius:6px;margin-top:8px">Encuentra tu favorito para cada día ↗</a></div>',
   'blank.name': 'En blanco',
   'blank.description': 'Empieza con un lienzo vacío y crea tu propio flujo de trabajo.',
   'bounded-cta-attention.name': 'Secuencia limitada para destacar la llamada a la acción',

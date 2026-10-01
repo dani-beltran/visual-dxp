@@ -10,6 +10,7 @@ import {
   StickyNote,
   Timer,
 } from 'lucide-react';
+import { welcomeJourneyPreset } from '../presets/welcome-journey';
 import { dataTools } from './data';
 import { FRAME_HEIGHT, FRAME_WIDTH } from './frames';
 import { type BuilderTranslator, translateEnglish } from './i18n';
@@ -135,76 +136,8 @@ export function createNode(kind: NodeKind, position = { x: 200, y: 200 }): Workf
     data: { kind, label: entry.label, config: { ...entry.config } },
   };
 }
-export const defaultWorkflow: Workflow = {
-  version: 1,
-  name: 'Welcome journey',
-  websiteUrl: '/demo-site.html',
-  includeSubpages: false,
-  nodes: [
-    {
-      id: 'welcome',
-      type: 'workflow',
-      position: { x: 60, y: 220 },
-      data: { kind: 'trigger', label: 'Page visited', config: { event: 'page-load' } },
-    },
-    {
-      id: 'pause',
-      type: 'workflow',
-      position: { x: 350, y: 220 },
-      data: { kind: 'delay', label: 'Give it a moment', config: { duration: 1500 } },
-    },
-    {
-      id: 'check',
-      type: 'workflow',
-      position: { x: 640, y: 220 },
-      data: {
-        kind: 'fork',
-        label: 'Find the right moment',
-        config: { conditionType: 'selector', condition: '#shop-now' },
-      },
-    },
-    {
-      id: 'offer',
-      type: 'workflow',
-      position: { x: 950, y: 85 },
-      data: { kind: 'popover', label: 'A little welcome gift', config: { ...catalog[6].config } },
-    },
-    {
-      id: 'update',
-      type: 'workflow',
-      position: { x: 950, y: 370 },
-      data: {
-        kind: 'dom',
-        label: 'Make it personal',
-        config: {
-          ...catalog[2].config,
-          selector: '#newsletter h2',
-          value: 'A little inspiration, just for you.',
-        },
-      },
-    },
-  ],
-  edges: [
-    { id: 'welcome-pause', source: 'welcome', target: 'pause', type: 'smoothstep' },
-    { id: 'pause-check', source: 'pause', target: 'check', type: 'smoothstep' },
-    {
-      id: 'check-offer',
-      source: 'check',
-      target: 'offer',
-      sourceHandle: 'true',
-      label: 'Element found',
-      type: 'smoothstep',
-    },
-    {
-      id: 'check-update',
-      source: 'check',
-      target: 'update',
-      sourceHandle: 'false',
-      label: 'Otherwise',
-      type: 'smoothstep',
-    },
-  ],
-};
+/** The initial workflow is also available in the bundled preset collection. */
+export const defaultWorkflow: Workflow = welcomeJourneyPreset.workflow;
 /** A summary is presentation text; configuration values are never rewritten. */
 export function stepSummary(
   kind: NodeKind,
