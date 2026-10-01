@@ -388,8 +388,10 @@ export const spanishMessages = {
   'nodeInspector.outputs': 'Salidas',
   'nodeInspector.true': 'Verdadero',
   'nodeInspector.conditionMatches': 'La condición se cumple',
+  'nodeInspector.conditionMatchesWithData': 'Reenvía datos si la condición se cumple',
   'nodeInspector.false': 'Falso',
   'nodeInspector.conditionDoesNotMatch': 'La condición no se cumple',
+  'nodeInspector.conditionDoesNotMatchWithData': 'Reenvía datos si la condición no se cumple',
   'nodeInspector.theMatchingOutputPassesAllIncomingDataUnchangedToTheNextStep':
     'La salida coincidente transmite los datos entrantes. Asigna la conexión entrante a Valor de la condición para elegir qué comparar sin cambiar los datos transmitidos.',
   'nodeInspector.body': 'Cuerpo',
@@ -553,7 +555,9 @@ export const spanishMessages = {
   'workflowCard.usesTheWholeIncomingValue': 'Usa todo el valor de entrada',
   'workflowCard.templateVariables':
     'Las variables de este paso usan datos de su conexión entrante.',
-  'workflowCard.usesIncomingData': 'Usa datos de entrada',
+  'workflowCard.usesIncomingData': 'Recibe datos',
+  'workflowCard.producesData': 'Produce datos',
+  'workflowCard.forwardsData': 'Reenvía datos',
   'workflowCard.running': 'En ejecución',
   'workflowCard.needsAttention': 'Requiere atención',
   'workflowCard.completed': 'Completado',

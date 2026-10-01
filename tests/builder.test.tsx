@@ -101,7 +101,7 @@ describe('builder and host boundary', () => {
         element(`[data-id="${id}"] .react-flow__handle.target`).classList.contains(
           'dxp-handle-data',
         ),
-      ).toBe(true);
+      ).toBe(id === 'node-2');
       expect(
         element(`[data-id="${id}"] .react-flow__handle.source`).classList.contains(
           'dxp-handle-data',
@@ -123,9 +123,7 @@ describe('builder and host boundary', () => {
         );
         content.dispatchEvent(new Event('input', { bubbles: true }));
       });
-      expect(element('[data-id="http-dom"]').classList.contains('dxp-edge-data')).toBe(
-        value.includes('{{'),
-      );
+      expect(element('[data-id="http-dom"]').classList.contains('dxp-edge-data')).toBe(true);
       expect(element('[data-id="http-http"]').classList.contains('dxp-edge-data')).toBe(true);
     }
   });

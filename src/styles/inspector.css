@@ -380,6 +380,9 @@
 .dxp-inspector-dot-data {
   background: var(--dxp-data);
 }
+.dxp-inspector-dot-data-false {
+  background: var(--dxp-data-false);
+}
 .dxp-inspector-preview {
   border: 1px solid var(--dxp-line);
   border-radius: 8px;

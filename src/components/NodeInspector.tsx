@@ -29,6 +29,7 @@ import '../styles/inspector.css';
 
 interface NodeInspectorProps {
   node: WorkflowNode;
+  forwardsData?: boolean;
   incomingMappings?: ReactNode;
   onChange: (patch: Partial<StepData>) => void;
   onClose: () => void;
@@ -104,6 +105,7 @@ function NumberInput({
 
 export function NodeInspector({
   node,
+  forwardsData = false,
   incomingMappings,
   onChange,
   onClose,
@@ -938,14 +940,30 @@ export function NodeInspector({
             <>
               <div className="dxp-inspector-branches">
                 <div>
-                  <i className="dxp-inspector-dot-true" />
+                  <i
+                    className={forwardsData ? 'dxp-inspector-dot-data' : 'dxp-inspector-dot-true'}
+                  />
                   <strong>{t('nodeInspector.true')}</strong>
-                  <span>{t('nodeInspector.conditionMatches')}</span>
+                  <span>
+                    {forwardsData
+                      ? t('nodeInspector.conditionMatchesWithData')
+                      : t('nodeInspector.conditionMatches')}
+                  </span>
                 </div>
                 <div>
-                  <i className="dxp-inspector-dot-false" />
+                  <i
+                    className={
+                      forwardsData
+                        ? 'dxp-inspector-dot-data dxp-inspector-dot-data-false'
+                        : 'dxp-inspector-dot-false'
+                    }
+                  />
                   <strong>{t('nodeInspector.false')}</strong>
-                  <span>{t('nodeInspector.conditionDoesNotMatch')}</span>
+                  <span>
+                    {forwardsData
+                      ? t('nodeInspector.conditionDoesNotMatchWithData')
+                      : t('nodeInspector.conditionDoesNotMatch')}
+                  </span>
                 </div>
               </div>
               <p className="dxp-inspector-hint">

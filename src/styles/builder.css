@@ -422,17 +422,21 @@
 .dxp-node-violet .react-flow__handle-right {
   border-color: #b09bc8;
 }
-.dxp-builder .react-flow__handle.source[data-handleid='true'] {
+.dxp-builder .react-flow__handle.source[data-handleid='true']:not(.dxp-handle-data) {
   background: #76a367;
   border-color: #76a367;
 }
-.dxp-builder .react-flow__handle.source[data-handleid='false'] {
+.dxp-builder .react-flow__handle.source[data-handleid='false']:not(.dxp-handle-data) {
   background: #d4a778;
   border-color: #d4a778;
 }
 .dxp-builder .react-flow__handle.dxp-handle-data {
   background: var(--dxp-data);
   border-color: var(--dxp-data);
+}
+.dxp-builder .react-flow__handle.source.dxp-handle-data[data-handleid='false'] {
+  background: var(--dxp-data-false);
+  border-color: var(--dxp-data-false);
 }
 .dxp-node-data-output {
   color: var(--dxp-data);

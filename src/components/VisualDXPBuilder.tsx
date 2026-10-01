@@ -78,7 +78,7 @@ import { duplicateNode, framesFirst, groupNodes, nodeSize, removeNodes } from '.
 import type { BuilderI18n } from '../lib/i18n';
 import { formatBuilderError } from '../lib/i18n';
 import { BuilderI18nProvider, useBuilderI18n } from '../lib/i18nContext';
-import { getNodeDataPorts } from '../lib/nodeData';
+import { getNodeDataFlow } from '../lib/nodeData';
 import { NoteEditingContext } from '../lib/noteEditing';
 import { NoteSelectionProvider, useNoteSelection } from '../lib/noteSelection';
 import { normalizeWebsiteUrl } from '../lib/picker';
@@ -387,12 +387,17 @@ function Builder({
     [workflow.nodes, selectedId, statuses],
   );
   const edges = useMemo(() => {
-    const nodeMap = new Map(workflow.nodes.map((node) => [node.id, node]));
+    const dataFlows = new Map(
+      workflow.nodes.map((node) => [
+        node.id,
+        getNodeDataFlow(node.id, workflow.nodes, workflow.edges),
+      ]),
+    );
     return workflow.edges.map((edge) => {
-      const source = nodeMap.get(edge.source)?.data;
-      const target = nodeMap.get(edge.target)?.data;
+      const sourceFlow = dataFlows.get(edge.source);
       const carriesData =
-        getNodeDataPorts(source).outputsData && getNodeDataPorts(target).acceptsData;
+        (sourceFlow === 'produces' || sourceFlow === 'forwards') &&
+        dataFlows.get(edge.target) !== undefined;
       const mapping = edge.data?.mapping;
       const destination =
         mapping?.targetInput === 'value'
@@ -1410,6 +1415,9 @@ function Builder({
         {selected && (
           <NodeInspector
             node={selected}
+            forwardsData={
+              getNodeDataFlow(selected.id, workflow.nodes, workflow.edges) === 'forwards'
+            }
             incomingMappings={
               !['note', 'frame', 'trigger'].includes(selected.data.kind) && (
                 <section aria-label={t('mapping.incoming')}>
