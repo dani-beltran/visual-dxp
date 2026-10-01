@@ -66,6 +66,12 @@ import {
 } from '../lib/aiCredentials';
 import { AISettingsStore } from '../lib/aiSettings';
 import { createNode, defaultWorkflow, getCatalog } from '../lib/catalog';
+import {
+  type ConnectionMapping,
+  type ConnectionPreview,
+  migrateConnectionMappings,
+} from '../lib/connectionMapping';
+import { migrateElementTemplates } from '../lib/elementTemplates';
 import { validateWorkflow } from '../lib/export';
 import { getFlowLabels } from '../lib/flowLabels';
 import { duplicateNode, framesFirst, groupNodes, nodeSize, removeNodes } from '../lib/frames';
@@ -93,6 +99,7 @@ import { ActivityPanel } from './ActivityPanel';
 import { AISettings } from './AISettings';
 import { CanvasChat } from './CanvasChat';
 import { CanvasHelp } from './CanvasHelp';
+import { ConnectionMappingEditor } from './ConnectionMappingEditor';
 import { EdgeInspector } from './EdgeInspector';
 import { ElementPicker } from './ElementPicker';
 import { InfoBox } from './InfoBox';
@@ -164,7 +171,12 @@ interface HistoryEntry {
 }
 type BuilderView = 'canvas' | 'presets' | 'activity' | 'settings';
 function copyWorkflow(w: Workflow): Workflow {
-  return { ...structuredClone(w), includeSubpages: w.includeSubpages ?? false };
+  return migrateElementTemplates(
+    migrateConnectionMappings({
+      ...structuredClone(w),
+      includeSubpages: w.includeSubpages ?? false,
+    }),
+  );
 }
 export function VisualDXPBuilder(props: VisualDXPBuilderProps) {
   return (
@@ -287,6 +299,9 @@ function Builder({
   const [picking, setPicking] = useState(false);
   const [toast, setToast] = useState('');
   const [saved, setSaved] = useState(true);
+  const [connectionPreviews, setConnectionPreviews] = useState<Record<string, ConnectionPreview>>(
+    {},
+  );
   const [statuses, setStatuses] = useState<Record<string, RunLog['status']>>({});
   const [showMinimap, setShowMinimap] = useState(false);
   const [zoom, setZoom] = useState(100);
@@ -378,11 +393,32 @@ function Builder({
       const target = nodeMap.get(edge.target)?.data;
       const carriesData =
         getNodeDataPorts(source).outputsData && getNodeDataPorts(target).acceptsData;
-      return carriesData
-        ? { ...edge, className: `${edge.className ?? ''} dxp-edge-data`.trim() }
-        : edge;
+      const mapping = edge.data?.mapping;
+      const destination =
+        mapping?.targetInput === 'value'
+          ? t('mapping.inputValue')
+          : mapping?.targetInput === 'condition'
+            ? t('mapping.inputCondition')
+            : t('mapping.inputData');
+      const path =
+        [mapping?.responseDataPath, mapping?.sourcePath].filter(Boolean).join(' → ') ||
+        t('mapping.wholeValue');
+      const caption = mapping
+        ? `${path.length > 48 ? `${path.slice(0, 45)}…` : path} → ${destination}`
+        : '';
+      const label = [typeof edge.label === 'string' ? edge.label : '', caption]
+        .filter(Boolean)
+        .join(' · ');
+      return {
+        ...edge,
+        ...(label ? { label, ariaLabel: label } : {}),
+        ...(carriesData || mapping
+          ? { className: `${edge.className ?? ''} dxp-edge-data`.trim() }
+          : {}),
+      };
     });
-  }, [workflow.nodes, workflow.edges]);
+  }, [workflow.nodes, workflow.edges, t]);
+
   const translation = useRef(t);
   translation.current = t;
   const notify = useCallback((message: string) => setToast(message), []);
@@ -496,12 +532,13 @@ function Builder({
   );
   const commit = useCallback(
     (update: (w: Workflow) => Workflow, action: ActivityAction, activityKey?: string) => {
-      const next = update(current.current);
+      const next = migrateElementTemplates(migrateConnectionMappings(update(current.current)));
       if (JSON.stringify(next) === JSON.stringify(current.current)) return;
       const entry = remember(activityKey);
       current.current = next;
       setWorkflow(next);
       setStatuses({});
+      setConnectionPreviews({});
       entry.activity = recordActivity(action, activityKey);
     },
     [remember, recordActivity],
@@ -512,6 +549,7 @@ function Builder({
       configureWebsite,
       testWorkflow: () => {
         setStatuses({});
+        setConnectionPreviews({});
         setPicking(false);
         setModal('preview');
         recordActivity(activityAction('activity.previewOpened', { name: current.current.name }));
@@ -573,6 +611,7 @@ function Builder({
     setSelectedId(null);
     setSelectedEdgeId(null);
     setStatuses({});
+    setConnectionPreviews({});
     refreshHistory((x) => x + 1);
     if (prev.activity && !unpublished) {
       try {
@@ -592,6 +631,7 @@ function Builder({
     setSelectedId(null);
     setSelectedEdgeId(null);
     setStatuses({});
+    setConnectionPreviews({});
     refreshHistory((x) => x + 1);
     if (next.activity) appendActivity(next.activity.store, next.activity.entry);
   }, [flushActivity, appendActivity]);
@@ -829,6 +869,38 @@ function Builder({
       `node:${selected.id}:${Object.keys(patch).sort().join(',')}`,
     );
   }
+  function patchMapping(edgeId: string, mapping: ConnectionMapping) {
+    const edge = workflow.edges.find((entry) => entry.id === edgeId);
+    if (!edge) return;
+    const sample = connectionPreviews[edgeId];
+    commit(
+      (w) => ({
+        ...w,
+        edges: w.edges.map((entry) =>
+          entry.id === edgeId ? { ...entry, data: { ...entry.data, mapping } } : entry,
+        ),
+      }),
+      activityAction('activity.settingsUpdated', {
+        label: `${workflow.nodes.find((node) => node.id === edge.source)?.data.label ?? edge.source} → ${workflow.nodes.find((node) => node.id === edge.target)?.data.label ?? edge.target}`,
+      }),
+      `edge:${edgeId}:mapping`,
+    );
+    // The edited connection's source is unchanged; downstream samples are now stale.
+    if (sample) setConnectionPreviews({ [edgeId]: sample });
+  }
+  function mappingEditor(edge: WorkflowEdge) {
+    return (
+      <ConnectionMappingEditor
+        key={edge.id}
+        edge={edge}
+        source={workflow.nodes.find((node) => node.id === edge.source)}
+        target={workflow.nodes.find((node) => node.id === edge.target)}
+        preview={connectionPreviews[edge.id]}
+        onChange={(mapping) => patchMapping(edge.id, mapping)}
+        onBlur={flushActivity}
+      />
+    );
+  }
   function renameEdge(label: string) {
     if (!selectedEdge) return;
     const nodeLabel = (id: string) => workflow.nodes.find((node) => node.id === id)?.data.label;
@@ -899,6 +971,7 @@ function Builder({
     setSelectedEdgeId(null);
     setNoteSelection(null);
     setStatuses({});
+    setConnectionPreviews({});
     setPicking(false);
     setCanvasAssistant(null);
     // Unmount the chat to cancel pending requests and discard stale graph context.
@@ -1208,14 +1281,17 @@ function Builder({
                 dragStartWorkflow.current = null;
               }}
               onNodeClick={(_, node) => {
+                flushActivity();
                 setSelectedId(node.id);
                 setSelectedEdgeId(null);
               }}
               onEdgeClick={(_, edge) => {
+                flushActivity();
                 setSelectedId(null);
                 setSelectedEdgeId(edge.id);
               }}
               onPaneClick={() => {
+                flushActivity();
                 setSelectedId(null);
                 setSelectedEdgeId(null);
               }}
@@ -1334,6 +1410,17 @@ function Builder({
         {selected && (
           <NodeInspector
             node={selected}
+            incomingMappings={
+              !['note', 'frame', 'trigger'].includes(selected.data.kind) && (
+                <section aria-label={t('mapping.incoming')}>
+                  <h3 className="dxp-inspector-section-label">{t('mapping.incoming')}</h3>
+                  {workflow.edges.filter((edge) => edge.target === selected.id).map(mappingEditor)}
+                  {!workflow.edges.some((edge) => edge.target === selected.id) && (
+                    <p className="dxp-inspector-hint">{t('mapping.noConnections')}</p>
+                  )}
+                </section>
+              )
+            }
             onChange={patchNode}
             onClose={() => setSelectedId(null)}
             onPickElement={() => setPicking(true)}
@@ -1360,7 +1447,9 @@ function Builder({
               flushActivity();
               setSelectedEdgeId(null);
             }}
-          />
+          >
+            {mappingEditor(selectedEdge)}
+          </EdgeInspector>
         )}
       </div>
       {showPresets && presets && (
@@ -1452,6 +1541,10 @@ function Builder({
         <Preview
           workflow={workflow}
           onClose={() => setModal(null)}
+          onPreviewStart={() => setConnectionPreviews({})}
+          onConnectionPreview={(id, preview) =>
+            setConnectionPreviews((samples) => ({ ...samples, [id]: preview }))
+          }
           onLog={(log) => setStatuses((s) => ({ ...s, [log.nodeId]: log.status }))}
         />
       )}

@@ -46,11 +46,13 @@ export function WorkflowCard({ id, data, selected }: NodeProps<WorkflowNode>) {
         <div
           className="dxp-node-incoming-value"
           title={
-            incomingDataPath
-              ? t('workflowCard.incomingDataIncomingdatapath', {
-                  incomingDataPath: String(incomingDataPath),
-                })
-              : t('workflowCard.usesTheWholeIncomingValue')
+            data.kind === 'dom'
+              ? t('workflowCard.templateVariables')
+              : incomingDataPath
+                ? t('workflowCard.incomingDataIncomingdatapath', {
+                    incomingDataPath: String(incomingDataPath),
+                  })
+                : t('workflowCard.usesTheWholeIncomingValue')
           }
         >
           <ArrowRight size={12} aria-hidden="true" /> {t('workflowCard.usesIncomingData')}

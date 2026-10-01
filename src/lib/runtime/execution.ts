@@ -1,3 +1,4 @@
+import type { createConnectionTools } from '../connectionMapping';
 import type { buildCookie } from '../cookies';
 import type { createDataTools, DataSelection } from '../data';
 import type { getDateRange } from '../dateRange';
@@ -9,6 +10,7 @@ import type { showPopover } from './popovers';
 import type { WorkflowRuntime } from './types';
 
 interface ExecutionModules {
+  createConnectionTools: typeof createConnectionTools;
   createDataTools: typeof createDataTools;
   buildCookie: typeof buildCookie;
   matchesCondition: typeof matchesCondition;
@@ -27,11 +29,13 @@ export function createExecution(
     getTimeRange,
     showPopover,
     createDataTools,
+    createConnectionTools,
   }: ExecutionModules,
 ): WorkflowRuntime['run'] {
   const { doc, win, signal, nodes, fetcher, maxSteps, aborted, log, wait, selectorElements } =
     context;
   const dataTools = createDataTools();
+  const connectionTools = createConnectionTools(dataTools);
   type RunState = { steps: number; active: Set<string> };
 
   async function next(
@@ -39,14 +43,50 @@ export function createExecution(
     state: RunState,
     data: DataSelection,
     handle?: string,
+    jsonResponse = false,
   ): Promise<void> {
     const edges = workflow.edges.filter(
       (edge) => edge.source === nodeId && (handle === undefined || edge.sourceHandle === handle),
     );
-    for (const edge of edges) await execute(edge.target, state, data);
+    for (const edge of edges) {
+      const preview = { source: data, jsonResponse };
+      try {
+        context.onConnectionPreview?.(edge.id, preview);
+      } catch {
+        /* Observers cannot interrupt execution. */
+      }
+      const mapping = edge.data?.mapping;
+      let resolved: ReturnType<typeof connectionTools.resolve>;
+      try {
+        connectionTools.validate(
+          mapping,
+          nodes.get(edge.target)?.data,
+          nodes.get(edge.source)?.data.kind,
+        );
+        resolved = connectionTools.resolve(mapping, preview);
+      } catch (error) {
+        log(
+          edge.target,
+          'error',
+          `Connection “${edge.id}”: ${error instanceof Error ? error.message : String(error)}`,
+        );
+        throw error;
+      }
+      await execute(
+        edge.target,
+        state,
+        resolved.incoming,
+        mapping?.targetInput === 'data' ? undefined : resolved.selected,
+      );
+    }
   }
 
-  async function execute(nodeId: string, state: RunState, input: DataSelection): Promise<void> {
+  async function execute(
+    nodeId: string,
+    state: RunState,
+    input: DataSelection,
+    selected?: DataSelection,
+  ): Promise<void> {
     aborted();
     const node = nodes.get(nodeId);
     if (!node) throw new Error(`Step “${nodeId}” does not exist.`);
@@ -69,6 +109,7 @@ export function createExecution(
       const config = node.data.config;
       // Data belongs to this path, never the shared runtime (runs may overlap).
       let output = input;
+      let jsonResponse = false;
       let requestError: string | undefined;
       let selectedHandle: string | undefined;
       let loopIterations = 0;
@@ -150,11 +191,28 @@ export function createExecution(
               break;
             }
             output = dataTools.parseResponse(body, config);
+            try {
+              JSON.parse(body);
+              jsonResponse = true;
+            } catch {
+              /* Complete text response. */
+            }
             break;
           }
           case 'dom': {
-            const value = dataTools.elementValue(config, input);
-            const targets = selectorElements(config.selector);
+            const variables = selected ?? input;
+            const value = dataTools.elementValue(config, variables);
+            const selector = dataTools.interpolate(
+              config.selector ?? '',
+              variables,
+              undefined,
+              true,
+            );
+            const attribute =
+              config.action === 'attribute'
+                ? dataTools.interpolate(config.attribute ?? '', variables, undefined, true)
+                : '';
+            const targets = selectorElements(selector);
             for (const element of targets) {
               switch (config.action ?? 'text') {
                 case 'text':
@@ -180,8 +238,8 @@ export function createExecution(
                   break;
                 }
                 case 'attribute':
-                  if (!config.attribute?.trim()) throw new Error('Enter an attribute name.');
-                  element.setAttribute(config.attribute, value);
+                  if (!attribute.trim()) throw new Error('Enter an attribute name.');
+                  element.setAttribute(attribute, value);
                   break;
                 default:
                   throw new Error('Unknown element action.');
@@ -192,7 +250,7 @@ export function createExecution(
           case 'fork':
             selectedHandle = matchesCondition(
               config,
-              { ...context, data: input },
+              { ...context, data: selected ?? input },
               { getDateRange, getTimeRange, dataTools },
             )
               ? 'true'
@@ -232,7 +290,7 @@ export function createExecution(
         }
         await next(nodeId, state, output, 'done');
       } else {
-        await next(nodeId, state, output, selectedHandle);
+        await next(nodeId, state, output, selectedHandle, jsonResponse);
       }
     } finally {
       state.active.delete(nodeId);

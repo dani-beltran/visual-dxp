@@ -11,6 +11,7 @@ import {
   X,
 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
+import type { ConnectionPreview } from '../lib/connectionMapping';
 import { validateWorkflow } from '../lib/export';
 import { useBuilderI18n } from '../lib/i18nContext';
 import type { RunLog, Workflow } from '../lib/types';
@@ -20,8 +21,12 @@ export function Preview({
   workflow,
   onClose,
   onLog,
+  onConnectionPreview,
+  onPreviewStart,
 }: {
   workflow: Workflow;
+  onConnectionPreview?: (edgeId: string, preview: ConnectionPreview) => void;
+  onPreviewStart?: () => void;
   onClose: () => void;
   onLog: (log: RunLog) => void;
 }) {
@@ -42,6 +47,7 @@ export function Preview({
     setError('');
   }, [workflow, stop]);
   function run() {
+    onPreviewStart?.();
     setLogs([]);
     setError('');
     const issues = validateWorkflow(workflow, t);
@@ -142,6 +148,7 @@ export function Preview({
             }}
             onError={setError}
             onClose={onClose}
+            onConnectionPreview={onConnectionPreview}
             onLog={(log) => {
               if (!running) return;
               setLogs((previous) => [...previous, log]);

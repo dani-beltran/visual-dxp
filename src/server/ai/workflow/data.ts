@@ -20,6 +20,8 @@ interface RequestConfig {
 }
 
 interface ElementValueConfig {
+  selector?: string;
+  attribute?: string;
   action?: string;
   value?: string;
   valueSource?: string;
@@ -174,34 +176,126 @@ export function createDataTools() {
     });
   }
 
+  function hasVariables(value = ''): boolean {
+    return /\{\{[\s\S]*?\}\}/.test(value);
+  }
+
+  function variablePath(expression: string): string {
+    const path = expression.trim();
+    if (!path)
+      throw Object.assign(
+        new Error('Enter a variable name inside {{ }}; use {{$}} for the whole incoming value.'),
+        {
+          messageKey: 'errors.data.emptyVariable',
+          messageParams: {},
+        },
+      );
+    // $ refers to the root, including a primitive selected on the connection.
+    const selection =
+      path === '$'
+        ? ''
+        : path.startsWith('$.')
+          ? path.slice(2)
+          : path.startsWith('$[')
+            ? path.slice(1)
+            : path;
+    if (path !== '$' && !selection) parsePath(path);
+    parsePath(selection);
+    return selection;
+  }
+
+  function validateTemplate(value = ''): void {
+    const remainder = value.replace(/\{\{([\s\S]*?)\}\}/g, (_match, expression: string) => {
+      variablePath(expression);
+      return '';
+    });
+    if (remainder.includes('{{'))
+      throw Object.assign(
+        new Error('Close each variable with matching braces, for example {{name}}.'),
+        {
+          messageKey: 'errors.data.unclosedVariable',
+          messageParams: {},
+        },
+      );
+  }
+
+  function hasElementValue(config: ElementValueConfig): boolean {
+    return !['hide', 'show'].includes(config.action ?? 'text');
+  }
+
   function usesIncomingValue(config: ElementValueConfig): boolean {
     return (
-      config.valueSource === 'incoming-data' && !['hide', 'show'].includes(config.action ?? 'text')
+      hasVariables(config.selector) ||
+      (config.action === 'attribute' && hasVariables(config.attribute)) ||
+      (hasElementValue(config) &&
+        (config.valueSource === 'incoming-data' || hasVariables(config.value)))
     );
   }
 
   function validateElementValue(config: ElementValueConfig): void {
-    if (['hide', 'show'].includes(config.action ?? 'text')) return;
+    validateTemplate(config.selector);
+    if (config.action === 'attribute') validateTemplate(config.attribute);
+    if (!hasElementValue(config)) return;
     if (!['manual', 'incoming-data'].includes(config.valueSource ?? 'manual'))
-      throw new Error('Choose Manual value or Incoming data as the value source.');
-    if (usesIncomingValue(config)) parsePath(config.valueDataPath);
+      throw Object.assign(new Error('Choose Manual value or Incoming data as the value source.'), {
+        messageKey: 'errors.data.chooseManualValueOrIncomingDataAsTheValueSource',
+        messageParams: {},
+      });
+    if (config.valueSource === 'incoming-data') parsePath(config.valueDataPath);
+    else validateTemplate(config.value);
+  }
+
+  function valueText(value: unknown, action?: string): string {
+    if (value === null || value === undefined) return '';
+    if (typeof value === 'string') return value;
+    if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+    if (action === 'add-class' || action === 'remove-class') {
+      if (Array.isArray(value) && value.every((item) => typeof item === 'string'))
+        return value.join(' ');
+      throw Object.assign(
+        new Error(
+          'Incoming CSS classes must be text, a number, a boolean, or an array of strings.',
+        ),
+        {
+          messageKey: 'errors.data.incomingCssClassesMustBeTextANumberABoolean',
+          messageParams: {},
+        },
+      );
+    }
+    return JSON.stringify(value);
+  }
+
+  function interpolate(
+    template: string,
+    input: DataSelection,
+    action?: string,
+    required = false,
+  ): string {
+    validateTemplate(template);
+    // One pass: data containing braces is inserted literally, never evaluated again.
+    return template.replace(/\{\{([\s\S]*?)\}\}/g, (_match, expression: string) => {
+      const selected = select(input, variablePath(expression));
+      if (required && (!selected.exists || selected.value === null || selected.value === undefined))
+        throw Object.assign(
+          new Error(
+            `Variable “${expression.trim()}” is missing in the element selector or attribute name.`,
+          ),
+          {
+            messageKey: 'errors.data.missingTargetVariable',
+            messageParams: { name: expression.trim() },
+          },
+        );
+      return valueText(selected.value, action);
+    });
   }
 
   function elementValue(config: ElementValueConfig, input: DataSelection): string {
     validateElementValue(config);
-    if (!usesIncomingValue(config)) return config.value ?? '';
-    const { value } = select(input, config.valueDataPath);
-    if (value === null || value === undefined) return '';
-    if (typeof value === 'string') return value;
-    if (typeof value === 'number' || typeof value === 'boolean') return String(value);
-    if (config.action === 'add-class' || config.action === 'remove-class') {
-      if (Array.isArray(value) && value.every((item) => typeof item === 'string'))
-        return value.join(' ');
-      throw new Error(
-        'Incoming CSS classes must be text, a number, a boolean, or an array of strings.',
-      );
-    }
-    return JSON.stringify(value);
+    if (!hasElementValue(config)) return '';
+    // Retain execution compatibility for callers passing unmigrated version-1 JSON.
+    if (config.valueSource === 'incoming-data')
+      return valueText(select(input, config.valueDataPath).value, config.action);
+    return interpolate(config.value ?? '', input, config.action);
   }
 
   function validateResponse(config: ResponseConfig): void {
@@ -387,6 +481,9 @@ export function createDataTools() {
   return {
     validateRequest,
     requestTemplate,
+    hasVariables,
+    validateTemplate,
+    interpolate,
     usesIncomingValue,
     validateElementValue,
     elementValue,

@@ -363,3 +363,73 @@ function delayedPopoverWorkflow() {
     ],
   );
 }
+
+it('transports connection source samples from the isolated runtime and rejects stale/foreign samples', async () => {
+  const graph = workflow(
+    [
+      node('start', 'trigger', { event: 'page-load' }),
+      node('http', 'http', { url: 'https://example.com/data' }),
+      node('update', 'dom', { selector: '#result', valueSource: 'incoming-data' }),
+    ],
+    [
+      ['start', 'http'],
+      ['http', 'update'],
+    ],
+  );
+  graph.edges[1].data = { mapping: { sourcePath: 'user.name', targetInput: 'value' } };
+  const onConnectionPreview = vi.fn();
+  vi.mocked(fetch).mockImplementation(
+    async (input) =>
+      new Response(
+        String(input).includes('example.com')
+          ? '{"user":{"name":"Ada"}}'
+          : '<html><body>Demo</body></html>',
+      ),
+  );
+  await act(async () =>
+    root.render(
+      <Preview
+        workflow={graph}
+        onClose={() => {}}
+        onLog={() => {}}
+        onConnectionPreview={onConnectionPreview}
+      />,
+    ),
+  );
+  const { frame, doc, win } = await loadWebsite();
+  await clickButton('Run workflow');
+  expect(doc.querySelector('#result')?.textContent).toBe('Ada');
+  expect(onConnectionPreview).toHaveBeenCalledWith('edge-1', {
+    source: { exists: true, value: { user: { name: 'Ada' } } },
+    jsonResponse: true,
+  });
+  const sent = vi
+    .mocked(win.parent.postMessage)
+    .mock.calls.map(([message]) => message)
+    .find((message) => message.type === 'connection-preview');
+  const count = onConnectionPreview.mock.calls.length;
+  for (const message of [
+    { ...sent, runId: 'previous-run' },
+    { ...sent, edgeId: 'unknown' },
+    { ...sent, preview: { source: { exists: 'yes' } } },
+  ]) {
+    await act(async () =>
+      window.dispatchEvent(
+        new MessageEvent('message', { data: message, source: frame.contentWindow, origin: 'null' }),
+      ),
+    );
+  }
+  await act(async () =>
+    window.dispatchEvent(
+      new MessageEvent('message', { data: sent, source: window, origin: 'null' }),
+    ),
+  );
+  expect(onConnectionPreview).toHaveBeenCalledTimes(count);
+  await clickButton('Stop workflow');
+  await act(async () =>
+    window.dispatchEvent(
+      new MessageEvent('message', { data: sent, source: frame.contentWindow, origin: 'null' }),
+    ),
+  );
+  expect(onConnectionPreview).toHaveBeenCalledTimes(count);
+});

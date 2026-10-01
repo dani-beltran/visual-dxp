@@ -1,11 +1,12 @@
 import { ArrowRight, Trash2, X } from 'lucide-react';
-import { useId } from 'react';
+import { type ReactNode, useId } from 'react';
 import { useBuilderI18n } from '../lib/i18nContext';
 import type { WorkflowEdge } from '../lib/types';
 import '../styles/inspector.css';
 
 export function EdgeInspector({
   edge,
+  children,
   sourceLabel,
   targetLabel,
   onChange,
@@ -14,6 +15,7 @@ export function EdgeInspector({
   onDelete,
 }: {
   edge: WorkflowEdge;
+  children?: ReactNode;
   sourceLabel: string;
   targetLabel: string;
   onChange: (label: string) => void;
@@ -65,6 +67,7 @@ export function EdgeInspector({
             {t('edgeInspector.shownOnTheConnectionLeaveEmptyToHideTheName')}
           </p>
         </div>
+        {children}
       </div>
       <footer className="dxp-inspector-footer">
         <button type="button" className="dxp-inspector-delete" onClick={onDelete}>

@@ -1,3 +1,4 @@
+import { createConnectionTools } from '../connectionMapping';
 import { buildCookie } from '../cookies';
 import { createDataTools } from '../data';
 import { getDateRange } from '../dateRange';
@@ -17,6 +18,7 @@ import { startZoomTrigger } from './zoom-trigger';
 // functions free of module-scope references so their compiled source can also
 // power exported workflows, including after bundling and minification.
 const runtimeModules = {
+  createConnectionTools,
   createDataTools,
   buildCookie,
   createRuntimeContext,

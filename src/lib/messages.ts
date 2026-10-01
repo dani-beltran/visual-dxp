@@ -3,12 +3,59 @@ export const englishMessages = {
   'common.enterFullscreen': 'Enter full screen',
   'common.exitFullscreen': 'Exit full screen',
   'nodeInspector.requestTemplates':
-    'Use incoming data in the URL or body with {{variableName}} or {{key.subKey.variableName}}. Array indexes such as {{items[0].id}} also work. Connect an HTTP response to this input to chain requests. Missing variables stop the request.',
+    'Use incoming data in the URL or body with {{name}} or {{user.name}}. Array indexes such as {{items[0].id}} also work. Connect an HTTP response to this input to chain requests. Missing variables stop the request.',
   'errors.data.emptyRequestTemplatePath': 'Enter a data path inside request template braces.',
   'errors.data.unclosedRequestTemplate':
     'Close request template variables with two closing braces.',
   'errors.data.unresolvedRequestTemplatePath': ({ path }: { path: string }) =>
     `Request template data path “${path}” could not be resolved.`,
+  'nodeInspector.variablesHint':
+    'Use {{name}} or {{user.name}} in content, selectors, or attribute names. Use {{$}} for the whole value selected on the connection. Variables are filled in when this step runs.',
+  'nodeInspector.variablesIncomingHint':
+    'Uses incoming data: variables are resolved from the incoming connection. Edit its mapping below to choose the data available to this step.',
+  'mapping.variablesInactive':
+    'Add a variable such as {{name}} or {{$}} to the destination step to use this input.',
+  'errors.data.emptyVariable':
+    'Enter a variable name inside {{ }}; use {{$}} for the whole incoming value.',
+  'errors.data.unclosedVariable': 'Close each variable with matching braces, for example {{name}}.',
+  'errors.data.missingTargetVariable': ({ name }: { name: string }) =>
+    `Variable “${name}” is missing in the element selector or attribute name.`,
+
+  'mapping.title': 'Data mapping',
+  'mapping.sourcePath': 'Source data path',
+  'mapping.destination': 'Destination input',
+  'mapping.httpInputHint':
+    'The selected data is available to variables in the request URL and body. This step passes its own response onward.',
+  'mapping.inputData': 'Data passed to the step',
+  'mapping.inputValue': 'Element value',
+  'mapping.inputCondition': 'Condition value',
+  'mapping.pathHint':
+    'Leave empty to use the whole value. Use properties and array indexes, e.g. data.items[0].price.',
+  'mapping.forwardHint':
+    'The selected data is passed to this step and forwarded to the following steps.',
+  'mapping.consumeHint':
+    'This step uses the selected value and forwards the original incoming data.',
+  'mapping.preview': 'Latest test run',
+  'mapping.unavailable':
+    'No sample available. Test the workflow to preview values. Large samples are omitted.',
+  'mapping.sourceOutput': 'Source output',
+  'mapping.mappedValue': 'Mapped value',
+  'mapping.missing': 'Missing — the path did not resolve to a value.',
+  'mapping.null': 'null (explicit value)',
+  'mapping.incompatible': 'Incompatible with the destination:',
+  'mapping.importedResponse': 'Imported response selection',
+  'mapping.importedHint':
+    'Preserves the saved HTTP selection before the source path. Applies to successful JSON responses; text and request errors pass through.',
+  'mapping.inactive':
+    'This input is inactive. Enable incoming data in the destination step to use it.',
+  'mapping.configureConnections':
+    'Choose the value in Incoming mappings below or select an incoming connection.',
+  'mapping.httpHint':
+    'The full response is available on every outgoing connection. Select a connection to choose which data it sends.',
+  'mapping.incoming': 'Incoming mappings',
+  'mapping.noConnections': 'Connect a step to configure its incoming data.',
+  'mapping.wholeValue': 'Whole value',
+
   'aiSettings.assistantCredentials': 'Assistant credentials',
   'aiSettings.aiSettings': 'AI settings',
   'aiSettings.yourAiConnection': 'YOUR AI CONNECTION',
@@ -369,7 +416,7 @@ export const englishMessages = {
   'nodeInspector.false': 'False',
   'nodeInspector.conditionDoesNotMatch': 'Condition does not match',
   'nodeInspector.theMatchingOutputPassesAllIncomingDataUnchangedToTheNextStep':
-    'The matching output passes all incoming data unchanged to the next step. The condition’s data path only selects what to compare.',
+    'The matching output forwards the incoming data. Map to Condition value on the incoming connection to select what to compare without changing forwarded data.',
   'nodeInspector.body': 'Body',
   'nodeInspector.runsEachRepetition': 'Runs each repetition',
   'nodeInspector.done': 'Done',
@@ -544,6 +591,7 @@ export const englishMessages = {
     incomingDataPath: string;
   }) => `Incoming data: ${incomingDataPath}`,
   'workflowCard.usesTheWholeIncomingValue': 'Uses the whole incoming value',
+  'workflowCard.templateVariables': 'Variables in this step use data from its incoming connection.',
   'workflowCard.usesIncomingData': 'Uses incoming data',
   'workflowCard.running': 'Running',
   'workflowCard.needsAttention': 'Needs attention',
@@ -838,7 +886,7 @@ export const englishMessages = {
   'nodes.trigger.description':
     'Starts the workflow when a selected event occurs. Use it to respond to page activity or visitor actions. Choose an event and any required target element or thresholds, then connect the first step.',
   'nodes.http.description':
-    'Sends an HTTP request to an API. Use it to call an external service. Set the URL and method, with headers or a body as needed. Use {{variableName}} or {{key.subKey.variableName}} in the URL or body to read incoming data; the next step receives response data on success or an error object with message and code on failure.',
+    'Sends an HTTP request to an API. Use it to call an external service. Set the URL and method, with headers or a body as needed.',
   'nodes.dom.description':
     'Updates matching elements on the page. Use it to change content, appearance, or visibility. Choose a target element and an action, then use a manual value or incoming data from a connected step. Set an attribute name when needed.',
   'nodes.cookie.description':

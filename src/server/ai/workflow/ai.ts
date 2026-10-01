@@ -1,3 +1,4 @@
+import { type ConnectionData, isConnectionMapping } from '../../../lib/connectionMapping';
 import { parseNoteMarks } from './notes';
 import type { NodeKind, NoteMark, StepConfig, Workflow, WorkflowEdge, WorkflowNode } from './types';
 import { validateWorkflow } from './validation';
@@ -27,6 +28,7 @@ export type WorkflowOperation =
   | { type: 'add_edge'; edge: WorkflowEdge }
   | {
       type: 'update_edge';
+      data?: ConnectionData;
       id: string;
       source?: string;
       target?: string;
@@ -218,14 +220,38 @@ function handle(value: unknown): string | null {
   return value as string;
 }
 
+function connectionData(value: unknown): ConnectionData {
+  const input = record(value, 'Connection data');
+  if (input.mapping === undefined) return {};
+  if (!isConnectionMapping(input.mapping)) throw new Error('Invalid connection data mapping.');
+  return {
+    mapping: {
+      sourcePath: text(input.mapping.sourcePath, 'Source data path', 4000, true),
+      targetInput: input.mapping.targetInput,
+      ...(input.mapping.responseDataPath === undefined
+        ? {}
+        : {
+            responseDataPath: text(
+              input.mapping.responseDataPath,
+              'Imported response selection',
+              4000,
+              true,
+            ),
+          }),
+    },
+  };
+}
+
 function edge(value: unknown): WorkflowEdge {
   const input = record(value, 'Connection');
+  const data = input.data === undefined ? undefined : connectionData(input.data);
   if (input.targetHandle != null) throw new Error('Connections cannot specify target handles.');
   return {
     id: id(input.id),
     source: id(input.source),
     target: id(input.target),
     type: 'smoothstep',
+    ...(data?.mapping ? { data } : {}),
     ...(input.sourceHandle !== undefined ? { sourceHandle: handle(input.sourceHandle) } : {}),
     ...(input.label !== undefined
       ? { label: text(input.label, 'Connection label', 200, true) }
@@ -269,6 +295,7 @@ function operations(value: unknown): WorkflowOperation[] {
           type: input.type,
           id: id(input.id),
         };
+        if (input.data !== undefined) update.data = connectionData(input.data);
         if (input.source !== undefined) update.source = id(input.source);
         if (input.target !== undefined) update.target = id(input.target);
         if (input.sourceHandle !== undefined) update.sourceHandle = handle(input.sourceHandle);

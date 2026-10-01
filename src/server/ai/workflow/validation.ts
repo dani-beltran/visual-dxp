@@ -1,3 +1,4 @@
+import { connectionTools } from '../../../lib/connectionMapping';
 import { buildCookie } from './cookies';
 import { dataTools } from './data';
 import { getDateRange } from './dateRange';
@@ -205,7 +206,8 @@ export function validateWorkflow(workflow: Workflow): ValidationIssue[] {
         } catch (error) {
           add((error as Error).message, node.id);
         }
-        selector(config.selector, node.id, 'Choose an element to update.');
+        if (!dataTools.hasVariables(config.selector))
+          selector(config.selector, node.id, 'Choose an element to update.');
         if (
           config.action &&
           !['text', 'html', 'add-class', 'remove-class', 'hide', 'show', 'attribute'].includes(
@@ -343,6 +345,11 @@ export function validateWorkflow(workflow: Workflow): ValidationIssue[] {
         'Notes cannot have workflow connections.',
         source.data.kind === 'note' ? source.id : target.id,
       );
+    try {
+      connectionTools.validate(edge.data?.mapping, target.data, source.data.kind);
+    } catch (error) {
+      add((error as Error).message, target.id);
+    }
     if (target.data.kind === 'trigger')
       add('Triggers cannot receive incoming connections.', target.id);
     if (source.data.kind === 'fork' && !['true', 'false'].includes(edge.sourceHandle ?? ''))

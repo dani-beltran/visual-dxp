@@ -23,6 +23,12 @@ const base: Workflow = {
   edges: [],
 };
 const cases: ['http' | 'fork' | 'dom', StepConfig][] = [
+  ['dom', { selector: '#{{id}}', action: 'text', value: 'Hello {{name}}' }],
+  [
+    'dom',
+    { selector: '#result', action: 'attribute', attribute: 'data-{{key}}', value: '{{value}}' },
+  ],
+  ['dom', { selector: '#{{id}}', action: 'hide' }],
   [
     'dom',
     {
@@ -93,6 +99,9 @@ it.each(cases)('retains %s config through tools and transport', async (kind, con
 });
 
 it.each([
+  ['dom', { selector: '#result', value: '{{name' }],
+  ['dom', { selector: '#result', value: '{{name()}}' }],
+  ['dom', { selector: '#{{ }}', action: 'hide' }],
   ['dom', { selector: '#result', valueSource: 'unknown' }],
   ['dom', { selector: '#result', valueSource: 'incoming-data', valueDataPath: 'items[' }],
   ['http', { url: 'https://example.com', responseDataPath: 'items[' }],

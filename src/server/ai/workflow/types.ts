@@ -1,3 +1,4 @@
+import type { ConnectionData } from '../../../lib/connectionMapping';
 import type { DataOperator } from './data';
 export type NodeKind =
   | 'trigger'
@@ -63,13 +64,14 @@ export interface StepConfig {
   headers?: string;
   /** Raw request body; accepts {{path}} variables from incoming data (except GET/HEAD). */
   body?: string;
-  /** Optional selection within parsed JSON. Non-JSON responses pass as complete text. */
+  /** @deprecated Migrated to connection mappings. Non-JSON responses pass as complete text. */
   responseDataPath?: string;
   action?: 'text' | 'html' | 'add-class' | 'remove-class' | 'hide' | 'show' | 'attribute';
+  /** Update element content supports {{name}}, nested paths, and {{$}} for the whole input. */
   value?: string;
-  /** Value source for Update element actions. Older workflows default to manual. */
+  /** @deprecated Incoming-data mode is migrated to a {{$}} value template. */
   valueSource?: 'manual' | 'incoming-data';
-  /** Optional selection within incoming data for Update element. */
+  /** @deprecated Migrated to the incoming connection’s value mapping. */
   valueDataPath?: string;
   attribute?: string;
   /** Name of the cookie to create or overwrite on the current host. */
@@ -82,7 +84,7 @@ export interface StepConfig {
   duration?: number;
   /** Omitted in older workflows, which check CSS selector existence. */
   conditionType?: ConditionType;
-  /** Optional nested selection from incoming node data; empty uses all data. */
+  /** @deprecated Migrated to the incoming connection’s condition mapping. */
   conditionDataPath?: string;
   conditionOperator?: DataOperator;
   /** CSS selector used by selector conditions. */
@@ -130,6 +132,7 @@ export interface WorkflowNode {
   data: StepData;
 }
 export interface WorkflowEdge {
+  data?: ConnectionData;
   id: string;
   source: string;
   target: string;

@@ -93,66 +93,76 @@ console.log(`Built ESM and UMD standalone scripts: ${cases} targeting cases pass
 let dataCases = 0;
 for (const library of [esm, umd]) {
   for (const selected of [false, true]) {
-    for (const price of [12, 4]) {
-      const node = (id, kind, config) => ({
-        id,
-        type: 'workflow',
-        position: { x: 0, y: 0 },
-        data: { kind, label: id, config },
-      });
-      const workflow = {
-        version: 1,
-        name: 'Built response data',
-        websiteUrl: 'https://example.com',
-        nodes: [
-          node('start', 'trigger', { event: 'click', selector: '#start' }),
-          node('request', 'http', {
-            url: 'https://example.com/api',
-            responseDataPath: selected ? 'items[0].price' : '',
-          }),
-          node('update', 'dom', {
-            selector: '#price',
-            action: 'text',
-            valueSource: 'incoming-data',
-            valueDataPath: selected ? '' : 'items[0].price',
-          }),
-          node('condition', 'fork', {
-            conditionType: 'data',
-            conditionDataPath: selected ? '' : 'items[0].price',
-            conditionOperator: 'greater-than',
-            conditionValue: '10',
-          }),
-          node('yes', 'dom', { selector: '#result', value: 'yes' }),
-          node('no', 'dom', { selector: '#result', value: 'no' }),
-        ],
-        edges: [
-          { id: 'a', source: 'start', target: 'request' },
-          { id: 'b', source: 'request', target: 'update' },
-          { id: 'update-condition', source: 'update', target: 'condition' },
-          { id: 'c', source: 'condition', target: 'yes', sourceHandle: 'true' },
-          { id: 'd', source: 'condition', target: 'no', sourceHandle: 'false' },
-        ],
-      };
-      const dom = new JSDOM(
-        '<button id="start">Run</button><p id="result">waiting</p><p id="price"></p>',
-        {
-          url: 'https://example.com',
-          runScripts: 'outside-only',
-        },
-      );
-      dom.window.fetch = async () => new Response(JSON.stringify({ items: [{ price }] }));
-      try {
-        dom.window.eval(library.exportWorkflow(workflow));
-        await dom.window.visualDXP.run();
-        assert.equal(
-          dom.window.document.querySelector('#result').textContent,
-          price > 10 ? 'yes' : 'no',
+    for (const migrated of [false, true, 'templates']) {
+      for (const price of [12, 4]) {
+        const node = (id, kind, config) => ({
+          id,
+          type: 'workflow',
+          position: { x: 0, y: 0 },
+          data: { kind, label: id, config },
+        });
+        const workflow = {
+          version: 1,
+          name: 'Built response data',
+          websiteUrl: 'https://example.com',
+          nodes: [
+            node('start', 'trigger', { event: 'click', selector: '#start' }),
+            node('request', 'http', {
+              url: 'https://example.com/api',
+              responseDataPath: selected ? 'items[0].price' : '',
+            }),
+            node('update', 'dom', {
+              selector: '#price',
+              action: 'text',
+              valueSource: 'incoming-data',
+              valueDataPath: selected ? '' : 'items[0].price',
+            }),
+            node('condition', 'fork', {
+              conditionType: 'data',
+              conditionDataPath: selected ? '' : 'items[0].price',
+              conditionOperator: 'greater-than',
+              conditionValue: '10',
+            }),
+            node('yes', 'dom', { selector: '#result', value: 'yes' }),
+            node('no', 'dom', { selector: '#result', value: 'no' }),
+          ],
+          edges: [
+            { id: 'a', source: 'start', target: 'request' },
+            { id: 'b', source: 'request', target: 'update' },
+            { id: 'update-condition', source: 'update', target: 'condition' },
+            { id: 'c', source: 'condition', target: 'yes', sourceHandle: 'true' },
+            { id: 'd', source: 'condition', target: 'no', sourceHandle: 'false' },
+          ],
+        };
+        const dom = new JSDOM(
+          '<button id="start">Run</button><p id="result">waiting</p><p id="price"></p>',
+          {
+            url: 'https://example.com',
+            runScripts: 'outside-only',
+          },
         );
-        assert.equal(dom.window.document.querySelector('#price').textContent, String(price));
-        dataCases += 1;
-      } finally {
-        dom.window.visualDXP?.destroy();
-        dom.window.close();
+        dom.window.fetch = async () => new Response(JSON.stringify({ items: [{ price }] }));
+        try {
+          dom.window.eval(
+            library.exportWorkflow(
+              migrated === 'templates'
+                ? library.migrateElementTemplates(library.migrateConnectionMappings(workflow))
+                : migrated
+                  ? library.migrateConnectionMappings(workflow)
+                  : workflow,
+            ),
+          );
+          await dom.window.visualDXP.run();
+          assert.equal(
+            dom.window.document.querySelector('#result').textContent,
+            price > 10 ? 'yes' : 'no',
+          );
+          assert.equal(dom.window.document.querySelector('#price').textContent, String(price));
+          dataCases += 1;
+        } finally {
+          dom.window.visualDXP?.destroy();
+          dom.window.close();
+        }
       }
     }
   }

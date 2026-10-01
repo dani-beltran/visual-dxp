@@ -1,3 +1,4 @@
+import type { ConnectionPreview } from '../connectionMapping';
 import type { RunLog } from '../types';
 
 export interface RuntimeOptions {
@@ -5,6 +6,8 @@ export interface RuntimeOptions {
   window?: Window;
   fetch?: typeof fetch;
   onLog?: (entry: RunLog) => void;
+  /** Transient execution samples; never included in workflow persistence. */
+  onConnectionPreview?: (edgeId: string, preview: ConnectionPreview) => void;
   signal?: AbortSignal;
   /** Maximum executed steps for one trigger invocation. Defaults to 10,000. */
   maxSteps?: number;

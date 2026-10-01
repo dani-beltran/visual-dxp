@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { migrateConnectionMappings } from '../src/lib/connectionMapping';
 import { dataTools } from '../src/lib/data';
 import { exportWorkflow, validateWorkflow } from '../src/lib/export';
 import { createRuntime } from '../src/lib/runtime';
@@ -255,3 +256,38 @@ it.each([
       expect.objectContaining({ nodeId: 'second' }),
     );
 });
+
+it.each(['direct', 'exported'] as const)(
+  'uses connection mappings before HTTP and element templates (%s)',
+  async (mode) => {
+    document.body.innerHTML = '<button id="start">Start</button><p id="result"></p>';
+    const original = workflow({
+      url: '/api/users/{{id}}',
+      method: 'POST',
+      body: '{"name":"{{name}}"}',
+    });
+    original.edges[1].data = { mapping: { sourcePath: 'user', targetInput: 'data' } };
+    original.edges[2].data = { mapping: { sourcePath: 'receipt', targetInput: 'value' } };
+    original.nodes[3].data.config = { selector: '#result', value: 'Saved {{name}}' };
+    const graph = migrateConnectionMappings(original);
+    const fetcher = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(new Response('{"data":{"user":{"id":42,"name":"Ada"}}}'))
+      .mockResolvedValueOnce(new Response('{"receipt":{"name":"Ada"}}'));
+    expect(validateWorkflow(graph)).toEqual([]);
+    let runtime: ReturnType<typeof createRuntime>;
+    if (mode === 'direct') runtime = createRuntime(graph);
+    else {
+      new Function('window', 'document', exportWorkflow(graph))(window, document);
+      const exported = (window as Window & { visualDXP?: ReturnType<typeof createRuntime> })
+        .visualDXP;
+      if (!exported) throw new Error('Expected exported runtime');
+      runtime = exported;
+    }
+    runtimes.push(runtime);
+    await runtime.run();
+    expect(fetcher.mock.calls[1][0]).toBe(new URL('/api/users/42', document.baseURI).href);
+    expect(fetcher.mock.calls[1][1]?.body).toBe('{"name":"Ada"}');
+    expect(document.querySelector('#result')?.textContent).toBe('Saved Ada');
+  },
+);

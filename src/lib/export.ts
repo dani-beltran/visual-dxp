@@ -1,3 +1,4 @@
+import { connectionTools } from './connectionMapping';
 import { buildCookie } from './cookies';
 import { dataTools } from './data';
 import { getDateRange } from './dateRange';
@@ -228,7 +229,8 @@ export function validateWorkflow(
         } catch (error) {
           add((error as Error).message, node.id);
         }
-        selector(config.selector, node.id, t('validation.chooseAnElementToUpdate'));
+        if (!dataTools.hasVariables(config.selector))
+          selector(config.selector, node.id, t('validation.chooseAnElementToUpdate'));
         if (
           config.action &&
           !['text', 'html', 'add-class', 'remove-class', 'hide', 'show', 'attribute'].includes(
@@ -376,6 +378,11 @@ export function validateWorkflow(
       );
       continue;
     }
+    try {
+      connectionTools.validate(edge.data?.mapping, target.data, source.data.kind);
+    } catch (error) {
+      issues.push({ edgeId: edge.id, nodeId: target.id, message: formatBuilderError(error, t) });
+    }
     if (target.data.kind === 'trigger')
       add(t('validation.triggersCannotReceiveIncomingConnections'), target.id);
     if (source.data.kind === 'fork' && !['true', 'false'].includes(edge.sourceHandle ?? ''))
@@ -438,11 +445,12 @@ export function exportWorkflow(workflow: Workflow, options: ExportOptions = {}):
       })),
     edges: workflow.edges
       .filter((edge) => !annotations.has(edge.source) && !annotations.has(edge.target))
-      .map(({ id, source, target, sourceHandle }) => ({
+      .map(({ id, source, target, sourceHandle, data }) => ({
         id,
         source,
         target,
         sourceHandle,
+        ...(data?.mapping ? { data: { mapping: data.mapping } } : {}),
       })),
   };
   const json = JSON.stringify(definition, null, 2)

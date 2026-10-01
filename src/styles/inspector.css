@@ -470,3 +470,31 @@
 .dxp-inspector-incoming-data > svg {
   color: var(--dxp-data);
 }
+
+.dxp-connection-mapping {
+  border-top: 1px solid var(--dxp-border);
+  padding-top: 16px;
+  margin-top: 16px;
+}
+.dxp-connection-mapping h3 {
+  font-size: 12px;
+  overflow-wrap: anywhere;
+  margin: 0 0 16px;
+}
+.dxp-mapping-preview {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--dxp-muted);
+}
+.dxp-mapping-preview pre {
+  max-height: 200px;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  padding: 10px;
+  background: var(--dxp-canvas);
+  border-radius: 6px;
+}
+.dxp-mapping-preview details {
+  margin: 8px 0;
+}

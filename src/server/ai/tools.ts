@@ -10,6 +10,26 @@ const shortText = z.string().max(200);
 const text = z.string().max(20000);
 const id = z.string().min(1).max(200);
 const position = z.object({ x: z.number().finite(), y: z.number().finite() });
+const connectionDataSchema = z.object({
+  mapping: z
+    .object({
+      sourcePath: text.describe(
+        'Path within source output, e.g. user.name or items[0].price. Empty selects the whole value.',
+      ),
+      targetInput: z
+        .enum(['data', 'value', 'condition'])
+        .describe(
+          'data replaces forwarded data; value (dom) and condition (fork) select only what the step consumes.',
+        ),
+      responseDataPath: text
+        .optional()
+        .describe(
+          'Imported HTTP selection. Preserve when editing existing mappings; do not add for new mappings.',
+        ),
+    })
+    .optional(),
+});
+
 const config = z.object({
   event: z
     .enum([
@@ -76,7 +96,11 @@ const config = z.object({
     .max(100)
     .describe('Percentage of page scrollable distance, default 75.')
     .optional(),
-  selector: text.optional(),
+  selector: text
+    .describe(
+      'CSS selector. Update element actions, including hide/show, may interpolate {{variables}} here.',
+    )
+    .optional(),
   url: text
     .describe(
       'Request URL; supports incoming data templates such as {{user.id}} or {{items[0].id}}.',
@@ -108,17 +132,23 @@ const config = z.object({
   action: z
     .enum(['text', 'html', 'add-class', 'remove-class', 'hide', 'show', 'attribute'])
     .optional(),
-  value: text.optional(),
+  value: text
+    .describe(
+      'Update element content. Mix literal text and incoming variables such as Hello {{name}}, {{user.name}}, or {{$}} for the whole mapped input.',
+    )
+    .optional(),
   valueSource: z
     .enum(['manual', 'incoming-data'])
-    .describe('Update element value source; defaults to manual. Hide/show do not use a value.')
+    .describe(
+      'Legacy only. For new Update element nodes omit valueSource and use {{variables}} in value.',
+    )
     .optional(),
   valueDataPath: text
     .describe(
-      'Optional selection from incoming data for Update element, e.g. user.name; empty uses the whole value.',
+      'Legacy only. New source selections belong to connections; interpolate {{variables}} in element content.',
     )
     .optional(),
-  attribute: text.optional(),
+  attribute: text.describe('Attribute name for Update element; supports {{variables}}.').optional(),
   cookieName: text
     .describe('Name of a cookie to set on the current host; no spaces or cookie separators.')
     .optional(),
@@ -349,7 +379,7 @@ export function createWorkflowTools(workflow: Workflow, selectedNodeIds: string[
       schema: z.object({ id }),
     }),
     defineTool(
-      ({ source, target, sourceHandle, label }) =>
+      ({ source, target, sourceHandle, label, data }) =>
         mutate({
           type: 'add_edge',
           edge: {
@@ -359,30 +389,33 @@ export function createWorkflowTools(workflow: Workflow, selectedNodeIds: string[
             type: 'smoothstep',
             ...(sourceHandle === undefined ? {} : { sourceHandle }),
             ...(label === undefined ? {} : { label }),
+            ...(data === undefined ? {} : { data }),
           },
         }),
       {
         name: 'add_connection',
         description:
-          'Connect existing executable nodes. Notes cannot have incoming or outgoing connections. Condition sourceHandle must be true/false; Loop must be body/done; all other executable nodes use null or omit it. Cycles and incoming trigger connections are unsupported.',
+          'Connect existing executable nodes. Configure source paths and destination inputs in data.mapping. Notes cannot have incoming or outgoing connections. Condition sourceHandle must be true/false; Loop must be body/done; all other executable nodes use null or omit it. Cycles and incoming trigger connections are unsupported.',
         schema: z.object({
           source: id,
           target: id,
           sourceHandle: z.enum(['true', 'false', 'body', 'done']).nullable().optional(),
           label: shortText.optional(),
+          data: connectionDataSchema.optional(),
         }),
       },
     ),
     defineTool((patch) => mutate({ type: 'update_edge', ...patch }), {
       name: 'update_connection',
       description:
-        'Rewire or relabel an existing connection. Send sourceHandle=null when changing to an ordinary source node.',
+        'Rewire, relabel or configure data.mapping on an existing connection. Send data={} to clear its mapping. Send sourceHandle=null when changing to an ordinary source node.',
       schema: z.object({
         id,
         source: id.optional(),
         target: id.optional(),
         sourceHandle: z.enum(['true', 'false', 'body', 'done']).nullable().optional(),
         label: shortText.optional(),
+        data: connectionDataSchema.optional(),
       }),
     }),
     defineTool(({ id: edgeId }) => mutate({ type: 'remove_edge', id: edgeId }), {

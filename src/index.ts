@@ -23,6 +23,9 @@ export {
   workflowFingerprint,
 } from './lib/ai';
 export { createNode, defaultWorkflow } from './lib/catalog';
+export type { ConnectionData, ConnectionMapping, ConnectionPreview } from './lib/connectionMapping';
+export { migrateConnectionMappings } from './lib/connectionMapping';
+export { migrateElementTemplates } from './lib/elementTemplates';
 export { exportWorkflow, validateWorkflow } from './lib/export';
 export type {
   BuilderI18n,

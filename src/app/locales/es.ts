@@ -5,13 +5,60 @@ export const spanishMessages = {
   'common.enterFullscreen': 'Entrar en pantalla completa',
   'common.exitFullscreen': 'Salir de pantalla completa',
   'nodeInspector.requestTemplates':
-    'Usa datos de entrada en la URL o el cuerpo con {{variableName}} o {{key.subKey.variableName}}. También puedes usar índices como {{items[0].id}}. Conecta una respuesta HTTP a esta entrada para encadenar solicitudes. Las variables que faltan detienen la solicitud.',
+    'Usa datos de entrada en la URL o el cuerpo con {{name}} o {{user.name}}. También puedes usar índices como {{items[0].id}}. Conecta una respuesta HTTP a esta entrada para encadenar solicitudes. Las variables que faltan detienen la solicitud.',
   'errors.data.emptyRequestTemplatePath':
     'Introduce una ruta de datos entre las llaves de la plantilla de solicitud.',
   'errors.data.unclosedRequestTemplate':
     'Cierra las variables de la plantilla de solicitud con dos llaves de cierre.',
   'errors.data.unresolvedRequestTemplatePath': ({ path }: { path: string }) =>
     `No se ha podido resolver la ruta de datos «${path}» de la plantilla de solicitud.`,
+  'nodeInspector.variablesHint':
+    'Usa {{name}} o {{user.name}} en el contenido, los selectores o los nombres de atributo. Usa {{$}} para el valor completo seleccionado en la conexión. Las variables se rellenan al ejecutar este paso.',
+  'nodeInspector.variablesIncomingHint':
+    'Usa datos de entrada: las variables se resuelven desde la conexión entrante. Edita su asignación abajo para elegir los datos disponibles para este paso.',
+  'mapping.variablesInactive':
+    'Añade una variable como {{name}} o {{$}} al paso de destino para usar esta entrada.',
+  'errors.data.emptyVariable':
+    'Introduce un nombre de variable entre {{ }}; usa {{$}} para el valor de entrada completo.',
+  'errors.data.unclosedVariable':
+    'Cierra cada variable con sus llaves correspondientes, por ejemplo {{name}}.',
+  'errors.data.missingTargetVariable': ({ name }) =>
+    `Falta la variable «${name}» en el selector del elemento o el nombre del atributo.`,
+
+  'mapping.title': 'Asignación de datos',
+  'mapping.sourcePath': 'Ruta de datos de origen',
+  'mapping.destination': 'Entrada de destino',
+  'mapping.httpInputHint':
+    'Los datos seleccionados están disponibles para las variables de la URL y el cuerpo de la petición. Este paso transmite su propia respuesta.',
+  'mapping.inputData': 'Datos enviados al paso',
+  'mapping.inputValue': 'Valor del elemento',
+  'mapping.inputCondition': 'Valor de la condición',
+  'mapping.pathHint':
+    'Déjala vacía para usar el valor completo. Usa propiedades e índices, p. ej. data.items[0].price.',
+  'mapping.forwardHint':
+    'Los datos seleccionados se envían a este paso y se transmiten a los siguientes.',
+  'mapping.consumeHint': 'Este paso usa el valor seleccionado y transmite los datos originales.',
+  'mapping.preview': 'Última prueba',
+  'mapping.unavailable':
+    'No hay muestra disponible. Prueba el flujo para ver los valores. Las muestras grandes se omiten.',
+  'mapping.sourceOutput': 'Salida de origen',
+  'mapping.mappedValue': 'Valor asignado',
+  'mapping.missing': 'Ausente: la ruta no corresponde a ningún valor.',
+  'mapping.null': 'null (valor explícito)',
+  'mapping.incompatible': 'Incompatible con el destino:',
+  'mapping.importedResponse': 'Selección de respuesta importada',
+  'mapping.importedHint':
+    'Conserva la selección HTTP guardada antes de la ruta de origen. Se aplica a respuestas JSON correctas; el texto y los errores se transmiten completos.',
+  'mapping.inactive':
+    'Esta entrada está inactiva. Activa los datos entrantes en el paso de destino para usarla.',
+  'mapping.configureConnections':
+    'Elige el valor en Asignaciones entrantes o selecciona una conexión entrante.',
+  'mapping.httpHint':
+    'La respuesta completa está disponible en cada conexión saliente. Selecciona una conexión para elegir los datos que envía.',
+  'mapping.incoming': 'Asignaciones entrantes',
+  'mapping.noConnections': 'Conecta un paso para configurar sus datos entrantes.',
+  'mapping.wholeValue': 'Valor completo',
+
   'aiSettings.assistantCredentials': 'Credenciales del asistente',
   'aiSettings.aiSettings': 'Configuración de IA',
   'aiSettings.yourAiConnection': 'TU CONEXIÓN DE IA',
@@ -344,7 +391,7 @@ export const spanishMessages = {
   'nodeInspector.false': 'Falso',
   'nodeInspector.conditionDoesNotMatch': 'La condición no se cumple',
   'nodeInspector.theMatchingOutputPassesAllIncomingDataUnchangedToTheNextStep':
-    'La salida coincidente pasa todos los datos de entrada al siguiente paso sin modificarlos. La ruta de datos de la condición solo selecciona qué comparar.',
+    'La salida coincidente transmite los datos entrantes. Asigna la conexión entrante a Valor de la condición para elegir qué comparar sin cambiar los datos transmitidos.',
   'nodeInspector.body': 'Cuerpo',
   'nodeInspector.runsEachRepetition': 'Se ejecuta en cada repetición',
   'nodeInspector.done': 'Finalizado',
@@ -504,6 +551,8 @@ export const spanishMessages = {
     'No se ha podido copiar automáticamente. Selecciona el script de arriba y cópialo manualmente.',
   'workflowCard.incomingData': 'Datos de entrada',
   'workflowCard.usesTheWholeIncomingValue': 'Usa todo el valor de entrada',
+  'workflowCard.templateVariables':
+    'Las variables de este paso usan datos de su conexión entrante.',
   'workflowCard.usesIncomingData': 'Usa datos de entrada',
   'workflowCard.running': 'En ejecución',
   'workflowCard.needsAttention': 'Requiere atención',
@@ -698,7 +747,7 @@ export const spanishMessages = {
   'nodes.trigger.description':
     'Inicia el flujo de trabajo cuando ocurre un evento seleccionado. Úsalo para responder a la actividad de la página o a las acciones del visitante. Elige un evento y los elementos de destino o umbrales necesarios y conecta el primer paso.',
   'nodes.http.description':
-    'Envía una solicitud HTTP a una API. Úsalo para llamar a un servicio externo. Configura la URL y el método, con cabeceras o un cuerpo si hace falta. Usa {{variableName}} o {{key.subKey.variableName}} en la URL o el cuerpo para leer datos de entrada; el siguiente paso recibe los datos de respuesta si funciona o un objeto de error con mensaje y código si falla.',
+    'Envía una solicitud HTTP a una API. Úsalo para llamar a un servicio externo. Configura la URL y el método, con cabeceras o un cuerpo si hace falta.',
   'nodes.dom.description':
     'Actualiza los elementos coincidentes de la página. Úsalo para cambiar su contenido, apariencia o visibilidad. Elige un elemento de destino y una acción y usa un valor manual o los datos de entrada de un paso conectado. Configura el nombre del atributo cuando sea necesario.',
   'nodes.cookie.description':

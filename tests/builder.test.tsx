@@ -112,9 +112,22 @@ describe('builder and host boundary', () => {
     expect(element('[data-id="http-dom"]').classList.contains('dxp-edge-data')).toBe(true);
     expect(element('[data-id="trigger-http"]').classList.contains('dxp-edge-data')).toBe(false);
     await click(element('[data-id="node-3"]'));
-    await click(element('input[role="switch"]'));
-    expect(element('[data-id="http-dom"]').classList.contains('dxp-edge-data')).toBe(false);
-    expect(element('[data-id="http-http"]').classList.contains('dxp-edge-data')).toBe(true);
+    expect(host.querySelector('input[role="switch"]')).toBeNull();
+    const content = element<HTMLTextAreaElement>('.dxp-inspector textarea');
+    expect(content.value).toBe('{{$}}');
+    for (const value of ['Static text', 'Hello {{name}}']) {
+      await act(async () => {
+        Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')!.set!.call(
+          content,
+          value,
+        );
+        content.dispatchEvent(new Event('input', { bubbles: true }));
+      });
+      expect(element('[data-id="http-dom"]').classList.contains('dxp-edge-data')).toBe(
+        value.includes('{{'),
+      );
+      expect(element('[data-id="http-http"]').classList.contains('dxp-edge-data')).toBe(true);
+    }
   });
 
   it('checks typed website URLs, confirms the bridge, and shows setup only when a check fails', async () => {

@@ -1,3 +1,4 @@
+import { isConnectionMapping } from './connectionMapping';
 import { isNoteMarks } from './noteText';
 import type { Workflow } from './types';
 
@@ -140,7 +141,10 @@ export function isWorkflow(value: unknown): value is Workflow {
       !nodeIds.has(edge.source) ||
       !nodeIds.has(edge.target) ||
       (edge.sourceHandle != null && typeof edge.sourceHandle !== 'string') ||
-      (edge.label != null && typeof edge.label !== 'string')
+      (edge.label != null && typeof edge.label !== 'string') ||
+      (edge.data !== undefined &&
+        (!object(edge.data) ||
+          (edge.data.mapping !== undefined && !isConnectionMapping(edge.data.mapping))))
     )
       return false;
     edgeIds.add(edge.id);
