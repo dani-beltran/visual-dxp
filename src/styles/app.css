@@ -19,11 +19,11 @@
   container-name: app-header;
   flex-shrink: 0;
   background: var(--dxp-surface);
-  padding: 8px 29px;
+  padding: 16px 29px 8px 29px;
 }
 .dxp-heading {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 24px;
 }
