@@ -6,10 +6,10 @@ export default defineConfig({
     outDir: 'public',
     emptyOutDir: false,
     lib: {
-      entry: 'src/preview-bridge.ts',
-      name: 'visualDXPPreviewBridge',
+      entry: 'src/bridge.ts',
+      name: 'visualDXPBridge',
       formats: ['iife'],
-      fileName: () => 'preview-bridge.js',
+      fileName: () => 'bridge.js',
     },
   },
 });

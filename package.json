@@ -12,7 +12,8 @@
   "types": "./dist/index.d.ts",
   "style": "./dist/visual-dxp.css",
   "sideEffects": [
-    "**/*.css"
+    "**/*.css",
+    "./dist/bridge.js"
   ],
   "exports": {
     ".": {
@@ -21,14 +22,13 @@
       "require": "./dist/visual-dxp.umd.cjs"
     },
     "./styles.css": "./dist/visual-dxp.css",
-    "./picker-bridge": "./dist/picker-bridge.js",
-    "./preview-bridge": "./dist/preview-bridge.js"
+    "./bridge": "./dist/bridge.js"
   },
   "scripts": {
-    "build:preview-bridge": "vite build --config vite.preview-bridge.config.ts",
-    "predev": "npm run build:preview-bridge",
-    "prebuild": "npm run build:preview-bridge",
-    "prebuild:lib": "npm run build:preview-bridge",
+    "build:bridge": "vite build --config vite.bridge.config.ts",
+    "predev": "npm run build:bridge",
+    "prebuild": "npm run build:bridge",
+    "prebuild:lib": "npm run build:bridge",
     "dev": "next dev --hostname 127.0.0.1",
     "build": "next build",
     "test": "vitest run",
@@ -41,7 +41,8 @@
     "start": "next start --hostname 0.0.0.0",
     "build:lib": "vite build --config vite.lib.config.ts",
     "typecheck": "tsc --noEmit",
-    "smoke": "node tests/smoke.mjs"
+    "smoke": "node tests/smoke.mjs",
+    "pretest": "npm run build:bridge"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "4.0.65",

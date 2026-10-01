@@ -6,7 +6,15 @@ import { useDialogFocus } from '../lib/useDialogFocus';
 import { IsolatedPreview } from './IsolatedPreview';
 import '../styles/popover-preview.css';
 
-export function PopoverPreview({ node, onClose }: { node: WorkflowNode; onClose: () => void }) {
+export function PopoverPreview({
+  node,
+  websiteUrl,
+  onClose,
+}: {
+  node: WorkflowNode;
+  websiteUrl: string;
+  onClose: () => void;
+}) {
   const { t } = useBuilderI18n();
   const positions: Record<NonNullable<StepConfig['position']>, string> = {
     center: t('popoverPreview.centerOfScreen'),
@@ -25,7 +33,7 @@ export function PopoverPreview({ node, onClose }: { node: WorkflowNode; onClose:
     () => ({
       version: 1,
       name: 'Popover preview',
-      websiteUrl: '/demo-site.html',
+      websiteUrl,
       nodes: [
         {
           id: 'preview-trigger',
@@ -41,7 +49,7 @@ export function PopoverPreview({ node, onClose }: { node: WorkflowNode; onClose:
       ],
       edges: [{ id: 'preview-edge', source: 'preview-trigger', target: node.id }],
     }),
-    [node],
+    [node, websiteUrl],
   );
   useEffect(() => {
     const close = (event: KeyboardEvent) => {
@@ -91,7 +99,8 @@ export function PopoverPreview({ node, onClose }: { node: WorkflowNode; onClose:
       </header>
       <div className="dxp-popover-preview-bar">
         <span>
-          <Globe2 size={14} /> {t('popoverPreview.demoWebsite')}
+          <Globe2 size={14} />{' '}
+          {websiteUrl === '/demo-site.html' ? t('popoverPreview.demoWebsite') : websiteUrl}
         </span>
         <span>
           {positions[config.position ?? 'bottom-right']} · {config.width ?? 360}{' '}
@@ -106,12 +115,12 @@ export function PopoverPreview({ node, onClose }: { node: WorkflowNode; onClose:
       <div className="dxp-popover-preview-website">
         {!ready && !error && (
           <div className="dxp-popover-preview-loading" role="status">
-            <LoaderCircle className="dxp-spin" size={18} /> {t('popoverPreview.loadingDemoWebsite')}
+            <LoaderCircle className="dxp-spin" size={18} /> {t('popoverPreview.loadingWebsite')}
           </div>
         )}
         <IsolatedPreview
-          key={reload}
-          url="/demo-site.html"
+          key={`${websiteUrl}-${reload}`}
+          url={websiteUrl}
           workflow={workflow}
           running={ready}
           revision={0}

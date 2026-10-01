@@ -38,8 +38,7 @@
   align-items: center;
   gap: 10px 14px;
 }
-.dxp-website-setup-actions .dxp-website-setup-copy,
-.dxp-website-setup-actions a {
+.dxp-website-setup-actions .dxp-website-setup-copy {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -57,8 +56,4 @@
 }
 .dxp-website-setup-actions .dxp-website-setup-copy:hover {
   background: var(--dxp-primary-hover);
-}
-.dxp-website-setup-actions a {
-  color: var(--dxp-primary-color);
-  text-underline-offset: 3px;
 }

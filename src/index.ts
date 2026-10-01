@@ -33,6 +33,7 @@ export type {
 export { createBuilderTranslator, formatBuilderError } from './lib/i18n';
 export { BuilderI18nProvider } from './lib/i18nContext';
 export { englishMessages } from './lib/messages';
+export { installPickerBridge } from './lib/pickerBridge';
 export { installPreviewBridge } from './lib/previewBridge';
 export type { RuntimeOptions, WorkflowRuntime } from './lib/runtime';
 export { createRuntime, executeWorkflow } from './lib/runtime';

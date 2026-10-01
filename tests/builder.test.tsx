@@ -172,6 +172,15 @@ describe('builder and host boundary', () => {
     await act(async () => vi.advanceTimersByTime(500));
     await act(async () => vi.advanceTimersByTime(8000));
     expect(host.querySelector('.dxp-website-settings .dxp-website-setup')).not.toBeNull();
+    const snippet = `<script src="${window.location.origin}/bridge.js" data-parent-origin="${window.location.origin}"></script>`;
+    expect(host.querySelector('.dxp-website-setup-snippet')?.textContent).toBe(snippet);
+    expect(host.querySelector('.dxp-website-setup a')).toBeNull();
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, get: () => undefined });
+    vi.spyOn(navigator, 'clipboard', 'get').mockReturnValue({ writeText } as unknown as Clipboard);
+    await click(button('Copy script'));
+    expect(writeText).toHaveBeenCalledWith(snippet);
+
     expect(host.querySelector('iframe')).toBeNull();
     await click(button('Use the demo website'));
     expect(host.querySelector('.dxp-website-connection')).toBeNull();

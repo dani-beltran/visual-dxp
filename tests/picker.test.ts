@@ -87,7 +87,9 @@ describe('website element selection', () => {
     );
     const session = attachElementPicker(document, vi.fn(), vi.fn());
     session.select('#target');
-    const outline = document.querySelector<HTMLElement>('[data-visual-dxp-picker] > div:last-child')!;
+    const outline = document.querySelector<HTMLElement>(
+      '[data-visual-dxp-picker] > div:last-child',
+    )!;
     expect(outline.style.top).toBe('120px');
     expect(outline.style.display).toBe('block');
     top = 55;
@@ -221,16 +223,33 @@ describe('cross-origin picker bridge', () => {
     script.dataset.parentOrigin = 'https://editor.example';
     vi.spyOn(document, 'currentScript', 'get').mockReturnValue(script);
     const parent = { postMessage: vi.fn() };
-    let receive: (event: unknown) => void = () => undefined;
+    const receivers: ((event: unknown) => void)[] = [];
+    const receive = (event: unknown) => {
+      for (const callback of receivers) callback(event);
+    };
     const bridgeWindow = {
       parent,
       addEventListener: (type: string, callback: (event: unknown) => void) => {
-        if (type === 'message') receive = callback;
+        if (type === 'message') receivers.push(callback);
       },
       removeEventListener: vi.fn(),
     };
-    const source = readFileSync('public/picker-bridge.js', 'utf8');
+    const source = readFileSync('public/bridge.js', 'utf8');
     new Function('window', 'document', 'URL', source)(bridgeWindow, document, URL);
+    const previewInit = {
+      protocol: 'visual-dxp:preview',
+      channel: 'preview-session',
+      type: 'init',
+    };
+    receive({ origin: 'https://untrusted.example', source: parent, data: previewInit });
+    receive({ origin: 'https://editor.example', source: {}, data: previewInit });
+    expect(parent.postMessage).not.toHaveBeenCalled();
+    receive({ origin: 'https://editor.example', source: parent, data: previewInit });
+    expect(parent.postMessage).toHaveBeenCalledWith(
+      { ...previewInit, type: 'ready' },
+      'https://editor.example',
+    );
+    parent.postMessage.mockClear();
     const init = { protocol: 'visual-dxp:element-picker', channel: 'editor-session', type: 'init' };
     receive({ origin: 'https://untrusted.example', source: parent, data: init });
     receive({ origin: 'https://editor.example', source: {}, data: init });
@@ -274,7 +293,9 @@ describe('cross-origin picker bridge', () => {
       () => ({ left: 20, top, width: 80, height: 25 }) as DOMRect,
     );
     document.dispatchEvent(new Event('scroll'));
-    const outline = document.querySelector<HTMLElement>('[data-visual-dxp-picker] > div:last-child')!;
+    const outline = document.querySelector<HTMLElement>(
+      '[data-visual-dxp-picker] > div:last-child',
+    )!;
     expect(outline.style.top).toBe('180px');
     top = 70;
     document.dispatchEvent(new Event('scroll'));

@@ -1462,7 +1462,11 @@ function Builder({
         />
       )}
       {modal === 'popover-preview' && selected?.data.kind === 'popover' && (
-        <PopoverPreview node={selected} onClose={() => setModal(null)} />
+        <PopoverPreview
+          node={selected}
+          websiteUrl={workflow.websiteUrl}
+          onClose={() => setModal(null)}
+        />
       )}
       {modal === 'website' && (
         // biome-ignore lint/a11y/useKeyWithClickEvents: The close button and Escape key dismiss this dialog for keyboard users.

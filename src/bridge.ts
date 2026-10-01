@@ -1,3 +1,4 @@
+import { installPickerBridge } from './lib/pickerBridge';
 import { installPreviewBridge } from './lib/previewBridge';
 
 // Classic script entry point for sites that do not use the Visual DXP package.
@@ -6,10 +7,11 @@ try {
   if (!origin || new URL(origin).origin !== origin || !/^https?:/.test(origin)) {
     throw new Error('Invalid parent origin');
   }
+  installPickerBridge(origin);
   installPreviewBridge(origin);
 } catch {
   console.warn(
-    '[Visual DXP preview bridge]',
+    '[Visual DXP bridge]',
     'Inactive: set data-parent-origin to the exact HTTP(S) editor origin, without a trailing slash.',
   );
 }

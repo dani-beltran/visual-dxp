@@ -60,7 +60,7 @@ export function ElementPicker({
         const html = await response.text();
         if (!controller.signal.aborted)
           setDemoHtml(
-            `${html}<script src="${window.location.origin}/picker-bridge.js" data-parent-origin="${window.location.origin}"></script>`,
+            `${html}<script src="${window.location.origin}/bridge.js" data-parent-origin="${window.location.origin}"></script>`,
           );
       })
       .catch(() => {

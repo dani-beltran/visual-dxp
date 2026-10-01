@@ -1,4 +1,4 @@
-/** A deliberately small, serializable protocol shared with picker-bridge.js. */
+/** A deliberately small, serializable protocol shared with bridge.js. */
 export const PICKER_PROTOCOL = 'visual-dxp:element-picker';
 
 export interface PickedElement {

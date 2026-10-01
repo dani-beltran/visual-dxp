@@ -423,7 +423,7 @@ export const englishMessages = {
   'popoverPreview.closePreviewEsc': 'Close preview (Esc)',
   'popoverPreview.demoWebsite': 'Demo website',
   'popoverPreview.px': 'px',
-  'popoverPreview.loadingDemoWebsite': 'Loading demo website…',
+  'popoverPreview.loadingWebsite': 'Loading website…',
   'popoverPreview.popoverPreviewWebsite': 'Popover preview website',
   'presetsPanel.workflowPresets': 'Workflow presets',
   'presetsPanel.applyingAPresetReplacesAllCurrentNodesAndConnectionsYourWorkflowName':
@@ -531,12 +531,8 @@ export const englishMessages = {
   'websiteSetup.connectYourWebsite': 'Connect your website',
   'websiteSetup.copied': 'Copied',
   'websiteSetup.copyScript': 'Copy script',
-  'websiteSetup.downloadBridgeFile': 'Download bridge file',
-  'websiteSetup.downloadPreviewBridgeFile': 'Download preview bridge',
-  'websiteSetup.previewInstructions':
-    'For popover and workflow previews, also host preview-bridge.js at your website’s root and include the second script below.',
   'isolatedPreview.bridgeUnavailable':
-    'The preview bridge did not connect. Install preview-bridge.js on this website with data-parent-origin set to the exact editor origin, then reload. Check the browser console for blocked scripts or embedding errors.',
+    'The preview bridge did not connect. Install bridge.js on this website with data-parent-origin set to the exact editor origin, then reload. Check the browser console for blocked scripts or embedding errors.',
   'websiteSetup.couldnTCopyAutomaticallySelectTheScriptAboveAndCopyItManually':
     'Couldn’t copy automatically. Select the script above and copy it manually.',
   'workflowCard.incomingData': 'Incoming data',
@@ -1098,7 +1094,7 @@ export const englishMessages = {
     `${count} ${count === 1 ? 'edit' : 'edits'} applied · Undo on the canvas`,
   'canvasChat.unavailable': 'Unable to reach the AI assistant.',
   'websiteSetup.installInstructions': ({ filename }: { filename: string }) =>
-    `Download and host ${filename} at your website’s root, then add this script to the pages you want to select elements on.`,
+    `Add this ${filename} script to your website’s pages to enable element selection and live previews.`,
   'websiteSetup.embeddingInstructions':
     'The website must also allow embedding via its CSP frame-ancestors and X-Frame-Options settings.',
   'aiSettings.privacy':

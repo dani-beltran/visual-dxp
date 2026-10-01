@@ -11,4 +11,4 @@ todo.md
 output
 .next/
 next-env.d.ts
-public/preview-bridge.js
+public/bridge.js

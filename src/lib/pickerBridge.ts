@@ -1,21 +1,19 @@
+import { getElementSelector, PICKER_PROTOCOL, type PickerSession } from './picker';
+
 /**
- * Visual DXP element-picker bridge. Host this file on the website being inspected.
- * <script src="/picker-bridge.js" data-parent-origin="https://your-editor.example"></script>
+ * Visual DXP element-picker bridge. Bundled with the preview bridge for external websites.
+ * <script src="https://your-editor.example/bridge.js" data-parent-origin="https://your-editor.example"></script>
  * The exact parent origin is mandatory. The site must separately permit framing.
  * This bridge never executes code received through postMessage.
  */
-(() => {
-  // biome-ignore lint/suspicious/noRedundantUseStrict: This bridge is loaded as a classic script by external sites.
-  'use strict';
+export function installPickerBridge(configuredOrigin: string) {
   const logPrefix = '[Visual DXP picker bridge]';
   console.info(logPrefix, 'Script loaded.');
-  const script = document.currentScript;
-  const configuredOrigin = script && script.getAttribute('data-parent-origin');
   if (!configuredOrigin) {
     console.warn(logPrefix, 'Inactive: add data-parent-origin with the exact editor origin.');
     return;
   }
-  let parentOrigin;
+  let parentOrigin: string;
   try {
     const parsedOrigin = new URL(configuredOrigin);
     if (!/^https?:$/.test(parsedOrigin.protocol) || parsedOrigin.origin !== configuredOrigin) {
@@ -49,7 +47,7 @@
       if (!response.ok) throw new Error();
       const editor = new URL(parentOrigin);
       // null means a source needs browser/manual verification, not that it blocks.
-      function matches(source) {
+      function matches(source: string): boolean | null {
         if (source === '*') return true;
         if (source.toLowerCase() === "'none'") return false;
         if (source.toLowerCase() === "'self'") {
@@ -144,79 +142,21 @@
     return;
   }
 
-  const protocol = 'visual-dxp:element-picker';
-  let activeChannel = null;
-  let session = null;
-  function send(type, values) {
+  const protocol = PICKER_PROTOCOL;
+  let activeChannel: string | null = null;
+  let session: PickerSession | null = null;
+  function send(type: string, values: Record<string, unknown> = {}) {
     window.parent.postMessage(
       Object.assign({ protocol: protocol, channel: activeChannel, type: type }, values || {}),
       parentOrigin,
     );
-  }
-  function escapeSelector(value) {
-    if (window.CSS && window.CSS.escape) return window.CSS.escape(value);
-    return Array.from(value)
-      .map((character, index) => {
-        const code = character.charCodeAt(0);
-        if (code === 0) return '\uFFFD';
-        if (
-          (code >= 1 && code <= 31) ||
-          code === 127 ||
-          (index === 0 && /[0-9]/.test(character)) ||
-          (index === 1 && value[0] === '-' && /[0-9]/.test(character))
-        )
-          return '\\' + code.toString(16) + ' ';
-        if (index === 0 && character === '-' && value.length === 1) return '\\-';
-        return code >= 128 || /[a-zA-Z0-9_-]/.test(character) ? character : '\\' + character;
-      })
-      .join('');
-  }
-  function selectorFor(element) {
-    function unique(selector) {
-      try {
-        return document.querySelectorAll(selector).length === 1;
-      } catch (_) {
-        return false;
-      }
-    }
-    const parts = [];
-    let current = element;
-    while (current) {
-      const tag = current.tagName.toLowerCase();
-      if (current.id && unique('#' + escapeSelector(current.id))) {
-        parts.unshift('#' + escapeSelector(current.id));
-        break;
-      }
-      const testId = current.getAttribute('data-testid');
-      if (testId) {
-        const stable =
-          '[data-testid="' +
-          testId.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\a ') +
-          '"]';
-        if (unique(stable)) {
-          parts.unshift(stable);
-          break;
-        }
-      }
-      let part = tag;
-      const siblings = current.parentElement
-        ? Array.from(current.parentElement.children).filter(
-            (child) => child.tagName === current.tagName,
-          )
-        : [];
-      if (siblings.length > 1) part += ':nth-of-type(' + (siblings.indexOf(current) + 1) + ')';
-      parts.unshift(part);
-      if (unique(parts.join(' > '))) break;
-      current = current.parentElement;
-    }
-    return parts.join(' > ');
   }
   function attach() {
     const root = document.createElement('div');
     root.setAttribute('data-visual-dxp-picker', 'overlay');
     root.setAttribute('aria-hidden', 'true');
     root.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:2147483647;';
-    function outline(selected) {
+    function outline(selected: boolean) {
       const box = document.createElement('div');
       box.style.cssText =
         'position:fixed;display:none;pointer-events:none;border:2px ' +
@@ -232,16 +172,20 @@
     const hoveredOutline = outline(false);
     const selectedOutline = outline(true);
     document.documentElement.appendChild(root);
-    let hovered = null;
-    let selected = null;
-    function detail(element) {
+    let hovered: Element | null = null;
+    let selected: Element | null = null;
+    function detail(element: Element) {
       return {
-        selector: selectorFor(element),
+        selector: getElementSelector(element),
         tagName: element.tagName.toLowerCase(),
         text: (element.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 100),
       };
     }
-    function draw(element, highlight, isSelected) {
+    function draw(
+      element: Element | null,
+      highlight: ReturnType<typeof outline>,
+      isSelected: boolean,
+    ) {
       if (!element || !element.isConnected) {
         highlight.box.style.display = 'none';
         return;
@@ -254,7 +198,7 @@
         width: rect.width + 'px',
         height: rect.height + 'px',
       });
-      highlight.label.textContent = (isSelected ? 'Selected · ' : '') + selectorFor(element);
+      highlight.label.textContent = (isSelected ? 'Selected · ' : '') + getElementSelector(element);
       highlight.label.style.bottom = rect.top < 30 ? 'auto' : '100%';
       highlight.label.style.top = rect.top < 30 ? '100%' : 'auto';
     }
@@ -262,14 +206,14 @@
       draw(hovered === selected ? null : hovered, hoveredOutline, false);
       draw(selected, selectedOutline, true);
     }
-    function valid(target) {
+    function valid(target: EventTarget | null): target is Element {
       return (
-        target &&
-        typeof target.closest === 'function' &&
-        !target.closest('[data-visual-dxp-picker]')
+        !!target &&
+        typeof (target as Element).closest === 'function' &&
+        !(target as Element).closest('[data-visual-dxp-picker]')
       );
     }
-    function move(event) {
+    function move(event: MouseEvent) {
       if (!valid(event.target) || event.target === hovered) return;
       hovered = event.target;
       refresh();
@@ -280,7 +224,7 @@
       refresh();
       send('hover', { element: null });
     }
-    function click(event) {
+    function click(event: MouseEvent) {
       if (!valid(event.target)) return;
       event.preventDefault();
       event.stopImmediatePropagation();
@@ -295,7 +239,7 @@
     document.addEventListener('scroll', refresh, true);
     window.addEventListener('resize', refresh);
     return {
-      select: (selector) => {
+      select: (selector: string) => {
         try {
           selected = selector.trim() ? document.querySelector(selector) : null;
           refresh();
@@ -358,4 +302,4 @@
     }
   });
   console.info(logPrefix, 'Listening for editor initialization.', { parentOrigin: parentOrigin });
-})();
+}

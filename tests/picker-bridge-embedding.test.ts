@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-const bridge = readFileSync('public/picker-bridge.js', 'utf8');
+const bridge = readFileSync('public/bridge.js', 'utf8');
 const prefix = '[Visual DXP picker bridge]';
 
 afterEach(() => {

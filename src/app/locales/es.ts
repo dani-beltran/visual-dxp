@@ -393,7 +393,7 @@ export const spanishMessages = {
   'popoverPreview.closePreviewEsc': 'Cerrar vista previa (Esc)',
   'popoverPreview.demoWebsite': 'Sitio web de demostración',
   'popoverPreview.px': 'px',
-  'popoverPreview.loadingDemoWebsite': 'Cargando sitio web de demostración…',
+  'popoverPreview.loadingWebsite': 'Cargando sitio web…',
   'popoverPreview.popoverPreviewWebsite': 'Sitio web de vista previa de la ventana emergente',
   'presetsPanel.workflowPresets': 'Plantillas de flujos de trabajo',
   'presetsPanel.applyingAPresetReplacesAllCurrentNodesAndConnectionsYourWorkflowName':
@@ -496,12 +496,8 @@ export const spanishMessages = {
   'websiteSetup.connectYourWebsite': 'Conecta tu sitio web',
   'websiteSetup.copied': 'Copiado',
   'websiteSetup.copyScript': 'Copiar script',
-  'websiteSetup.downloadBridgeFile': 'Descargar archivo del puente',
-  'websiteSetup.downloadPreviewBridgeFile': 'Descargar puente de vista previa',
-  'websiteSetup.previewInstructions':
-    'Para previsualizar ventanas emergentes y flujos, aloja también preview-bridge.js en la raíz de tu sitio web e incluye el segundo script de abajo.',
   'isolatedPreview.bridgeUnavailable':
-    'El puente de vista previa no se ha conectado. Instala preview-bridge.js en este sitio web con data-parent-origin configurado con el origen exacto del editor y recarga. Revisa la consola del navegador por si hay scripts bloqueados o errores de incrustación.',
+    'El puente de vista previa no se ha conectado. Instala bridge.js en este sitio web con data-parent-origin configurado con el origen exacto del editor y recarga. Revisa la consola del navegador por si hay scripts bloqueados o errores de incrustación.',
   'websiteSetup.couldnTCopyAutomaticallySelectTheScriptAboveAndCopyItManually':
     'No se ha podido copiar automáticamente. Selecciona el script de arriba y cópialo manualmente.',
   'workflowCard.incomingData': 'Datos de entrada',
@@ -1059,7 +1055,7 @@ export const spanishMessages = {
   'canvasChat.editsApplied': ({ count }) =>
     `${count} ${count === 1 ? 'cambio aplicado' : 'cambios aplicados'} · Deshacer en el lienzo`,
   'websiteSetup.installInstructions': ({ filename }) =>
-    `Descarga y aloja ${filename} en la raíz de tu sitio web y añade este script a las páginas donde quieras seleccionar elementos.`,
+    `Añade este script ${filename} a las páginas de tu sitio web para seleccionar elementos y previsualizar los flujos.`,
   'canvasChat.selectedStep': ({ label }) => `Seleccionado: ${label}`,
   'website.exportTargetFailure': ({ reason }) =>
     `Configura la URL de tu sitio web antes de exportar. El sitio web de demostración solo sirve para la vista previa. ${reason}`,

@@ -48,8 +48,10 @@ function popover(config: StepConfig = {}): WorkflowNode {
   };
 }
 
-async function renderPreview(node = popover(), onClose = vi.fn()) {
-  await act(async () => root.render(<PopoverPreview node={node} onClose={onClose} />));
+async function renderPreview(node = popover(), onClose = vi.fn(), websiteUrl = '/demo-site.html') {
+  await act(async () =>
+    root.render(<PopoverPreview node={node} websiteUrl={websiteUrl} onClose={onClose} />),
+  );
   return onClose;
 }
 
@@ -80,11 +82,44 @@ function panel(doc: Document) {
 }
 
 describe('fullscreen popover preview', () => {
+  it('loads the configured external website and runs its popover through the bridge', async () => {
+    const websiteUrl = 'https://shop.example/products?preview=1';
+    await renderPreview(popover(), vi.fn(), websiteUrl);
+    const frame = websiteFrame();
+    expect(frame.src).toBe(websiteUrl);
+    expect(frame.hasAttribute('srcdoc')).toBe(false);
+    expect(frame.getAttribute('sandbox')).toBe('allow-scripts');
+    expect(fetch).not.toHaveBeenCalled();
+    expect(document.querySelector('.dxp-popover-preview-bar')?.textContent).toContain(websiteUrl);
+    expect(document.body.textContent).not.toContain('Demo website');
+    const target = frame.contentWindow!;
+    const post = vi.spyOn(target, 'postMessage').mockImplementation(() => {});
+    await act(async () => frame.dispatchEvent(new Event('load')));
+    const init = post.mock.calls.at(-1)![0];
+    await act(async () => {
+      window.dispatchEvent(
+        new MessageEvent('message', {
+          source: target,
+          origin: 'null',
+          data: { ...init, type: 'ready' },
+        }),
+      );
+    });
+    expect(post).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'run',
+        workflow: expect.objectContaining({ websiteUrl }),
+      }),
+      '*',
+    );
+    expect(document.querySelector('.dxp-popover-preview-loading')).toBeNull();
+  });
+
   it('reports a missing preview bridge instead of loading forever', async () => {
     vi.useFakeTimers();
     await renderPreview();
     await act(async () => vi.advanceTimersByTime(8000));
-    expect(document.querySelector('[role="alert"]')?.textContent).toContain('preview-bridge.js');
+    expect(document.querySelector('[role="alert"]')?.textContent).toContain('bridge.js');
     expect(document.querySelector('.dxp-popover-preview-loading')).toBeNull();
   });
 
