@@ -4,7 +4,7 @@ A Next.js App Router application and embeddable React 19 workflow editor powered
 
 ## Common DXP presets
 
-Import `commonDXPPresets` from `dlb-dxp` and pass it as `<VisualDXPBuilder presets={commonDXPPresets} />` to enable twelve editable examples, ordered from basic help to segmented onboarding. The demo opts in explicitly; builders without presets still have no Presets tab. See the [preset reference and setup guide](docs/common-dxp-presets.md) for every scenario, selectors, HTTP placeholders, CSS, and runtime limits.
+Import `commonDXPPresets` from `dlb-dxp` and pass it as `<VisualDXPBuilder presets={commonDXPPresets} />` to enable Blank followed by twelve editable examples, ordered from basic help to segmented onboarding. The demo opts in explicitly; builders without presets still have no Presets tab. See the [preset reference and setup guide](docs/common-dxp-presets.md) for every scenario, selectors, HTTP placeholders, CSS, and runtime limits.
 
 ## Run the demo
 
@@ -135,57 +135,26 @@ interface WorkflowPreset {
 }
 ```
 
-Store each preset in its own `.ts` file as a JSON-serializable object literal with `satisfies WorkflowPreset`. Use fixed node/edge IDs and type-only imports; preset definitions must not contain functions, JSX, generated IDs, or runtime dependencies. The common campaign headline preset calculates its current UTC week at module load and stores only the resulting date strings in its exported object. For example, `presets/welcome.ts`:
+Bundled examples of increasing complexity live in [`src/presets`](src/presets). Start with [click-to-open help](src/presets/click-to-open-help.ts), which connects a click trigger to an anchored popover and includes setup notes. See the [common DXP presets reference](docs/common-dxp-presets.md) for all thirteen presets and their required setup.
 
-```ts
-import type { WorkflowPreset } from 'dlb-dxp';
-
-export const welcomePreset = {
-  id: 'welcome',
-  name: 'Welcome message',
-  description: 'Greet visitors when the page loads.',
-  complexity: 'beginner',
-  order: 10,
-  setupInstructions: ['Customize the welcome message before publishing.'],
-  workflow: {
-    version: 1,
-    name: 'Welcome message',
-    websiteUrl: '',
-    nodes: [
-      {
-        id: 'start', type: 'workflow', position: { x: 0, y: 0 },
-        data: { kind: 'trigger', label: 'Page loaded', config: { event: 'page-load' } },
-      },
-      {
-        id: 'welcome', type: 'workflow', position: { x: 320, y: 0 },
-        data: {
-          kind: 'popover', label: 'Welcome',
-          config: { contentType: 'html', content: '<h2>Welcome!</h2>', position: 'center' },
-        },
-      },
-    ],
-    edges: [{ id: 'start-welcome', source: 'start', target: 'welcome' }],
-  },
-} satisfies WorkflowPreset;
-```
-
-Pass the presets explicitly from your host:
+Pass a bundled preset explicitly from your host:
 
 ```tsx
-import VisualDXPBuilder from 'dlb-dxp';
+import VisualDXPBuilder, { clickToOpenHelpPreset } from 'dlb-dxp';
 import 'dlb-dxp/styles.css';
-import { welcomePreset } from './presets/welcome';
 
 export function ExperienceEditor() {
-  return <VisualDXPBuilder presets={[welcomePreset]} style={{ height: 600 }} />;
+  return <VisualDXPBuilder presets={[clickToOpenHelpPreset]} style={{ height: 600 }} />;
 }
 ```
 
-The builder never loads a built-in collection. Copyable examples of increasing complexity live in [`examples/presets`](examples/presets): a welcome message, a returning-visitor greeting, and API-driven content. In your host, change their type-only import to `dlb-dxp`.
+The builder never loads a collection automatically. Pass `commonDXPPresets` to offer the full bundled collection, or supply your own `WorkflowPreset[]`. Configure the target website and adapt the preset's selectors and content before publishing.
+
+For custom presets, store each definition in its own `.ts` file and check the object with `satisfies WorkflowPreset`. Use fixed node/edge IDs and keep the resulting preset JSON-serializable, without functions or JSX in its data. The bundled definitions use factories and locale messages to produce plain objects; the campaign headline preset also calculates its current UTC week at module load and stores only the resulting date strings.
 
 Choose ascending `order` values from least to most complex; this field determines display order without changing your array. Removing all presets while Presets is active returns to Canvas.
 
-Applying validates the workflow structure, graph, and configuration before replacing all nodes and connections. Invalid presets display an error and leave the editor unchanged. The current workflow's `name`, `websiteUrl`, and `includeSubpages` are preserved. Preset data is deep-cloned, editor selections and transient state are cleared, and the applied graph is fitted on Canvas. Application uses the normal commit path: one undoable edit, one activity entry, and the usual `onChange` and optional localStorage persistence. It does not execute the workflow or make network requests. Setup instructions describe any site-specific changes required before testing or publishing.
+The first bundled preset, `blankPreset`, clears the canvas so you can start from scratch. Add a trigger and steps before previewing or exporting. Applying a nonempty preset validates the workflow structure, graph, and configuration before replacing all nodes and connections. Invalid presets display an error and leave the editor unchanged. The current workflow's `name`, `websiteUrl`, and `includeSubpages` are preserved. Preset data is deep-cloned, editor selections and transient state are cleared, and the applied graph is fitted on Canvas. Application uses the normal commit path: one undoable edit, one activity entry, and the usual `onChange` and optional localStorage persistence. It does not execute the workflow or make network requests. Setup instructions describe any site-specific changes required before testing or publishing.
 
 ### Brand colors with theme.css
 

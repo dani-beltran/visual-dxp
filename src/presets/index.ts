@@ -1,4 +1,5 @@
 import type { WorkflowPreset } from '../lib/types';
+import { blankPreset, createBlankPreset } from './blank';
 import {
   boundedCtaAttentionPreset,
   createBoundedCtaAttentionPreset,
@@ -33,6 +34,7 @@ import {
 import { createSegmentedOnboardingPreset, segmentedOnboardingPreset } from './segmented-onboarding';
 
 export {
+  blankPreset,
   boundedCtaAttentionPreset,
   campaignHeadlinePreset,
   campaignUrlPersonalizationPreset,
@@ -49,6 +51,7 @@ export {
 
 /** Curated examples in ascending implementation complexity; opt in through the presets prop. */
 export const commonDXPPresets: readonly WorkflowPreset[] = [
+  blankPreset,
   clickToOpenHelpPreset,
   delayedWelcomePreset,
   campaignHeadlinePreset,
@@ -67,6 +70,7 @@ export { englishPresetMessages, type PresetMessages } from './locale/en';
 export { spanishPresetMessages } from './locale/es';
 
 const spanishPresets: readonly WorkflowPreset[] = [
+  createBlankPreset(spanishPresetMessages),
   createBoundedCtaAttentionPreset(spanishPresetMessages),
   createCampaignHeadlinePreset(spanishPresetMessages),
   createCampaignUrlPersonalizationPreset(spanishPresetMessages),

@@ -1,10 +1,10 @@
 # Common DXP workflow presets
 
-`commonDXPPresets` contains twelve independent examples, ordered by implementation complexity. Every preset is an editable, JSON-serializable object literal in its own file under `src/presets/`, checked with `satisfies WorkflowPreset`. The catalog covers all ten current node kinds. Static IDs remain stable when the workflow is applied; annotation IDs are never used in connections.
+`commonDXPPresets` contains Blank followed by twelve independent examples, ordered by implementation complexity. Every preset is an editable, JSON-serializable object literal in its own file under `src/presets/`, checked with `satisfies WorkflowPreset`. The catalog covers all ten current node kinds. Static IDs remain stable when the workflow is applied; annotation IDs are never used in connections.
 
-Each preset carries its setup instructions as editable, disconnected note nodes on the canvas, beside the steps they explain. Onboarding places these notes inside the corresponding stage frames. The common presets omit the optional `setupInstructions` metadata, so their cards show the scenario summary while setup guidance appears when applied. Other consumers can still supply that optional metadata for their own preset cards.
+Each nonempty preset carries its setup instructions as editable, disconnected note nodes on the canvas, beside the steps they explain. Onboarding places these notes inside the corresponding stage frames. The common presets omit the optional `setupInstructions` metadata, so their cards show the scenario summary while setup guidance appears when applied. Other consumers can still supply that optional metadata for their own preset cards.
 
-Every canvas also has a green overview note to the left of the workflow, containing the preset title in bold followed by its description.
+Every nonempty preset canvas also has a green overview note to the left of the workflow, containing the preset title in bold followed by its description.
 
 Unanchored popover HTML follows the Atelier demo branding: cream surfaces, olive accents and links styled as buttons, Georgia headings, and an Atelier wordmark. Each snippet includes its own inline styles, so it also works in isolated previews and exports without loading the demo stylesheet. Anchored popovers are compact 240px tooltip-style hints with lightweight white Georgia serif text on an olive (#697856) background, a decorative emoji, and a single sentence explaining the target control, without a wordmark, heading, or extra link. Their runtime arrow fill, arrow stroke, surface background, and surface border all match the olive content background (#697856), using CSS scoped to each popover ID. They retain a white runtime close button. When changing the background, update these scoped colors together. Customize the wordmark, copy, and colors when adapting these examples to another brand.
 
@@ -20,10 +20,11 @@ Applying a preset replaces the graph and preserves the editor's current workflow
 
 ## Preset reference
 
-The first three are ordered by their final implementation: two connected nodes, a linear delay, then conditional execution. Exit intent precedes the returning-visitor example because its true branch simply ends. Node types below are distinct types, rather than counts. Every preset also includes setup `note` nodes; these annotations add no execution complexity.
+After Blank, the first three examples are ordered by their final implementation: two connected nodes, a linear delay, then conditional execution. Exit intent precedes the returning-visitor example because its true branch simply ends. Node types below are distinct types, rather than counts. Every nonempty preset also includes setup `note` nodes; these annotations add no execution complexity.
 
 | Order | Preset / export | Complexity | Purpose and node types | Required setup |
 | --- | --- | --- | --- | --- |
+| 0 | Blank / `blankPreset` | Beginner | Empty canvas with no nodes or connections. | Add a trigger and steps before previewing or exporting. Applying preserves host metadata and supports Undo. |
 | 10 | Click-to-open help / `clickToOpenHelpPreset` | Beginner | Click a newsletter link to show help beside the form. `trigger`, `popover`. | Demo trigger `#collection .section-heading a`; anchor `#newsletter form`. Replace with your accessible help link/button and form. Adapt newsletter copy to your terms. |
 | 20 | Delayed welcome / `delayedWelcomePreset` | Beginner | Page load → 2-second pause → welcome. `trigger`, `delay`, `popover`. | Update welcome copy and the `#collection` link. Runs on every page load. |
 | 30 | Campaign headline / `campaignHeadlinePreset` | Beginner | Page load → current UTC campaign week → headline. False leaves the page alone. `trigger`, `fork`, `dom`. | Monday–Sunday dates are calculated when `campaign-headline.ts` loads; reload to refresh the available preset. Change `.hero h1` and copy. Text updates replace nested markup. |

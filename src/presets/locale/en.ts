@@ -3,6 +3,8 @@ export const englishPresetMessages = {
   'complexity.beginner': 'beginner',
   'complexity.intermediate': 'intermediate',
   'complexity.advanced': 'advanced',
+  'blank.name': 'Blank',
+  'blank.description': 'Start from an empty canvas and build your own workflow.',
   'bounded-cta-attention.name': 'Bounded CTA attention sequence',
   'bounded-cta-attention.description':
     'Highlight the collection heading twice after the main CTA is clicked, then show a completion tip.',

@@ -8,6 +8,7 @@ import { createRuntime, type WorkflowRuntime } from '../src/lib/runtime';
 import { isWorkflow } from '../src/lib/serialization';
 import type { RunLog, WorkflowNode, WorkflowPreset } from '../src/lib/types';
 import {
+  blankPreset,
   boundedCtaAttentionPreset,
   campaignUrlPersonalizationPreset,
   clickToOpenHelpPreset,
@@ -75,8 +76,20 @@ afterEach(() => {
 });
 
 describe('common DXP preset contracts and layout', () => {
-  it('has at least twelve unique, deliberately ordered presets covering the complete catalog', () => {
-    expect(commonDXPPresets.length).toBeGreaterThanOrEqual(12);
+  it('ships a serializable empty Blank preset that must be completed before export', () => {
+    expect(JSON.parse(JSON.stringify(blankPreset))).toEqual(blankPreset);
+    expect(isWorkflow(blankPreset.workflow)).toBe(true);
+    expect(blankPreset.workflow.nodes).toEqual([]);
+    expect(blankPreset.workflow.edges).toEqual([]);
+    expect(validateWorkflow(blankPreset.workflow).length).toBeGreaterThan(0);
+    expect(() =>
+      exportWorkflow({ ...blankPreset.workflow, websiteUrl: 'https://example.com' }),
+    ).toThrow();
+  });
+
+  it('has at least thirteen unique, deliberately ordered presets covering the complete catalog', () => {
+    expect(commonDXPPresets[0]).toBe(blankPreset);
+    expect(commonDXPPresets.length).toBeGreaterThanOrEqual(13);
     expect(new Set(commonDXPPresets.map((p) => p.id)).size).toBe(commonDXPPresets.length);
     const order = commonDXPPresets.map((p) => p.order);
     expect(new Set(order).size).toBe(order.length);
@@ -89,7 +102,7 @@ describe('common DXP preset contracts and layout', () => {
     ).toEqual(new Set(catalog.map((entry) => entry.kind)));
   });
 
-  it.each(commonDXPPresets)(
+  it.each(commonDXPPresets.filter((preset) => preset !== blankPreset))(
     '$name serializes, validates, exports, and has reachable executable nodes',
     (preset) => {
       expect(JSON.parse(JSON.stringify(preset))).toEqual(preset);

@@ -872,7 +872,9 @@ function Builder({
     try {
       if (!isWorkflow(preset.workflow)) throw new Error(t('builder.invalidWorkflowStructure'));
       next = copyWorkflow(preset.workflow);
-      const issues = validateWorkflow(next, t);
+      // Empty presets reset the canvas; execution still requires a runnable workflow.
+      const issues =
+        next.nodes.length === 0 && next.edges.length === 0 ? [] : validateWorkflow(next, t);
       if (issues.length) throw new Error(issues.map((issue) => issue.message).join(' '));
     } catch (error) {
       return t('builder.couldNotApplyNameValue', {

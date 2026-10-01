@@ -4,6 +4,8 @@ export const spanishPresetMessages = {
   'complexity.beginner': 'principiante',
   'complexity.intermediate': 'intermedio',
   'complexity.advanced': 'avanzado',
+  'blank.name': 'En blanco',
+  'blank.description': 'Empieza con un lienzo vacío y crea tu propio flujo de trabajo.',
   'bounded-cta-attention.name': 'Secuencia limitada para destacar la llamada a la acción',
   'bounded-cta-attention.description':
     'Destaca dos veces el encabezado de la colección al hacer clic en la llamada a la acción principal y después muestra un aviso de finalización.',

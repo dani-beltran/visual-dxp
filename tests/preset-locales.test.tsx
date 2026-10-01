@@ -6,6 +6,7 @@ import { PresetsPanel } from '../src/components/PresetsPanel';
 import { validateWorkflow } from '../src/lib/export';
 import { BuilderI18nProvider } from '../src/lib/i18nContext';
 import {
+  blankPreset,
   commonDXPPresets,
   englishPresetMessages,
   getCommonDXPPresets,
@@ -26,7 +27,14 @@ it.each(commonDXPPresets)('localizes $id while preserving executable configurati
   expect(spanish).toBeDefined();
   if (!spanish) throw new Error('Missing Spanish preset');
   expect(JSON.parse(JSON.stringify(spanish))).toEqual(spanish);
-  expect(validateWorkflow(spanish.workflow)).toEqual([]);
+  if (english === blankPreset) {
+    expect(getCommonDXPPresets('es')[0]).toBe(spanish);
+    expect(spanish.workflow.nodes).toEqual([]);
+    expect(spanish.workflow.edges).toEqual([]);
+    expect(validateWorkflow(spanish.workflow).length).toBeGreaterThan(0);
+  } else {
+    expect(validateWorkflow(spanish.workflow)).toEqual([]);
+  }
   expect(spanish.name).not.toBe(english.name);
   expect(spanish.description).not.toBe(english.description);
   expect(spanish.workflow.name).toBe(spanish.name);
@@ -77,13 +85,13 @@ it('updates bundled cards with the editor locale and applies the displayed trans
     );
   try {
     await render('en');
-    expect(host.querySelector('h3')?.textContent).toBe('Click-to-open help');
+    expect(host.querySelector('h3')?.textContent).toBe('Blank');
     await render('es-ES');
-    expect(host.querySelector('h3')?.textContent).toBe('Ayuda al hacer clic');
+    expect(host.querySelector('h3')?.textContent).toBe('En blanco');
     await act(() => host.querySelector('button')?.click());
     expect(onApply).toHaveBeenCalledWith(getCommonDXPPresets('es')[0]);
     await render('en');
-    expect(host.querySelector('h3')?.textContent).toBe('Click-to-open help');
+    expect(host.querySelector('h3')?.textContent).toBe('Blank');
     expect(onApply).toHaveBeenCalledTimes(1);
   } finally {
     await act(() => root.unmount());
