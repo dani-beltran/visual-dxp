@@ -401,6 +401,8 @@ The builder uses opaque sandbox origins for all untrusted previews, including sa
 
 Use the exact editor origin, including its port when relevant, with no trailing slash. The bridge checks the parent window, exact origin, protocol, and session channel. It only operates while the authorized editor activates a picker session and removes selection listeners/outlines on stop.
 
+To verify installation, open the host website's browser console and filter for `[Visual DXP picker bridge]`. The bridge logs when the script loads, why it is inactive, when it starts listening, and when a picker session is ready or stopped. Selection and selector lookup logs confirm interaction without logging page text or selector values. When visiting the website directly, an inactive message is expected; open it in the editor picker iframe to connect.
+
 The target website must permit embedding via its `Content-Security-Policy: frame-ancestors` and `X-Frame-Options` settings. Neither a React component nor this bridge can override browser framing policy. Remote sites that you cannot configure still support manual CSS selector entry.
 
 See [MDN: iframe contentDocument](https://developer.mozilla.org/en-US/docs/Web/API/HTMLIFrameElement/contentDocument) and [MDN: postMessage](https://developer.mozilla.org/en-US/docs/Web/API/Window/postMessage) for the browser model.
