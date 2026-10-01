@@ -10,6 +10,7 @@ import {
   createCampaignUrlPersonalizationPreset,
 } from './campaign-url-personalization';
 import { clickToOpenHelpPreset, createClickToOpenHelpPreset } from './click-to-open-help';
+import { contextualSupportPreset, createContextualSupportPreset } from './contextual-support';
 import { createDelayedWelcomePreset, delayedWelcomePreset } from './delayed-welcome';
 import {
   createEngagedReaderInvitationPreset,
@@ -40,6 +41,7 @@ export {
   campaignHeadlinePreset,
   campaignUrlPersonalizationPreset,
   clickToOpenHelpPreset,
+  contextualSupportPreset,
   delayedWelcomePreset,
   engagedReaderInvitationPreset,
   exitIntentOfferPreset,
@@ -64,6 +66,7 @@ export const commonDXPPresets: readonly WorkflowPreset[] = [
   exitIntentOfferPreset,
   returningVisitorExperiencePreset,
   inactivityAssistancePreset,
+  contextualSupportPreset,
   frustrationRecoveryPreset,
   boundedCtaAttentionPreset,
   segmentedOnboardingPreset,
@@ -79,6 +82,7 @@ const spanishPresets: readonly WorkflowPreset[] = [
   createCampaignHeadlinePreset(spanishPresetMessages),
   createCampaignUrlPersonalizationPreset(spanishPresetMessages),
   createClickToOpenHelpPreset(spanishPresetMessages),
+  createContextualSupportPreset(spanishPresetMessages),
   createDelayedWelcomePreset(spanishPresetMessages),
   createEngagedReaderInvitationPreset(spanishPresetMessages),
   createExitIntentOfferPreset(spanishPresetMessages),
