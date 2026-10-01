@@ -25,7 +25,14 @@ const config = z.object({
       'inactivity',
       'scroll-thrashing',
       'scroll-depth',
+      'commerce-product-added-to-cart',
     ])
+    .optional(),
+  commercePlatform: z
+    .literal('shopify', { error: 'Unsupported commerce platform. Only Shopify is supported.' })
+    .describe(
+      'Commerce platform; defaults to Shopify. All other platforms are disabled premium options.',
+    )
     .optional(),
   rageClickCount: z
     .number()
@@ -392,10 +399,17 @@ export function createWorkflowTools(workflow: Workflow, selectedNodeIds: string[
         const handler = privateHandlers.get(name);
         if (!handler) return JSON.stringify({ ok: false, error: 'Unknown workflow tool.' });
         return handler(input);
-      } catch {
+      } catch (error) {
         return JSON.stringify({
           ok: false,
-          error: 'Invalid tool arguments. Check the tool schema and try again.',
+          error:
+            error instanceof z.ZodError &&
+            error.issues.some(
+              (issue) =>
+                issue.message === 'Unsupported commerce platform. Only Shopify is supported.',
+            )
+              ? 'Unsupported commerce platform. Only Shopify is supported.'
+              : 'Invalid tool arguments. Check the tool schema and try again.',
         });
       }
     },

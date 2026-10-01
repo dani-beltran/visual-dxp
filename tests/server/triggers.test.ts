@@ -24,6 +24,7 @@ const base: Workflow = {
   edges: [],
 };
 const configs: StepConfig[] = [
+  { event: 'commerce-product-added-to-cart', commercePlatform: 'shopify' },
   { event: 'zoom-in', selector: '#product-image' },
   { event: 'swipe', selector: '#product-image' },
   { event: 'exit-intent' },
@@ -109,5 +110,45 @@ describe('behavior trigger tools', () => {
     });
     expect(toolkit.getOperations()).toEqual([]);
     expect(toolkit.getWorkflow()).toEqual(base);
+  });
+});
+
+it.each([
+  'woocommerce',
+  'prestashop',
+  'bigcommerce',
+  'adobe-commerce',
+  'ecwid',
+  'wix-ecommerce',
+  'unknown',
+])(
+  'rejects unsupported commerce platform %s in AI tools and operations',
+  async (commercePlatform) => {
+    const toolkit = createWorkflowTools(base, []);
+    const update = toolkit.tools.find((item) => item.name === 'update_node')!;
+    const config = { event: 'commerce-product-added-to-cart', commercePlatform };
+    await expect(update.invoke({ id: 'start', config })).rejects.toThrow(
+      'Unsupported commerce platform',
+    );
+    expect(() =>
+      applyWorkflowOperations(base, [{ type: 'update_node', id: 'start', config }]),
+    ).toThrow('Unsupported commerce platform');
+    expect(toolkit.getOperations()).toEqual([]);
+    expect(toolkit.getWorkflow()).toEqual(base);
+  },
+);
+
+it('reports a clear provider error through the private AI schema boundary', () => {
+  const toolkit = createWorkflowTools(base, []);
+  expect(
+    JSON.parse(
+      toolkit.invokePrivate('update_node', {
+        id: 'start',
+        config: { event: 'commerce-product-added-to-cart', commercePlatform: 'woocommerce' },
+      }),
+    ),
+  ).toEqual({
+    ok: false,
+    error: 'Unsupported commerce platform. Only Shopify is supported.',
   });
 });

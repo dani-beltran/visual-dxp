@@ -6,7 +6,8 @@ import type { Workflow } from '../types';
 import type { matchesCondition } from './conditions';
 import type { RuntimeContext } from './context';
 import type { showPopover } from './popovers';
-import type { WorkflowRuntime } from './types';
+/** Internal invocation input; the public run(triggerId?) API remains unchanged. */
+export type RunTrigger = (triggerId?: string, input?: DataSelection) => Promise<void>;
 
 interface ExecutionModules {
   createDataTools: typeof createDataTools;
@@ -28,7 +29,7 @@ export function createExecution(
     showPopover,
     createDataTools,
   }: ExecutionModules,
-): WorkflowRuntime['run'] {
+): RunTrigger {
   const { doc, win, signal, nodes, fetcher, maxSteps, aborted, log, wait, selectorElements } =
     context;
   const dataTools = createDataTools();
@@ -89,6 +90,12 @@ export function createExecution(
             break;
           }
           case 'trigger':
+            if (
+              config.event === 'commerce-product-added-to-cart' &&
+              config.commercePlatform !== undefined &&
+              config.commercePlatform !== 'shopify'
+            )
+              throw new Error('Unsupported commerce platform. Only Shopify is supported.');
             break;
           case 'delay': {
             const duration = config.duration ?? 1000;
@@ -234,7 +241,10 @@ export function createExecution(
     }
   }
 
-  async function run(triggerId?: string): Promise<void> {
+  async function run(
+    triggerId?: string,
+    input: DataSelection = { exists: false, value: undefined },
+  ): Promise<void> {
     if (context.destroyed) return;
     const triggers = triggerId
       ? [nodes.get(triggerId)]
@@ -244,11 +254,7 @@ export function createExecution(
       for (const trigger of triggers) {
         if (trigger?.data.kind !== 'trigger')
           throw new Error('Choose a valid trigger to run this workflow.');
-        await execute(
-          trigger.id,
-          { steps: 0, active: new Set() },
-          { exists: false, value: undefined },
-        );
+        await execute(trigger.id, { steps: 0, active: new Set() }, input);
       }
     } catch (error) {
       if (!signal.aborted) throw error;

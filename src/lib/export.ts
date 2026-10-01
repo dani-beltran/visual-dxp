@@ -120,6 +120,7 @@ export function validateWorkflow(
       add(t('validation.frameDimensionsMustBePositiveNumbers'), node.id);
     const textFields = [
       'event',
+      'commercePlatform',
       'selector',
       'url',
       'method',

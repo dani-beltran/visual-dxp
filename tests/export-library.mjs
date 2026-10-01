@@ -160,3 +160,81 @@ for (const library of [esm, umd]) {
 console.log(
   `Built ESM and UMD standalone scripts: ${dataCases} HTTP → Update element → Incoming data condition → branch cases passed.`,
 );
+
+let commerceCases = 0;
+for (const library of [esm, umd]) {
+  const dom = new JSDOM('<p id="result">waiting</p>', {
+    url: 'https://example.com',
+    runScripts: 'outside-only',
+  });
+  const page = dom.window;
+  const node = (id, kind, config) => ({
+    id,
+    type: 'workflow',
+    position: { x: 0, y: 0 },
+    data: { kind, label: id, config },
+  });
+  const workflow = {
+    version: 1,
+    name: 'Built commerce',
+    websiteUrl: 'https://example.com',
+    nodes: [
+      node('start', 'trigger', {
+        event: 'commerce-product-added-to-cart',
+        commercePlatform: 'shopify',
+      }),
+      node('condition', 'fork', {
+        conditionType: 'data',
+        conditionDataPath: 'addition.totalQuantity',
+        conditionOperator: 'equal',
+        conditionValue: '2',
+      }),
+      node('output', 'dom', { selector: '#result', valueSource: 'incoming-data' }),
+    ],
+    edges: [
+      { id: 'a', source: 'start', target: 'condition' },
+      { id: 'b', source: 'condition', target: 'output', sourceHandle: 'true' },
+    ],
+  };
+  const outcome = { cart: { totalQuantity: 9 }, userErrors: [], warnings: [] };
+  const event = (promise) =>
+    Object.assign(new page.Event('shopify:cart:lines-update'), {
+      action: 'add',
+      lines: [{ merchandiseId: '123', quantity: 2 }],
+      promise,
+    });
+  try {
+    page.eval(library.exportWorkflow(workflow));
+    const output = page.document.querySelector('#result');
+    page.document.dispatchEvent(event(Promise.resolve(outcome)));
+    await new Promise(setImmediate);
+    const data = JSON.parse(output.textContent);
+    assert.equal(data.platform, 'shopify');
+    assert.equal(data.requested.totalQuantity, 2);
+    assert.equal(data.addition.totalQuantity, 2);
+    assert.equal(data.cart.totalQuantity, 9);
+    assert.equal(data.cart.totalAmount, null);
+    commerceCases += 1;
+    output.textContent = 'waiting';
+    page.document.dispatchEvent(
+      event(Promise.resolve({ ...outcome, warnings: [{ code: 'MERCHANDISE_OUT_OF_STOCK' }] })),
+    );
+    await new Promise(setImmediate);
+    assert.equal(output.textContent, 'waiting');
+    commerceCases += 1;
+    let finish;
+    const pending = new Promise((resolve) => {
+      finish = resolve;
+    });
+    page.document.dispatchEvent(event(pending));
+    page.visualDXP.destroy();
+    finish(outcome);
+    await new Promise(setImmediate);
+    assert.equal(output.textContent, 'waiting');
+    commerceCases += 1;
+  } finally {
+    page.visualDXP?.destroy();
+    page.close();
+  }
+}
+console.log(`Built ESM and UMD commerce: ${commerceCases} cases passed.`);

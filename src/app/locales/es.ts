@@ -2,6 +2,21 @@ import type { BuilderMessages } from '../../lib/i18n';
 
 /** Complete Spanish builder catalog supplied by the demo app. */
 export const spanishMessages = {
+  'commerce.productAddedToCart': 'Comercio: Producto añadido al carrito',
+  'commerce.triggerHint': 'Se inicia tras añadir correctamente un producto al carrito.',
+  'commerce.eventReference': 'Referencia del evento de Shopify',
+  'commerce.integrationGuide': 'Guía de integración de Shopify',
+  'commerce.cartReference': 'Referencia de datos del carrito de Shopify',
+  'commerce.platform': 'Plataforma',
+  'commerce.premium': 'Premium',
+  'commerce.outputHint':
+    'Transmite el payload del evento de Shopify.',
+  'commerce.unsupportedPlatform': 'Plataforma de comercio no compatible. Solo se admite Shopify.',
+  'commerce.setupGuidance':
+    'La integración de tu tema/carrito debe emitir shopify:cart:lines-update.',
+  'commerce.dataGuidance':
+    'Consulta la referencia del payload para ver exactamente qué datos se transmiten.',
+
   'aiSettings.assistantCredentials': 'Credenciales del asistente',
   'aiSettings.aiSettings': 'Configuración de IA',
   'aiSettings.yourAiConnection': 'TU CONEXIÓN DE IA',

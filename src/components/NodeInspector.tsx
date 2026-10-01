@@ -21,6 +21,7 @@ import { formatBuilderError } from '../lib/i18n';
 import { useBuilderI18n } from '../lib/i18nContext';
 import { elementTriggerEvents, getTriggerOptions } from '../lib/triggers';
 import type { ConditionType, NodeKind, StepConfig, StepData, WorkflowNode } from '../lib/types';
+import { CommercePlatformPicker } from './CommercePlatformPicker';
 import { InfoBox } from './InfoBox';
 import { NoteControls } from './NoteControls';
 import { NoteTextEditor } from './NoteTextEditor';
@@ -113,7 +114,10 @@ export function NodeInspector({
   const { t } = useBuilderI18n();
   const catalog = getCatalog(t);
   const nextOutputDescriptions = {
-    trigger: t('nodeInspector.runsWhenTheSelectedEventOccurs'),
+    trigger:
+      node.data.config.event === 'commerce-product-added-to-cart'
+        ? t('commerce.outputHint')
+        : t('nodeInspector.runsWhenTheSelectedEventOccurs'),
     http: t('nodeInspector.passesResponseDataOrAnErrorObjectToTheNextNode'),
     dom: t('nodeInspector.runsAfterTheElementsAreUpdated'),
     cookie: t('nodeInspector.runsAfterTheCookieIsSaved'),
@@ -276,7 +280,15 @@ export function NodeInspector({
               <Select
                 id={id('event')}
                 value={config.event ?? 'page-load'}
-                onChange={(event) => update({ event: event.target.value as StepConfig['event'] })}
+                onChange={(event) =>
+                  update({
+                    event: event.target.value as StepConfig['event'],
+                    ...(event.target.value === 'commerce-product-added-to-cart' &&
+                    config.commercePlatform === undefined
+                      ? { commercePlatform: 'shopify' as const }
+                      : {}),
+                  })
+                }
               >
                 {Object.entries(triggerOptions).map(([value, option]) => (
                   <option key={value} value={value}>
@@ -286,6 +298,24 @@ export function NodeInspector({
               </Select>
             </Field>
             <InfoBox>{trigger?.hint ?? t('nodeInspector.chooseASupportedTriggerEvent')}</InfoBox>
+            {config.event === 'commerce-product-added-to-cart' && (
+              <>
+                <CommercePlatformPicker
+                  value={
+                    config.commercePlatform === undefined ? 'shopify' : config.commercePlatform
+                  }
+                  onChange={(commercePlatform) => update({ commercePlatform })}
+                />
+                <InfoBox
+                  source={{
+                    label: t('commerce.integrationGuide'),
+                    href: 'https://shopify.dev/docs/api/storefront-events-and-actions/events/listen',
+                  }}
+                >
+                  {t('commerce.setupGuidance')}
+                </InfoBox>
+              </>
+            )}
             {trigger?.settings.map(({ key, label, defaultValue, min, max }) => (
               <Field key={key} label={label} htmlFor={id(key)}>
                 <NumberInput
@@ -1026,6 +1056,16 @@ export function NodeInspector({
                 <span>{nextOutputDescriptions[node.data.kind]}</span>
               </div>
             </div>
+          )}
+          {node.data.kind === 'trigger' && config.event === 'commerce-product-added-to-cart' && (
+            <InfoBox
+              source={{
+                label: t('commerce.cartReference'),
+                href: 'https://shopify.dev/docs/api/storefront-events-and-actions/events/cart-lines-update',
+              }}
+            >
+              {t('commerce.dataGuidance')}
+            </InfoBox>
           )}
           {node.data.kind === 'http' && (
             <>

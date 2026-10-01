@@ -39,9 +39,12 @@ export type TriggerEvent =
   | 'rage-click'
   | 'inactivity'
   | 'scroll-thrashing'
-  | 'scroll-depth';
+  | 'scroll-depth'
+  | 'commerce-product-added-to-cart';
 export interface StepConfig {
   event?: TriggerEvent;
+  /** Commerce adapter. Omitted means Shopify; other providers are unsupported. */
+  commercePlatform?: 'shopify';
   /** Nearby primary clicks required for rage clicking. Defaults to 3. */
   rageClickCount?: number;
   /** Rage click time window in milliseconds. Defaults to 1,000. */

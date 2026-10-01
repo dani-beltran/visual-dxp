@@ -332,6 +332,21 @@
   line-height: 1.75;
   color: var(--dxp-muted);
 }
+.dxp-inspector-note-source {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: fit-content;
+  margin-top: 6px;
+  color: var(--dxp-primary-color);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.dxp-inspector-note-source:focus-visible {
+  outline: 2px solid var(--dxp-focus);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
 .dxp-inspector-branches {
   background: var(--dxp-canvas);
   border: 1px solid var(--dxp-line);

@@ -23,6 +23,7 @@ export {
   workflowFingerprint,
 } from './lib/ai';
 export { createNode, defaultWorkflow } from './lib/catalog';
+export type { CommerceEventData, CommerceMoney } from './lib/commerce';
 export { exportWorkflow, validateWorkflow } from './lib/export';
 export type {
   BuilderI18n,

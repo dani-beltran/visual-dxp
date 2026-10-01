@@ -149,6 +149,8 @@ export function stepSummary(
     case 'trigger': {
       const event = c.event ?? 'page-load';
       switch (event) {
+        case 'commerce-product-added-to-cart':
+          return `${t('commerce.productAddedToCart')} · ${c.commercePlatform === undefined || c.commercePlatform === 'shopify' ? 'Shopify' : c.commercePlatform}`;
         case 'page-load':
           return t('summary.pageLoad');
         case 'exit-intent':

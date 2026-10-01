@@ -97,6 +97,7 @@ export function validateWorkflow(workflow: Workflow): ValidationIssue[] {
     if (!knownKinds.has(node.data.kind)) add('Unknown step type.', node.id);
     const textFields = [
       'event',
+      'commercePlatform',
       'selector',
       'url',
       'method',

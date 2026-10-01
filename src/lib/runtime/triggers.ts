@@ -1,11 +1,14 @@
 import type { Workflow } from '../types';
 import type { startBehaviorTrigger } from './behavior-triggers';
+import type { createShopifyAdapter, startCommerceTrigger } from './commerce-trigger';
 import type { RuntimeContext } from './context';
+import type { RunTrigger } from './execution';
 import type { startSwipeTrigger } from './swipe-trigger';
-import type { WorkflowRuntime } from './types';
 import type { startZoomTrigger } from './zoom-trigger';
 
 interface TriggerModules {
+  createShopifyAdapter: typeof createShopifyAdapter;
+  startCommerceTrigger: typeof startCommerceTrigger;
   startBehaviorTrigger: typeof startBehaviorTrigger;
   startZoomTrigger: typeof startZoomTrigger;
   startSwipeTrigger: typeof startSwipeTrigger;
@@ -14,13 +17,17 @@ interface TriggerModules {
 export function startTriggers(
   workflow: Workflow,
   context: RuntimeContext,
-  run: WorkflowRuntime['run'],
-  { startBehaviorTrigger, startZoomTrigger, startSwipeTrigger }: TriggerModules,
+  run: RunTrigger,
+  modules: TriggerModules,
 ): void {
+  const { startBehaviorTrigger, startZoomTrigger, startSwipeTrigger, startCommerceTrigger } =
+    modules;
   const { doc, cleanups, log, reportFailure } = context;
   for (const node of workflow.nodes.filter((entry) => entry.data.kind === 'trigger')) {
     const config = node.data.config;
-    if (!config.event || config.event === 'page-load') {
+    if (config.event === 'commerce-product-added-to-cart') {
+      startCommerceTrigger(node.id, config, context, run, modules);
+    } else if (!config.event || config.event === 'page-load') {
       const ready = () => {
         void run(node.id).catch(reportFailure);
       };

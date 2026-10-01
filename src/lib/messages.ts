@@ -1,5 +1,17 @@
 /** English defaults and the public translation contract. Keys remain stable when copy changes. */
 export const englishMessages = {
+  'commerce.productAddedToCart': 'Commerce: Product added to cart',
+  'commerce.triggerHint': 'Runs after a successful addition to the cart.',
+  'commerce.eventReference': 'Shopify event reference',
+  'commerce.integrationGuide': 'Shopify integration guide',
+  'commerce.cartReference': 'Shopify cart payload reference',
+  'commerce.platform': 'Platform',
+  'commerce.premium': 'Premium',
+  'commerce.outputHint': 'Passes the Shopify event payload.',
+  'commerce.unsupportedPlatform': 'Unsupported commerce platform. Only Shopify is supported.',
+  'commerce.setupGuidance': 'Your theme/cart integration must emit shopify:cart:lines-update.',
+  'commerce.dataGuidance': 'Check the payload reference to see exactly which data is passed.',
+
   'aiSettings.assistantCredentials': 'Assistant credentials',
   'aiSettings.aiSettings': 'AI settings',
   'aiSettings.yourAiConnection': 'YOUR AI CONNECTION',

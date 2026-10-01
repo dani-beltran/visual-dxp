@@ -31,6 +31,11 @@ export const triggerOptions: Record<
   TriggerEvent,
   { label: string; hint: string; settings: TriggerSetting[] }
 > = {
+  'commerce-product-added-to-cart': {
+    label: 'Commerce: Product added to cart',
+    hint: 'Requires the Shopify standard storefront event shopify:cart:lines-update. Runs after a successful add with cart data and no errors or warnings. No selector required.',
+    settings: [],
+  },
   'page-load': {
     label: 'The page loads',
     hint: 'This workflow starts once the page is ready.',
@@ -138,6 +143,12 @@ export const triggerOptions: Record<
 export function validateTriggerConfig(config: StepConfig): string[] {
   const event = config.event ?? 'page-load';
   if (!Object.hasOwn(triggerOptions, event)) return ['Choose a supported trigger event.'];
+  if (
+    event === 'commerce-product-added-to-cart' &&
+    config.commercePlatform !== undefined &&
+    config.commercePlatform !== 'shopify'
+  )
+    return ['Unsupported commerce platform. Only Shopify is supported.'];
   return triggerOptions[event].settings.flatMap(({ key, label, min, max }) => {
     const value = config[key];
     return value !== undefined && (!Number.isInteger(value) || value < min || value > max)

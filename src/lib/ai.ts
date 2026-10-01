@@ -92,6 +92,7 @@ const kinds = new Set<NodeKind>([
 ]);
 const configStrings = [
   'event',
+  'commercePlatform',
   'selector',
   'url',
   'method',

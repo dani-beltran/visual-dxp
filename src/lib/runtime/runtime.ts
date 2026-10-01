@@ -4,6 +4,7 @@ import { getDateRange } from '../dateRange';
 import { getTimeRange } from '../timeRange';
 import type { Workflow } from '../types';
 import { startBehaviorTrigger } from './behavior-triggers';
+import { createShopifyAdapter, startCommerceTrigger } from './commerce-trigger';
 import { matchesCondition } from './conditions';
 import { createRuntimeContext } from './context';
 import { createExecution } from './execution';
@@ -26,6 +27,8 @@ const runtimeModules = {
   getTimeRange,
   showPopover,
   startTriggers,
+  createShopifyAdapter,
+  startCommerceTrigger,
   startBehaviorTrigger,
   startZoomTrigger,
   startSwipeTrigger,

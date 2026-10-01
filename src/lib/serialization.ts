@@ -15,6 +15,7 @@ const kinds = new Set([
 ]);
 const strings = [
   'event',
+  'commercePlatform',
   'selector',
   'url',
   'method',

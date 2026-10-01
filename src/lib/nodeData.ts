@@ -10,6 +10,10 @@ interface NodeDataPorts {
 // Define data-port behavior once per node kind. Config changes are evaluated on render.
 // These describe data inputs/outputs shown on the canvas, including condition pass-through.
 const dataPorts: Partial<Record<NodeKind, (config: StepConfig) => NodeDataPorts>> = {
+  trigger: (config) => ({
+    acceptsData: false,
+    outputsData: config.event === 'commerce-product-added-to-cart',
+  }),
   http: () => ({ acceptsData: false, outputsData: true }),
   fork: (config) => ({
     acceptsData: config.conditionType === 'data',

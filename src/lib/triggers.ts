@@ -33,6 +33,11 @@ export function getTriggerOptions(t: BuilderTranslator = translateEnglish) {
     TriggerEvent,
     { label: string; hint: string; settings: TriggerSetting[] }
   > = {
+    'commerce-product-added-to-cart': {
+      label: t('commerce.productAddedToCart'),
+      hint: t('commerce.triggerHint'),
+      settings: [],
+    },
     'page-load': {
       label: t('triggers.thePageLoads'),
       hint: t('triggers.thisWorkflowStartsOnceThePageIsReady'),
@@ -166,6 +171,12 @@ export function validateTriggerConfig(
   const triggerOptions = getTriggerOptions(t);
   const event = config.event ?? 'page-load';
   if (!Object.hasOwn(triggerOptions, event)) return [t('validation.unsupportedTrigger')];
+  if (
+    event === 'commerce-product-added-to-cart' &&
+    config.commercePlatform !== undefined &&
+    config.commercePlatform !== 'shopify'
+  )
+    return [t('commerce.unsupportedPlatform')];
   return triggerOptions[event].settings.flatMap(({ key, label, min, max }) => {
     const value = config[key];
     return value !== undefined && (!Number.isInteger(value) || value < min || value > max)
