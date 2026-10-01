@@ -501,6 +501,7 @@ it('browsing provider tabs preserves requests, but cross-tab activation cancels 
   await typeMessage('Rename the delay');
   await click(button('Send message'));
   const signal = fetcher.mock.calls[0][1]!.signal!;
+  await click(host.querySelector<HTMLButtonElement>('[role="tab"][id$="-settings-tab"]')!);
   const providerTabs = [
     ...host.querySelectorAll<HTMLButtonElement>('[aria-label="AI providers"] [role="tab"]'),
   ];

@@ -93,12 +93,12 @@ export const englishMessages = {
     activeProvider,
   }: {
     activeProvider: string;
-  }) => `Unlock ${activeProvider} in settings below to use AI`,
+  }) => `Unlock ${activeProvider} in AI Settings to use AI`,
   'canvasChat.aiConfigurationIsIncorrectForActiveproviderCheckSettingsBelow': ({
     activeProvider,
   }: {
     activeProvider: string;
-  }) => `AI configuration is incorrect for ${activeProvider}. Check settings below.`,
+  }) => `AI configuration is incorrect for ${activeProvider}. Check AI Settings.`,
   'canvasChat.selected': 'Selected:',
   'canvasChat.workingWithYourCurrentCanvas': 'Working with your current canvas',
   'canvasChat.aiProviderSettings': 'AI provider settings',
