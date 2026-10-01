@@ -321,6 +321,153 @@
         font-size: 18px;
         color: #7c856e;
       }
+      .support-chat {
+        display: none;
+        position: fixed;
+        right: 20px;
+        bottom: 20px;
+        z-index: 1000;
+        width: min(360px, calc(100vw - 40px));
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 12px;
+        font-size: 14px;
+        line-height: 1.5;
+      }
+      .support-chat.dxp-support-visible {
+        display: flex;
+      }
+      .support-chat button:focus-visible,
+      .support-chat input:focus-visible {
+        outline: 3px solid #697856;
+        outline-offset: 3px;
+      }
+      .support-chat-launcher {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 0;
+        border: 0;
+        background: transparent;
+        color: #353b32;
+        text-align: left;
+      }
+      .support-chat-invitation {
+        padding: 14px 18px;
+        border: 1px solid #dedfd4;
+        border-radius: 16px 16px 4px 16px;
+        background: #fffdf8;
+        box-shadow: 0 8px 28px #353b3214;
+      }
+      .support-chat-icon {
+        display: grid;
+        place-items: center;
+        flex-shrink: 0;
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        background: #697856;
+        color: white;
+        box-shadow: 0 8px 28px #353b3226;
+      }
+      .support-chat-icon svg {
+        width: 26px;
+        height: 26px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 1.6;
+      }
+      .support-chat-launcher[aria-expanded='true'] .support-chat-invitation {
+        display: none;
+      }
+      .support-chat-panel {
+        width: 100%;
+        max-height: calc(100dvh - 108px);
+        overflow: auto;
+        border: 1px solid #dedfd4;
+        border-radius: 18px;
+        background: #fffdf8;
+        box-shadow: 0 12px 44px #353b3226;
+      }
+      .support-chat-heading {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 18px 20px;
+        background: #e9ecdf;
+      }
+      #support-chat-title {
+        margin: 0;
+        font:
+          24px Georgia,
+          serif;
+      }
+      .support-chat-close {
+        width: 36px;
+        height: 36px;
+        border: 0;
+        border-radius: 50%;
+        background: #fffdf8;
+        color: #353b32;
+        font-size: 24px;
+      }
+      .support-chat-disclaimer {
+        margin: 0;
+        padding: 14px 20px;
+        border-bottom: 1px solid #dedfd4;
+        color: #626b59;
+        font-size: 12px;
+      }
+      .support-chat-messages {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        max-height: 240px;
+        overflow-y: auto;
+        padding: 20px;
+      }
+      .support-chat-message {
+        align-self: flex-start;
+        max-width: 90%;
+        margin: 0;
+        padding: 12px 14px;
+        border-radius: 12px 12px 12px 2px;
+        background: #eef0e7;
+        overflow-wrap: anywhere;
+      }
+      .support-chat-message strong {
+        display: block;
+        margin-bottom: 4px;
+        font-size: 11px;
+      }
+      .support-chat-message.is-visitor {
+        align-self: flex-end;
+        border-radius: 12px 12px 2px 12px;
+        background: #697856;
+        color: white;
+      }
+      .support-chat-form {
+        display: flex;
+        gap: 8px;
+        padding: 16px;
+        border-top: 1px solid #dedfd4;
+      }
+      #support-chat-input {
+        width: 100%;
+        min-width: 0;
+        padding: 10px;
+        border: 1px solid #b8bfac;
+        border-radius: 8px;
+        background: white;
+        color: #353b32;
+      }
+      #support-chat-form button {
+        border: 0;
+        border-radius: 8px;
+        padding: 10px 14px;
+        background: #697856;
+        color: white;
+      }
       @media (max-width: 600px) {
         header {
           height: 62px;
@@ -599,6 +746,79 @@
       <span class="logo">atelier</span
       ><span>Good things, thoughtfully made. &nbsp; © 2026 Atelier</span>
     </footer>
+    <div id="support-chat" class="support-chat">
+      <section
+        id="support-chat-panel"
+        class="support-chat-panel"
+        role="dialog"
+        aria-labelledby="support-chat-title"
+        aria-describedby="support-chat-disclaimer"
+        hidden
+      >
+        <div class="support-chat-heading">
+          <h2 id="support-chat-title">Atelier support</h2>
+          <button
+            id="support-chat-close"
+            class="support-chat-close"
+            type="button"
+            aria-label="Close support chat"
+          >
+            ×
+          </button>
+        </div>
+        <p id="support-chat-disclaimer" class="support-chat-disclaimer">
+          This is a showcasing example support chat. Replies are simulated; no live agent is
+          connected and no messages are sent.
+        </p>
+        <div
+          id="support-chat-messages"
+          class="support-chat-messages"
+          role="log"
+          aria-label="Example conversation"
+          aria-live="polite"
+        >
+          <p class="support-chat-message">
+            <strong>Atelier · Demo assistant</strong>Hello! Looking for something for your home? Try
+            sending a message to explore this example chat.
+          </p>
+          <p class="support-chat-message is-visitor">
+            <strong>You · Sample message</strong>Can you help me choose a gift?
+          </p>
+          <p class="support-chat-message">
+            <strong>Atelier · Demo assistant</strong>Of course. Our ceramic collection is a lovely
+            place to start.
+          </p>
+        </div>
+        <form id="support-chat-form" class="support-chat-form">
+          <input
+            id="support-chat-input"
+            type="text"
+            aria-label="Your demo message"
+            placeholder="Try a demo message…"
+            maxlength="500"
+            autocomplete="off"
+            required
+          />
+          <button type="submit">Send</button>
+        </form>
+      </section>
+      <button
+        id="support-chat-launcher"
+        class="support-chat-launcher"
+        type="button"
+        aria-label="Open support chat"
+        aria-controls="support-chat-panel"
+        aria-expanded="false"
+      >
+        <span class="support-chat-invitation">Do you need help? We are here for you.</span>
+        <span class="support-chat-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5H4l-3 3V11.5a10 10 0 0 1 20 0Z" />
+            <path d="M6 9h10M6 13h7" />
+          </svg>
+        </span>
+      </button>
+    </div>
     <script>
       document.getElementById('shop-now').addEventListener('click', () => {
         document.getElementById('collection').scrollIntoView({ behavior: 'smooth' });
@@ -607,6 +827,53 @@
         event.preventDefault();
         this.innerHTML = '<p>Thank you. Make a little room for good things.</p>';
       });
+    </script>
+    <script id="support-chat-script">
+      (() => {
+        const chat = document.getElementById('support-chat');
+        const launcher = document.getElementById('support-chat-launcher');
+        const panel = document.getElementById('support-chat-panel');
+        const input = document.getElementById('support-chat-input');
+        const messages = document.getElementById('support-chat-messages');
+        function setOpen(open) {
+          panel.hidden = !open;
+          launcher.setAttribute('aria-expanded', String(open));
+          launcher.setAttribute('aria-label', open ? 'Close support chat' : 'Open support chat');
+          (open ? input : launcher).focus();
+        }
+        launcher.addEventListener('click', () => setOpen(panel.hidden));
+        document
+          .getElementById('support-chat-close')
+          .addEventListener('click', () => setOpen(false));
+        chat.addEventListener('keydown', (event) => {
+          if (event.key === 'Escape' && !panel.hidden) {
+            event.preventDefault();
+            event.stopPropagation();
+            setOpen(false);
+          }
+        });
+        function addMessage(author, text, visitor = false) {
+          const message = document.createElement('p');
+          message.className = `support-chat-message${visitor ? ' is-visitor' : ''}`;
+          const label = document.createElement('strong');
+          label.textContent = author;
+          message.append(label, document.createTextNode(text));
+          messages.append(message);
+        }
+        document.getElementById('support-chat-form').addEventListener('submit', (event) => {
+          event.preventDefault();
+          const text = input.value.trim();
+          if (!text) return;
+          addMessage('You', text, true);
+          addMessage(
+            'Atelier · Demo assistant',
+            'Thanks for trying our example chat! In a real support chat, our team would help you here. This reply is simulated.',
+          );
+          input.value = '';
+          messages.scrollTop = messages.scrollHeight;
+          input.focus();
+        });
+      })();
     </script>
   </body>
 </html>

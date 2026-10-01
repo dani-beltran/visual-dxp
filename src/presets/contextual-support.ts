@@ -8,7 +8,7 @@ export function createContextualSupportPreset(messages: PresetMessages = english
     description: messages['contextual-support.description'],
     complexity: 'intermediate',
     order: 95,
-    tags: ['trigger', 'fork', 'popover', 'note'],
+    tags: ['trigger', 'fork', 'dom', 'popover', 'note'],
     workflow: {
       version: 1,
       name: messages['contextual-support.workflow.name'],
@@ -57,13 +57,12 @@ export function createContextualSupportPreset(messages: PresetMessages = english
             y: 60,
           },
           data: {
-            kind: 'popover',
+            kind: 'dom',
             label: messages['contextual-support.workflow.nodes.support-online.data.label'],
             config: {
-              contentType: 'iframe',
-              url: 'https://support.example.invalid/help',
-              position: 'bottom-right',
-              width: 400,
+              selector: '#support-chat',
+              action: 'add-class',
+              value: 'dxp-support-visible',
             },
           },
         },

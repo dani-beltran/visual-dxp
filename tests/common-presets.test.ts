@@ -228,14 +228,11 @@ describe('preset execution with a mocked browser and network', () => {
         open ? 'support-online' : 'support-offline',
       ]);
       expect(popover(open ? 'support-offline' : 'support-online')).toBeNull();
-      if (open) {
-        const frame = required(popover('support-online')?.querySelector('iframe'));
-        expect(frame.src).toBe('https://support.example.invalid/help');
-        expect(frame.title).toBe('Support center');
-        expect(frame.getAttribute('sandbox')).toBe('allow-scripts allow-forms allow-popups');
-      } else {
+      expect(element('#support-chat').classList.contains('dxp-support-visible')).toBe(open);
+      expect(popover('support-online')).toBeNull();
+      expect(document.querySelector('iframe')).toBeNull();
+      if (!open) {
         expect(popover('support-offline')?.textContent).toContain('09:00–17:00 UTC daily');
-        expect(document.querySelector('iframe')).toBeNull();
       }
       expect(request).not.toHaveBeenCalled();
     },
@@ -251,7 +248,7 @@ describe('preset execution with a mocked browser and network', () => {
     vi.setSystemTime(new Date('2026-10-01T09:00:00Z'));
     element('#support-help').dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
     await vi.advanceTimersByTimeAsync(0);
-    expect(popover('support-online')?.querySelector('iframe')).not.toBeNull();
+    expect(element('#support-chat').classList.contains('dxp-support-visible')).toBe(true);
     expect(popover('support-offline')).toBeNull();
   });
 

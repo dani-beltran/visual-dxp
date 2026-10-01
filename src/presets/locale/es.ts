@@ -6,7 +6,7 @@ export const spanishPresetMessages = {
   'complexity.advanced': 'avanzado',
   'contextual-support.name': 'Ayuda contextual según el horario de atención',
   'contextual-support.description':
-    'Pasa el cursor sobre Ayuda para abrir una página de soporte integrada durante el horario de atención o mostrar un mensaje fuera de horario.',
+    'Pasa el cursor sobre Ayuda para mostrar el chat de soporte de la demo durante el horario de atención o un mensaje fuera de horario.',
   'contextual-support.workflow.name': 'Ayuda contextual según el horario de atención',
   'contextual-support.workflow.nodes.support-hover.data.label': 'Pasar el cursor sobre Ayuda',
   'contextual-support.workflow.nodes.support-hours.data.label': 'Horario de atención (UTC)',
@@ -15,7 +15,7 @@ export const spanishPresetMessages = {
     '<div style="margin:-28px -24px -24px;padding:36px 24px 28px;background:#f8f6f1;color:#353b32;font-family:Arial,Helvetica,sans-serif;box-sizing:border-box;overflow-wrap:anywhere"><div style="padding:0 0 16px;border-bottom:1px solid #dedfd4"><span style="font-family:Georgia,serif;font-size:25px;letter-spacing:-1px">atelier<span aria-hidden="true" style="font-family:Arial,Helvetica,sans-serif;font-size:9px;vertical-align:top;margin-left:3px">®</span></span></div><p style="margin:22px 0 12px;font-size:10px;letter-spacing:1.7px;text-transform:uppercase;color:#697856">Estamos para ayudarte</p><h2 style="margin:0 0 14px;font-family:Georgia,serif;font-size:29px;font-weight:400;line-height:1.15">Volvemos pronto</h2><p style="margin:0;font-size:13px;line-height:1.75;color:#626b59">Nuestro horario de atención es de 09:00 a 17:00 UTC todos los días. Vuelve a visitarnos durante ese horario. Mientras tanto, descubre la colección a tu ritmo.</p><a href="#collection" style="display:inline-block;margin-top:22px;padding:12px 20px;background:#697856;color:#fff;border-radius:6px;text-decoration:none;font-size:13px">Descubrir la colección ↗</a></div>',
   'contextual-support.workflow.nodes.support-offline.data.label': 'Fuera del horario de atención',
   'contextual-support.workflow.nodes.support-trigger-note.data.config.noteText':
-    'Pasa el cursor sobre Help en el pie de página de la demo (#support-help). Sustituye el selector por tu enlace de ayuda. Cada evento mouseover comprueba la hora y puede volver a abrir la ventana. El enlace sigue funcionando al hacer clic.',
+    'Pasa el cursor sobre Help en el pie de página de la demo (#support-help). Sustituye el selector por tu enlace de ayuda. Cada evento mouseover comprueba la hora y muestra el chat o vuelve a abrir el mensaje fuera de horario. El enlace sigue funcionando al hacer clic.',
   'contextual-support.workflow.nodes.support-trigger-note.data.label':
     'Configuración: Enlace de ayuda',
   'contextual-support.workflow.nodes.support-hours-note.data.config.noteText':
@@ -23,11 +23,11 @@ export const spanishPresetMessages = {
   'contextual-support.workflow.nodes.support-hours-note.data.label':
     'Configuración: Horario de atención',
   'contextual-support.workflow.nodes.support-embed-note.data.config.noteText':
-    'Sustituye https://support.example.invalid/help antes de ejecutar la rama de horario abierto. Es una URL de ejemplo sin servicio. Usa una página HTTPS que permita iframes y funcione en el sandbox (scripts, formularios y ventanas emergentes; sin acceso de mismo origen). Pruébala en la vista previa. No hay alternativa automática si falla la carga. Personaliza el mensaje y el enlace #collection.',
+    'El nodo Centro de ayuda añade dxp-support-visible a #support-chat en demo-site.html. Haz clic en el icono para abrir una conversación de ejemplo. Es una demostración, no un servicio de atención real. Para tu sitio, usa el selector y la clase de visibilidad de tu chat. Personaliza el mensaje fuera de horario y el enlace #collection.',
   'contextual-support.workflow.nodes.support-embed-note.data.label':
-    'Configuración: Página de soporte',
+    'Configuración: Chat de soporte',
   'contextual-support.workflow.nodes.contextual-support-overview.data.config.noteText':
-    'Pasa el cursor sobre Ayuda para abrir una página de soporte integrada durante el horario de atención o mostrar un mensaje fuera de horario.',
+    'Pasa el cursor sobre Ayuda para mostrar el chat de soporte de la demo durante el horario de atención o un mensaje fuera de horario.',
   'contextual-support.workflow.nodes.contextual-support-overview.data.label':
     'Resumen de la plantilla',
   'contextual-support.workflow.edges.support-hours-to-support-online.label': 'Abierto',
