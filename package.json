@@ -33,7 +33,7 @@
     "format:check": "biome format .",
     "check": "biome check .",
     "check:fix": "biome check --write .",
-    "start": "next start --hostname 127.0.0.1",
+    "start": "next start --hostname 0.0.0.0",
     "build:lib": "vite build --config vite.lib.config.ts",
     "typecheck": "tsc --noEmit",
     "smoke": "node tests/smoke.mjs"
