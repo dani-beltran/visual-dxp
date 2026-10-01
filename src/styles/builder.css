@@ -800,6 +800,10 @@
 .dxp-website-connection {
   margin: 19px 29px 12px;
 }
+.dxp-website-connection-error h3 {
+  color: var(--dxp-text-secondary);
+  margin-bottom: 4px;
+}
 .dxp-website-connection-status {
   display: flex;
   align-items: center;

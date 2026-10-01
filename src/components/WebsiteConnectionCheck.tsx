@@ -87,7 +87,10 @@ export function WebsiteConnectionCheck({ url }: { url: string }) {
             {t('websiteConnectionCheck.websiteConnectedSuccessfully')}
           </>
         ) : (
-          t('websiteConnectionCheck.couldnTConnectToYourWebsiteCompleteTheSetupBelow')
+          <div className="dxp-website-connection-error">
+            <h3>{t('websiteConnectionCheck.connectionNeedsAttention')}</h3>
+            <span>{t('websiteConnectionCheck.couldnTConnectToYourWebsiteCompleteTheSetupBelow')}</span>
+          </div>
         )}
       </div>
       {status === 'unavailable' && <WebsiteSetup />}

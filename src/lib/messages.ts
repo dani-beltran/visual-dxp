@@ -518,6 +518,7 @@ export const englishMessages = {
   'websiteConnectionCheck.websiteConnectionCheck': 'Website connection check',
   'websiteConnectionCheck.connectingToYourWebsite': 'Connecting to your website…',
   'websiteConnectionCheck.websiteConnectedSuccessfully': 'Website connected successfully',
+  'websiteConnectionCheck.connectionNeedsAttention': 'Your connection needs attention',
   'websiteConnectionCheck.couldnTConnectToYourWebsiteCompleteTheSetupBelow':
     'Couldn’t connect to your website. Complete the setup below.',
   'websiteSetup.connectYourWebsite': 'Connect your website',

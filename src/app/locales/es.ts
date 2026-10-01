@@ -482,6 +482,7 @@ export const spanishMessages = {
   'websiteConnectionCheck.websiteConnectionCheck': 'Comprobación de conexión al sitio web',
   'websiteConnectionCheck.connectingToYourWebsite': 'Conectando a tu sitio web…',
   'websiteConnectionCheck.websiteConnectedSuccessfully': 'Sitio web conectado correctamente',
+  'websiteConnectionCheck.connectionNeedsAttention': 'Tu conexión necesita atención',
   'websiteConnectionCheck.couldnTConnectToYourWebsiteCompleteTheSetupBelow':
     'No se ha podido conectar a tu sitio web. Completa la configuración de abajo.',
   'websiteSetup.connectYourWebsite': 'Conecta tu sitio web',
