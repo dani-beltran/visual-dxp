@@ -160,7 +160,12 @@ try {
   const page = await fetch(base);
   assert.equal(page.status, 200);
   assert.match(await page.text(), /Visual DXP/);
-  for (const asset of ['demo-site.html', 'picker-bridge.js', 'visual-dxp-logo.png']) {
+  for (const asset of [
+    'demo-site.html',
+    'picker-bridge.js',
+    'preview-bridge.js',
+    'visual-dxp-logo.png',
+  ]) {
     const response = await fetch(`${base}/${asset}`);
     assert.equal(response.status, 200);
     assert.deepEqual(Buffer.from(await response.arrayBuffer()), await readFile(`public/${asset}`));

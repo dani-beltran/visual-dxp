@@ -532,6 +532,11 @@ export const englishMessages = {
   'websiteSetup.copied': 'Copied',
   'websiteSetup.copyScript': 'Copy script',
   'websiteSetup.downloadBridgeFile': 'Download bridge file',
+  'websiteSetup.downloadPreviewBridgeFile': 'Download preview bridge',
+  'websiteSetup.previewInstructions':
+    'For popover and workflow previews, also host preview-bridge.js at your website’s root and include the second script below.',
+  'isolatedPreview.bridgeUnavailable':
+    'The preview bridge did not connect. Install preview-bridge.js on this website with data-parent-origin set to the exact editor origin, then reload. Check the browser console for blocked scripts or embedding errors.',
   'websiteSetup.couldnTCopyAutomaticallySelectTheScriptAboveAndCopyItManually':
     'Couldn’t copy automatically. Select the script above and copy it manually.',
   'workflowCard.incomingData': 'Incoming data',

@@ -30,6 +30,7 @@ export function IsolatedPreview({
   const [html, setHtml] = useState<string>();
   const [ready, setReady] = useState(false);
   const channel = useRef('');
+  const reconnect = useRef<() => void>(() => {});
   const callbacks = useRef({ onReady, onLog, onError, onClose });
   callbacks.current = { onReady, onLog, onError, onClose };
   const current = useRef(workflow);
@@ -49,6 +50,26 @@ export function IsolatedPreview({
     setHtml(undefined);
     channel.current = crypto.randomUUID();
     const controller = new AbortController();
+    let retry: number | undefined;
+    let timeout: number | undefined;
+    const clearConnectionTimers = () => {
+      window.clearInterval(retry);
+      window.clearTimeout(timeout);
+    };
+    const connect = () => {
+      clearConnectionTimers();
+      channel.current = crypto.randomUUID();
+      setReady(false);
+      callbacks.current.onReady(false);
+      callbacks.current.onError('');
+      retry = window.setInterval(() => send('init'), 1000);
+      timeout = window.setTimeout(() => {
+        clearConnectionTimers();
+        callbacks.current.onError(t('isolatedPreview.bridgeUnavailable'));
+      }, 8000);
+      send('init');
+    };
+    reconnect.current = connect;
     if (demo) {
       void fetch('/demo-site.html', {
         credentials: 'omit',
@@ -76,10 +97,13 @@ export function IsolatedPreview({
       const data = event.data;
       if (!data || data.protocol !== PREVIEW_PROTOCOL || data.channel !== channel.current) return;
       if (data.type === 'ready') {
+        clearConnectionTimers();
+        callbacks.current.onError('');
         setReady(true);
         callbacks.current.onReady(true);
       }
       if (data.type === 'unavailable') {
+        clearConnectionTimers();
         setReady(false);
         callbacks.current.onReady(false);
       }
@@ -109,11 +133,14 @@ export function IsolatedPreview({
       }
     };
     window.addEventListener('message', receive);
+    connect();
     return () => {
       controller.abort();
+      clearConnectionTimers();
+      reconnect.current = () => {};
       window.removeEventListener('message', receive);
     };
-  }, [url, demo]);
+  }, [url, demo, send]);
   // biome-ignore lint/correctness/useExhaustiveDependencies: revision explicitly restarts an unchanged workflow.
   useEffect(() => {
     if (!ready) return;
@@ -128,11 +155,7 @@ export function IsolatedPreview({
       sandbox="allow-scripts"
       referrerPolicy="no-referrer"
       title={title}
-      onLoad={() => {
-        setReady(false);
-        callbacks.current.onReady(false);
-        send('init');
-      }}
+      onLoad={() => reconnect.current()}
       onError={() => callbacks.current.onError(t('isolatedPreview.theWebsiteCouldNotLoad'))}
     />
   );

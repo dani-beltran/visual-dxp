@@ -497,6 +497,11 @@ export const spanishMessages = {
   'websiteSetup.copied': 'Copiado',
   'websiteSetup.copyScript': 'Copiar script',
   'websiteSetup.downloadBridgeFile': 'Descargar archivo del puente',
+  'websiteSetup.downloadPreviewBridgeFile': 'Descargar puente de vista previa',
+  'websiteSetup.previewInstructions':
+    'Para previsualizar ventanas emergentes y flujos, aloja también preview-bridge.js en la raíz de tu sitio web e incluye el segundo script de abajo.',
+  'isolatedPreview.bridgeUnavailable':
+    'El puente de vista previa no se ha conectado. Instala preview-bridge.js en este sitio web con data-parent-origin configurado con el origen exacto del editor y recarga. Revisa la consola del navegador por si hay scripts bloqueados o errores de incrustación.',
   'websiteSetup.couldnTCopyAutomaticallySelectTheScriptAboveAndCopyItManually':
     'No se ha podido copiar automáticamente. Selecciona el script de arriba y cópialo manualmente.',
   'workflowCard.incomingData': 'Datos de entrada',

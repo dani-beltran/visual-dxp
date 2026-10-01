@@ -21,9 +21,14 @@
       "require": "./dist/visual-dxp.umd.cjs"
     },
     "./styles.css": "./dist/visual-dxp.css",
-    "./picker-bridge": "./dist/picker-bridge.js"
+    "./picker-bridge": "./dist/picker-bridge.js",
+    "./preview-bridge": "./dist/preview-bridge.js"
   },
   "scripts": {
+    "build:preview-bridge": "vite build --config vite.preview-bridge.config.ts",
+    "predev": "npm run build:preview-bridge",
+    "prebuild": "npm run build:preview-bridge",
+    "prebuild:lib": "npm run build:preview-bridge",
     "dev": "next dev --hostname 127.0.0.1",
     "build": "next build",
     "test": "vitest run",
