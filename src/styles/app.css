@@ -17,7 +17,7 @@
 .dxp-header {
   flex-shrink: 0;
   background: var(--dxp-surface);
-  padding: 24px 29px;
+  padding: 8px 29px;
 }
 .dxp-heading {
   display: flex;
@@ -41,7 +41,7 @@
 }
 .dxp-heading p {
   max-width: 560px;
-  margin-top: 10px;
+  margin-top: 6px;
   font-size: 12px;
   line-height: 1.6;
   color: var(--dxp-muted);
@@ -60,6 +60,46 @@
   gap: 8px;
   color: var(--dxp-muted);
   font-size: 12px;
+}
+.dxp-workflow-bar {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 56px;
+  padding: 9px 29px;
+  background: var(--dxp-surface);
+}
+.dxp-workflow-name {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+  margin: 0;
+  padding: 8px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--dxp-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 600;
+}
+.dxp-workflow-name:hover {
+  border-color: var(--dxp-line);
+}
+.dxp-workflow-name:focus {
+  border-color: var(--dxp-focus);
+  background: var(--dxp-canvas);
+}
+.dxp-workflow-actions {
+  display: flex;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
 }
 .dxp-export-modal {
   width: 830px;
@@ -114,7 +154,10 @@
 }
 @media (max-width: 1150px) {
   .dxp-header {
-    padding: 22px;
+    padding: 14px 22px;
+  }
+  .dxp-workflow-bar {
+    padding-inline: 22px;
   }
 }
 @media (max-width: 800px) {
@@ -122,11 +165,25 @@
     min-height: 600px;
   }
   .dxp-header {
-    padding: 20px 15px;
+    padding: 12px 15px;
   }
   .dxp-heading {
     flex-direction: column;
     align-items: flex-start;
     gap: 16px;
+  }
+  .dxp-workflow-bar {
+    padding-inline: 15px;
+  }
+}
+@media (max-width: 600px) {
+  .dxp-workflow-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    padding-block: 12px;
+  }
+  .dxp-workflow-actions {
+    justify-content: flex-end;
   }
 }

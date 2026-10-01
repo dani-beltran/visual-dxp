@@ -280,21 +280,36 @@ export function App({
                 {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
                 {theme === 'dark' ? copy.lightMode : copy.darkMode}
               </button>
-              <button
-                type="button"
-                className="dxp-button"
-                onClick={() => {
-                  builder?.testWorkflow();
-                }}
-              >
-                <Play size={14} /> {copy.testWorkflow}
-              </button>
-              <button type="button" className="dxp-button dxp-button-primary" onClick={openExport}>
-                <Code2 size={16} /> {copy.exportWorkflow} <ArrowUpRight size={14} />
-              </button>
             </div>
           </div>
         </header>
+        <section className="dxp-workflow-bar" aria-label={copy.workflowActions}>
+          <input
+            className="dxp-workflow-name"
+            aria-label={copy.workflowName}
+            title={copy.workflowName}
+            value={workflow.name}
+            onChange={(event) => builder?.renameWorkflow(event.target.value)}
+            onBlur={() => builder?.flushActivity()}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') event.currentTarget.blur();
+            }}
+          />
+          <div className="dxp-workflow-actions">
+            <button
+              type="button"
+              className="dxp-button"
+              onClick={() => {
+                builder?.testWorkflow();
+              }}
+            >
+              <Play size={14} /> {copy.testWorkflow}
+            </button>
+            <button type="button" className="dxp-button dxp-button-primary" onClick={openExport}>
+              <Code2 size={16} /> {copy.exportWorkflow} <ArrowUpRight size={14} />
+            </button>
+          </div>
+        </section>
         <VisualDXPBuilder
           {...builderProps}
           i18n={builderI18n}
