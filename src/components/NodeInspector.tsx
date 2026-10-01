@@ -2,7 +2,6 @@ import {
   ArrowDown,
   ArrowRight,
   Braces,
-  ChevronDown,
   Copy,
   Frame,
   Info,
@@ -14,7 +13,7 @@ import {
   Trash2,
   X,
 } from 'lucide-react';
-import { type ReactNode, type SelectHTMLAttributes, useEffect, useId, useState } from 'react';
+import { type ReactNode, useEffect, useId, useState } from 'react';
 import { getCatalog } from '../lib/catalog';
 import { dataTools } from '../lib/data';
 import { dataHint, getDataOperators } from '../lib/dataLabels';
@@ -25,6 +24,7 @@ import type { ConditionType, NodeKind, StepConfig, StepData, WorkflowNode } from
 import { InfoBox } from './InfoBox';
 import { NoteControls } from './NoteControls';
 import { NoteTextEditor } from './NoteTextEditor';
+import { Select } from './Select';
 import '../styles/inspector.css';
 
 interface NodeInspectorProps {
@@ -53,15 +53,6 @@ function Field({
       <label htmlFor={htmlFor}>{label}</label>
       {children}
       {hint && <p className="dxp-inspector-hint">{hint}</p>}
-    </div>
-  );
-}
-
-function Select({ children, ...props }: SelectHTMLAttributes<HTMLSelectElement>) {
-  return (
-    <div className="dxp-inspector-select">
-      <select {...props}>{children}</select>
-      <ChevronDown size={13} aria-hidden="true" />
     </div>
   );
 }

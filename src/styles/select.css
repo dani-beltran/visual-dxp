@@ -1,0 +1,18 @@
+.dxp-select {
+  display: block;
+  position: relative;
+  width: 100%;
+}
+.dxp-select > .dxp-select-control {
+  appearance: none;
+  padding-inline-end: 30px;
+  cursor: pointer;
+}
+.dxp-select > svg {
+  position: absolute;
+  inset-inline-end: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--dxp-muted);
+  pointer-events: none;
+}

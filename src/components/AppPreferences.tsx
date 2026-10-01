@@ -1,6 +1,7 @@
 import { Moon, Settings2, Sun } from 'lucide-react';
 import { useEffect, useId, useRef, useState } from 'react';
 import type { appMessages } from '../app/locales/appMessages';
+import { Select } from './Select';
 import '../styles/app-preferences.css';
 
 interface AppPreferencesProps {
@@ -66,8 +67,9 @@ export function AppPreferences({
         aria-label={copy.preferences}
         data-open={preferencesOpen}
       >
-        <label className="dxp-language-selector">
-          <select
+        <label className="dxp-language-selector" htmlFor={`${preferencesId}-language`}>
+          <Select
+            id={`${preferencesId}-language`}
             className="dxp-button"
             value={selectedLanguage}
             onChange={(event) => onLanguageChange(event.target.value)}
@@ -81,7 +83,7 @@ export function AppPreferences({
             {hostLanguage !== 'en' && hostLanguage.split('-')[0].toLowerCase() !== 'es' && (
               <option value={hostLanguage}>{hostLanguage}</option>
             )}
-          </select>
+          </Select>
         </label>
         <button
           type="button"
