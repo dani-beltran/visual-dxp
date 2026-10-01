@@ -384,7 +384,7 @@ describe('preset execution with a mocked browser and network', () => {
     runtime(boundedCtaAttentionPreset).start();
     element<HTMLButtonElement>('#shop-now').click();
     await vi.advanceTimersByTimeAsync(0);
-    const target = element('#collection h2');
+    const target = element('#collection .products');
     expect(target.classList.contains('dxp-cta-attention')).toBe(true);
     expect(popover('attention-done')).toBeNull();
     await vi.advanceTimersByTimeAsync(600);

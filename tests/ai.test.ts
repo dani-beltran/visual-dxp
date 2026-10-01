@@ -579,9 +579,9 @@ describe('AI HTTP client', () => {
         .fn()
         .mockResolvedValue(new Response('secret provider key and stack trace', { status: 500 })),
     );
-    await expect(requestAIChat({ endpoint: '/api/ai/chat' }, request())).rejects.toThrow(
-      'The AI request failed. Try again or check your server configuration.',
-    );
+    await expect(requestAIChat({ endpoint: '/api/ai/chat' }, request())).rejects.toMatchObject({
+      message: 'The AI request failed. Try again or check AI Settings.',
+    });
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('<html>proxy error</html>')));
     await expect(requestAIChat({ endpoint: '/api/ai/chat' }, request())).rejects.toThrow(
       'The AI assistant returned an invalid response. Try again.',

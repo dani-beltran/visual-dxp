@@ -98,7 +98,7 @@ it('edits each condition type with the corresponding fields and preserves legacy
   expect(host.textContent).toContain('Cookies');
   expect(host.textContent).toContain('True if any source contains the name and value');
   expect(host.textContent).toContain('localStorage and sessionStorage');
-  expect(stepSummary('fork', current)).toContain('Cookie or browser storage');
+  expect(stepSummary('fork', current)).toBe('Cookie audience = ""');
   await change('Condition type', 'selector');
   expect(field('Element exists').value).toBe('#legacy');
   await change('Element exists', '#new');

@@ -130,7 +130,7 @@ it('masks keys, toggles visibility, shows privacy text, and removes settings', a
   await click(button('Show API key'));
   expect(host.querySelector('input')?.type).toBe('text');
   await click(button('Hide API key'));
-  expect(host.textContent).toContain('privileged browser extensions');
+  expect(host.textContent).toContain('browser extensions with special permissions');
   expect(host.textContent).toContain('never included in your published site');
   await act(async () =>
     store.save('sk-test-private', 'my-model', 'a very long passphrase', 'https://ai.test/chat'),
