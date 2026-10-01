@@ -4,7 +4,7 @@ import type { NodeKind } from './types';
 export const nodeDescriptions = {
   trigger:
     'Starts the workflow when a selected event occurs. Use it to respond to page activity or visitor actions. Choose an event and any required target element or thresholds, then connect the first step.',
-  http: 'Sends an HTTP request to an API. Use it to call an external service. Set the URL and method, with headers or a body as needed; the next step receives response data on success or an error object with message and code on failure.',
+  http: 'Sends an HTTP request to an API. Use it to call an external service. Set the URL and method, with headers or a body as needed. Use {{variableName}} or {{key.subKey.variableName}} in the URL or body to read incoming data; the next step receives response data on success or an error object with message and code on failure.',
   dom: 'Updates matching elements on the page. Use it to change content, appearance, or visibility. Choose a target element and an action, then use a manual value or incoming data from a connected step. Set an attribute name when needed.',
   cookie:
     'Saves a cookie on this website. Use it to remember a value for later steps or visits. Set a name, value, and expiration; a Condition step can check the saved value.',

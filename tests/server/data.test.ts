@@ -53,6 +53,14 @@ const cases: ['http' | 'fork' | 'dom', StepConfig][] = [
   ['http', { url: 'https://example.com', responseDataPath: 'items[0].price' }],
   ['http', { url: 'https://example.com', responseDataPath: '' }],
   [
+    'http',
+    {
+      url: 'https://example.com:{{port}}/users/{{user.id}}',
+      method: 'POST',
+      body: '{"name":"{{user.name}}"}',
+    },
+  ],
+  [
     'fork',
     {
       conditionType: 'data',

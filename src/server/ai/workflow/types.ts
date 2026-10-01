@@ -57,9 +57,11 @@ export interface StepConfig {
   /** Percentage of the page's scrollable distance. Defaults to 75. */
   scrollThreshold?: number;
   selector?: string;
+  /** Request URL; accepts {{path}} variables from incoming data. */
   url?: string;
   method?: string;
   headers?: string;
+  /** Raw request body; accepts {{path}} variables from incoming data (except GET/HEAD). */
   body?: string;
   /** Optional selection within parsed JSON. Non-JSON responses pass as complete text. */
   responseDataPath?: string;
