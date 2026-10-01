@@ -1,5 +1,12 @@
 /** English defaults and the public translation contract. Keys remain stable when copy changes. */
 export const englishMessages = {
+  'nodeInspector.requestTemplates':
+    'Use incoming data in the URL or body with {{variableName}} or {{key.subKey.variableName}}. Array indexes such as {{items[0].id}} also work. Connect an HTTP response to this input to chain requests. Missing variables stop the request.',
+  'errors.data.emptyRequestTemplatePath': 'Enter a data path inside request template braces.',
+  'errors.data.unclosedRequestTemplate':
+    'Close request template variables with two closing braces.',
+  'errors.data.unresolvedRequestTemplatePath': ({ path }: { path: string }) =>
+    `Request template data path “${path}” could not be resolved.`,
   'aiSettings.assistantCredentials': 'Assistant credentials',
   'aiSettings.aiSettings': 'AI settings',
   'aiSettings.yourAiConnection': 'YOUR AI CONNECTION',
@@ -828,7 +835,7 @@ export const englishMessages = {
   'nodes.trigger.description':
     'Starts the workflow when a selected event occurs. Use it to respond to page activity or visitor actions. Choose an event and any required target element or thresholds, then connect the first step.',
   'nodes.http.description':
-    'Sends an HTTP request to an API. Use it to call an external service. Set the URL and method, with headers or a body as needed; the next step receives response data on success or an error object with message and code on failure.',
+    'Sends an HTTP request to an API. Use it to call an external service. Set the URL and method, with headers or a body as needed. Use {{variableName}} or {{key.subKey.variableName}} in the URL or body to read incoming data; the next step receives response data on success or an error object with message and code on failure.',
   'nodes.dom.description':
     'Updates matching elements on the page. Use it to change content, appearance, or visibility. Choose a target element and an action, then use a manual value or incoming data from a connected step. Set an attribute name when needed.',
   'nodes.cookie.description':

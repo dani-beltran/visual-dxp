@@ -77,10 +77,18 @@ const config = z.object({
     .describe('Percentage of page scrollable distance, default 75.')
     .optional(),
   selector: text.optional(),
-  url: text.optional(),
+  url: text
+    .describe(
+      'Request URL; supports incoming data templates such as {{user.id}} or {{items[0].id}}.',
+    )
+    .optional(),
   method: shortText.optional(),
   headers: text.describe('JSON object encoded as a string, with string header values.').optional(),
-  body: text.optional(),
+  body: text
+    .describe(
+      'Request body; supports incoming data templates such as {{user.name}}. Ignored for GET/HEAD.',
+    )
+    .optional(),
   responseDataPath: text
     .describe(
       'Optional nested response selection, applied to automatically parsed JSON; e.g. data.items[0].price.',

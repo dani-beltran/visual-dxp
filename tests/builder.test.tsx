@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 
+import { Position } from '@xyflow/react';
 import { act, StrictMode } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -71,6 +72,51 @@ async function click(target: HTMLElement) {
 }
 
 describe('builder and host boundary', () => {
+  it('renders blue data sockets and connections for chained HTTP nodes and updates receiving data ports', async () => {
+    const workflow = initialWorkflow();
+    workflow.nodes = [
+      createNode('trigger', { x: 0, y: 0 }),
+      createNode('http', { x: 300, y: 0 }),
+      createNode('http', { x: 600, y: 0 }),
+      createNode('dom', { x: 900, y: 0 }),
+    ].map((node, index) => ({
+      ...node,
+      id: `node-${index}`,
+      width: 220,
+      height: 140,
+      handles: [
+        { type: 'source', position: Position.Right, x: 220, y: 70 },
+        { type: 'target', position: Position.Left, x: 0, y: 70 },
+      ],
+    }));
+    workflow.nodes[3].data.config = { selector: '#result', valueSource: 'incoming-data' };
+    workflow.edges = [
+      { id: 'trigger-http', source: 'node-0', target: 'node-1' },
+      { id: 'http-http', source: 'node-1', target: 'node-2' },
+      { id: 'http-dom', source: 'node-2', target: 'node-3' },
+    ];
+    await act(async () => root.render(<VisualDXPBuilder initialWorkflow={workflow} />));
+    for (const id of ['node-1', 'node-2']) {
+      expect(
+        element(`[data-id="${id}"] .react-flow__handle.target`).classList.contains(
+          'dxp-handle-data',
+        ),
+      ).toBe(true);
+      expect(
+        element(`[data-id="${id}"] .react-flow__handle.source`).classList.contains(
+          'dxp-handle-data',
+        ),
+      ).toBe(true);
+    }
+    expect(element('[data-id="http-http"]').classList.contains('dxp-edge-data')).toBe(true);
+    expect(element('[data-id="http-dom"]').classList.contains('dxp-edge-data')).toBe(true);
+    expect(element('[data-id="trigger-http"]').classList.contains('dxp-edge-data')).toBe(false);
+    await click(element('[data-id="node-3"]'));
+    await click(element('input[role="switch"]'));
+    expect(element('[data-id="http-dom"]').classList.contains('dxp-edge-data')).toBe(false);
+    expect(element('[data-id="http-http"]').classList.contains('dxp-edge-data')).toBe(true);
+  });
+
   it('checks typed website URLs, confirms the bridge, and shows setup only when a check fails', async () => {
     vi.useFakeTimers();
     const onChange = vi.fn<(workflow: Workflow) => void>();
