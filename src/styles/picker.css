@@ -95,12 +95,12 @@
   color: var(--dxp-muted);
   background: var(--dxp-canvas);
 }
-.dxp-picker-address input {
+.dxp-picker-url {
   min-width: 0;
   flex: 1;
-  outline: 0;
-  border: 0;
-  background: transparent;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   color: var(--dxp-text-secondary);
   font-size: 12px;
 }

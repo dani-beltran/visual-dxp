@@ -1,10 +1,8 @@
 import { ArrowRight, Check, Globe2, Info, MousePointer2, RefreshCw, X } from 'lucide-react';
-import { useEffect, useId, useRef, useState } from 'react';
-import { formatBuilderError } from '../lib/i18n';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useBuilderI18n } from '../lib/i18nContext';
 import type { PickedElement, PickerSession } from '../lib/picker';
 import { normalizeWebsiteUrl, PICKER_PROTOCOL } from '../lib/picker';
-import { websiteUrlInputValue } from '../lib/targeting';
 import { WebsiteSetup } from './WebsiteSetup';
 import '../styles/picker.css';
 
@@ -13,7 +11,6 @@ export interface ElementPickerProps {
   initialSelector?: string;
   onSelect: (selector: string) => void;
   onClose: () => void;
-  onUrlChange?: (url: string) => void;
 }
 
 type ConnectionStatus = 'loading' | 'connected' | 'bridge' | 'unavailable';
@@ -23,7 +20,6 @@ export function ElementPicker({
   initialSelector = '',
   onSelect,
   onClose,
-  onUrlChange,
 }: ElementPickerProps) {
   const { t } = useBuilderI18n();
   const headingId = useId();
@@ -34,14 +30,13 @@ export function ElementPicker({
   const initRef = useRef<() => void>(() => undefined);
   const channelRef = useRef('');
   const selectorRef = useRef(initialSelector);
-  const [urlInput, setUrlInput] = useState(() => websiteUrlInputValue(url));
-  const [frameUrl, setFrameUrl] = useState(() => {
+  const frameUrl = useMemo(() => {
     try {
       return normalizeWebsiteUrl(url.trim() || '/demo-site.html', window.location.href);
     } catch {
       return '';
     }
-  });
+  }, [url]);
   const [demoHtml, setDemoHtml] = useState<string>();
   const [reload, setReload] = useState(0);
   const isDemo = frameUrl === new URL('/demo-site.html', window.location.origin).href;
@@ -72,7 +67,6 @@ export function ElementPicker({
   const [hovered, setHovered] = useState<PickedElement | null>(null);
   const [selected, setSelected] = useState<PickedElement | null>(null);
   const [status, setStatus] = useState<ConnectionStatus>('loading');
-  const [error, setError] = useState('');
   const [showHelp, setShowHelp] = useState(false);
   const [selectorHint, setSelectorHint] = useState('');
   const unavailable = status === 'unavailable';
@@ -189,25 +183,6 @@ export function ElementPicker({
     };
   }, [frameUrl, reload, unavailable]);
 
-  const loadUrl = () => {
-    try {
-      const normalized = normalizeWebsiteUrl(
-        urlInput.trim() || '/demo-site.html',
-        window.location.href,
-      );
-      setError('');
-      setStatus('loading');
-      setFrameUrl(normalized);
-      setReload((value) => value + 1);
-      onUrlChange?.(normalized);
-    } catch (cause) {
-      setError(
-        cause instanceof Error
-          ? formatBuilderError(cause, t)
-          : t('elementPicker.enterAValidWebsiteUrl'),
-      );
-    }
-  };
   const updateSelector = (value: string) => {
     setSelector(value);
     selectorRef.current = value;
@@ -251,21 +226,6 @@ export function ElementPicker({
         </p>
       )}
       <WebsiteSetup />
-      <button
-        type="button"
-        onClick={() => {
-          const demo = new URL('/demo-site.html', window.location.href).href;
-          setUrlInput('');
-          setFrameUrl(demo);
-          setStatus('loading');
-          setError('');
-          setReload((value) => value + 1);
-          onUrlChange?.(demo);
-          setShowHelp(false);
-        }}
-      >
-        {t('elementPicker.openDemoWebsite')} <ArrowRight size={13} />
-      </button>
     </div>
   );
 
@@ -324,29 +284,24 @@ export function ElementPicker({
             <X size={20} />
           </button>
         </header>
-        <form
-          className="dxp-picker-address"
-          onSubmit={(event) => {
-            event.preventDefault();
-            loadUrl();
-          }}
-        >
+        <div className="dxp-picker-address">
           <Globe2 size={16} aria-hidden="true" />
-          <input
-            aria-label={t('elementPicker.websiteUrl')}
-            value={urlInput}
-            onChange={(event) => setUrlInput(event.target.value)}
-            placeholder={t('elementPicker.leaveEmptyToUseTheDemoWebsite')}
-          />
-          <button type="submit" className="dxp-picker-load">
-            <RefreshCw size={14} /> {t('elementPicker.loadWebsite')}
+          <span className="dxp-picker-url" title={url || '/demo-site.html'}>
+            {url || '/demo-site.html'}
+          </span>
+          <button
+            type="button"
+            className="dxp-picker-load"
+            title={t('preview.reloadWebsite')}
+            aria-label={t('preview.reloadWebsite')}
+            onClick={() => {
+              setStatus('loading');
+              setReload((value) => value + 1);
+            }}
+          >
+            <RefreshCw size={14} />
           </button>
-        </form>
-        {error && (
-          <div className="dxp-picker-error" role="alert">
-            {error}
-          </div>
-        )}
+        </div>
         <div className="dxp-picker-toolbar">
           <span className={`dxp-picker-status dxp-picker-status-${status}`}>
             <i />

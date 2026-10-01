@@ -185,9 +185,7 @@ describe('website element selection', () => {
         ).toBe('#shop-now');
 
         await act(async () => {
-          host
-            .querySelector('form')!
-            .dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+          host.querySelector<HTMLButtonElement>('[aria-label="Reload website"]')!.click();
         });
         const retry = host.querySelector('iframe')!;
         expect(retry).not.toBeNull();

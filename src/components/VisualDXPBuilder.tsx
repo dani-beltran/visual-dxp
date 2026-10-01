@@ -1441,12 +1441,6 @@ function Builder({
           url={workflow.websiteUrl}
           initialSelector={selected.data.config.selector}
           onClose={() => setPicking(false)}
-          onUrlChange={(url) =>
-            commit(
-              (w) => ({ ...w, websiteUrl: url }),
-              activityAction('activity.websiteChanged', { url }),
-            )
-          }
           onSelect={(selector) => {
             patchNode({ config: { ...selected.data.config, selector } });
             setPicking(false);
