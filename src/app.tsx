@@ -1,18 +1,8 @@
-import {
-  ArrowDownToLine,
-  ArrowUpRight,
-  Check,
-  Code2,
-  Copy,
-  FileJson,
-  Moon,
-  Play,
-  Sun,
-  X,
-} from 'lucide-react';
+import { ArrowDownToLine, ArrowUpRight, Check, Code2, Copy, FileJson, Play, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { appMessages } from './app/locales/appMessages';
 import { spanishMessages } from './app/locales/es';
+import { AppPreferences } from './components/AppPreferences';
 import {
   VisualDXPBuilder,
   type VisualDXPBuilderApi,
@@ -250,37 +240,14 @@ export function App({
               </div>
               <p>{copy.description}</p>
             </div>
-            <div className="dxp-header-actions">
-              <label className="dxp-language-selector">
-                <span>{copy.language}</span>
-                <select
-                  className="dxp-button"
-                  value={selectedLanguage}
-                  onChange={(event) => selectLanguage(event.target.value)}
-                >
-                  <option value="en" lang="en">
-                    English
-                  </option>
-                  <option value="es" lang="es">
-                    Español
-                  </option>
-                  {hostLanguage !== 'en' && hostLanguage.split('-')[0].toLowerCase() !== 'es' && (
-                    <option value={hostLanguage}>{hostLanguage}</option>
-                  )}
-                </select>
-              </label>
-              <button
-                type="button"
-                className="dxp-button"
-                aria-label={copy.darkMode}
-                aria-pressed={theme === 'dark'}
-                title={theme === 'dark' ? copy.switchToLight : copy.switchToDark}
-                onClick={() => setTheme((current) => (current === 'light' ? 'dark' : 'light'))}
-              >
-                {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
-                {theme === 'dark' ? copy.lightMode : copy.darkMode}
-              </button>
-            </div>
+            <AppPreferences
+              selectedLanguage={selectedLanguage}
+              hostLanguage={hostLanguage}
+              theme={theme}
+              copy={copy}
+              onLanguageChange={selectLanguage}
+              onThemeChange={setTheme}
+            />
           </div>
         </header>
         <section className="dxp-workflow-bar" aria-label={copy.workflowActions}>

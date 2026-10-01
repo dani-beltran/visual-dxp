@@ -15,13 +15,14 @@
   height: auto;
 }
 .dxp-header {
+  container-type: inline-size;
+  container-name: app-header;
   flex-shrink: 0;
   background: var(--dxp-surface);
   padding: 8px 29px;
 }
 .dxp-heading {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 24px;
@@ -45,21 +46,6 @@
   font-size: 12px;
   line-height: 1.6;
   color: var(--dxp-muted);
-}
-.dxp-header-actions {
-  display: flex;
-  flex-shrink: 0;
-  max-width: 100%;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px;
-}
-.dxp-language-selector {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--dxp-muted);
-  font-size: 12px;
 }
 .dxp-workflow-bar {
   display: flex;
@@ -168,12 +154,15 @@
     padding: 12px 15px;
   }
   .dxp-heading {
-    flex-direction: column;
-    align-items: flex-start;
     gap: 16px;
   }
   .dxp-workflow-bar {
     padding-inline: 15px;
+  }
+}
+@container app-header (max-width: 400px) {
+  .dxp-brand-image {
+    width: 140px;
   }
 }
 @media (max-width: 600px) {

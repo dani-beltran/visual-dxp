@@ -1,7 +1,7 @@
 /** Copy owned by the demo shell; builder translations are supplied separately. */
 export const appMessages = {
   en: {
-    language: 'Language',
+    preferences: 'Preferences',
     description:
       'Build website workflows visually, test them live, and export standalone JavaScript.',
     darkMode: 'Dark mode',
@@ -31,7 +31,7 @@ export const appMessages = {
     download: 'Download',
   },
   es: {
-    language: 'Idioma',
+    preferences: 'Preferencias',
     description:
       'Crea flujos de trabajo visualmente, pruébalos en directo y expórtalos como JavaScript.',
     darkMode: 'Modo oscuro',
