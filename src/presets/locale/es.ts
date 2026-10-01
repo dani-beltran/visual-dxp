@@ -79,14 +79,14 @@ export const spanishPresetMessages = {
   'campaign-headline.workflow.edges.headline-day-to-headline-update.label': 'Semana de campaña',
   'campaign-url-personalization.name': 'Personalización por URL de campaña',
   'campaign-url-personalization.description':
-    'Da la bienvenida a los visitantes de la campaña everyday-edit con un texto personalizado y conserva un mensaje predeterminado.',
+    'Da la bienvenida a los visitantes de la campaña Summer Sale con un texto personalizado y conserva un mensaje predeterminado.',
   'campaign-url-personalization.workflow.name': 'Personalización por URL de campaña',
   'campaign-url-personalization.workflow.nodes.campaign-load.data.label': 'Página cargada',
   'campaign-url-personalization.workflow.nodes.campaign-check.data.label':
-    '¿Campaña everyday-edit?',
+    '¿Campaña Summer Sale?',
   'campaign-url-personalization.workflow.nodes.campaign-matched.data.label': 'Mensaje de campaña',
   'campaign-url-personalization.workflow.nodes.campaign-matched.data.config.value':
-    'Te damos la bienvenida a nuestra selección cotidiana: objetos cuidados para mañanas sin prisas.',
+    'Te damos la bienvenida a Summer Sale: objetos cuidados para mañanas sin prisas.',
   'campaign-url-personalization.workflow.nodes.campaign-default.data.label':
     'Mensaje predeterminado',
   'campaign-url-personalization.workflow.nodes.campaign-default.data.config.value':
@@ -94,7 +94,7 @@ export const spanishPresetMessages = {
   'campaign-url-personalization.workflow.nodes.campaign-url-personalization-setup-1.data.label':
     'Configuración: Parámetro de campaña',
   'campaign-url-personalization.workflow.nodes.campaign-url-personalization-setup-1.data.config.noteText':
-    'Visita /demo-site.html?utm_campaign=everyday-edit para obtener una coincidencia. Los valores de consulta son exactos y distinguen mayúsculas y minúsculas; sustituye el parámetro y el valor por los de tu campaña.',
+    'Visita /demo-site.html?utm_campaign=summer-sale para obtener una coincidencia. Los valores de consulta son exactos y distinguen mayúsculas y minúsculas; sustituye el parámetro y el valor por los de tu campaña.',
   'campaign-url-personalization.workflow.nodes.campaign-url-personalization-setup-2.data.label':
     'Configuración: Sitio web de vista previa',
   'campaign-url-personalization.workflow.nodes.campaign-url-personalization-setup-2.data.config.noteText':
@@ -102,7 +102,7 @@ export const spanishPresetMessages = {
   'campaign-url-personalization.workflow.nodes.campaign-url-personalization-overview.data.label':
     'Resumen del preajuste',
   'campaign-url-personalization.workflow.nodes.campaign-url-personalization-overview.data.config.noteText':
-    'Da la bienvenida a los visitantes de la campaña everyday-edit con un texto personalizado y conserva un mensaje predeterminado.',
+    'Da la bienvenida a los visitantes de la campaña Summer Sale con un texto personalizado y conserva un mensaje predeterminado.',
   'campaign-url-personalization.workflow.edges.campaign-check-to-campaign-matched.label':
     'Coincidencia de campaña',
   'campaign-url-personalization.workflow.edges.campaign-check-to-campaign-default.label':

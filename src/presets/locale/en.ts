@@ -75,21 +75,21 @@ export const englishPresetMessages = {
   'campaign-headline.workflow.edges.headline-day-to-headline-update.label': 'Campaign week',
   'campaign-url-personalization.name': 'Campaign URL personalization',
   'campaign-url-personalization.description':
-    'Welcome everyday-edit campaign visitors with tailored copy while retaining a default message.',
+    'Welcome Summer Sale campaign visitors with tailored copy while retaining a default message.',
   'campaign-url-personalization.workflow.name': 'Campaign URL personalization',
   'campaign-url-personalization.workflow.nodes.campaign-load.data.label': 'Page loaded',
   'campaign-url-personalization.workflow.nodes.campaign-check.data.label':
-    'Everyday edit campaign?',
+    'Summer Sale campaign?',
   'campaign-url-personalization.workflow.nodes.campaign-matched.data.label': 'Campaign message',
   'campaign-url-personalization.workflow.nodes.campaign-matched.data.config.value':
-    'Welcome to the everyday edit: thoughtful objects for slower mornings.',
+    'Welcome to Summer Sale: thoughtful objects for slower mornings.',
   'campaign-url-personalization.workflow.nodes.campaign-default.data.label': 'Default message',
   'campaign-url-personalization.workflow.nodes.campaign-default.data.config.value':
     'Discover thoughtful objects for everyday living.',
   'campaign-url-personalization.workflow.nodes.campaign-url-personalization-setup-1.data.label':
     'Setup: Campaign parameter',
   'campaign-url-personalization.workflow.nodes.campaign-url-personalization-setup-1.data.config.noteText':
-    'Visit /demo-site.html?utm_campaign=everyday-edit to match. Query values are exact and case-sensitive; replace the parameter and value for your campaign.',
+    'Visit /demo-site.html?utm_campaign=summer-sale to match. Query values are exact and case-sensitive; replace the parameter and value for your campaign.',
   'campaign-url-personalization.workflow.nodes.campaign-url-personalization-setup-2.data.label':
     'Setup: Preview website',
   'campaign-url-personalization.workflow.nodes.campaign-url-personalization-setup-2.data.config.noteText':
@@ -97,7 +97,7 @@ export const englishPresetMessages = {
   'campaign-url-personalization.workflow.nodes.campaign-url-personalization-overview.data.label':
     'Preset overview',
   'campaign-url-personalization.workflow.nodes.campaign-url-personalization-overview.data.config.noteText':
-    'Welcome everyday-edit campaign visitors with tailored copy while retaining a default message.',
+    'Welcome Summer Sale campaign visitors with tailored copy while retaining a default message.',
   'campaign-url-personalization.workflow.edges.campaign-check-to-campaign-matched.label':
     'Campaign match',
   'campaign-url-personalization.workflow.edges.campaign-check-to-campaign-default.label': 'Default',

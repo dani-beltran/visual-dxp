@@ -281,16 +281,16 @@ describe('preset execution with a mocked browser and network', () => {
       mobile ? 'on the go' : 'closer look',
     );
   });
-  it.each(['everyday-edit', 'EVERYDAY-EDIT', ''])(
+  it.each(['summer-sale', 'SUMMER-SALE', ''])(
     'matches campaign URL values exactly (%s)',
     async (campaign) => {
       history.replaceState(null, '', `/demo-site.html?utm_campaign=${campaign}`);
       await runtime(campaignUrlPersonalizationPreset).run();
       expect(successful()).toContain(
-        campaign === 'everyday-edit' ? 'campaign-matched' : 'campaign-default',
+        campaign === 'summer-sale' ? 'campaign-matched' : 'campaign-default',
       );
       expect(successful()).not.toContain(
-        campaign === 'everyday-edit' ? 'campaign-default' : 'campaign-matched',
+        campaign === 'summer-sale' ? 'campaign-default' : 'campaign-matched',
       );
     },
   );

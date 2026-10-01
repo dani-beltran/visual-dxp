@@ -46,7 +46,7 @@ export function createCampaignUrlPersonalizationPreset(
             config: {
               conditionType: 'query-param',
               conditionKey: 'utm_campaign',
-              conditionValue: 'everyday-edit',
+              conditionValue: 'summer-sale',
             },
           },
         },
