@@ -4,7 +4,7 @@ A Next.js App Router application and embeddable React 19 workflow editor powered
 
 ## Common DXP presets
 
-Import `commonDXPPresets` from `visual-dxp` and pass it as `<VisualDXPBuilder presets={commonDXPPresets} />` to enable Blank followed by twelve editable examples, ordered from basic help to segmented onboarding. The demo opts in explicitly; builders without presets still have no Presets tab. See the [preset reference and setup guide](docs/common-dxp-presets.md) for every scenario, selectors, HTTP placeholders, CSS, and runtime limits.
+Import `commonDXPPresets` from `visual-dxp` and pass it as `<VisualDXPBuilder presets={commonDXPPresets} />` to enable Blank followed by fourteen editable examples, ordered from basic help to segmented onboarding. The demo opts in explicitly; builders without presets still have no Presets tab. See the [preset reference and setup guide](docs/common-dxp-presets.md) for every scenario, selectors, HTTP placeholders, CSS, and runtime limits.
 
 ## Run the demo
 
@@ -135,7 +135,7 @@ interface WorkflowPreset {
 }
 ```
 
-Bundled examples of increasing complexity live in [`src/presets`](src/presets). Start with [click-to-open help](src/presets/click-to-open-help.ts), which connects a click trigger to an anchored popover and includes setup notes. See the [common DXP presets reference](docs/common-dxp-presets.md) for all thirteen presets and their required setup.
+Bundled examples of increasing complexity live in [`src/presets`](src/presets). Start with [click-to-open help](src/presets/click-to-open-help.ts), which connects a click trigger to an anchored popover and includes setup notes. See the [common DXP presets reference](docs/common-dxp-presets.md) for all fifteen presets and their required setup.
 
 Pass a bundled preset explicitly from your host:
 
