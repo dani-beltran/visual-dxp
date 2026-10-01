@@ -892,7 +892,7 @@ function Builder({
     }
     for (const edge of next.edges) delete edge.selected;
     commit(
-      (w) => ({ ...w, nodes: next.nodes, edges: next.edges }),
+      (w) => ({ ...w, name: next.name, nodes: next.nodes, edges: next.edges }),
       activityAction('activity.presetApplied', { name: preset.name }),
     );
     setSelectedId(null);

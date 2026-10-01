@@ -122,20 +122,30 @@ function freeze<T>(value: T): T {
 }
 
 describe('optional builder presets', () => {
-  it('applies Blank first, clears the canvas, preserves host metadata, and supports Undo/Redo', async () => {
+  it('applies Blank first, clears the canvas, updates the name, preserves website settings, and supports Undo/Redo', async () => {
     const onChange = vi.fn<(workflow: Workflow) => void>();
     await render({ presets: commonDXPPresets, onChange });
     await click(tab('Presets'));
     expect(element('.dxp-preset-card h3').textContent).toBe('Blank');
     await click(element('button[aria-label="Apply preset: Blank"]'));
     expect(host.querySelector('[role="alert"]')).toBeNull();
-    expect(onChange.mock.lastCall?.[0]).toEqual({ ...initialWorkflow(), nodes: [], edges: [] });
+    expect(onChange.mock.lastCall?.[0]).toEqual({
+      ...initialWorkflow(),
+      name: blankPreset.workflow.name,
+      nodes: [],
+      edges: [],
+    });
     expect(host.querySelector('.react-flow__node')).toBeNull();
     expect(tab('Canvas').getAttribute('aria-selected')).toBe('true');
     await click(element('button[title^="Undo"]'));
     expect(onChange.mock.lastCall?.[0]).toEqual(initialWorkflow());
     await click(element('button[title^="Redo"]'));
-    expect(onChange.mock.lastCall?.[0]).toEqual({ ...initialWorkflow(), nodes: [], edges: [] });
+    expect(onChange.mock.lastCall?.[0]).toEqual({
+      ...initialWorkflow(),
+      name: blankPreset.workflow.name,
+      nodes: [],
+      edges: [],
+    });
     expect(fetch).not.toHaveBeenCalled();
   });
 
@@ -149,6 +159,7 @@ describe('optional builder presets', () => {
       await apply(preset.name);
       const applied = onChange.mock.lastCall?.[0];
       if (!applied) throw new Error('Expected an applied workflow');
+      expect(applied.name).toBe(preset.workflow.name);
       expect(applied.nodes).toEqual(preset.workflow.nodes);
       expect(applied.edges).toEqual(preset.workflow.edges);
       expect(applied.websiteUrl).toBe(initialWorkflow().websiteUrl);
@@ -277,7 +288,7 @@ describe('optional builder presets', () => {
   );
 
   it.each([true, false, undefined])(
-    'replaces the graph and preserves the latest host metadata (subpages: %s)',
+    'replaces the graph and name and preserves website settings (subpages: %s)',
     async (includeSubpages) => {
       const onChange = vi.fn<(workflow: Workflow) => void>();
       let api: VisualDXPBuilderApi | null = null;
@@ -293,7 +304,7 @@ describe('optional builder presets', () => {
       await apply();
       expect(onChange.mock.lastCall?.[0]).toEqual({
         ...clickToOpenHelpPreset.workflow,
-        name: 'Updated host name',
+        name: clickToOpenHelpPreset.workflow.name,
         websiteUrl: initialWorkflow().websiteUrl,
         includeSubpages: includeSubpages ?? false,
       });

@@ -18,7 +18,7 @@ import { VisualDXPBuilder, commonDXPPresets } from 'visual-dxp';
 
 The demo explicitly passes the collection through `App` to `VisualDXPBuilder`. The builder imports no preset collection: omitting `presets`, or passing an empty array, leaves the Presets tab hidden. Each preset is also a named public export (for example, `campaignHeadlinePreset` and `segmentedOnboardingPreset`). The collection's array order and each preset's `order` agree.
 
-Applying a preset replaces the graph and preserves the editor's current workflow name, website URL, and subpage scope. It deep-clones the graph, supports Undo, and never executes it automatically. The built-in `/demo-site.html` is a preview target; configure your own website before exporting. When previewing URL personalization, set the preview website URL to `/demo-site.html?utm_campaign=everyday-edit`. For segmented onboarding, use `/demo-site.html?utm_campaign=onboarding`. The exported scope ignores query strings, but the runtime condition reads the visitor's actual query parameters.
+Applying a preset replaces the graph and workflow name, and preserves the editor's current website URL and subpage scope. It deep-clones the graph, supports Undo, and never executes it automatically. The built-in `/demo-site.html` is a preview target; configure your own website before exporting. When previewing URL personalization, set the preview website URL to `/demo-site.html?utm_campaign=everyday-edit`. For segmented onboarding, use `/demo-site.html?utm_campaign=onboarding`. The exported scope ignores query strings, but the runtime condition reads the visitor's actual query parameters.
 
 ## Preset reference
 
@@ -26,7 +26,7 @@ After Blank, the first three examples are ordered by their final implementation:
 
 | Order | Preset / export | Complexity | Purpose and node types | Required setup |
 | --- | --- | --- | --- | --- |
-| 0 | Blank / `blankPreset` | Beginner | Empty canvas with no nodes or connections. | Add a trigger and steps before previewing or exporting. Applying preserves host metadata and supports Undo. |
+| 0 | Blank / `blankPreset` | Beginner | Empty canvas with no nodes or connections. | Add a trigger and steps before previewing or exporting. Applying updates the name, preserves website settings, and supports Undo. |
 | 10 | Click-to-open help / `clickToOpenHelpPreset` | Beginner | Click a newsletter link to show help beside the form. `trigger`, `popover`. | Demo trigger `#collection .section-heading a`; anchor `#newsletter form`. Replace with your accessible help link/button and form. Adapt newsletter copy to your terms. |
 | 20 | Delayed welcome / `delayedWelcomePreset` | Beginner | Page load → 2-second pause → welcome. `trigger`, `delay`, `popover`. | Update welcome copy and the `#collection` link. Runs on every page load. |
 | 30 | Campaign headline / `campaignHeadlinePreset` | Beginner | Page load → current UTC campaign week → headline. False leaves the page alone. `trigger`, `fork`, `dom`. | Monday–Sunday dates are calculated when `campaign-headline.ts` loads; reload to refresh the available preset. Change `.hero h1` and copy. Text updates replace nested markup. |
