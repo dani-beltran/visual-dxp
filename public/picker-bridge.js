@@ -30,7 +30,116 @@
     console.warn(logPrefix, 'Inactive: data-parent-origin is not a valid URL.');
     return;
   }
+  // Check from a direct visit: a blocked iframe cannot execute this script, and
+  // the editor's opaque sandbox origin cannot reliably fetch the host's headers.
+  async function checkEmbedding() {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+    try {
+      const page = new URL(window.location.href);
+      if (!/^https?:$/.test(page.protocol)) throw new Error();
+      const response = await window.fetch(page.href, {
+        method: 'HEAD',
+        mode: 'same-origin',
+        credentials: 'same-origin',
+        redirect: 'error',
+        cache: 'no-store',
+        signal: controller.signal,
+      });
+      if (!response.ok) throw new Error();
+      const editor = new URL(parentOrigin);
+      // null means a source needs browser/manual verification, not that it blocks.
+      function matches(source) {
+        if (source === '*') return true;
+        if (source.toLowerCase() === "'none'") return false;
+        if (source.toLowerCase() === "'self'") {
+          if (page.origin === editor.origin) return true;
+          // CSP can allow secure upgrades for 'self'. Leave these to the browser.
+          if (page.protocol === 'http:' && editor.protocol === 'https:') return null;
+          return false;
+        }
+        if (/^https?:$/i.test(source))
+          return source.toLowerCase() === editor.protocol || source.toLowerCase() === 'http:';
+        const host = source.match(
+          /^(?:(https?):\/\/)?(\*|(?:\*\.)?[a-z0-9.-]+)(?::(\*|[0-9]+))?\/?$/i,
+        );
+        if (!host) return null;
+        const scheme = host[1] ? host[1].toLowerCase() + ':' : page.protocol;
+        const hostname = host[2].toLowerCase();
+        const port = host[3];
+        const schemeMatches =
+          scheme === editor.protocol || (scheme === 'http:' && editor.protocol === 'https:');
+        const hostMatches =
+          hostname === '*' ||
+          (hostname.startsWith('*.')
+            ? editor.hostname.endsWith(hostname.slice(1))
+            : hostname === editor.hostname);
+        const editorPort = editor.port || (editor.protocol === 'https:' ? '443' : '80');
+        const portMatches =
+          port === '*' ||
+          (!port && !editor.port) ||
+          (port !== undefined && Number(port) === Number(editorPort));
+        return schemeMatches && hostMatches && portMatches;
+      }
+      const policies = (response.headers.get('content-security-policy') || '').split(',');
+      const ancestors = policies
+        .map((policy) =>
+          policy
+            .split(';')
+            .map((value) => value.trim())
+            .find((value) => /^frame-ancestors(?:\s|$)/i.test(value)),
+        )
+        .filter((value) => value !== undefined);
+      let blocked = false;
+      let uncertain = false;
+      if (ancestors.length) {
+        // Every enforced policy must allow the parent; only the first duplicate
+        // directive in each policy applies. Enforced frame-ancestors overrides XFO.
+        for (const directive of ancestors) {
+          const results = directive.split(/\s+/).slice(1).map(matches);
+          if (!results.includes(true)) {
+            if (results.includes(null)) uncertain = true;
+            else blocked = true;
+          }
+        }
+      } else {
+        const options = (response.headers.get('x-frame-options') || '')
+          .split(',')
+          .map((value) => value.trim().toUpperCase())
+          .filter(Boolean);
+        blocked =
+          options.includes('DENY') ||
+          (options.includes('SAMEORIGIN') && page.origin !== editor.origin);
+        uncertain = options.some((value) => value !== 'DENY' && value !== 'SAMEORIGIN');
+      }
+      if (blocked) {
+        console.warn(
+          logPrefix,
+          'Iframe embedding appears blocked for the configured editor. Update the host response headers: CSP frame-ancestors or X-Frame-Options.',
+          { parentOrigin: parentOrigin },
+        );
+      } else if (uncertain) {
+        console.warn(
+          logPrefix,
+          'Unable to verify iframe embedding: review the response framing policy in browser DevTools.',
+        );
+      } else {
+        console.info(
+          logPrefix,
+          'Header check found no restriction blocking the configured editor. Confirm by opening the picker; navigation headers and other ancestors may differ.',
+        );
+      }
+    } catch (_) {
+      console.warn(
+        logPrefix,
+        'Unable to verify iframe embedding: the HEAD request failed, redirected, timed out, or was blocked. Inspect CSP frame-ancestors and X-Frame-Options in browser DevTools.',
+      );
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
   if (window.parent === window) {
+    void checkEmbedding();
     console.info(logPrefix, 'Inactive: open this website in the editor picker iframe to connect.');
     return;
   }

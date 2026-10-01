@@ -403,6 +403,8 @@ Use the exact editor origin, including its port when relevant, with no trailing 
 
 To verify installation, open the host website's browser console and filter for `[Visual DXP picker bridge]`. The bridge logs when the script loads, why it is inactive, when it starts listening, and when a picker session is ready or stopped. Selection and selector lookup logs confirm interaction without logging page text or selector values. When visiting the website directly, an inactive message is expected; open it in the editor picker iframe to connect.
 
+On a direct visit with a valid `data-parent-origin`, the bridge also makes a same-origin `HEAD` request to check `X-Frame-Options` and enforced CSP `frame-ancestors` against the editor origin. Blocking policies produce a warning; failed requests and unsupported policy syntax produce an unable-to-verify warning. This is a diagnostic, not a guarantee: navigation responses can differ from `HEAD`, and additional ancestors or browser policies can prevent framing. A blocked iframe cannot execute the bridge, so the editor also logs connection failures with troubleshooting guidance.
+
 The target website must permit embedding via its `Content-Security-Policy: frame-ancestors` and `X-Frame-Options` settings. Neither a React component nor this bridge can override browser framing policy. Remote sites that you cannot configure still support manual CSS selector entry.
 
 See [MDN: iframe contentDocument](https://developer.mozilla.org/en-US/docs/Web/API/HTMLIFrameElement/contentDocument) and [MDN: postMessage](https://developer.mozilla.org/en-US/docs/Web/API/Window/postMessage) for the browser model.

@@ -130,7 +130,13 @@ export function ElementPicker({
       setSelectorHint('');
       retry = window.setInterval(initialize, 1000);
       timeout = window.setTimeout(() => {
-        if (!finished) setStatus('unavailable');
+        if (!finished) {
+          console.warn(
+            '[Visual DXP picker bridge]',
+            'Iframe did not connect. Check the bridge installation and host CSP frame-ancestors / X-Frame-Options headers; a timeout alone does not confirm embedding is blocked.',
+          );
+          setStatus('unavailable');
+        }
         window.clearInterval(retry);
       }, 8000);
       initialize();
@@ -161,7 +167,13 @@ export function ElementPicker({
             : t('elementPicker.noMatchingElementFoundYouCanStillUseThisSelector'),
         );
     };
-    const failed = () => setStatus('unavailable');
+    const failed = () => {
+      console.warn(
+        '[Visual DXP picker bridge]',
+        'Iframe failed to load. Check the network and browser console for CSP frame-ancestors or X-Frame-Options violations.',
+      );
+      setStatus('unavailable');
+    };
     frame?.addEventListener('error', failed);
     window.addEventListener('message', message);
     reconnect();
