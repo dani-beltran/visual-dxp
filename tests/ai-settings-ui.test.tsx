@@ -96,7 +96,7 @@ it('shows configured AI by default and includes the tab in roving keyboard navig
   expect(tab('AI Settings')).toBeUndefined();
   expect(tab('Canvas')?.tabIndex).toBe(0);
 });
-it('keeps saved settings and provides unlocking within the assistant when the tab is hidden', async () => {
+it('keeps saved settings when the tab is hidden and unlocks through AI Settings', async () => {
   const store = new AISettingsStore();
   await store.save('sk-test-private', 'my-model', 'a very long passphrase', 'https://ai.test/chat');
   store.lock();
@@ -104,9 +104,12 @@ it('keeps saved settings and provides unlocking within the assistant when the ta
   await builder({ endpoint: 'https://ai.test/chat', showSettings: false });
   await click(button('AI chat'));
   expect(tab('AI Settings')).toBeUndefined();
-  expect(button('Unlock browser settings')).toBeDefined();
+  expect(button('Unlock browser settings')).toBeUndefined();
+  expect(host.querySelector('[aria-label="Assistant credentials"]')).toBeNull();
   expect(host.querySelector('.dxp-ai-context')?.textContent).toContain('Unlock OpenAI');
   expect(host.querySelector('.dxp-ai-status.error')).not.toBeNull();
+  await builder({ endpoint: 'https://ai.test/chat', showSettings: true });
+  await click(tab('AI Settings')!);
   await input('Passphrase to unlock', 'a very long passphrase');
   await click(button('Unlock browser settings'));
   // Web Crypto completes asynchronously, outside React's event turn.
@@ -130,7 +133,7 @@ it('masks keys, toggles visibility, shows privacy text, and removes settings', a
   await click(button('Show API key'));
   expect(host.querySelector('input')?.type).toBe('text');
   await click(button('Hide API key'));
-  expect(host.textContent).toContain('privileged browser extensions');
+  expect(host.textContent).toContain('browser extensions with special permissions');
   expect(host.textContent).toContain('never included in your published site');
   await act(async () =>
     store.save('sk-test-private', 'my-model', 'a very long passphrase', 'https://ai.test/chat'),
@@ -168,9 +171,11 @@ it('updates the chat status when damaged browser settings are removed', async ()
   await builder({ endpoint: '/api/ai/chat' });
   await click(button('AI chat'));
   expect(host.querySelector('.dxp-ai-status.error')).not.toBeNull();
+  expect(host.querySelector('[aria-label="Assistant credentials"]')).toBeNull();
+  await click(tab('AI Settings')!);
   await click(button('Remove browser settings'));
   expect(host.querySelector('.dxp-ai-status.ready')).not.toBeNull();
-  expect(host.querySelector('[aria-label="Assistant credentials"]')?.textContent).toContain(
+  expect(host.querySelector('[aria-label="AI settings"]')?.textContent).toContain(
     'Active provider: OpenAI',
   );
 });

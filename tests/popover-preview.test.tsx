@@ -82,7 +82,7 @@ function panel(doc: Document) {
 describe('fullscreen popover preview', () => {
   it('reports a missing preview bridge instead of loading forever', async () => {
     vi.useFakeTimers();
-    await renderPreview(popover(), vi.fn(), 'https://example.com');
+    await renderPreview();
     await act(async () => vi.advanceTimersByTime(8000));
     expect(document.querySelector('[role="alert"]')?.textContent).toContain('preview-bridge.js');
     expect(document.querySelector('.dxp-popover-preview-loading')).toBeNull();
@@ -90,14 +90,13 @@ describe('fullscreen popover preview', () => {
 
   it('connects when the bridge is installed after the iframe load and stops retrying', async () => {
     vi.useFakeTimers();
-    await renderPreview(popover(), vi.fn(), 'https://example.com');
+    await renderPreview();
     const frame = websiteFrame();
     await act(async () => frame.dispatchEvent(new Event('load')));
     const doc = frame.contentDocument;
     if (!doc) throw new Error('Expected the website document.');
-    doc.open();
-    doc.write('<html><body><h1>Website</h1></body></html>');
-    doc.close();
+    // Populate the loaded document without scheduling a second load via doc.close().
+    doc.body.innerHTML = '<h1>Website</h1>';
     connectPreview(frame);
     await act(async () => vi.advanceTimersByTime(1000));
     const original = panel(doc);
@@ -106,8 +105,8 @@ describe('fullscreen popover preview', () => {
     expect(document.querySelector('[role="alert"]')).toBeNull();
   });
 
-  it.each(['', '   ', '/demo-site.html'])('uses the demo when the site is %j', async (url) => {
-    await renderPreview(popover(), vi.fn(), url);
+  it('uses the isolated demo website for content previews', async () => {
+    await renderPreview();
     expect(websiteFrame().hasAttribute('src')).toBe(false);
     expect(websiteFrame().getAttribute('srcdoc')).toContain('Demo');
     expect(document.querySelector('.dxp-popover-preview-bar')?.textContent).toContain(

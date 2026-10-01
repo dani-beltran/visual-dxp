@@ -280,11 +280,16 @@ describe('builder targeting persistence', () => {
       document.getElementById(checkbox.getAttribute('aria-describedby') ?? '')?.textContent,
     ).toContain('Also run this experience on pages beneath this URL.');
     await editUrl('https://example.com');
-    expect(host.textContent).toContain('The homepage only.');
+    expect(host.querySelector('.dxp-website-scope')?.textContent).toContain(
+      'Effective scope: https://example.com/',
+    );
+    expect(checkbox.checked).toBe(false);
     await act(async () => checkbox.click());
-    expect(host.textContent).toContain('The homepage and all subpages.');
+    expect(checkbox.checked).toBe(true);
     await editUrl('https://example.com/products');
-    expect(host.textContent).toContain('/products-sale');
+    expect(host.querySelector('.dxp-website-scope')?.textContent).toContain(
+      'Effective scope: https://example.com/products',
+    );
     await click('Save website');
     expect(onChange.mock.lastCall?.[0].includeSubpages).toBe(true);
     const entries = store.getSnapshot();
