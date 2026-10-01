@@ -17,6 +17,14 @@ export const spanishMessages = {
   'commerce.dataGuidance':
     'Consulta la referencia del payload para ver exactamente qué datos se transmiten.',
 
+  'nodeInspector.requestTemplates':
+    'Usa datos de entrada en la URL o el cuerpo con {{variableName}} o {{key.subKey.variableName}}. También puedes usar índices como {{items[0].id}}. Conecta una respuesta HTTP a esta entrada para encadenar solicitudes. Las variables que faltan detienen la solicitud.',
+  'errors.data.emptyRequestTemplatePath':
+    'Introduce una ruta de datos entre las llaves de la plantilla de solicitud.',
+  'errors.data.unclosedRequestTemplate':
+    'Cierra las variables de la plantilla de solicitud con dos llaves de cierre.',
+  'errors.data.unresolvedRequestTemplatePath': ({ path }: { path: string }) =>
+    `No se ha podido resolver la ruta de datos «${path}» de la plantilla de solicitud.`,
   'aiSettings.assistantCredentials': 'Credenciales del asistente',
   'aiSettings.aiSettings': 'Configuración de IA',
   'aiSettings.yourAiConnection': 'TU CONEXIÓN DE IA',
@@ -702,7 +710,7 @@ export const spanishMessages = {
   'nodes.trigger.description':
     'Inicia el flujo de trabajo cuando ocurre un evento seleccionado. Úsalo para responder a la actividad de la página o a las acciones del visitante. Elige un evento y los elementos de destino o umbrales necesarios y conecta el primer paso.',
   'nodes.http.description':
-    'Envía una solicitud HTTP a una API. Úsalo para llamar a un servicio externo. Configura la URL y el método, con cabeceras o un cuerpo si hace falta; el siguiente paso recibe los datos de respuesta si funciona o un objeto de error con mensaje y código si falla.',
+    'Envía una solicitud HTTP a una API. Úsalo para llamar a un servicio externo. Configura la URL y el método, con cabeceras o un cuerpo si hace falta. Usa {{variableName}} o {{key.subKey.variableName}} en la URL o el cuerpo para leer datos de entrada; el siguiente paso recibe los datos de respuesta si funciona o un objeto de error con mensaje y código si falla.',
   'nodes.dom.description':
     'Actualiza los elementos coincidentes de la página. Úsalo para cambiar su contenido, apariencia o visibilidad. Elige un elemento de destino y una acción y usa un valor manual o los datos de entrada de un paso conectado. Configura el nombre del atributo cuando sea necesario.',
   'nodes.cookie.description':

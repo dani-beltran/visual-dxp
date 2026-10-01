@@ -105,10 +105,13 @@ export function createExecution(
             break;
           }
           case 'http': {
+            dataTools.validateRequest(config);
             dataTools.validateResponse(config);
             if (!fetcher) throw new Error('This browser does not support fetch.');
             if (!config.url?.trim()) throw new Error('Enter a request URL.');
-            const url = new URL(config.url, doc.baseURI);
+            const requestUrl = dataTools.requestTemplate(config.url, input);
+            if (!requestUrl.trim()) throw new Error('Enter a request URL.');
+            const url = new URL(requestUrl, doc.baseURI);
             if (!['http:', 'https:'].includes(url.protocol))
               throw new Error('Requests require an HTTP or HTTPS URL.');
             const headers = config.headers?.trim()
@@ -123,15 +126,17 @@ export function createExecution(
               throw new Error('Request headers must be a JSON object with string values.');
             }
             const method = (config.method ?? 'GET').toUpperCase();
+            const requestBody =
+              method === 'GET' || method === 'HEAD' || !config.body
+                ? undefined
+                : dataTools.requestTemplate(config.body, input, true);
             let body: string;
             try {
               const response = await fetcher(url.href, {
                 method,
                 headers,
                 signal,
-                ...(method === 'GET' || method === 'HEAD' || !config.body
-                  ? {}
-                  : { body: config.body }),
+                ...(requestBody === undefined ? {} : { body: requestBody }),
               });
               if (!response.ok) {
                 requestError = `Request failed: HTTP ${response.status}${response.statusText ? ` ${response.statusText}` : ''}.`;

@@ -132,6 +132,14 @@ export function NodeInspector({
     : undefined;
   const conditionType = config.conditionType ?? 'selector';
   const dataOperator = config.conditionOperator ?? 'equal';
+  let requestTemplateError: string | undefined;
+  if (node.data.kind === 'http') {
+    try {
+      dataTools.validateRequest(config);
+    } catch (error) {
+      requestTemplateError = formatBuilderError(error, t);
+    }
+  }
   let dataError: string | undefined;
   try {
     if (node.data.kind === 'http') dataTools.validateResponse(config);
@@ -334,6 +342,12 @@ export function NodeInspector({
 
         {node.data.kind === 'http' && (
           <>
+            <InfoBox>{t('nodeInspector.requestTemplates')}</InfoBox>
+            {requestTemplateError && (
+              <p className="dxp-inspector-hint" role="alert">
+                {requestTemplateError}
+              </p>
+            )}
             <Field label={t('nodeInspector.method')} htmlFor={id('method')}>
               <Select
                 id={id('method')}
@@ -348,7 +362,7 @@ export function NodeInspector({
             <Field label={t('nodeInspector.requestUrl')} htmlFor={id('url')}>
               <input
                 id={id('url')}
-                type="url"
+                type="text"
                 value={config.url ?? ''}
                 placeholder="https://api.example.com/data"
                 onChange={(event) => update({ url: event.target.value })}

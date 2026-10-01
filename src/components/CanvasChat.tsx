@@ -8,7 +8,7 @@ import {
   Square,
   X,
 } from 'lucide-react';
-import { type ReactNode, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import type { AIChatMessage } from '../lib/ai';
 import { formatBuilderError } from '../lib/i18n';
 import { useBuilderI18n } from '../lib/i18nContext';
@@ -19,7 +19,6 @@ export interface CanvasChatProps {
   onOpenChange?: (open: boolean) => void;
   configured: boolean;
   activeProvider?: string;
-  settings?: ReactNode;
   locked?: boolean;
   configurationError?: boolean;
   selectedLabel?: string;
@@ -37,7 +36,6 @@ type Message = AIChatMessage & { id: number; changeCount?: number };
 export function CanvasChat({
   configured,
   activeProvider = 'OpenAI',
-  settings,
   locked = false,
   configurationError = false,
   selectedLabel,
@@ -252,12 +250,6 @@ export function CanvasChat({
               <span>{t('canvasChat.workingWithYourCurrentCanvas')}</span>
             )}
           </div>
-          {settings && (
-            <details className="dxp-ai-compact-settings" open={locked || undefined}>
-              <summary>{t('canvasChat.aiProviderSettings')}</summary>
-              {settings}
-            </details>
-          )}
           <div
             ref={transcript}
             className="dxp-ai-transcript"

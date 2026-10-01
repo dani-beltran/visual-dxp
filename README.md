@@ -4,7 +4,7 @@ A Next.js App Router application and embeddable React 19 workflow editor powered
 
 ## Common DXP presets
 
-Import `commonDXPPresets` from `visual-dxp` and pass it as `<VisualDXPBuilder presets={commonDXPPresets} />` to enable Blank followed by twelve editable examples, ordered from basic help to segmented onboarding. The demo opts in explicitly; builders without presets still have no Presets tab. See the [preset reference and setup guide](docs/common-dxp-presets.md) for every scenario, selectors, HTTP placeholders, CSS, and runtime limits.
+Import `commonDXPPresets` from `visual-dxp` and pass it as `<VisualDXPBuilder presets={commonDXPPresets} />` to enable Blank followed by fourteen editable examples, ordered from basic help to segmented onboarding. The demo opts in explicitly; builders without presets still have no Presets tab. See the [preset reference and setup guide](docs/common-dxp-presets.md) for every scenario, selectors, HTTP placeholders, CSS, and runtime limits.
 
 ## Run the demo
 
@@ -135,7 +135,7 @@ interface WorkflowPreset {
 }
 ```
 
-Bundled examples of increasing complexity live in [`src/presets`](src/presets). Start with [click-to-open help](src/presets/click-to-open-help.ts), which connects a click trigger to an anchored popover and includes setup notes. See the [common DXP presets reference](docs/common-dxp-presets.md) for all thirteen presets and their required setup.
+Bundled examples of increasing complexity live in [`src/presets`](src/presets). Start with [click-to-open help](src/presets/click-to-open-help.ts), which connects a click trigger to an anchored popover and includes setup notes. See the [common DXP presets reference](docs/common-dxp-presets.md) for all fifteen presets and their required setup.
 
 Pass a bundled preset explicitly from your host:
 
@@ -256,7 +256,11 @@ Connections from a step execute in order. HTTP requests output their response bo
 
 Select a node to see its setup guidance and **Outputs** in the step details panel. Outputs explain when the next step runs: **Next** for triggers and actions, **Data** for HTTP responses, **True**/**False** for conditions, and **Body**/**Done** for loops. Notes and frames show that they have no outputs. Trigger choices also include event-specific hints, and condition descriptions explain what each check matches.
 
-On the canvas, HTTP nodes show a blue output socket and **DATA OUT** label. Conditions configured for **Incoming data** and Update element nodes with **Use incoming data** show a blue input socket and **Uses incoming data** badge. A direct connection from an HTTP data output to either of these inputs is highlighted blue; changing the receiving node's configuration updates the highlighting automatically. Other connections can still pass data through intermediate steps, but only these direct data connections receive the blue highlight.
+On the canvas, HTTP nodes show blue input and output sockets and a **DATA OUT** label. HTTP nodes, Conditions configured for **Incoming data**, and Update element nodes with **Use incoming data** show a **Uses incoming data** badge. Connections from HTTP or Condition data outputs to these data inputs are highlighted blue, including HTTP-to-HTTP connections; changing the receiving node's configuration updates the highlighting automatically. Other connections can still pass data through intermediate steps, but only these direct data connections receive the blue highlight.
+
+HTTP URLs and request bodies accept incoming data templates: `{{variableName}}`, `{{key.subKey.variableName}}`, or array paths such as `{{items[0].id}}`. For example, connect a request returning `{ "user": { "id": 42, "name": "Ada" } }` to a POST request with URL `/api/users/{{user.id}}` and body `{ "name": "{{user.name}}", "id": {{user.id}} }`. It sends `/api/users/42` with `{ "name": "Ada", "id": 42 }`, then passes its own response to the next node. Paths refer to the previous node's output after any response-path selection. Surrounding whitespace inside braces is allowed.
+
+URLs and plain-text bodies insert strings directly and serialize other values as JSON. URL values are substituted before normal URL parsing and HTTP(S) validation; supply percent-encoded values when they must remain a single URL component. JSON object/array bodies escape substitutions inside quoted strings and retain native JSON types for unquoted placeholders. A body containing only `{{payload}}` sends that value as text or JSON. Substitution happens once; braces inside incoming values remain literal. Missing variables and malformed paths stop execution before the request is sent. GET and HEAD ignore body templates. Headers remain a manually configured JSON object.
 
 Failed HTTP requests output `{ "error": { "message": "Request failed: HTTP 503 Unavailable.", "code": 503 } }` and continue downstream. The code is the numeric HTTP status, or `"NETWORK_ERROR"` for network or response-body read failures; the message describes the failure. Errors bypass **Response data path**, so conditions can always inspect `error.code` or `error.message`. The execution log still records the HTTP error. Invalid node configuration still reports an error and stops execution, and stopping the workflow still cancels pending requests.
 
@@ -400,6 +404,10 @@ The builder uses opaque sandbox origins for all untrusted previews, including sa
 ```
 
 Use the exact editor origin, including its port when relevant, with no trailing slash. The bridge checks the parent window, exact origin, protocol, and session channel. It only operates while the authorized editor activates a picker session and removes selection listeners/outlines on stop.
+
+To verify installation, open the host website's browser console and filter for `[Visual DXP picker bridge]`. The bridge logs when the script loads, why it is inactive, when it starts listening, and when a picker session is ready or stopped. Selection and selector lookup logs confirm interaction without logging page text or selector values. When visiting the website directly, an inactive message is expected; open it in the editor picker iframe to connect.
+
+On a direct visit with a valid `data-parent-origin`, the bridge also makes a same-origin `HEAD` request to check `X-Frame-Options` and enforced CSP `frame-ancestors` against the editor origin. Blocking policies produce a warning; failed requests and unsupported policy syntax produce an unable-to-verify warning. This is a diagnostic, not a guarantee: navigation responses can differ from `HEAD`, and additional ancestors or browser policies can prevent framing. A blocked iframe cannot execute the bridge, so the editor also logs connection failures with troubleshooting guidance.
 
 The target website must permit embedding via its `Content-Security-Policy: frame-ancestors` and `X-Frame-Options` settings. Neither a React component nor this bridge can override browser framing policy. Remote sites that you cannot configure still support manual CSS selector entry.
 

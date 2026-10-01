@@ -41,12 +41,18 @@ afterEach(async () => {
   host.remove();
   vi.unstubAllGlobals();
 });
-function field(label: string): HTMLInputElement | HTMLSelectElement {
+function field(label: string): HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement {
   const id = [...host.querySelectorAll('label')].find(
     (item) => item.textContent === label,
   )?.htmlFor;
   const input = document.getElementById(id ?? '');
-  if (!(input instanceof HTMLInputElement || input instanceof HTMLSelectElement))
+  if (
+    !(
+      input instanceof HTMLInputElement ||
+      input instanceof HTMLSelectElement ||
+      input instanceof HTMLTextAreaElement
+    )
+  )
     throw new Error(`Missing field: ${label}`);
   return input;
 }
@@ -55,7 +61,11 @@ async function change(label: string, value: string) {
   const select = input instanceof HTMLSelectElement;
   await act(async () => {
     Object.getOwnPropertyDescriptor(
-      select ? HTMLSelectElement.prototype : HTMLInputElement.prototype,
+      select
+        ? HTMLSelectElement.prototype
+        : input instanceof HTMLTextAreaElement
+          ? HTMLTextAreaElement.prototype
+          : HTMLInputElement.prototype,
       'value',
     )!.set!.call(input, value);
     input.dispatchEvent(new Event(select ? 'change' : 'input', { bubbles: true }));
@@ -263,6 +273,21 @@ it('edits response selection in Outputs without a response format setting', asyn
   await change('Response data path', '');
   expect(current.responseDataPath).toBe('');
   expect(outputSection?.querySelector('[role="alert"]')).toBeNull();
+  expect(host.textContent).toContain('{{key.subKey.variableName}}');
+  await change('Request URL', '/api/users/{{user.id}}');
+  await change('Method', 'POST');
+  await change('Request body', '{"name":"{{user.name}}"}');
+  expect(current).toMatchObject({
+    url: '/api/users/{{user.id}}',
+    body: '{"name":"{{user.name}}"}',
+  });
+  expect(host.querySelector('[role="alert"]')).toBeNull();
+  await change('Request body', '{{missing');
+  expect(host.querySelector('[role="alert"]')?.textContent).toContain('closing braces');
+  await change('Method', 'GET');
+  expect(host.querySelector('[role="alert"]')).toBeNull();
+  await change('Request URL', '/api/{{user..id}}');
+  expect(host.querySelector('[role="alert"]')?.textContent).toContain('Invalid data path');
 });
 
 it('switches element values between manual and incoming data while preserving manual input', async () => {

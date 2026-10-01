@@ -13,6 +13,12 @@ interface ResponseConfig {
   responseDataPath?: string;
 }
 
+interface RequestConfig {
+  url?: string;
+  method?: string;
+  body?: string;
+}
+
 interface ElementValueConfig {
   action?: string;
   value?: string;
@@ -97,6 +103,75 @@ export function createDataTools() {
       value = (value as Record<string | number, unknown>)[token];
     }
     return { exists, value };
+  }
+
+  // Read placeholders only once: braces in incoming values are ordinary data.
+  function mapRequestTemplate(
+    template: string,
+    render: (path: string, inString: boolean) => string,
+  ): string {
+    let inString = false;
+    let escaped = false;
+    let end = 0;
+    const result = template.replace(
+      /\{\{([\s\S]*?)\}\}/g,
+      (match, path: string, offset: number) => {
+        for (const character of template.slice(end, offset)) {
+          if (escaped) escaped = false;
+          else if (inString && character === '\\') escaped = true;
+          else if (character === '"') inString = !inString;
+        }
+        end = offset + match.length;
+        if (!path.trim())
+          throw Object.assign(new Error('Enter a data path inside request template braces.'), {
+            messageKey: 'errors.data.emptyRequestTemplatePath',
+            messageParams: {},
+          });
+        parsePath(path);
+        return render(path.trim(), inString);
+      },
+    );
+    if (template.slice(end).includes('{{'))
+      throw Object.assign(new Error('Close request template variables with two closing braces.'), {
+        messageKey: 'errors.data.unclosedRequestTemplate',
+        messageParams: {},
+      });
+    return result;
+  }
+
+  /** Validate syntax without needing runtime data; return a URL suitable for static checks. */
+  function validateRequest(config: RequestConfig): string {
+    const url = mapRequestTemplate(config.url ?? '', () => '1');
+    if (!['GET', 'HEAD'].includes((config.method ?? 'GET').toUpperCase()))
+      mapRequestTemplate(config.body ?? '', () => '0');
+    return url;
+  }
+
+  function requestTemplate(template: string, input: DataSelection, body = false): string {
+    // Recognize JSON object/array bodies before inserting data. Plain text and
+    // whole-value templates retain raw-body behavior, including plain strings.
+    let json = body && /^(?:\{(?!\{)|\[)/.test(template.trim());
+    if (json) {
+      const sample = mapRequestTemplate(template, () => '0');
+      try {
+        JSON.parse(sample);
+      } catch {
+        json = false;
+      }
+    }
+    return mapRequestTemplate(template, (path, inString) => {
+      const { exists, value } = select(input, path);
+      if (!exists || value === undefined)
+        throw Object.assign(
+          new Error(`Request template data path “${path}” could not be resolved.`),
+          {
+            messageKey: 'errors.data.unresolvedRequestTemplatePath',
+            messageParams: { path },
+          },
+        );
+      const text = typeof value === 'string' ? value : JSON.stringify(value);
+      return json ? (inString ? JSON.stringify(text).slice(1, -1) : JSON.stringify(value)) : text;
+    });
   }
 
   function usesIncomingValue(config: ElementValueConfig): boolean {
@@ -310,6 +385,8 @@ export function createDataTools() {
   }
 
   return {
+    validateRequest,
+    requestTemplate,
     usesIncomingValue,
     validateElementValue,
     elementValue,

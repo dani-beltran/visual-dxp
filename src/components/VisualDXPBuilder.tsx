@@ -1303,7 +1303,6 @@ function Builder({
                       onOpenChange={toggleChat}
                       configured={aiEnabled}
                       activeProvider={AI_PROVIDER_LABELS[aiSettingsState.activeProvider]}
-                      settings={<AISettings store={aiSettings} endpoint={ai!.endpoint} compact />}
                       locked={aiSettingsState.status === 'locked'}
                       configurationError={aiConfigurationError}
                       selectedLabel={selected?.data.label}

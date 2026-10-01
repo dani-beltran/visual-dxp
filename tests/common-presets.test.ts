@@ -13,6 +13,7 @@ import {
   campaignUrlPersonalizationPreset,
   clickToOpenHelpPreset,
   commonDXPPresets,
+  contextualSupportPreset,
   delayedWelcomePreset,
   engagedReaderInvitationPreset,
   exitIntentOfferPreset,
@@ -202,6 +203,55 @@ describe('common DXP preset contracts and layout', () => {
 });
 
 describe('preset execution with a mocked browser and network', () => {
+  it.each([
+    ['2026-10-01T08:59:59Z', false],
+    ['2026-10-01T09:00:00Z', true],
+    ['2026-10-01T16:59:59Z', true],
+    ['2026-10-01T17:00:00Z', false],
+    ['2026-10-04T12:00:00Z', true],
+  ])(
+    'opens contextual support only on hover and selects the UTC hours branch at %s',
+    async (time, open) => {
+      vi.setSystemTime(new Date(time));
+      runtime(contextualSupportPreset).start();
+      await vi.advanceTimersByTimeAsync(0);
+      expect(successful()).toEqual([]);
+      element('#shop-now').dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
+      await vi.advanceTimersByTimeAsync(0);
+      expect(successful()).toEqual([]);
+
+      element('#support-help').dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
+      await vi.advanceTimersByTimeAsync(0);
+      expect(successful()).toEqual([
+        'support-hover',
+        'support-hours',
+        open ? 'support-online' : 'support-offline',
+      ]);
+      expect(popover(open ? 'support-offline' : 'support-online')).toBeNull();
+      expect(element('#support-chat').classList.contains('dxp-support-visible')).toBe(open);
+      expect(popover('support-online')).toBeNull();
+      expect(document.querySelector('iframe')).toBeNull();
+      if (!open) {
+        expect(popover('support-offline')?.textContent).toContain('09:00–17:00 UTC daily');
+      }
+      expect(request).not.toHaveBeenCalled();
+    },
+  );
+
+  it('rechecks support hours on a later hover after dismissing the previous message', async () => {
+    vi.setSystemTime(new Date('2026-10-01T08:59:00Z'));
+    runtime(contextualSupportPreset).start();
+    element('#support-help').dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
+    await vi.advanceTimersByTimeAsync(0);
+    required(popover('support-offline')?.querySelector('button')).click();
+    expect(popover('support-offline')).toBeNull();
+    vi.setSystemTime(new Date('2026-10-01T09:00:00Z'));
+    element('#support-help').dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(element('#support-chat').classList.contains('dxp-support-visible')).toBe(true);
+    expect(popover('support-offline')).toBeNull();
+  });
+
   it.each([
     ['2026-09-30T12:00:00Z', '2026-09-28', '2026-10-04'],
     ['2027-01-03T23:59:59Z', '2026-12-28', '2027-01-03'],

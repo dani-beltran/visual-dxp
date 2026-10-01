@@ -14,7 +14,7 @@ const dataPorts: Partial<Record<NodeKind, (config: StepConfig) => NodeDataPorts>
     acceptsData: false,
     outputsData: config.event === 'commerce-product-added-to-cart',
   }),
-  http: () => ({ acceptsData: false, outputsData: true }),
+  http: () => ({ acceptsData: true, outputsData: true }),
   fork: (config) => ({
     acceptsData: config.conditionType === 'data',
     outputsData: true,

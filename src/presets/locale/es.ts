@@ -4,6 +4,34 @@ export const spanishPresetMessages = {
   'complexity.beginner': 'principiante',
   'complexity.intermediate': 'intermedio',
   'complexity.advanced': 'avanzado',
+  'contextual-support.name': 'Ayuda contextual según el horario de atención',
+  'contextual-support.description':
+    'Pasa el cursor sobre Ayuda para mostrar el chat de soporte de la demo durante el horario de atención o un mensaje fuera de horario.',
+  'contextual-support.workflow.name': 'Ayuda contextual según el horario de atención',
+  'contextual-support.workflow.nodes.support-hover.data.label': 'Pasar el cursor sobre Ayuda',
+  'contextual-support.workflow.nodes.support-hours.data.label': 'Horario de atención (UTC)',
+  'contextual-support.workflow.nodes.support-online.data.label': 'Centro de ayuda',
+  'contextual-support.workflow.nodes.support-offline.data.config.content':
+    '<div style="margin:-28px -24px -24px;padding:36px 24px 28px;background:#f8f6f1;color:#353b32;font-family:Arial,Helvetica,sans-serif;box-sizing:border-box;overflow-wrap:anywhere"><div style="padding:0 0 16px;border-bottom:1px solid #dedfd4"><span style="font-family:Georgia,serif;font-size:25px;letter-spacing:-1px">atelier<span aria-hidden="true" style="font-family:Arial,Helvetica,sans-serif;font-size:9px;vertical-align:top;margin-left:3px">®</span></span></div><p style="margin:22px 0 12px;font-size:10px;letter-spacing:1.7px;text-transform:uppercase;color:#697856">Estamos para ayudarte</p><h2 style="margin:0 0 14px;font-family:Georgia,serif;font-size:29px;font-weight:400;line-height:1.15">Volvemos pronto</h2><p style="margin:0;font-size:13px;line-height:1.75;color:#626b59">Nuestro horario de atención es de 09:00 a 17:00 UTC todos los días. Vuelve a visitarnos durante ese horario. Mientras tanto, descubre la colección a tu ritmo.</p><a href="#collection" style="display:inline-block;margin-top:22px;padding:12px 20px;background:#697856;color:#fff;border-radius:6px;text-decoration:none;font-size:13px">Descubrir la colección ↗</a></div>',
+  'contextual-support.workflow.nodes.support-offline.data.label': 'Fuera del horario de atención',
+  'contextual-support.workflow.nodes.support-trigger-note.data.config.noteText':
+    'Pasa el cursor sobre Help en el pie de página de la demo (#support-help). Sustituye el selector por tu enlace de ayuda. Cada evento mouseover comprueba la hora y muestra el chat o vuelve a abrir el mensaje fuera de horario. El enlace sigue funcionando al hacer clic.',
+  'contextual-support.workflow.nodes.support-trigger-note.data.label':
+    'Configuración: Enlace de ayuda',
+  'contextual-support.workflow.nodes.support-hours-note.data.config.noteText':
+    'Funciona todos los días de 09:00 a 17:00 UTC. El minuto final es inclusivo: 16:59 cierra a las 17:00. Ajusta las horas, la zona horaria y el mensaje juntos. Local usa la zona del visitante. Comprueba el reloj del navegador, no los días laborables, festivos ni la disponibilidad del equipo.',
+  'contextual-support.workflow.nodes.support-hours-note.data.label':
+    'Configuración: Horario de atención',
+  'contextual-support.workflow.nodes.support-embed-note.data.config.noteText':
+    'El nodo Centro de ayuda añade dxp-support-visible a #support-chat en demo-site.html. Haz clic en el icono para abrir una conversación de ejemplo. Es una demostración, no un servicio de atención real. Para tu sitio, usa el selector y la clase de visibilidad de tu chat. Personaliza el mensaje fuera de horario y el enlace #collection.',
+  'contextual-support.workflow.nodes.support-embed-note.data.label':
+    'Configuración: Chat de soporte',
+  'contextual-support.workflow.nodes.contextual-support-overview.data.config.noteText':
+    'Pasa el cursor sobre Ayuda para mostrar el chat de soporte de la demo durante el horario de atención o un mensaje fuera de horario.',
+  'contextual-support.workflow.nodes.contextual-support-overview.data.label':
+    'Resumen de la plantilla',
+  'contextual-support.workflow.edges.support-hours-to-support-online.label': 'Abierto',
+  'contextual-support.workflow.edges.support-hours-to-support-offline.label': 'Cerrado',
   'welcome-journey.name': 'Recorrido de bienvenida',
   'welcome-journey.description':
     'Espera un momento después de cargar la página y muestra una oferta de bienvenida si existe el botón de compra; si no, personaliza el título del boletín.',
@@ -82,8 +110,7 @@ export const spanishPresetMessages = {
     'Da la bienvenida a los visitantes de la campaña Summer Sale con un texto personalizado y conserva un mensaje predeterminado.',
   'campaign-url-personalization.workflow.name': 'Personalización por URL de campaña',
   'campaign-url-personalization.workflow.nodes.campaign-load.data.label': 'Página cargada',
-  'campaign-url-personalization.workflow.nodes.campaign-check.data.label':
-    '¿Campaña Summer Sale?',
+  'campaign-url-personalization.workflow.nodes.campaign-check.data.label': '¿Campaña Summer Sale?',
   'campaign-url-personalization.workflow.nodes.campaign-matched.data.label': 'Mensaje de campaña',
   'campaign-url-personalization.workflow.nodes.campaign-matched.data.config.value':
     'Te damos la bienvenida a Summer Sale: objetos cuidados para mañanas sin prisas.',

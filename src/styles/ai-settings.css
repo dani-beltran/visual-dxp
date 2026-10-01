@@ -117,8 +117,7 @@
 .dxp-ai-provider-tabs svg {
   flex-shrink: 0;
 }
-.dxp-ai-settings button:focus-visible,
-.dxp-ai-compact-settings summary:focus-visible {
+.dxp-ai-settings button:focus-visible {
   outline: 2px solid var(--dxp-focus);
   outline-offset: 3px;
 }
@@ -133,19 +132,6 @@
 }
 .dxp-ai-settings [role='tabpanel'] > p:first-child {
   margin-top: 0;
-}
-.dxp-ai-compact-settings {
-  flex: 0 1 auto;
-  min-height: 32px;
-  max-height: 45%;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  border-bottom: 1px solid var(--dxp-line);
-}
-.dxp-ai-compact-settings summary {
-  cursor: pointer;
-  padding: 8px 16px;
-  font-size: 12px;
 }
 .dxp-ai-settings.compact {
   box-sizing: border-box;

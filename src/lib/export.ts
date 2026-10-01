@@ -191,11 +191,16 @@ export function validateWorkflow(
         break;
       case 'http':
         try {
+          url(
+            dataTools.validateRequest(config),
+            node.id,
+            t('validation.enterAValidHttpOrHttpsRequestUrl'),
+            true,
+          );
           dataTools.validateResponse(config);
         } catch (error) {
           add((error as Error).message, node.id);
         }
-        url(config.url, node.id, t('validation.enterAValidHttpOrHttpsRequestUrl'), true);
         if (
           config.method &&
           !['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'].includes(
