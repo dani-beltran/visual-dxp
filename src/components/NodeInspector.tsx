@@ -1007,7 +1007,6 @@ export function NodeInspector({
               </div>
             </div>
           )}
-          {node.data.kind === 'http' && <InfoBox>{t('mapping.httpHint')}</InfoBox>}
         </section>
         {incomingMappings}
       </div>

@@ -5,7 +5,7 @@ export const spanishMessages = {
   'common.enterFullscreen': 'Entrar en pantalla completa',
   'common.exitFullscreen': 'Salir de pantalla completa',
   'nodeInspector.requestTemplates':
-    'Usa datos de entrada en la URL o el cuerpo con {{name}} o {{user.name}}. También puedes usar índices como {{items[0].id}}. Conecta una respuesta HTTP a esta entrada para encadenar solicitudes. Las variables que faltan detienen la solicitud.',
+    'Usa datos de entrada en la URL, las cabeceras o el cuerpo con {{name}} o {{user.name}}. También puedes usar índices como {{items[0].id}}. Las variables que faltan detienen la solicitud.',
   'errors.data.emptyRequestTemplatePath':
     'Introduce una ruta de datos entre las llaves de la plantilla de solicitud.',
   'errors.data.unclosedRequestTemplate':
@@ -29,7 +29,7 @@ export const spanishMessages = {
   'mapping.sourcePath': 'Ruta de datos de origen',
   'mapping.destination': 'Entrada de destino',
   'mapping.httpInputHint':
-    'Los datos seleccionados están disponibles para las variables de la URL y el cuerpo de la petición. Este paso transmite su propia respuesta.',
+    'Los datos seleccionados están disponibles para las variables de la URL, las cabeceras y el cuerpo de la petición. Este paso transmite su propia respuesta.',
   'mapping.inputData': 'Datos enviados al paso',
   'mapping.inputValue': 'Valor del elemento',
   'mapping.inputCondition': 'Valor de la condición',
@@ -256,7 +256,7 @@ export const spanishMessages = {
   'nodeInspector.requestUrl': 'URL de la solicitud',
   'nodeInspector.headers': 'Cabeceras',
   'nodeInspector.enterAJsonObjectLeaveEmptyForDefaultHeaders':
-    'Introduce un objeto JSON. Déjalo vacío para usar las cabeceras predeterminadas.',
+    'Introduce un objeto JSON con valores de texto. Usa variables como "Bearer {{token}}". Déjalo vacío para usar las cabeceras predeterminadas.',
   'nodeInspector.requestBody': 'Cuerpo de la solicitud',
   'nodeInspector.sentAsTheRawRequestBody': 'Se envía como cuerpo de la solicitud sin procesar.',
   'nodeInspector.theApiMustAllowRequestsFromYourWebsiteThroughCors':

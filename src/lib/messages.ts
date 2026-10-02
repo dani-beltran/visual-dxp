@@ -3,7 +3,7 @@ export const englishMessages = {
   'common.enterFullscreen': 'Enter full screen',
   'common.exitFullscreen': 'Exit full screen',
   'nodeInspector.requestTemplates':
-    'Use incoming data in the URL or body with {{name}} or {{user.name}}. Array indexes such as {{items[0].id}} also work. Connect an HTTP response to this input to chain requests. Missing variables stop the request.',
+    'Use incoming data in the URL, headers, or body with {{name}} or {{user.name}}. Array indexes such as {{items[0].id}} also work. Missing variables stop the request.',
   'errors.data.emptyRequestTemplatePath': 'Enter a data path inside request template braces.',
   'errors.data.unclosedRequestTemplate':
     'Close request template variables with two closing braces.',
@@ -25,7 +25,7 @@ export const englishMessages = {
   'mapping.sourcePath': 'Source data path',
   'mapping.destination': 'Destination input',
   'mapping.httpInputHint':
-    'The selected data is available to variables in the request URL and body. This step passes its own response onward.',
+    'The selected data is available to variables in the request URL, headers, and body. This step passes its own response onward.',
   'mapping.inputData': 'Data passed to the step',
   'mapping.inputValue': 'Element value',
   'mapping.inputCondition': 'Condition value',
@@ -282,7 +282,7 @@ export const englishMessages = {
   'nodeInspector.requestUrl': 'Request URL',
   'nodeInspector.headers': 'Headers',
   'nodeInspector.enterAJsonObjectLeaveEmptyForDefaultHeaders':
-    'Enter a JSON object. Leave empty for default headers.',
+    'Enter a JSON object with string values. Use variables such as "Bearer {{token}}". Leave empty for default headers.',
   'nodeInspector.requestBody': 'Request body',
   'nodeInspector.sentAsTheRawRequestBody': 'Sent as the raw request body.',
   'nodeInspector.theApiMustAllowRequestsFromYourWebsiteThroughCors':

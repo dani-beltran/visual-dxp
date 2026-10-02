@@ -16,6 +16,7 @@ interface ResponseConfig {
 interface RequestConfig {
   url?: string;
   method?: string;
+  headers?: string;
   body?: string;
 }
 
@@ -144,6 +145,7 @@ export function createDataTools() {
   /** Validate syntax without needing runtime data; return a URL suitable for static checks. */
   function validateRequest(config: RequestConfig): string {
     const url = mapRequestTemplate(config.url ?? '', () => '1');
+    mapRequestTemplate(config.headers ?? '', () => '0');
     if (!['GET', 'HEAD'].includes((config.method ?? 'GET').toUpperCase()))
       mapRequestTemplate(config.body ?? '', () => '0');
     return url;

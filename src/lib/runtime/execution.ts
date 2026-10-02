@@ -149,7 +149,10 @@ export function createExecution(
             if (!['http:', 'https:'].includes(url.protocol))
               throw new Error('Requests require an HTTP or HTTPS URL.');
             const headers = config.headers?.trim()
-              ? (JSON.parse(config.headers) as Record<string, string>)
+              ? (JSON.parse(dataTools.requestTemplate(config.headers, input, true)) as Record<
+                  string,
+                  string
+                >)
               : {};
             if (
               !headers ||
