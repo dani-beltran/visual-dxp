@@ -11,7 +11,7 @@ cp .env.example .env.local
 npm run dev
 ```
 
-Open http://127.0.0.1:3000. `OPENAI_MODEL` defaults to `gpt-6-luna`. See [execution and deployment setup](langchain.md) for remote execution. Claude uses ANTHROPIC_API_KEY and ANTHROPIC_MODEL; Self-Hosted uses the settings below. Restart after changing environment variables. Browser AI Settings updates apply immediately and never change these files. The demo no longer reads `VITE_DXP_AI_ENDPOINT`; old Vite settings can be removed from your local environment. Do not copy secrets into any public variable.
+Open http://127.0.0.1:3000. `OPENAI_MODEL` defaults to `gpt-6-luna`. See [execution and deployment setup](langchain.md) for remote execution. Claude uses ANTHROPIC_API_KEY and ANTHROPIC_MODEL; Local uses the settings below. Restart after changing environment variables. Browser AI Settings updates apply immediately and never change these files. The demo no longer reads `VITE_DXP_AI_ENDPOINT`; old Vite settings can be removed from your local environment. Do not copy secrets into any public variable.
 
 The demo passes exactly:
 
@@ -130,7 +130,7 @@ Direct execution uses explicit request-scoped instances of `@ai-sdk/openai`, `@a
 | --- | --- | --- |
 | OpenAI | `https://api.openai.com/v1/responses`, `store: false`, encrypted reasoning continuation | `OPENAI_API_KEY`, `OPENAI_MODEL` (default `gpt-6-luna`); existing optional LangGraph mode |
 | Claude | `https://api.anthropic.com/v1/messages` | `ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL` (both required) |
-| Self-Hosted | Allowlisted base URL + `/chat/completions` | `LOCAL_LLM_BASE_URL`, `LOCAL_LLM_MODEL`, optional `LOCAL_LLM_API_KEY` |
+| Local | Loopback base URL + `/chat/completions` | `LOCAL_LLM_BASE_URL`, `LOCAL_LLM_MODEL`, optional `LOCAL_LLM_API_KEY` |
 
 Browser overrides replace the complete configuration for their selected provider. An empty local browser key means no authentication, even if server environment keys exist. No cross-provider credential mixing, model mixing, or retry/fallback occurs. Cloud environment base URL overrides are ignored.
 
@@ -143,19 +143,18 @@ AI SDK telemetry is explicitly disabled for all direct executions. Browser crede
 Start an OpenAI-compatible runtime and load a model that supports tool calls. For example:
 
 ```dotenv
-# Explicit exact base URLs; no implicit localhost permission or wildcards.
-AI_LOCAL_ALLOWED_BASE_URLS=http://127.0.0.1:11434/v1,http://127.0.0.1:1234/v1
+# Only localhost, 127.0.0.1, or [::1]; no allowlist configuration needed.
 # Optional development/debugging defaults:
 LOCAL_LLM_BASE_URL=http://127.0.0.1:11434/v1
 LOCAL_LLM_MODEL=your-installed-tool-capable-model
 LOCAL_LLM_API_KEY=
 ```
 
-Ollama commonly exposes `/v1` on port 11434; LM Studio commonly uses port 1234. Enter the actual base URL and loaded model ID in **Self-Hosted**, then save and activate. Model IDs are editable and accept repository-style IDs and runtime tags. Model availability and tool support depend on the runtime and model; compatible API formatting alone is insufficient.
+Ollama commonly exposes `/v1` on port 11434; LM Studio commonly uses port 1234. Enter the actual base URL and loaded model ID in **Local**, then save and activate. Model IDs are editable and accept repository-style IDs and runtime tags. Model availability and tool support depend on the runtime and model; compatible API formatting alone is insufficient.
 
-The model base URL is separate from the browser’s application endpoint (`/api/ai/chat`). It must be reachable from the **application backend**. Localhost identifies the backend machine/container, not the visitor’s computer. Hosted Next servers normally cannot reach a model running on a visitor’s laptop.
+Local is for developers and debugging and only works when running the demo app locally alongside an OpenAI-compatible model server. The model base URL is separate from the browser’s application endpoint (`/api/ai/chat`). Requests originate from the **application backend**: localhost identifies the backend machine/container, not the visitor’s computer. The hosted demo cannot connect to a model on a visitor’s laptop.
 
-The server canonicalizes URLs and compares the entire base URL against `AI_LOCAL_ALLOWED_BASE_URLS`. The default allowance is empty, including loopback. It rejects credentials, queries, fragments, unsupported protocols, unauthorized paths/ports/hosts, and redirects. Only server administrators can change the allowlist. Allow only model servers you control; an allowed hostname’s DNS and network destination must also be administrator-controlled (the application does not pin DNS answers). Do not allow metadata services or arbitrary user-controlled hosts. Set network egress restrictions appropriate to the deployment.
+Only HTTP(S) URLs with a host of `localhost`, `127.0.0.1`, or `[::1]` are accepted. The backend rewrites `localhost` to `127.0.0.1` so DNS cannot change its destination. Ports and base paths are configurable. Remote hosts, private network addresses, URL credentials, queries, fragments, unsupported protocols and redirects are rejected. `AI_LOCAL_ALLOWED_BASE_URLS` is no longer used. Loopback access is intended for trusted local development; it still permits requests to other services listening on the backend’s loopback interfaces.
 
 ## Encryption and isolation
 
@@ -175,7 +174,7 @@ Origin isolation prevents ordinary cross-origin storage/DOM access. It cannot pr
 
 Before enabling browser credentials in production, configure the entire request path to omit `X-DXP-OpenAI-Key`, `X-DXP-AI-Key`, upstream `X-Api-Key` (including lowercase/reformatted variants), Authorization, Cookies and all provider Authorization headers. Prefer allowlisting safe metadata such as request ID, status and duration. Disable raw request/header/body capture in reverse proxies, load balancers, APM, OpenTelemetry HTTP instrumentation, error reporters, analytics and browser session replay; exclude the key/passphrase fields from replay. Redaction must run before ingestion, not only in a log viewer. Disable caching and request/response recording for `/api/ai/*`.
 
-The application does not log credentialed requests or SDK errors, and the browser override tool loop does not invoke tracing/checkpoint frameworks. Host-installed instrumentation runs outside this code and must be configured by the operator. Never persist browser keys in databases, files, caches, sessions, queues, or checkpoints. Restrict outbound traffic to the fixed cloud HTTPS APIs and administrator-approved local model servers. For custom cross-origin servers, allow only exact trusted builder origins and required headers. The supplied Next API deliberately supports same-origin requests only.
+The application does not log credentialed requests or SDK errors, and the browser override tool loop does not invoke tracing/checkpoint frameworks. Host-installed instrumentation runs outside this code and must be configured by the operator. Never persist browser keys in databases, files, caches, sessions, queues, or checkpoints. Restrict outbound traffic to the fixed cloud HTTPS APIs and loopback model servers. For custom cross-origin servers, allow only exact trusted builder origins and required headers. The supplied Next API deliberately supports same-origin requests only.
 
 Connections represent unchanged data flow. For field selection or transformation, add a node with `kind: "transform"`, `config.dataPath`, and an ordered `config.transformations` list. Supported transformation types are `capitalize`, `lowercase`, `uppercase`, `title-case`, `trim`, `prefix`/`suffix` (string `value`), `replace` (`find` and `replacement`), and `fallback` (JSON `value`). An empty list performs extraction only. New proposals must not create edge mappings or legacy node path fields. Existing version-1 mappings are accepted at import boundaries and migrated to explicit nodes by the editor/runtime. Imported `migrationWarning` values indicate a downstream data decision requiring review and must be preserved during unrelated AI edits. See [ADR 0002](decisions/0002-data-transform-nodes.md).
 

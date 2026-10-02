@@ -5,7 +5,7 @@ export type AIProvider = (typeof AI_PROVIDERS)[number];
 export const AI_PROVIDER_LABELS: Record<AIProvider, string> = {
   openai: 'OpenAI',
   claude: 'Claude',
-  local: 'Self-Hosted',
+  local: 'Local',
 };
 export const isAIProvider = (value: unknown): value is AIProvider =>
   AI_PROVIDERS.includes(value as AIProvider);
@@ -60,6 +60,7 @@ export function normalizeLocalBaseURL(value: string): string {
     const url = new URL(value);
     if (
       !['http:', 'https:'].includes(url.protocol) ||
+      !['localhost', '127.0.0.1', '[::1]'].includes(url.hostname) ||
       url.username ||
       url.password ||
       url.search ||
@@ -72,7 +73,7 @@ export function normalizeLocalBaseURL(value: string): string {
   } catch {
     throw Object.assign(
       new AIConfigurationError(
-        'Enter a valid HTTP(S) local API base URL without credentials, query, or fragment.',
+        'Enter an HTTP(S) API base URL on localhost, 127.0.0.1, or [::1], without credentials, query, or fragment.',
       ),
       {
         messageKey: 'errors.aiCredentials.enterAValidHttpSLocalApiBaseUrlWithout',

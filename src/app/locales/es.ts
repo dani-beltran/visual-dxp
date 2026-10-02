@@ -76,12 +76,12 @@ export const spanishMessages = {
   'aiSettings.settingsUnavailable': 'Configuración no disponible.',
   'aiSettings.browserCredentialsRequireAnHttpsAiServer':
     'Las credenciales del navegador requieren un servidor de IA HTTPS.',
-  'aiSettings.selfHostedSetupInformation': 'Información de configuración del servidor propio',
+  'aiSettings.selfHostedSetupInformation': 'Información de configuración de Local',
   'aiSettings.enterTheApiBaseUrlOfYourSelfHostedOpenaiCompatibleModel':
-    'Introduce la URL base de la API de tu servidor de modelos compatible con OpenAI. El backend de la aplicación debe poder acceder a la URL y el administrador debe permitirla. Un servidor alojado localmente en tu ordenador no funcionará porque el backend no podrá acceder a él. El modelo seleccionado debe admitir llamadas a herramientas para editar flujos de trabajo.',
+    'Local está pensado para desarrolladores y depuración y solo funciona al ejecutar la aplicación de demostración localmente. Ejecuta un servidor de modelos compatible con OpenAI en la misma máquina que el backend de la demo e introduce una URL con localhost, 127.0.0.1 o [::1]. Las solicitudes salen del backend; la demo alojada no puede conectarse a un modelo en tu ordenador. El modelo debe admitir llamadas a herramientas para editar flujos de trabajo.',
   'aiSettings.unlockedUseActivateSavedConfigurationToSelectThisProvider':
     'Desbloqueado. Usa Activar configuración guardada para seleccionar este proveedor.',
-  'aiSettings.selfHostedApiBaseUrl': 'URL base de la API del servidor propio',
+  'aiSettings.selfHostedApiBaseUrl': 'URL base de la API de Local',
   'aiSettings.enterAKeyToReplaceSettingsUseActivateForSavedSettings':
     'Introduce una clave para reemplazar la configuración; usa Activar para la configuración guardada',
   'aiSettings.hideApiKey': 'Ocultar clave de API',
@@ -615,7 +615,7 @@ export const spanishMessages = {
   'errors.aiSettings.theAiServerOriginChangedConfirmTheNewDestinationIn':
     'El origen del servidor de IA ha cambiado. Confirma el nuevo destino en la configuración de IA o en el asistente antes de enviar.',
   'errors.aiCredentials.enterAValidHttpSLocalApiBaseUrlWithout':
-    'Introduce una URL base de API local HTTP(S) válida sin credenciales, consulta ni fragmento.',
+    'Introduce una URL base de API HTTP(S) en localhost, 127.0.0.1 o [::1], sin credenciales, consulta ni fragmento.',
   'errors.aiCredentials.configureAValidHttpOrHttpsAiEndpointWithoutEmbedded':
     'Configura un endpoint de IA HTTP o HTTPS válido sin credenciales incrustadas.',
   'errors.ai.idsCannotContainSurroundingWhitespaceOrControlCharacters':

@@ -529,7 +529,5 @@ it('browsing provider tabs preserves requests, but cross-tab activation cancels 
   expect(onChange).toHaveBeenCalledTimes(before);
   expect(onChange.mock.lastCall![0]).toEqual(baseline);
   expect(host.textContent).not.toContain('1 edit applied');
-  expect(host.querySelector('.dxp-ai-header')?.textContent).toContain(
-    'Active provider: Self-Hosted',
-  );
+  expect(host.querySelector('.dxp-ai-header')?.textContent).toContain('Active provider: Local');
 });

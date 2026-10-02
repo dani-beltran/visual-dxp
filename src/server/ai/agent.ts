@@ -44,20 +44,19 @@ export async function runLocalAgent(
       throw new Error('Unsafe request.');
     for (let turn = 0; turn < 40; turn++) {
       signal.throwIfAborted();
+      const requireWorkflowRead = config.provider === 'local' && turn === 0;
       const result = await generateText({
         model,
         system: systemPrompt,
         messages,
-        tools,
+        tools: requireWorkflowRead ? { read_workflow: tools.read_workflow } : tools,
         abortSignal: signal,
         maxRetries: 0,
         maxOutputTokens: 8192,
         telemetry: { isEnabled: false, recordInputs: false, recordOutputs: false },
-        // A compatible model must demonstrate tool calling, even for conversational requests.
-        toolChoice:
-          config.provider === 'local' && turn === 0
-            ? { type: 'tool', toolName: 'read_workflow' }
-            : 'auto',
+        // Some local servers reject named tool choices. Offering only the read tool
+        // with required selection preserves the mandatory first workflow read.
+        toolChoice: requireWorkflowRead ? 'required' : 'auto',
         ...(config.provider === 'openai'
           ? {
               providerOptions: {

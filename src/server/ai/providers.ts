@@ -21,30 +21,20 @@ export interface ProviderConfiguration {
   baseURL: string;
 }
 export function allowedLocalBaseURL(value: string): string {
-  let base: string;
-  let allowed: string[];
   try {
-    base = normalizeLocalBaseURL(value);
-    allowed = (process.env.AI_LOCAL_ALLOWED_BASE_URLS ?? '')
-      .split(',')
-      .map((s) => s.trim())
-      .filter(Boolean)
-      .map(normalizeLocalBaseURL);
+    const url = new URL(normalizeLocalBaseURL(value));
+    // Avoid DNS resolution for localhost: the destination must remain loopback.
+    if (url.hostname === 'localhost') url.hostname = '127.0.0.1';
+    return url.href.replace(/\/+$/, '');
   } catch {
     throw new AIServiceError(
       400,
-      'Invalid local API base URL or server allowlist.',
+      'Local models require a localhost, 127.0.0.1, or [::1] API base URL on the backend machine.',
       'local_destination',
     );
   }
-  if (!allowed.includes(base))
-    throw new AIServiceError(
-      400,
-      'Local destination is not allowed. Ask the server administrator to add this exact base URL to AI_LOCAL_ALLOWED_BASE_URLS.',
-      'local_destination',
-    );
-  return base;
 }
+
 export function resolveProviderConfiguration(
   input?: AIRequestConfiguration,
 ): ProviderConfiguration {

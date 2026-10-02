@@ -86,14 +86,14 @@ export const englishMessages = {
   }) => `${label} saved configuration is ready. Saved model: ${model}.`,
   'aiSettings.configureLabelBelowThenSaveAndActivateIt': ({ label }: { label: string }) =>
     `Configure ${label} below, then save and activate it.`,
-  'aiSettings.selfHostedSetupInformation': 'Self-Hosted setup information',
+  'aiSettings.selfHostedSetupInformation': 'Local setup information',
   'aiSettings.enterTheApiBaseUrlOfYourSelfHostedOpenaiCompatibleModel':
-    'Enter the API base URL of your self-hosted, OpenAI-compatible model server. The URL must be reachable by the application backend and allowed by the administrator. A server hosted locally on your computer won’t work because the backend won’t be able to reach it. The selected model must support tool calls for workflow editing.',
+    'Local is for developers and debugging and only works when running the demo app locally. Run an OpenAI-compatible model server on the same machine as the demo backend, and enter a URL using localhost, 127.0.0.1, or [::1]. Requests come from the backend; the hosted demo cannot connect to a model on your computer. The model must support tool calls for workflow editing.',
   'aiSettings.unlockedUseActivateSavedConfigurationToSelectThisProvider':
     'Unlocked. Use Activate saved configuration to select this provider.',
   'aiSettings.labelSavedAndActivated': ({ label }: { label: string }) =>
     `${label} saved and activated.`,
-  'aiSettings.selfHostedApiBaseUrl': 'Self-Hosted API base URL',
+  'aiSettings.selfHostedApiBaseUrl': 'Local API base URL',
   'aiSettings.enterAKeyToReplaceSettingsUseActivateForSavedSettings':
     'Enter a key to replace settings; use Activate for saved settings',
   'aiSettings.hideApiKey': 'Hide API key',
@@ -730,7 +730,7 @@ export const englishMessages = {
   'errors.aiSettings.theAiServerOriginChangedConfirmTheNewDestinationIn':
     'The AI server origin changed. Confirm the new destination in AI settings or the assistant before sending.',
   'errors.aiCredentials.enterAValidHttpSLocalApiBaseUrlWithout':
-    'Enter a valid HTTP(S) local API base URL without credentials, query, or fragment.',
+    'Enter an HTTP(S) API base URL on localhost, 127.0.0.1, or [::1], without credentials, query, or fragment.',
   'errors.aiCredentials.configureAValidHttpOrHttpsAiEndpointWithoutEmbedded':
     'Configure a valid HTTP or HTTPS AI endpoint without embedded credentials.',
   'errors.ai.labelMustBeAnObject': ({ label }: { label: string }) => `${label} must be an object.`,

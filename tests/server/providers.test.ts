@@ -11,6 +11,7 @@ import {
 } from '../../src/lib/aiCredentials';
 import { respondToAIChat, runLocalAgent } from '../../src/server/ai/agent';
 import { handleChat } from '../../src/server/ai/http';
+import { allowedLocalBaseURL, resolveProviderConfiguration } from '../../src/server/ai/providers';
 
 const input = {
   messages: [{ role: 'user' as const, content: 'Add a note' }],
@@ -103,7 +104,6 @@ function upstream(provider: AIProvider, tool?: string, args: unknown = {}) {
 let now = Date.now();
 beforeEach(() => {
   vi.stubEnv('LANGGRAPH_API_URL', '');
-  vi.stubEnv('AI_LOCAL_ALLOWED_BASE_URLS', baseURL);
   now += 60001;
   vi.spyOn(Date, 'now').mockReturnValue(now);
 });
@@ -133,7 +133,14 @@ it.each(['openai', 'claude', 'local'] as const)(
         provider === 'claude' ? 'claude-private-key' : `Bearer ${provider}-private-key`,
       );
       expect(body.model).toBe(`${provider}-model`);
-      expect(body.tools.length).toBeGreaterThan(5);
+      if (provider === 'local' && step === 0) {
+        expect(body.tools).toHaveLength(1);
+        expect(body.tools[0].function.name).toBe('read_workflow');
+        expect(body.tool_choice).toBe('required');
+      } else {
+        expect(body.tools.length).toBeGreaterThan(5);
+        if (provider === 'local') expect(body.tool_choice).toBe('auto');
+      }
       expect(String(init.body)).not.toContain('private-key');
       if (provider === 'openai') expect(body.store).toBe(false);
       if (step === 2) {
@@ -151,11 +158,6 @@ it.each(['openai', 'claude', 'local'] as const)(
         expect(JSON.parse(text)).toMatchObject({ ok: true, operation: { type: 'add_node' } });
       }
 
-      if (provider === 'local' && step === 0)
-        expect(body.tool_choice).toMatchObject({
-          type: 'function',
-          function: { name: 'read_workflow' },
-        });
       return step++ === 0
         ? upstream(provider, 'read_workflow')
         : step === 2
@@ -235,8 +237,13 @@ it('reports missing local tool capability instead of accepting conversational cl
 });
 it.each([
   'http://169.254.169.254/v1',
-  'http://127.0.0.1:1234/v1',
-  'http://127.0.0.1:11434/other',
+  'https://models.example.com/v1',
+  'http://192.168.1.1/v1',
+  'http://10.0.0.1/v1',
+  'http://localhost.evil.test/v1',
+  'http://127.0.0.1.evil.test/v1',
+  'http://[::ffff:192.168.1.1]/v1',
+  'http://0.0.0.0/v1',
   'http://user:password@127.0.0.1:11434/v1',
   'file:///tmp/model',
   'http://127.0.0.1:11434/v1?q=x',
@@ -248,13 +255,9 @@ it.each([
   ).rejects.toMatchObject({ status: 400 });
   expect(fetcher).not.toHaveBeenCalled();
 });
-it('requires explicit loopback allowance and keeps cloud destinations fixed', async () => {
-  vi.stubEnv('AI_LOCAL_ALLOWED_BASE_URLS', '');
+it('keeps cloud destinations fixed', async () => {
   const fetcher = vi.fn();
   vi.stubGlobal('fetch', fetcher);
-  await expect(
-    runLocalAgent(input, new AbortController().signal, config('local')),
-  ).rejects.toMatchObject({ code: 'local_destination' });
   await expect(
     runLocalAgent(input, new AbortController().signal, { ...config('claude'), baseURL }),
   ).rejects.toMatchObject({ status: 400 });
@@ -410,4 +413,29 @@ it('discards valid-looking tool calls when the provider response was truncated',
     runLocalAgent(input, new AbortController().signal, config('local')),
   ).rejects.toMatchObject({ status: 422 });
   expect(fetcher).toHaveBeenCalledOnce();
+});
+
+it.each([
+  ['http://localhost:11434/v1', 'http://127.0.0.1:11434/v1'],
+  ['http://127.0.0.1:1234/other', 'http://127.0.0.1:1234/other'],
+  ['http://[::1]:11434/v1', 'http://[::1]:11434/v1'],
+])('sends local model requests only to loopback: %s', async (baseURL, expected) => {
+  let step = 0;
+  const fetcher = vi.fn(async (url: string | URL | Request) => {
+    expect(String(url)).toBe(expected + '/chat/completions');
+    return step++ === 0 ? upstream('local', 'read_workflow') : upstream('local');
+  });
+  vi.stubGlobal('fetch', fetcher);
+  await runLocalAgent(input, new AbortController().signal, { ...config('local'), baseURL });
+  expect(fetcher).toHaveBeenCalled();
+});
+
+it('rejects remote server defaults even if the old allowlist names them', () => {
+  vi.stubEnv('AI_LOCAL_ALLOWED_BASE_URLS', 'https://models.example.com/v1');
+  vi.stubEnv('LOCAL_LLM_BASE_URL', 'https://models.example.com/v1');
+  vi.stubEnv('LOCAL_LLM_MODEL', 'local-model');
+  expect(() => resolveProviderConfiguration({ provider: 'local', source: 'server' })).toThrow(
+    'Local models require',
+  );
+  expect(() => allowedLocalBaseURL('http://169.254.169.254/v1')).toThrow('Local models require');
 });
