@@ -11,6 +11,26 @@ const text = z.string().max(20000);
 const id = z.string().min(1).max(200);
 const position = z.object({ x: z.number().finite(), y: z.number().finite() });
 const config = z.object({
+  dataPath: text
+    .describe(
+      'Data Transform: nested path such as user.name or items[0].price; empty selects the whole input.',
+    )
+    .optional(),
+  transformations: z
+    .array(
+      z.discriminatedUnion('type', [
+        z.object({ type: z.enum(['capitalize', 'lowercase', 'uppercase', 'title-case', 'trim']) }),
+        z.object({ type: z.enum(['prefix', 'suffix']), value: text }),
+        z.object({ type: z.literal('replace'), find: text.min(1), replacement: text }),
+        z.object({ type: z.literal('fallback'), value: z.json() }),
+      ]),
+    )
+    .max(100)
+    .describe(
+      'Data Transform operations run in list order. Text operations require strings. Fallback handles only missing or null values.',
+    )
+    .optional(),
+
   event: z
     .enum([
       'page-load',
@@ -76,7 +96,11 @@ const config = z.object({
     .max(100)
     .describe('Percentage of page scrollable distance, default 75.')
     .optional(),
-  selector: text.optional(),
+  selector: text
+    .describe(
+      'CSS selector. Update element actions, including hide/show, may interpolate {{variables}} here.',
+    )
+    .optional(),
   url: text
     .describe(
       'Request URL; supports incoming data templates such as {{user.id}} or {{items[0].id}}.',
@@ -89,14 +113,6 @@ const config = z.object({
       'Request body; supports incoming data templates such as {{user.name}}. Ignored for GET/HEAD.',
     )
     .optional(),
-  responseDataPath: text
-    .describe(
-      'Optional nested response selection, applied to automatically parsed JSON; e.g. data.items[0].price.',
-    )
-    .optional(),
-  conditionDataPath: text
-    .describe('Optional nested incoming data selection. Empty evaluates the whole value.')
-    .optional(),
   conditionOperator: z
     .enum(
       Object.keys(dataTools.operators) as [
@@ -108,22 +124,21 @@ const config = z.object({
   action: z
     .enum(['text', 'html', 'add-class', 'remove-class', 'hide', 'show', 'attribute'])
     .optional(),
-  value: text.optional(),
-  valueSource: z
-    .enum(['manual', 'incoming-data'])
-    .describe('Update element value source; defaults to manual. Hide/show do not use a value.')
-    .optional(),
-  valueDataPath: text
+  value: text
     .describe(
-      'Optional selection from incoming data for Update element, e.g. user.name; empty uses the whole value.',
+      'Update element content. Mix literal text and incoming variables such as Hello {{name}}, {{user.name}}, or {{$}} for the whole incoming input.',
     )
     .optional(),
-  attribute: text.optional(),
+  attribute: text.describe('Attribute name for Update element; supports {{variables}}.').optional(),
   cookieName: text
-    .describe('Name of a cookie to set on the current host; no spaces or cookie separators.')
+    .describe(
+      'Cookie name on the current host; supports {{name}}, nested paths, and {{$}} from incoming data. Missing/null name variables stop the step. The resolved name must have no spaces or cookie separators.',
+    )
     .optional(),
   cookieValue: text
-    .describe('Cookie value; may be empty. Names and values are percent-encoded when written.')
+    .describe(
+      'Cookie value; supports {{name}}, nested paths, and {{$}} from incoming data. Missing/null value variables become empty text; objects and arrays become JSON. Names and values are percent-encoded after substitution.',
+    )
     .optional(),
   cookieDays: z
     .number()
@@ -315,6 +330,7 @@ export function createWorkflowTools(workflow: Workflow, selectedNodeIds: string[
           kind: z.enum([
             'trigger',
             'http',
+            'transform',
             'dom',
             'cookie',
             'delay',
@@ -364,7 +380,7 @@ export function createWorkflowTools(workflow: Workflow, selectedNodeIds: string[
       {
         name: 'add_connection',
         description:
-          'Connect existing executable nodes. Notes cannot have incoming or outgoing connections. Condition sourceHandle must be true/false; Loop must be body/done; all other executable nodes use null or omit it. Cycles and incoming trigger connections are unsupported.',
+          'Connect existing executable nodes. Connections carry data unchanged. Use a Data Transform node for field selection or transformation. Notes cannot have incoming or outgoing connections. Condition sourceHandle must be true/false; Loop must be body/done; all other executable nodes use null or omit it. Cycles and incoming trigger connections are unsupported.',
         schema: z.object({
           source: id,
           target: id,
@@ -376,7 +392,7 @@ export function createWorkflowTools(workflow: Workflow, selectedNodeIds: string[
     defineTool((patch) => mutate({ type: 'update_edge', ...patch }), {
       name: 'update_connection',
       description:
-        'Rewire or relabel an existing connection. Send sourceHandle=null when changing to an ordinary source node.',
+        'Rewire or relabel an existing connection. Field selection belongs to Data Transform nodes. Send sourceHandle=null when changing to an ordinary source node.',
       schema: z.object({
         id,
         source: id.optional(),

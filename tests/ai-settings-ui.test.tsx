@@ -214,14 +214,14 @@ it('saves and activates local settings without a key, and unsaved fields never a
   const store = new AISettingsStore();
   store.refresh();
   await act(async () => root.render(<AISettings store={store} endpoint="https://ai.test/chat" />));
-  await click(tab('Self-Hosted')!);
-  expect(host.textContent).toContain('hosted locally on your computer won’t work');
+  await click(tab('Local')!);
+  expect(host.textContent).toContain('only works when running the demo app locally');
   expect(host.querySelector('input[type="password"]')).not.toBeNull();
   expect(
     [...host.querySelectorAll('label')].some((label) => label.textContent?.includes('passphrase')),
   ).toBe(false);
-  await input('Self-Hosted API base URL', 'https://models.example.com/v1');
-  await input('Self-Hosted model ID', 'local-model');
+  await input('Local API base URL', 'http://localhost:11434/v1');
+  await input('Local model ID', 'local-model');
   expect(store.forRequest('https://ai.test/chat', new AbortController())).toBeUndefined();
   await act(async () =>
     host
@@ -229,12 +229,12 @@ it('saves and activates local settings without a key, and unsaved fields never a
       .dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })),
   );
   expect(store.getSnapshot().activeProvider).toBe('local');
-  await input('Self-Hosted model ID', 'unsaved-model');
-  await input('Self-Hosted API base URL', 'http://evil.test/v1');
+  await input('Local model ID', 'unsaved-model');
+  await input('Local API base URL', 'http://evil.test/v1');
   expect(store.forRequest('https://ai.test/chat', new AbortController())).toMatchObject({
     provider: 'local',
     model: 'local-model',
-    baseURL: 'https://models.example.com/v1',
+    baseURL: 'http://localhost:11434/v1',
   });
   await click(tab('Claude')!);
   await input('Anthropic API key', 'sk-ant-private');

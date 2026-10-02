@@ -5,6 +5,7 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { NodeInspector } from '../src/components/NodeInspector';
 import { NodeLibrary } from '../src/components/NodeLibrary';
 import { createNode, stepSummary } from '../src/lib/catalog';
+import { getNodeDataPorts } from '../src/lib/nodeData';
 import type { StepConfig } from '../src/lib/types';
 
 let root: Root;
@@ -44,6 +45,22 @@ async function change(label: string, value: string) {
   });
 }
 
+function Inspector() {
+  const [node, setNode] = useState(() => createNode('cookie'));
+  current = node.data.config;
+  return (
+    <NodeInspector
+      node={node}
+      onChange={(patch) => setNode({ ...node, data: { ...node.data, ...patch } })}
+      onClose={() => {}}
+      onPickElement={() => {}}
+      onDelete={() => {}}
+      onDuplicate={() => {}}
+      onPreviewContent={() => {}}
+    />
+  );
+}
+
 it('adds the Set cookie action from the node library', async () => {
   const add = vi.fn();
   await act(async () => root.render(<NodeLibrary onAdd={add} />));
@@ -54,21 +71,6 @@ it('adds the Set cookie action from the node library', async () => {
 });
 
 it('edits cookie name, value, and session or persistent expiration', async () => {
-  function Inspector() {
-    const [node, setNode] = useState(() => createNode('cookie'));
-    current = node.data.config;
-    return (
-      <NodeInspector
-        node={node}
-        onChange={(patch) => setNode({ ...node, data: { ...node.data, ...patch } })}
-        onClose={() => {}}
-        onPickElement={() => {}}
-        onDelete={() => {}}
-        onDuplicate={() => {}}
-        onPreviewContent={() => {}}
-      />
-    );
-  }
   await act(async () => root.render(<Inspector />));
   expect(field('Cookie name').value).toBe('audience');
   expect(field('Cookie value').value).toBe('returning');
@@ -91,4 +93,29 @@ it('edits cookie name, value, and session or persistent expiration', async () =>
   await change('Cookie value', '');
   expect(current).toMatchObject({ cookieName: 'campaign', cookieValue: '', cookieDays: 0 });
   expect(host.textContent).not.toContain('Expires after');
+});
+
+it('validates cookie templates and derives incoming data use without variable explanations', async () => {
+  await act(async () => root.render(<Inspector />));
+  expect(host.textContent).not.toContain('in the cookie name or value');
+  const incoming = () => host.querySelector('.dxp-inspector-incoming-data');
+  expect(incoming()).toBeNull();
+  expect(getNodeDataPorts({ kind: 'cookie', config: current }).acceptsData).toBe(false);
+  await change('Cookie name', 'audience_{{user.id}}');
+  expect(incoming()).toBeNull();
+  expect(getNodeDataPorts({ kind: 'cookie', config: current }).acceptsData).toBe(true);
+  expect(host.querySelector('[role="alert"]')).toBeNull();
+  await change('Cookie value', '{{$}}');
+  await change('Cookie name', 'audience');
+  expect(incoming()).toBeNull();
+  expect(getNodeDataPorts({ kind: 'cookie', config: current }).acceptsData).toBe(true);
+  await change('Cookie value', 'returning');
+  expect(incoming()).toBeNull();
+  expect(getNodeDataPorts({ kind: 'cookie', config: current }).acceptsData).toBe(false);
+  await change('Cookie value', '{{user.name');
+  expect(host.querySelector('[role="alert"]')?.textContent).toContain('matching braces');
+  await change('Cookie value', '{{user.name}}');
+  expect(host.querySelector('[role="alert"]')).toBeNull();
+  await change('Cookie name', 'bad {{name}}');
+  expect(host.querySelector('[role="alert"]')?.textContent).toContain('cookie name without spaces');
 });

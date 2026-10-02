@@ -4,26 +4,22 @@ export interface DataSelection {
 }
 
 interface DataConditionConfig {
-  conditionDataPath?: string;
   conditionOperator?: string;
   conditionValue?: string;
-}
-
-interface ResponseConfig {
-  responseDataPath?: string;
 }
 
 interface RequestConfig {
   url?: string;
   method?: string;
+  headers?: string;
   body?: string;
 }
 
 interface ElementValueConfig {
+  selector?: string;
+  attribute?: string;
   action?: string;
   value?: string;
-  valueSource?: string;
-  valueDataPath?: string;
 }
 
 /** Self-contained so preview and exported scripts use exactly the same rules. */
@@ -142,6 +138,7 @@ export function createDataTools() {
   /** Validate syntax without needing runtime data; return a URL suitable for static checks. */
   function validateRequest(config: RequestConfig): string {
     const url = mapRequestTemplate(config.url ?? '', () => '1');
+    mapRequestTemplate(config.headers ?? '', () => '0');
     if (!['GET', 'HEAD'].includes((config.method ?? 'GET').toUpperCase()))
       mapRequestTemplate(config.body ?? '', () => '0');
     return url;
@@ -174,42 +171,122 @@ export function createDataTools() {
     });
   }
 
+  function hasVariables(value = ''): boolean {
+    return /\{\{[\s\S]*?\}\}/.test(value);
+  }
+
+  function variablePath(expression: string): string {
+    const path = expression.trim();
+    if (!path)
+      throw Object.assign(
+        new Error('Enter a variable name inside {{ }}; use {{$}} for the whole incoming value.'),
+        {
+          messageKey: 'errors.data.emptyVariable',
+          messageParams: {},
+        },
+      );
+    // $ refers to the root, including a primitive selected on the connection.
+    const selection =
+      path === '$'
+        ? ''
+        : path.startsWith('$.')
+          ? path.slice(2)
+          : path.startsWith('$[')
+            ? path.slice(1)
+            : path;
+    if (path !== '$' && !selection) parsePath(path);
+    parsePath(selection);
+    return selection;
+  }
+
+  function validateTemplate(value = ''): void {
+    const remainder = value.replace(/\{\{([\s\S]*?)\}\}/g, (_match, expression: string) => {
+      variablePath(expression);
+      return '';
+    });
+    if (remainder.includes('{{'))
+      throw Object.assign(
+        new Error('Close each variable with matching braces, for example {{name}}.'),
+        {
+          messageKey: 'errors.data.unclosedVariable',
+          messageParams: {},
+        },
+      );
+  }
+
+  function hasElementValue(config: ElementValueConfig): boolean {
+    return !['hide', 'show'].includes(config.action ?? 'text');
+  }
+
   function usesIncomingValue(config: ElementValueConfig): boolean {
     return (
-      config.valueSource === 'incoming-data' && !['hide', 'show'].includes(config.action ?? 'text')
+      hasVariables(config.selector) ||
+      (config.action === 'attribute' && hasVariables(config.attribute)) ||
+      (hasElementValue(config) && hasVariables(config.value))
     );
   }
 
   function validateElementValue(config: ElementValueConfig): void {
-    if (['hide', 'show'].includes(config.action ?? 'text')) return;
-    if (!['manual', 'incoming-data'].includes(config.valueSource ?? 'manual'))
-      throw new Error('Choose Manual value or Incoming data as the value source.');
-    if (usesIncomingValue(config)) parsePath(config.valueDataPath);
+    validateTemplate(config.selector);
+    if (config.action === 'attribute') validateTemplate(config.attribute);
+    if (!hasElementValue(config)) return;
+    validateTemplate(config.value);
   }
 
-  function elementValue(config: ElementValueConfig, input: DataSelection): string {
-    validateElementValue(config);
-    if (!usesIncomingValue(config)) return config.value ?? '';
-    const { value } = select(input, config.valueDataPath);
+  function valueText(value: unknown, action?: string): string {
     if (value === null || value === undefined) return '';
     if (typeof value === 'string') return value;
     if (typeof value === 'number' || typeof value === 'boolean') return String(value);
-    if (config.action === 'add-class' || config.action === 'remove-class') {
+    if (action === 'add-class' || action === 'remove-class') {
       if (Array.isArray(value) && value.every((item) => typeof item === 'string'))
         return value.join(' ');
-      throw new Error(
-        'Incoming CSS classes must be text, a number, a boolean, or an array of strings.',
+      throw Object.assign(
+        new Error(
+          'Incoming CSS classes must be text, a number, a boolean, or an array of strings.',
+        ),
+        {
+          messageKey: 'errors.data.incomingCssClassesMustBeTextANumberABoolean',
+          messageParams: {},
+        },
       );
     }
     return JSON.stringify(value);
   }
 
-  function validateResponse(config: ResponseConfig): void {
-    parsePath(config.responseDataPath);
+  function interpolate(
+    template: string,
+    input: DataSelection,
+    action?: string,
+    required: boolean | 'cookie name' = false,
+  ): string {
+    validateTemplate(template);
+    // One pass: data containing braces is inserted literally, never evaluated again.
+    return template.replace(/\{\{([\s\S]*?)\}\}/g, (_match, expression: string) => {
+      const selected = select(input, variablePath(expression));
+      if (required && (!selected.exists || selected.value === null || selected.value === undefined))
+        throw Object.assign(
+          new Error(
+            `Variable “${expression.trim()}” is missing in the ${required === 'cookie name' ? 'cookie name' : 'element selector or attribute name'}.`,
+          ),
+          {
+            messageKey:
+              required === 'cookie name'
+                ? 'errors.cookies.missingNameVariable'
+                : 'errors.data.missingTargetVariable',
+            messageParams: { name: expression.trim() },
+          },
+        );
+      return valueText(selected.value, action);
+    });
   }
 
-  function parseResponse(body: string, config: ResponseConfig): DataSelection {
-    validateResponse(config);
+  function elementValue(config: ElementValueConfig, input: DataSelection): string {
+    validateElementValue(config);
+    if (!hasElementValue(config)) return '';
+    return interpolate(config.value ?? '', input, config.action);
+  }
+
+  function parseResponse(body: string): DataSelection {
     let value: unknown;
     try {
       value = JSON.parse(body);
@@ -217,12 +294,10 @@ export function createDataTools() {
       // Non-JSON bodies are always passed through as complete text.
       return { exists: true, value: body };
     }
-    // Preserve missingness so downstream Exists checks distinguish it from null.
-    return select({ exists: true, value }, config.responseDataPath);
+    return { exists: true, value };
   }
 
   function validateCondition(config: DataConditionConfig): void {
-    parsePath(config.conditionDataPath);
     const operator = config.conditionOperator ?? 'equal';
     if (!Object.hasOwn(operators, operator))
       throw new Error('Choose a supported Incoming data condition operator.');
@@ -285,14 +360,14 @@ export function createDataTools() {
   function evaluate(config: DataConditionConfig, input: DataSelection): boolean {
     validateCondition(config);
     const operator = config.conditionOperator ?? 'equal';
-    const { exists, value } = select(input, config.conditionDataPath);
+    const { exists, value } = input;
     if (operator === 'exists') return exists;
     if (operator === 'not-exists') return !exists;
     if (operator === 'is-null') return exists && value === null;
     if (operator === 'is-not-null') return exists && value !== null;
     if (!exists)
       throw new Error(
-        `Data path “${config.conditionDataPath?.trim() || '(incoming data)'}” could not be resolved. Use Exists or Does not exist to check missing data.`,
+        `Data path “(incoming data)” could not be resolved. Use Exists or Does not exist to check missing data.`,
       );
     const type = value === null ? 'null' : Array.isArray(value) ? 'array' : typeof value;
     const unsupported = () =>
@@ -387,6 +462,9 @@ export function createDataTools() {
   return {
     validateRequest,
     requestTemplate,
+    hasVariables,
+    validateTemplate,
+    interpolate,
     usesIncomingValue,
     validateElementValue,
     elementValue,
@@ -394,7 +472,6 @@ export function createDataTools() {
     needsValue,
     parsePath,
     select,
-    validateResponse,
     parseResponse,
     validateCondition,
     evaluate,

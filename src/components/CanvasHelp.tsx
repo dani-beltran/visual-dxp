@@ -1,4 +1,5 @@
 import {
+  Braces,
   CircleHelp,
   Frame,
   Hand,
@@ -31,6 +32,11 @@ export function CanvasHelp({
       text: t('canvasHelp.dragNodesToMoveThemClickANodeToOpenItsSettings'),
     },
     {
+      icon: Hand,
+      title: t('canvasHelp.moveAroundTheCanvas'),
+      text: t('canvasHelp.dragEmptySpaceToPanScrollPinchOrUseTheZoomButtons'),
+    },
+    {
       icon: StickyNote,
       title: t('canvasHelp.leaveANote'),
       text: t('canvasHelp.addANoteAndTypeDirectlyOnTheCanvasSelectTextThen'),
@@ -46,9 +52,9 @@ export function CanvasHelp({
       text: t('canvasHelp.dragFromTheCircleOnTheRightOfOneNodeToThe'),
     },
     {
-      icon: Hand,
-      title: t('canvasHelp.moveAroundTheCanvas'),
-      text: t('canvasHelp.dragEmptySpaceToPanScrollPinchOrUseTheZoomButtons'),
+      icon: Braces,
+      title: t('canvasHelp.useVariables'),
+      text: t('canvasHelp.useVariablesDescription'),
     },
   ];
   const [internalOpen, setInternalOpen] = useState(false);

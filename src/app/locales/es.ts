@@ -2,16 +2,61 @@ import type { BuilderMessages } from '../../lib/i18n';
 
 /** Complete Spanish builder catalog supplied by the demo app. */
 export const spanishMessages = {
+  'nodes.transform.label': 'Transformación de datos',
+  'nodes.transform.description':
+    'Selecciona un campo de los datos entrantes y transforma su valor. El resultado se transmite a los siguientes pasos.',
+  'transform.dataPath': 'Ruta de datos',
+  'transform.pathHint':
+    'Déjala vacía para seleccionar toda la entrada. Usa propiedades e índices, p. ej. user.items[0].name. Sin transformaciones, el valor extraído se transmite sin cambios.',
+  'transform.wholeValue': 'Valor completo',
+  'transform.transformations': 'Transformaciones',
+  'transform.orderHint':
+    'Se ejecutan de arriba abajo. Las operaciones de texto requieren texto. Añade primero un valor alternativo si el campo puede estar ausente o ser null.',
+  'transform.capitalize': 'Primera letra mayúscula',
+  'transform.lowercase': 'Minúsculas',
+  'transform.uppercase': 'Mayúsculas',
+  'transform.title-case': 'Iniciales mayúsculas',
+  'transform.trim': 'Recortar espacios',
+  'transform.prefix': 'Añadir prefijo',
+  'transform.suffix': 'Añadir sufijo',
+  'transform.replace': 'Buscar y reemplazar',
+  'transform.fallback': 'Valor alternativo para ausente o null',
+  'transform.textToAdd': 'Texto que añadir',
+  'transform.find': 'Buscar',
+  'transform.replacement': 'Reemplazar por',
+  'transform.replaceHint':
+    'Reemplaza todas las coincidencias exactas. El texto es literal; no se usan expresiones regulares.',
+  'transform.fallbackType': 'Tipo de valor alternativo',
+  'transform.fallbackValue': 'Valor alternativo',
+  'transform.text': 'Texto',
+  'transform.json': 'Valor JSON',
+  'transform.invalidFallback':
+    'Introduce JSON válido, como null, false, 0, "texto", un objeto o una matriz. Se guarda cuando el JSON es válido.',
+  'transform.add': 'Añadir transformación',
+  'transform.outputHint': 'Transmite el valor seleccionado y transformado al siguiente nodo',
+  'transform.summary': ({ path, count }) =>
+    `${path} · ${count} ${count === 1 ? 'transformación' : 'transformaciones'}`,
+  'transform.operation': ({ number }) => `Transformación ${number}`,
+  'transform.moveUp': ({ number }) => `Subir transformación ${number}`,
+  'transform.moveDown': ({ number }) => `Bajar transformación ${number}`,
+  'transform.remove': ({ number }) => `Eliminar transformación ${number}`,
   'common.enterFullscreen': 'Entrar en pantalla completa',
   'common.exitFullscreen': 'Salir de pantalla completa',
   'nodeInspector.requestTemplates':
-    'Usa datos de entrada en la URL o el cuerpo con {{variableName}} o {{key.subKey.variableName}}. También puedes usar índices como {{items[0].id}}. Conecta una respuesta HTTP a esta entrada para encadenar solicitudes. Las variables que faltan detienen la solicitud.',
+    'Usa datos de entrada en la URL, las cabeceras o el cuerpo con {{name}} o {{user.name}}. También puedes usar índices como {{items[0].id}}. Las variables que faltan detienen la solicitud.',
   'errors.data.emptyRequestTemplatePath':
     'Introduce una ruta de datos entre las llaves de la plantilla de solicitud.',
   'errors.data.unclosedRequestTemplate':
     'Cierra las variables de la plantilla de solicitud con dos llaves de cierre.',
   'errors.data.unresolvedRequestTemplatePath': ({ path }: { path: string }) =>
     `No se ha podido resolver la ruta de datos «${path}» de la plantilla de solicitud.`,
+  'errors.data.emptyVariable':
+    'Introduce un nombre de variable entre {{ }}; usa {{$}} para el valor de entrada completo.',
+  'errors.data.unclosedVariable':
+    'Cierra cada variable con sus llaves correspondientes, por ejemplo {{name}}.',
+  'errors.data.missingTargetVariable': ({ name }) =>
+    `Falta la variable «${name}» en el selector del elemento o el nombre del atributo.`,
+
   'aiSettings.assistantCredentials': 'Credenciales del asistente',
   'aiSettings.aiSettings': 'Configuración de IA',
   'aiSettings.yourAiConnection': 'TU CONEXIÓN DE IA',
@@ -27,13 +72,12 @@ export const spanishMessages = {
   'aiSettings.settingsUnavailable': 'Configuración no disponible.',
   'aiSettings.browserCredentialsRequireAnHttpsAiServer':
     'Las credenciales del navegador requieren un servidor de IA HTTPS.',
-  'aiSettings.selfHostedSetupInformation': 'Información de configuración del servidor propio',
+  'aiSettings.selfHostedSetupInformation': 'Información de configuración de Local',
   'aiSettings.enterTheApiBaseUrlOfYourSelfHostedOpenaiCompatibleModel':
-    'Introduce la URL base de la API de tu servidor de modelos compatible con OpenAI. El backend de la aplicación debe poder acceder a la URL y el administrador debe permitirla. Un servidor alojado localmente en tu ordenador no funcionará porque el backend no podrá acceder a él. El modelo seleccionado debe admitir llamadas a herramientas para editar flujos de trabajo.',
+    'Local está pensado para desarrolladores y depuración y solo funciona al ejecutar la aplicación de demostración localmente. Ejecuta un servidor de modelos compatible con OpenAI en la misma máquina que el backend de la demo e introduce una URL con localhost, 127.0.0.1 o [::1]. Las solicitudes salen del backend; la demo alojada no puede conectarse a un modelo en tu ordenador. El modelo debe admitir llamadas a herramientas para editar flujos de trabajo.',
   'aiSettings.unlockedUseActivateSavedConfigurationToSelectThisProvider':
     'Desbloqueado. Usa Activar configuración guardada para seleccionar este proveedor.',
-  'aiSettings.selfHostedApiBaseUrl': 'URL base de la API del servidor propio',
-  'aiSettings.apiKey': 'Clave de API',
+  'aiSettings.selfHostedApiBaseUrl': 'URL base de la API de Local',
   'aiSettings.enterAKeyToReplaceSettingsUseActivateForSavedSettings':
     'Introduce una clave para reemplazar la configuración; usa Activar para la configuración guardada',
   'aiSettings.hideApiKey': 'Ocultar clave de API',
@@ -63,19 +107,16 @@ export const spanishMessages = {
     'Los cambios de este flujo de trabajo aparecerán aquí.',
   'canvasChat.addAWelcomePopoverAfterA2SecondDelay':
     'Añade una ventana emergente de bienvenida tras una espera de 2 segundos',
-  'canvasChat.explainTheConnectionsInThisWorkflow':
-    'Explica las conexiones de este flujo de trabajo',
+  'canvasChat.explainThisWorkflow':
+    'Explica qué hace este flujo de trabajo',
   'canvasChat.changeTheSelectedStep': 'Cambia el paso seleccionado',
   'canvasChat.stoppedNoChangesWereMade': 'Detenido. No se ha realizado ningún cambio.',
   'canvasChat.aiChat': 'Chat de IA',
   'canvasChat.yourWorkflowAssistant': 'Tu asistente de flujos de trabajo',
-  'canvasChat.activeProvider': 'Proveedor activo:',
   'canvasChat.startANewConversation': 'Iniciar una nueva conversación',
   'canvasChat.newConversation': 'Nueva conversación',
   'canvasChat.closeAiChat': 'Cerrar chat de IA',
-  'canvasChat.selected': 'Seleccionado:',
   'canvasChat.workingWithYourCurrentCanvas': 'Trabajando con tu lienzo actual',
-  'canvasChat.aiProviderSettings': 'Configuración del proveedor de IA',
   'canvasChat.aiConversation': 'Conversación de IA',
   'canvasChat.whatWouldYouLikeToCreate': '¿Qué te gustaría crear?',
   'canvasChat.askMeToAddStepsAdjustTheirSettingsOrConnectYourJourney':
@@ -109,6 +150,9 @@ export const spanishMessages = {
   'canvasHelp.dragFromTheCircleOnTheRightOfOneNodeToThe':
     'Arrastra desde el círculo de la derecha de un nodo hasta el de la izquierda de otro. Haz clic en una conexión para editar su nombre. Una Condición usa la salida superior cuando se cumple y la inferior en caso contrario.',
   'canvasHelp.moveAroundTheCanvas': 'Moverse por el lienzo',
+  'canvasHelp.useVariables': 'Usar variables',
+  'canvasHelp.useVariablesDescription':
+    'Los nodos de petición HTTP producen datos que fluyen de un paso a otro por las conexiones. En cualquier parámetro de texto de un nodo, las variables se sustituyen por los campos de datos a los que apuntan cuando se ejecuta el flujo. Escribe Hola {{user.name}} para insertar un nombre, {{items[0].name}} para el primer elemento o {{$}} para el valor completo de entrada.',
   'canvasHelp.dragEmptySpaceToPanScrollPinchOrUseTheZoomButtons':
     'Arrastra un espacio vacío para desplazarte. Usa la rueda, el gesto de pellizco o los botones de zoom para acercar o alejar. Ajustar todos los nodos muestra el recorrido completo; el minimapa ofrece una vista general.',
   'canvasHelp.canvasHelp': 'Ayuda del lienzo',
@@ -134,17 +178,11 @@ export const spanishMessages = {
   'elementPicker.elementFoundOnThePage': 'Elemento encontrado en la página.',
   'elementPicker.noMatchingElementFoundYouCanStillUseThisSelector':
     'No se ha encontrado ningún elemento coincidente. Puedes seguir usando este selector.',
-  'elementPicker.enterAValidWebsiteUrl': 'Introduce una URL de sitio web válida.',
   'elementPicker.thisWebsiteCouldnTConnectToThePickerCheckTheSetupBelow':
     'Este sitio web no ha podido conectarse al selector. Revisa la configuración de abajo y vuelve a pulsar Cargar sitio web.',
-  'elementPicker.openDemoWebsite': 'Abrir sitio web de demostración',
   'elementPicker.selectAnElement': 'Seleccionar un elemento',
   'elementPicker.pointClickAndConnectYourExperience': 'Apunta, haz clic y conecta tu experiencia.',
   'elementPicker.closeElementPicker': 'Cerrar selector de elementos',
-  'elementPicker.websiteUrl': 'URL del sitio web',
-  'elementPicker.leaveEmptyToUseTheDemoWebsite':
-    'Déjalo vacío para usar el sitio web de demostración',
-  'elementPicker.loadWebsite': 'Cargar sitio web',
   'elementPicker.selectionModeIsOn': 'El modo de selección está activo',
   'elementPicker.connectingToWebsite': 'Conectando al sitio web…',
   'elementPicker.connectionRequired': 'Se requiere conexión',
@@ -188,7 +226,6 @@ export const spanishMessages = {
   'nodeInspector.eGSignupButton': 'p. ej. #signup-button',
   'nodeInspector.pickAnElementFromYourWebsite': 'Elige un elemento de tu sitio web',
   'nodeInspector.selectOnWebsite': 'Seleccionar en el sitio web',
-  'nodeInspector.details': 'DETALLES',
   'nodeInspector.canvasGroup': 'Grupo del lienzo',
   'nodeInspector.canvasAnnotation': 'Anotación del lienzo',
   'nodeInspector.workflowStep': 'Paso del flujo de trabajo',
@@ -209,7 +246,7 @@ export const spanishMessages = {
   'nodeInspector.requestUrl': 'URL de la solicitud',
   'nodeInspector.headers': 'Cabeceras',
   'nodeInspector.enterAJsonObjectLeaveEmptyForDefaultHeaders':
-    'Introduce un objeto JSON. Déjalo vacío para usar las cabeceras predeterminadas.',
+    'Introduce un objeto JSON con valores de texto. Déjalo vacío para usar las cabeceras predeterminadas.',
   'nodeInspector.requestBody': 'Cuerpo de la solicitud',
   'nodeInspector.sentAsTheRawRequestBody': 'Se envía como cuerpo de la solicitud sin procesar.',
   'nodeInspector.theApiMustAllowRequestsFromYourWebsiteThroughCors':
@@ -224,17 +261,6 @@ export const spanishMessages = {
   'nodeInspector.setAttribute': 'Establecer atributo',
   'nodeInspector.attributeName': 'Nombre del atributo',
   'nodeInspector.eGAriaLabel': 'p. ej. aria-label',
-  'nodeInspector.useIncomingData': 'Usar datos de entrada',
-  'nodeInspector.usesTheValueReceivedThroughTheBlueInputConnectionSuchAsAn':
-    'Usa el valor recibido a través de la conexión de entrada azul, como una respuesta HTTP, para esta acción. El elemento de destino y el nombre del atributo se mantienen según la configuración.',
-  'nodeInspector.incomingDataPath': 'Ruta de los datos de entrada',
-  'nodeInspector.eGUserName': 'p. ej. user.name',
-  'nodeInspector.optionalLeaveEmptyToUseTheWholeIncomingValueExamplesUserName':
-    'Opcional. Déjalo vacío para usar todo el valor de entrada. Ejemplos: user.name o data.items[0].price. Las cadenas, los números y los booleanos se convierten en texto; null y los valores ausentes se convierten en texto vacío.',
-  'nodeInspector.classNamesCanAlsoBeAnArrayOfStringsSeparateMultipleNames':
-    ' Los nombres de clase también pueden ser un array de cadenas. Separa los nombres en el texto con espacios.',
-  'nodeInspector.arraysAndObjectsBecomeJsonText':
-    ' Los arrays y objetos se convierten en texto JSON.',
   'nodeInspector.htmlContent': 'Contenido HTML',
   'nodeInspector.cssClassNames': 'Nombres de clases CSS',
   'nodeInspector.attributeValue': 'Valor del atributo',
@@ -270,8 +296,6 @@ export const spanishMessages = {
   'nodeInspector.cookies': 'Cookies',
   'nodeInspector.evaluatesDataReceivedThroughTheIncomingConnectionSuchAsAnHttpResponse':
     'Evalúa los datos recibidos a través de la conexión de entrada, como una respuesta HTTP. Elige un valor y un operador para dirigir la ejecución por Verdadero o Falso.',
-  'nodeInspector.optionalLeaveEmptyToEvaluateAllIncomingDataExamplesUserNameData':
-    'Opcional. Déjalo vacío para evaluar todos los datos de entrada. Ejemplos: user.name, data.items[0].price, items[2].tags.',
   'nodeInspector.operator': 'Operador',
   'nodeInspector.comparisonValue': 'Valor de comparación',
   'nodeInspector.trueWhenThisCssSelectorMatchesAnElement':
@@ -341,10 +365,10 @@ export const spanishMessages = {
   'nodeInspector.outputs': 'Salidas',
   'nodeInspector.true': 'Verdadero',
   'nodeInspector.conditionMatches': 'La condición se cumple',
+  'nodeInspector.conditionMatchesWithData': 'Reenvía datos si la condición se cumple',
   'nodeInspector.false': 'Falso',
   'nodeInspector.conditionDoesNotMatch': 'La condición no se cumple',
-  'nodeInspector.theMatchingOutputPassesAllIncomingDataUnchangedToTheNextStep':
-    'La salida coincidente pasa todos los datos de entrada al siguiente paso sin modificarlos. La ruta de datos de la condición solo selecciona qué comparar.',
+  'nodeInspector.conditionDoesNotMatchWithData': 'Reenvía datos si la condición no se cumple',
   'nodeInspector.body': 'Cuerpo',
   'nodeInspector.runsEachRepetition': 'Se ejecuta en cada repetición',
   'nodeInspector.done': 'Finalizado',
@@ -353,10 +377,6 @@ export const spanishMessages = {
     'Conecta los pasos que quieras repetir a Cuerpo. Conecta el siguiente paso a Finalizado.',
   'nodeInspector.data': 'Datos',
   'nodeInspector.next': 'Siguiente',
-  'nodeInspector.responseDataPath': 'Ruta de los datos de respuesta',
-  'nodeInspector.eGDataItems0Price': 'p. ej. data.items[0].price',
-  'nodeInspector.responsesAreAutomaticallyParsedAsJsonWhenPossibleOptionallySelectAValue':
-    'Las respuestas se interpretan automáticamente como JSON cuando es posible. Puedes seleccionar un valor con una ruta como user.name, data.items[0].price o items[2].tags; déjalo vacío para usar todo el cuerpo. Una ruta JSON inexistente devuelve undefined; null se pasa como null. Las respuestas que no son JSON ignoran la ruta y se pasan como texto completo.',
   'nodeInspector.duplicate': 'Duplicar',
   'nodeInspector.delete': 'Eliminar',
   'nodeLibrary.nodeLibrary': 'Biblioteca de nodos',
@@ -385,7 +405,6 @@ export const spanishMessages = {
   'popoverPreview.bottomLeft': 'Abajo a la izquierda',
   'popoverPreview.bottomRight': 'Abajo a la derecha',
   'popoverPreview.nextToAnElement': 'Junto a un elemento',
-  'popoverPreview.popoverPreview': 'Vista previa de la ventana emergente',
   'popoverPreview.fullscreenPopoverPreview':
     'Vista previa de la ventana emergente a pantalla completa',
   'popoverPreview.contentPreview': 'VISTA PREVIA DEL CONTENIDO',
@@ -422,7 +441,6 @@ export const spanishMessages = {
     'Los sitios web externos necesitan el puente de vista previa configurado para el origen de este editor. Las vistas previas se ejecutan en un origen aislado. Los disparadores de carga de página se ejecutan al iniciar. Los demás responden a este sitio web igual que el script exportado. Recarga para restablecer los cambios de la página.',
   'builder.theActivityCouldNotBeSavedYourWorkflowEditIsStillApplied':
     'No se ha podido guardar la actividad. El cambio en tu flujo de trabajo sigue aplicado.',
-  'builder.you': 'Tú',
   'builder.browserStorageIsUnavailableExportYourWorkflowToKeepACopy':
     'El almacenamiento del navegador no está disponible. Exporta tu flujo de trabajo para conservar una copia.',
   'builder.theChangeWasUndoneButItsActivityEntryCouldNotBeRemoved':
@@ -503,8 +521,9 @@ export const spanishMessages = {
   'websiteSetup.couldnTCopyAutomaticallySelectTheScriptAboveAndCopyItManually':
     'No se ha podido copiar automáticamente. Selecciona el script de arriba y cópialo manualmente.',
   'workflowCard.incomingData': 'Datos de entrada',
-  'workflowCard.usesTheWholeIncomingValue': 'Usa todo el valor de entrada',
-  'workflowCard.usesIncomingData': 'Usa datos de entrada',
+  'workflowCard.usesIncomingData': 'Recibe datos',
+  'workflowCard.producesData': 'Produce datos',
+  'workflowCard.forwardsData': 'Reenvía datos',
   'workflowCard.running': 'En ejecución',
   'workflowCard.needsAttention': 'Requiere atención',
   'workflowCard.completed': 'Completado',
@@ -520,6 +539,8 @@ export const spanishMessages = {
   'workflowCard.responseDataOutput': 'Salida de datos de respuesta',
   'errors.cookies.enterACookieNameWithoutSpacesOrSeparatorsSuchAs':
     'Introduce un nombre de cookie sin espacios ni separadores como = y ;.',
+  'errors.cookies.missingNameVariable': ({ name }) =>
+    `La variable «${name}» no está disponible en el nombre de la cookie.`,
   'errors.cookies.cookiesWithAnHttponlyNamePrefixMustBeSetBy':
     'Las cookies con un prefijo de nombre HttpOnly deben establecerse desde un servidor.',
   'errors.cookies.enterACookieValueAnEmptyStringIsAllowed':
@@ -537,8 +558,6 @@ export const spanishMessages = {
   'errors.timeRange.chooseVisitorLocalTimeOrUtcForTheTimeOf':
     'Elige la hora local del visitante o UTC para la hora del día.',
   'errors.data.dataPathMustBeText': 'La ruta de datos debe ser texto.',
-  'errors.data.chooseManualValueOrIncomingDataAsTheValueSource':
-    'Elige Valor manual o Datos de entrada como fuente del valor.',
   'errors.data.incomingCssClassesMustBeTextANumberABoolean':
     'Las clases CSS de entrada deben ser texto, un número, un booleano o un array de cadenas.',
   'errors.data.chooseASupportedIncomingDataConditionOperator':
@@ -590,7 +609,7 @@ export const spanishMessages = {
   'errors.aiSettings.theAiServerOriginChangedConfirmTheNewDestinationIn':
     'El origen del servidor de IA ha cambiado. Confirma el nuevo destino en la configuración de IA o en el asistente antes de enviar.',
   'errors.aiCredentials.enterAValidHttpSLocalApiBaseUrlWithout':
-    'Introduce una URL base de API local HTTP(S) válida sin credenciales, consulta ni fragmento.',
+    'Introduce una URL base de API HTTP(S) en localhost, 127.0.0.1 o [::1], sin credenciales, consulta ni fragmento.',
   'errors.aiCredentials.configureAValidHttpOrHttpsAiEndpointWithoutEmbedded':
     'Configura un endpoint de IA HTTP o HTTPS válido sin credenciales incrustadas.',
   'errors.ai.idsCannotContainSurroundingWhitespaceOrControlCharacters':
@@ -696,25 +715,25 @@ export const spanishMessages = {
     'Usa una URL de sitio web sin credenciales incrustadas.',
   'errors.picker.theWebsiteIsNotReadyYet': 'El sitio web aún no está listo.',
   'nodes.trigger.description':
-    'Inicia el flujo de trabajo cuando ocurre un evento seleccionado. Úsalo para responder a la actividad de la página o a las acciones del visitante. Elige un evento y los elementos de destino o umbrales necesarios y conecta el primer paso.',
+    'Inicia el flujo de trabajo cuando ocurre un evento seleccionado. Úsalo para responder a la actividad de la página o a las acciones del visitante.',
   'nodes.http.description':
-    'Envía una solicitud HTTP a una API. Úsalo para llamar a un servicio externo. Configura la URL y el método, con cabeceras o un cuerpo si hace falta. Usa {{variableName}} o {{key.subKey.variableName}} en la URL o el cuerpo para leer datos de entrada; el siguiente paso recibe los datos de respuesta si funciona o un objeto de error con mensaje y código si falla.',
+    'Envía una solicitud HTTP a una API. Úsalo para llamar a un servicio externo.',
   'nodes.dom.description':
-    'Actualiza los elementos coincidentes de la página. Úsalo para cambiar su contenido, apariencia o visibilidad. Elige un elemento de destino y una acción y usa un valor manual o los datos de entrada de un paso conectado. Configura el nombre del atributo cuando sea necesario.',
+    'Actualiza los elementos coincidentes de la página. Úsalo para cambiar su contenido, apariencia o visibilidad.',
   'nodes.cookie.description':
-    'Guarda una cookie en este sitio web. Úsalo para recordar un valor en pasos o visitas posteriores. Configura un nombre, valor y caducidad; un paso de Condición puede comprobar el valor guardado.',
+    'Guarda una cookie en este sitio web. Úsalo para recordar un valor en pasos o visitas posteriores.',
   'nodes.delay.description':
-    'Pausa el flujo de trabajo antes de continuar. Úsalo para espaciar los pasos conectados. Configura una duración en milisegundos; el siguiente paso se ejecuta después de la pausa.',
+    'Pausa el flujo de trabajo antes de continuar. Úsalo para espaciar los pasos conectados.',
   'nodes.fork.description':
-    'Elige una ruta según una condición. Úsalo para adaptar el flujo de trabajo al visitante o a la página. Elige un tipo de condición y sus valores y conecta la salida Verdadero cuando se cumpla y la salida Falso en caso contrario.',
+    'Elige una ruta según una condición. Úsalo para adaptar el flujo de trabajo al visitante o a la página.',
   'nodes.loop.description':
-    'Repite los pasos conectados. Úsalo para ejecutar la misma secuencia más de una vez. Configura el número de repeticiones, conecta los pasos a Cuerpo y el paso siguiente a Finalizado.',
+    'Repite los pasos conectados. Úsalo para ejecutar la misma secuencia más de una vez.',
   'nodes.popover.description':
-    'Muestra un panel sobre la página. Úsalo para mostrar un mensaje o un sitio web incrustado. Proporciona HTML o una URL, elige una posición y un ancho y selecciona un elemento de anclaje si lo sitúas junto a un elemento.',
+    'Muestra un panel sobre la página. Úsalo para mostrar un mensaje o un sitio web incrustado.',
   'nodes.note.description':
-    'Añade texto al lienzo. Úsalo para documentar ideas, contexto o recordatorios. Introduce el texto de la nota y elige su formato; las notas se omiten al ejecutar el flujo de trabajo.',
+    'Añade texto al lienzo. Úsalo para documentar ideas, contexto o recordatorios.',
   'nodes.frame.description':
-    'Agrupa nodos en el lienzo para que se muevan juntos. Úsalo para organizar partes relacionadas de un flujo de trabajo. Asigna un nombre al marco y coloca los nodos completamente dentro; los marcos se omiten al ejecutar el flujo de trabajo.',
+    'Agrupa nodos en el lienzo para que se muevan juntos. Úsalo para organizar partes relacionadas de un flujo de trabajo.',
   'nodes.trigger.label': 'Disparador',
   'nodes.http.label': 'Solicitud HTTP',
   'nodes.dom.label': 'Actualizar elemento',
@@ -946,8 +965,6 @@ export const spanishMessages = {
     `No se ha podido aplicar «${name}». ${value}`,
   'builder.appliedNameUseUndoToRestoreYourPreviousWorkflow': ({ name }) =>
     `Se ha aplicado «${name}». Usa Deshacer para restaurar el flujo de trabajo anterior.`,
-  'workflowCard.incomingDataIncomingdatapath': ({ incomingDataPath }) =>
-    `Datos de entrada: ${incomingDataPath}`,
   'activity.previewOpened': ({ name }) => `Se abrió una vista previa de prueba de «${name}»`,
   'activity.workflowRenamed': ({ name }) => `Se cambió el nombre del flujo de trabajo a «${name}»`,
   'activity.settingsUpdated': ({ label }) => `Se actualizó la configuración de «${label}»`,
@@ -963,7 +980,6 @@ export const spanishMessages = {
   'activity.nodeDuplicated': ({ label }) => `Se duplicó «${label}»`,
   'activity.presetApplied': ({ name }) => `Se aplicó la plantilla «${name}»`,
   'activity.workflowImported': ({ name }) => `Se importó el flujo de trabajo «${name}»`,
-  'activity.websiteChanged': ({ url }) => `Se cambió el sitio web de destino a «${url}»`,
   'activity.websiteConfigured': ({ url, includeSubpages }) =>
     `Se cambió el sitio web de destino a «${url}» (${includeSubpages ? 'incluidas las subpáginas' : 'solo esta página'})`,
   'activity.aiEditsApplied': ({ count }) =>
@@ -993,8 +1009,6 @@ export const spanishMessages = {
     `«${value1}» no es compatible con datos de tipo ${type}.`,
   'errors.data.enterAJsonTypeToCompareWithType2Data': ({ type, type2 }) =>
     `Introduce un valor JSON de tipo ${type} para compararlo con datos de tipo ${type2}.`,
-  'errors.targeting.exportTargetMessageMessage': ({ EXPORT_TARGET_MESSAGE, message }) =>
-    `${EXPORT_TARGET_MESSAGE} ${message}`,
   'errors.aiSettings.unlockValue1InAiSettingsBeforeUsingAi': ({ value1 }) =>
     `Desbloquea ${value1} en Configuración de IA antes de usar la IA.`,
   'errors.ai.labelMustBeAnObject': ({ label }) => `${label} debe ser un objeto.`,

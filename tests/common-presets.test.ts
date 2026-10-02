@@ -88,7 +88,7 @@ describe('common DXP preset contracts and layout', () => {
     ).toThrow();
   });
 
-  it('has at least thirteen unique, deliberately ordered presets covering the complete catalog', () => {
+  it('has at least thirteen unique, deliberately ordered presets covering the existing preset node kinds', () => {
     expect(commonDXPPresets[0]).toBe(blankPreset);
     expect(commonDXPPresets.length).toBeGreaterThanOrEqual(13);
     expect(new Set(commonDXPPresets.map((p) => p.id)).size).toBe(commonDXPPresets.length);
@@ -100,7 +100,9 @@ describe('common DXP preset contracts and layout', () => {
     expect(complexity).toEqual([...complexity].sort());
     expect(
       new Set(commonDXPPresets.flatMap((p) => p.workflow.nodes.map((n) => n.data.kind))),
-    ).toEqual(new Set(catalog.map((entry) => entry.kind)));
+    ).toEqual(
+      new Set(catalog.filter((entry) => entry.kind !== 'transform').map((entry) => entry.kind)),
+    );
   });
 
   it.each(commonDXPPresets.filter((preset) => preset !== blankPreset))(

@@ -102,7 +102,7 @@ it('accepts unauthenticated local settings without Web Crypto and encrypts optio
   await store.saveProvider('local', { ...local, apiKey: 'local-secret-key' }, pass, endpoint);
   expect(localStorage.getItem(AI_SETTINGS_STORAGE_KEY)).not.toContain('local-secret-key');
   store.lock();
-  expect(() => get(store)).toThrow(/Unlock Self-Hosted/);
+  expect(() => get(store)).toThrow(/Unlock Local/);
   await store.unlock(pass, 'local');
   expect(get(store)).toMatchObject({ apiKey: 'local-secret-key' });
 });

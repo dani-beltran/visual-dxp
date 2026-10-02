@@ -380,6 +380,9 @@
 .dxp-inspector-dot-data {
   background: var(--dxp-data);
 }
+.dxp-inspector-dot-data-false {
+  background: var(--dxp-data-false);
+}
 .dxp-inspector-preview {
   border: 1px solid var(--dxp-line);
   border-radius: 8px;
@@ -469,4 +472,19 @@
 }
 .dxp-inspector-incoming-data > svg {
   color: var(--dxp-data);
+}
+
+.dxp-transform-operation {
+  padding: 12px;
+  border: 1px solid var(--dxp-line);
+  border-radius: 8px;
+}
+.dxp-transform-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+}
+.dxp-transform-actions button:disabled {
+  opacity: 0.35;
+  cursor: default;
 }

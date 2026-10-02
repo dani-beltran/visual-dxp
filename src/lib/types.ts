@@ -1,8 +1,11 @@
 import type { Edge, Node } from '@xyflow/react';
+import type { ConnectionData } from './connections';
 import type { DataOperator } from './data';
+import type { DataTransformConfig } from './dataTransform';
 export type NodeKind =
   | 'trigger'
   | 'http'
+  | 'transform'
   | 'dom'
   | 'cookie'
   | 'delay'
@@ -42,7 +45,7 @@ export type TriggerEvent =
   | 'inactivity'
   | 'scroll-thrashing'
   | 'scroll-depth';
-export interface StepConfig {
+export interface StepConfig extends DataTransformConfig {
   event?: TriggerEvent;
   /** Nearby primary clicks required for rage clicking. Defaults to 3. */
   rageClickCount?: number;
@@ -65,18 +68,13 @@ export interface StepConfig {
   headers?: string;
   /** Raw request body; accepts {{path}} variables from incoming data (except GET/HEAD). */
   body?: string;
-  /** Optional selection within parsed JSON. Non-JSON responses pass as complete text. */
-  responseDataPath?: string;
   action?: 'text' | 'html' | 'add-class' | 'remove-class' | 'hide' | 'show' | 'attribute';
+  /** Update element content supports {{name}}, nested paths, and {{$}} for the whole input. */
   value?: string;
-  /** Value source for Update element actions. Older workflows default to manual. */
-  valueSource?: 'manual' | 'incoming-data';
-  /** Optional selection within incoming data for Update element. */
-  valueDataPath?: string;
   attribute?: string;
-  /** Name of the cookie to create or overwrite on the current host. */
+  /** Cookie name on the current host; supports {{variables}} from incoming data. */
   cookieName?: string;
-  /** Cookie value, encoded when written. An empty string is allowed. */
+  /** Cookie value; supports {{variables}} and {{$}}. Encoded when written; may be empty. */
   cookieValue?: string;
   /** Lifetime in whole days, from 0 (browser session, default) to 400. */
   cookieDays?: number;
@@ -84,8 +82,6 @@ export interface StepConfig {
   duration?: number;
   /** Omitted in older workflows, which check CSS selector existence. */
   conditionType?: ConditionType;
-  /** Optional nested selection from incoming node data; empty uses all data. */
-  conditionDataPath?: string;
   conditionOperator?: DataOperator;
   /** CSS selector used by selector conditions. */
   condition?: string;
@@ -127,7 +123,7 @@ export type StepData = {
   [key: string]: unknown;
 };
 export type WorkflowNode = Node<StepData, 'workflow'>;
-export type WorkflowEdge = Edge;
+export type WorkflowEdge = Edge<ConnectionData>;
 export interface Workflow {
   version: 1;
   name: string;
@@ -159,6 +155,7 @@ export interface RunLog {
 export interface ValidationIssue {
   /** Stable identifier for issues that affect editor behavior. */
   code?: string;
+  edgeId?: string;
   nodeId?: string;
   message: string;
 }

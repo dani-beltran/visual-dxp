@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import type { ConnectionPreview } from '../lib/connections';
 import { useBuilderI18n } from '../lib/i18nContext';
 import { PREVIEW_PROTOCOL, previewBridgeSource } from '../lib/previewBridge';
 import type { RunLog, Workflow } from '../lib/types';
@@ -12,6 +13,7 @@ export function IsolatedPreview({
   title,
   onReady,
   onLog,
+  onConnectionPreview,
   onError,
   onClose,
 }: {
@@ -22,6 +24,7 @@ export function IsolatedPreview({
   title: string;
   onReady: (ready: boolean) => void;
   onLog?: (log: RunLog) => void;
+  onConnectionPreview?: (edgeId: string, preview: ConnectionPreview) => void;
   onError: (error: string) => void;
   onClose: () => void;
 }) {
@@ -29,10 +32,11 @@ export function IsolatedPreview({
   const frame = useRef<HTMLIFrameElement>(null);
   const [html, setHtml] = useState<string>();
   const [ready, setReady] = useState(false);
+  const runId = useRef('');
   const channel = useRef('');
   const reconnect = useRef<() => void>(() => {});
-  const callbacks = useRef({ onReady, onLog, onError, onClose });
-  callbacks.current = { onReady, onLog, onError, onClose };
+  const callbacks = useRef({ onReady, onLog, onConnectionPreview, onError, onClose });
+  callbacks.current = { onReady, onLog, onConnectionPreview, onError, onClose };
   const current = useRef(workflow);
   current.current = workflow;
   const demo = url === '/demo-site.html';
@@ -110,6 +114,29 @@ export function IsolatedPreview({
       if (data.type === 'close') callbacks.current.onClose();
       if (data.type === 'error')
         callbacks.current.onError(t('isolatedPreview.theIsolatedPreviewCouldNotRunThisWorkflow'));
+      if (data.type === 'connection-preview' && runId.current && data.runId === runId.current) {
+        const sample = data.preview;
+        if (
+          typeof data.edgeId !== 'string' ||
+          !current.current.edges.some((edge) => edge.id === data.edgeId) ||
+          !sample ||
+          !sample.source ||
+          typeof sample.source.exists !== 'boolean'
+        )
+          return;
+        try {
+          const encoded = JSON.stringify(sample.source.value);
+          if (encoded && encoded.length > 32768) return;
+          callbacks.current.onConnectionPreview?.(data.edgeId, {
+            source: {
+              exists: sample.source.exists,
+              value: encoded === undefined ? undefined : JSON.parse(encoded),
+            },
+          });
+        } catch {
+          /* Ignore malformed or oversized execution samples. */
+        }
+      }
       if (data.type === 'log') {
         const log = data.log as RunLog;
         if (
@@ -144,8 +171,12 @@ export function IsolatedPreview({
   // biome-ignore lint/correctness/useExhaustiveDependencies: revision explicitly restarts an unchanged workflow.
   useEffect(() => {
     if (!ready) return;
-    send(running ? 'run' : 'stop', running ? { workflow } : {});
-    return () => send('stop');
+    runId.current = running ? crypto.randomUUID() : '';
+    send(running ? 'run' : 'stop', running ? { workflow, runId: runId.current } : {});
+    return () => {
+      runId.current = '';
+      send('stop');
+    };
   }, [ready, running, workflow, revision, send]);
   return (
     <iframe

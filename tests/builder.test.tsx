@@ -89,7 +89,7 @@ describe('builder and host boundary', () => {
         { type: 'target', position: Position.Left, x: 0, y: 70 },
       ],
     }));
-    workflow.nodes[3].data.config = { selector: '#result', valueSource: 'incoming-data' };
+    workflow.nodes[3].data.config = { selector: '#result', value: '{{$}}' };
     workflow.edges = [
       { id: 'trigger-http', source: 'node-0', target: 'node-1' },
       { id: 'http-http', source: 'node-1', target: 'node-2' },
@@ -101,7 +101,7 @@ describe('builder and host boundary', () => {
         element(`[data-id="${id}"] .react-flow__handle.target`).classList.contains(
           'dxp-handle-data',
         ),
-      ).toBe(true);
+      ).toBe(id === 'node-2');
       expect(
         element(`[data-id="${id}"] .react-flow__handle.source`).classList.contains(
           'dxp-handle-data',
@@ -112,9 +112,20 @@ describe('builder and host boundary', () => {
     expect(element('[data-id="http-dom"]').classList.contains('dxp-edge-data')).toBe(true);
     expect(element('[data-id="trigger-http"]').classList.contains('dxp-edge-data')).toBe(false);
     await click(element('[data-id="node-3"]'));
-    await click(element('input[role="switch"]'));
-    expect(element('[data-id="http-dom"]').classList.contains('dxp-edge-data')).toBe(false);
-    expect(element('[data-id="http-http"]').classList.contains('dxp-edge-data')).toBe(true);
+    expect(host.querySelector('input[role="switch"]')).toBeNull();
+    const content = element<HTMLTextAreaElement>('.dxp-inspector textarea');
+    expect(content.value).toBe('{{$}}');
+    for (const value of ['Static text', 'Hello {{name}}']) {
+      await act(async () => {
+        Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')!.set!.call(
+          content,
+          value,
+        );
+        content.dispatchEvent(new Event('input', { bubbles: true }));
+      });
+      expect(element('[data-id="http-dom"]').classList.contains('dxp-edge-data')).toBe(true);
+      expect(element('[data-id="http-http"]').classList.contains('dxp-edge-data')).toBe(true);
+    }
   });
 
   it('checks typed website URLs, confirms the bridge, and shows setup only when a check fails', async () => {

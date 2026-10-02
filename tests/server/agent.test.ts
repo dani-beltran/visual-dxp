@@ -306,3 +306,39 @@ describe('LangSmith Deployment proxy', () => {
     });
   });
 });
+
+it('authors ordered Data Transform nodes and flow-only connections through the AI tools', () => {
+  const toolkit = createWorkflowTools(input.workflow, []);
+  const catalog = JSON.parse(toolkit.invokePrivate('read_node_catalog', {}));
+  expect(catalog).toContainEqual(
+    expect.objectContaining({ kind: 'transform', defaults: { dataPath: '', transformations: [] } }),
+  );
+  const config = {
+    dataPath: 'user.items[0].name',
+    transformations: [
+      { type: 'fallback', value: ' Guest ' },
+      { type: 'trim' },
+      { type: 'uppercase' },
+      { type: 'prefix', value: 'Hello ' },
+    ],
+  };
+  const added = JSON.parse(toolkit.invokePrivate('add_node', { kind: 'transform', config }));
+  expect(added.ok).toBe(true);
+  const transformId = added.operation.node.id;
+  expect(toolkit.getWorkflow().nodes.at(-1)?.data.config).toEqual(config);
+  const connected = JSON.parse(
+    toolkit.invokePrivate('add_connection', { source: 'start', target: transformId }),
+  );
+  expect(connected.ok).toBe(true);
+  expect(toolkit.getWorkflow().edges.at(-1)?.data).toBeUndefined();
+  const before = toolkit.getWorkflow();
+  expect(
+    JSON.parse(
+      toolkit.invokePrivate('update_node', {
+        id: transformId,
+        config: { transformations: [{ type: 'replace', find: '', replacement: 'x' }] },
+      }),
+    ).ok,
+  ).toBe(false);
+  expect(toolkit.getWorkflow()).toEqual(before);
+});

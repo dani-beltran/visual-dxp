@@ -14,6 +14,7 @@ import {
   OPENAI_OVERRIDE_HEADER,
   validBrowserConfiguration,
 } from '../../lib/aiCredentials';
+import { safeTextEmitter } from '../../lib/aiStream';
 import { aiRateLimitKey, allowAIRequest } from './access';
 import { AIServiceError, respondToAIChat } from './agent';
 import {
@@ -32,6 +33,7 @@ type ChatHandler = (
   request: AIChatRequest,
   signal: AbortSignal,
   override?: AIRequestConfiguration,
+  onText?: (text: string) => void,
 ) => Promise<AIChatResponse>;
 
 function json(status: number, body: unknown): Response {
@@ -184,6 +186,11 @@ export async function handleChat(
   const timer = setTimeout(() => {
     controller.abort(new AIServiceError(504, 'The AI request timed out. Try a smaller change.'));
   }, CHAT_TIMEOUT_MS);
+  let streaming = false;
+  const cleanup = () => {
+    clearTimeout(timer);
+    request.signal.removeEventListener('abort', disconnected);
+  };
   try {
     const raw = await readJSON(request, controller.signal);
     let input: AIChatRequest;
@@ -199,6 +206,57 @@ export async function handleChat(
       return json(429, { error: 'AI request limit reached. Try again in a minute.' });
     if (browserKey && JSON.stringify(input).includes(browserKey))
       return json(400, { error: 'Credentials must not appear in chat or workflow data.' });
+    if (request.headers.get('accept')?.includes('application/x-ndjson')) {
+      streaming = true;
+      const encoder = new TextEncoder();
+      let cancelled = false;
+      const body = new ReadableStream<Uint8Array>({
+        start(stream) {
+          const send = (event: unknown) => {
+            if (!cancelled) stream.enqueue(encoder.encode(`${JSON.stringify(event)}\n`));
+          };
+          const emit = safeTextEmitter(browserKey, (text) => send({ type: 'text', text }));
+          void (async () => {
+            try {
+              const result = await abortable(
+                () =>
+                  handler(input, controller.signal, override, (text) => {
+                    controller.signal.throwIfAborted();
+                    emit(text);
+                  }),
+                controller.signal,
+              );
+              controller.signal.throwIfAborted();
+              if (browserKey && JSON.stringify(result).includes(browserKey))
+                throw new Error('Unsafe response.');
+              const parsed = parseAIChatResponse(result);
+              applyWorkflowOperations(input.workflow, parsed.operations);
+              emit('', true);
+              send({ type: 'result', response: parsed });
+            } catch {
+              send({ type: 'error' });
+            } finally {
+              cleanup();
+              if (!cancelled) stream.close();
+            }
+          })();
+        },
+        cancel() {
+          cancelled = true;
+          disconnected();
+          cleanup();
+        },
+      });
+      return new Response(body, {
+        headers: {
+          'Content-Type': 'application/x-ndjson; charset=utf-8',
+          'Cache-Control': 'no-store, no-transform',
+          'X-Content-Type-Options': 'nosniff',
+          'X-Accel-Buffering': 'no',
+          Vary: 'Origin, Sec-Fetch-Site, Accept',
+        },
+      });
+    }
     const result = await abortable(
       () => handler(input, controller.signal, override),
       controller.signal,
@@ -224,7 +282,6 @@ export async function handleChat(
         'The AI service could not finish this request. Check the model or deployment configuration and try again.',
     });
   } finally {
-    clearTimeout(timer);
-    request.signal.removeEventListener('abort', disconnected);
+    if (!streaming) cleanup();
   }
 }

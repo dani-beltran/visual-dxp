@@ -66,13 +66,14 @@ import {
 } from '../lib/aiCredentials';
 import { AISettingsStore } from '../lib/aiSettings';
 import { createNode, defaultWorkflow, getCatalog } from '../lib/catalog';
+import type { ConnectionPreview } from '../lib/connections';
 import { validateWorkflow } from '../lib/export';
 import { getFlowLabels } from '../lib/flowLabels';
 import { duplicateNode, framesFirst, groupNodes, nodeSize, removeNodes } from '../lib/frames';
 import type { BuilderI18n } from '../lib/i18n';
 import { formatBuilderError } from '../lib/i18n';
 import { BuilderI18nProvider, useBuilderI18n } from '../lib/i18nContext';
-import { getNodeDataPorts } from '../lib/nodeData';
+import { getNodeDataFlow } from '../lib/nodeData';
 import { NoteEditingContext } from '../lib/noteEditing';
 import { NoteSelectionProvider, useNoteSelection } from '../lib/noteSelection';
 import { normalizeWebsiteUrl } from '../lib/picker';
@@ -287,6 +288,9 @@ function Builder({
   const [picking, setPicking] = useState(false);
   const [toast, setToast] = useState('');
   const [saved, setSaved] = useState(true);
+  const [connectionPreviews, setConnectionPreviews] = useState<Record<string, ConnectionPreview>>(
+    {},
+  );
   const [statuses, setStatuses] = useState<Record<string, RunLog['status']>>({});
   const [showMinimap, setShowMinimap] = useState(false);
   const [zoom, setZoom] = useState(100);
@@ -372,17 +376,25 @@ function Builder({
     [workflow.nodes, selectedId, statuses],
   );
   const edges = useMemo(() => {
-    const nodeMap = new Map(workflow.nodes.map((node) => [node.id, node]));
+    const dataFlows = new Map(
+      workflow.nodes.map((node) => [
+        node.id,
+        getNodeDataFlow(node.id, workflow.nodes, workflow.edges),
+      ]),
+    );
     return workflow.edges.map((edge) => {
-      const source = nodeMap.get(edge.source)?.data;
-      const target = nodeMap.get(edge.target)?.data;
+      const sourceFlow = dataFlows.get(edge.source);
       const carriesData =
-        getNodeDataPorts(source).outputsData && getNodeDataPorts(target).acceptsData;
-      return carriesData
-        ? { ...edge, className: `${edge.className ?? ''} dxp-edge-data`.trim() }
-        : edge;
+        (sourceFlow === 'produces' || sourceFlow === 'forwards') &&
+        dataFlows.get(edge.target) !== undefined;
+      return {
+        ...edge,
+        ...(typeof edge.label === 'string' && edge.label ? { ariaLabel: edge.label } : {}),
+        ...(carriesData ? { className: `${edge.className ?? ''} dxp-edge-data`.trim() } : {}),
+      };
     });
   }, [workflow.nodes, workflow.edges]);
+
   const translation = useRef(t);
   translation.current = t;
   const notify = useCallback((message: string) => setToast(message), []);
@@ -502,6 +514,7 @@ function Builder({
       current.current = next;
       setWorkflow(next);
       setStatuses({});
+      setConnectionPreviews({});
       entry.activity = recordActivity(action, activityKey);
     },
     [remember, recordActivity],
@@ -512,6 +525,7 @@ function Builder({
       configureWebsite,
       testWorkflow: () => {
         setStatuses({});
+        setConnectionPreviews({});
         setPicking(false);
         setModal('preview');
         recordActivity(activityAction('activity.previewOpened', { name: current.current.name }));
@@ -573,6 +587,7 @@ function Builder({
     setSelectedId(null);
     setSelectedEdgeId(null);
     setStatuses({});
+    setConnectionPreviews({});
     refreshHistory((x) => x + 1);
     if (prev.activity && !unpublished) {
       try {
@@ -592,6 +607,7 @@ function Builder({
     setSelectedId(null);
     setSelectedEdgeId(null);
     setStatuses({});
+    setConnectionPreviews({});
     refreshHistory((x) => x + 1);
     if (next.activity) appendActivity(next.activity.store, next.activity.entry);
   }, [flushActivity, appendActivity]);
@@ -814,6 +830,14 @@ function Builder({
   }
   function patchNode(patch: Partial<StepData>) {
     if (!selected) return;
+    const inputSamples =
+      selected?.data.kind === 'transform' && patch.config
+        ? Object.fromEntries(
+            workflow.edges
+              .filter((edge) => edge.target === selectedId && connectionPreviews[edge.id])
+              .map((edge) => [edge.id, connectionPreviews[edge.id]]),
+          )
+        : undefined;
     commit(
       (w) => ({
         ...w,
@@ -828,6 +852,7 @@ function Builder({
           : activityAction('activity.settingsUpdated', { label: selected.data.label }),
       `node:${selected.id}:${Object.keys(patch).sort().join(',')}`,
     );
+    if (inputSamples) setConnectionPreviews(inputSamples);
   }
   function renameEdge(label: string) {
     if (!selectedEdge) return;
@@ -899,6 +924,7 @@ function Builder({
     setSelectedEdgeId(null);
     setNoteSelection(null);
     setStatuses({});
+    setConnectionPreviews({});
     setPicking(false);
     setCanvasAssistant(null);
     // Unmount the chat to cancel pending requests and discard stale graph context.
@@ -958,7 +984,11 @@ function Builder({
       setWebsiteError(formatBuilderError(error, t));
     }
   }
-  async function sendAIMessage(messages: AIChatMessage[], signal: AbortSignal) {
+  async function sendAIMessage(
+    messages: AIChatMessage[],
+    signal: AbortSignal,
+    onText?: (text: string) => void,
+  ) {
     if (!aiEnabled || !ai) throw new Error(t('builder.connectTheAssistantServiceToStartChatting'));
     const snapshot = copyWorkflow(current.current);
     const baseline = workflowFingerprint(snapshot);
@@ -973,6 +1003,7 @@ function Builder({
       },
       AbortSignal.any([signal, controller.signal]),
       override,
+      onText,
     )
       .then((result) => {
         setAIRequestConfigurationError(false);
@@ -1208,14 +1239,17 @@ function Builder({
                 dragStartWorkflow.current = null;
               }}
               onNodeClick={(_, node) => {
+                flushActivity();
                 setSelectedId(node.id);
                 setSelectedEdgeId(null);
               }}
               onEdgeClick={(_, edge) => {
+                flushActivity();
                 setSelectedId(null);
                 setSelectedEdgeId(edge.id);
               }}
               onPaneClick={() => {
+                flushActivity();
                 setSelectedId(null);
                 setSelectedEdgeId(null);
               }}
@@ -1334,6 +1368,9 @@ function Builder({
         {selected && (
           <NodeInspector
             node={selected}
+            forwardsData={
+              getNodeDataFlow(selected.id, workflow.nodes, workflow.edges) === 'forwards'
+            }
             onChange={patchNode}
             onClose={() => setSelectedId(null)}
             onPickElement={() => setPicking(true)}
@@ -1452,6 +1489,10 @@ function Builder({
         <Preview
           workflow={workflow}
           onClose={() => setModal(null)}
+          onPreviewStart={() => setConnectionPreviews({})}
+          onConnectionPreview={(id, preview) =>
+            setConnectionPreviews((samples) => ({ ...samples, [id]: preview }))
+          }
           onLog={(log) => setStatuses((s) => ({ ...s, [log.nodeId]: log.status }))}
         />
       )}

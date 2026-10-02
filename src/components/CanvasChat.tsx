@@ -12,6 +12,7 @@ import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import type { AIChatMessage } from '../lib/ai';
 import { formatBuilderError } from '../lib/i18n';
 import { useBuilderI18n } from '../lib/i18nContext';
+import { ChatMarkdown } from './ChatMarkdown';
 import '../styles/chat.css';
 
 export interface CanvasChatProps {
@@ -25,6 +26,7 @@ export interface CanvasChatProps {
   onSend: (
     messages: AIChatMessage[],
     signal: AbortSignal,
+    onText?: (text: string) => void,
   ) => Promise<{
     message: string;
     changeCount: number;
@@ -46,7 +48,7 @@ export function CanvasChat({
   const { t } = useBuilderI18n();
   const suggestions = [
     t('canvasChat.addAWelcomePopoverAfterA2SecondDelay'),
-    t('canvasChat.explainTheConnectionsInThisWorkflow'),
+    t('canvasChat.explainThisWorkflow'),
     t('canvasChat.changeTheSelectedStep'),
   ];
   const [internalOpen, setInternalOpen] = useState(false);
@@ -126,21 +128,32 @@ export function CanvasChat({
     setDraft('');
     setError('');
     setBusy(true);
+    const assistantId = sequence.current++;
+    let partial = '';
     try {
-      const result = await onSend(conversation, controller.signal);
+      const result = await onSend(conversation, controller.signal, (text) => {
+        if (controller.signal.aborted || request.current !== controller) return;
+        partial += text;
+        const content = partial;
+        setMessages((previous) => [
+          ...previous.filter((message) => message.id !== assistantId),
+          { role: 'assistant', content, id: assistantId },
+        ]);
+      });
       if (controller.signal.aborted || request.current !== controller) return;
       history.current = [...conversation, { role: 'assistant', content: result.message }];
       setMessages((previous) => [
-        ...previous,
+        ...previous.filter((message) => message.id !== assistantId),
         {
           role: 'assistant',
           content: result.message,
           changeCount: result.changeCount,
-          id: sequence.current++,
+          id: assistantId,
         },
       ]);
     } catch (cause) {
       if (request.current !== controller) return;
+      setMessages((previous) => previous.filter((message) => message.id !== assistantId));
       setError(
         controller.signal.aborted
           ? t('canvasChat.stoppedNoChangesWereMade')
@@ -295,7 +308,7 @@ export function CanvasChat({
                 <span className="dxp-ai-message-author">
                   {message.role === 'user' ? t('canvasChat.you') : t('canvasChat.visualDxpAi')}
                 </span>
-                <p>{message.content}</p>
+                <ChatMarkdown content={message.content} />
                 {!!message.changeCount && (
                   <span className="dxp-ai-applied">
                     <Check size={12} aria-hidden="true" />

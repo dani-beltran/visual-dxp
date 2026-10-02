@@ -1,9 +1,9 @@
-import { Handle, type NodeProps, Position } from '@xyflow/react';
+import { Handle, type NodeProps, Position, useStore } from '@xyflow/react';
 import { ArrowRight, Check, Circle, Ellipsis, LoaderCircle } from 'lucide-react';
 import { useContext } from 'react';
 import { getCatalog, stepSummary } from '../lib/catalog';
 import { useBuilderI18n } from '../lib/i18nContext';
-import { getNodeDataPorts } from '../lib/nodeData';
+import { getNodeDataFlow, getNodeDataPorts } from '../lib/nodeData';
 import { NoteEditingContext } from '../lib/noteEditing';
 import type { WorkflowNode } from '../lib/types';
 import { FrameCard } from './FrameCard';
@@ -13,13 +13,37 @@ export function WorkflowCard({ id, data, selected }: NodeProps<WorkflowNode>) {
   const { t } = useBuilderI18n();
   const catalog = getCatalog(t);
   const editNote = useContext(NoteEditingContext);
+  const dataFlow = useStore((state) =>
+    getNodeDataFlow(id, state.nodes as WorkflowNode[], state.edges),
+  );
+  const receivesData = useStore((state) =>
+    state.edges.some((edge) => {
+      if (edge.target !== id) return false;
+      const sourceFlow = getNodeDataFlow(edge.source, state.nodes as WorkflowNode[], state.edges);
+      return sourceFlow === 'produces' || sourceFlow === 'forwards';
+    }),
+  );
   if (data.kind === 'frame') return <FrameCard data={data} selected={selected} />;
   if (data.kind === 'note')
     return <NoteCard id={id} data={data} selected={selected} onChange={editNote} />;
   const entry = catalog.find((x) => x.kind === data.kind)!;
   const Icon = entry.icon;
   const split = data.kind === 'fork' || data.kind === 'loop';
-  const { acceptsData, outputsData, incomingDataPath } = getNodeDataPorts(data);
+  const { outputsData } = getNodeDataPorts(data);
+  const highlightsOutput = dataFlow === 'forwards' || outputsData;
+  const sendsData = dataFlow === 'produces' || dataFlow === 'forwards';
+  const outputLabel =
+    dataFlow === 'produces'
+      ? data.kind === 'transform'
+        ? t('transform.outputHint')
+        : t('workflowCard.responseDataOutput')
+      : t('workflowCard.forwardsData');
+  const dataFlowLabel =
+    dataFlow === 'produces'
+      ? t('workflowCard.producesData')
+      : dataFlow === 'forwards'
+        ? t('workflowCard.forwardsData')
+        : t('workflowCard.usesIncomingData');
   return (
     <div
       className={`dxp-node dxp-node-${entry.color} ${selected ? 'is-selected' : ''} ${data.status === 'running' ? 'is-running' : ''}`}
@@ -28,9 +52,9 @@ export function WorkflowCard({ id, data, selected }: NodeProps<WorkflowNode>) {
         <Handle
           type="target"
           position={Position.Left}
-          className={acceptsData ? 'dxp-handle-data' : undefined}
-          title={acceptsData ? t('workflowCard.incomingData') : undefined}
-          aria-label={acceptsData ? t('workflowCard.incomingData') : undefined}
+          className={receivesData ? 'dxp-handle-data' : undefined}
+          title={receivesData ? t('workflowCard.incomingData') : undefined}
+          aria-label={receivesData ? t('workflowCard.incomingData') : undefined}
         />
       )}
       <div className="dxp-node-top">
@@ -42,18 +66,9 @@ export function WorkflowCard({ id, data, selected }: NodeProps<WorkflowNode>) {
       </div>
       <strong>{data.label}</strong>
       <p>{stepSummary(data.kind, data.config, t)}</p>
-      {acceptsData && (
-        <div
-          className="dxp-node-incoming-value"
-          title={
-            incomingDataPath
-              ? t('workflowCard.incomingDataIncomingdatapath', {
-                  incomingDataPath: String(incomingDataPath),
-                })
-              : t('workflowCard.usesTheWholeIncomingValue')
-          }
-        >
-          <ArrowRight size={12} aria-hidden="true" /> {t('workflowCard.usesIncomingData')}
+      {dataFlow && (
+        <div className="dxp-node-incoming-value" title={dataFlowLabel}>
+          <ArrowRight size={12} aria-hidden="true" /> {dataFlowLabel}
         </div>
       )}
       <div className="dxp-node-footer">
@@ -73,7 +88,7 @@ export function WorkflowCard({ id, data, selected }: NodeProps<WorkflowNode>) {
                 ? t('workflowCard.completed')
                 : t('workflowCard.configured')}
         </span>
-        <span className={outputsData ? 'dxp-node-data-output' : undefined}>
+        <span className={highlightsOutput ? 'dxp-node-data-output' : undefined}>
           {data.kind === 'trigger'
             ? 'START'
             : split
@@ -88,6 +103,7 @@ export function WorkflowCard({ id, data, selected }: NodeProps<WorkflowNode>) {
           <Handle
             type="source"
             id={data.kind === 'fork' ? 'true' : 'body'}
+            className={sendsData ? 'dxp-handle-data' : undefined}
             title={
               data.kind === 'fork'
                 ? t('workflowCard.truePassesIncomingDataUnchanged')
@@ -99,6 +115,7 @@ export function WorkflowCard({ id, data, selected }: NodeProps<WorkflowNode>) {
           <Handle
             type="source"
             id={data.kind === 'fork' ? 'false' : 'done'}
+            className={sendsData ? 'dxp-handle-data' : undefined}
             title={
               data.kind === 'fork'
                 ? t('workflowCard.falsePassesIncomingDataUnchanged')
@@ -112,9 +129,9 @@ export function WorkflowCard({ id, data, selected }: NodeProps<WorkflowNode>) {
         <Handle
           type="source"
           position={Position.Right}
-          className={outputsData ? 'dxp-handle-data' : undefined}
-          title={outputsData ? t('workflowCard.responseDataOutput') : undefined}
-          aria-label={outputsData ? t('workflowCard.responseDataOutput') : undefined}
+          className={sendsData ? 'dxp-handle-data' : undefined}
+          title={sendsData ? outputLabel : undefined}
+          aria-label={sendsData ? outputLabel : undefined}
         />
       )}
     </div>

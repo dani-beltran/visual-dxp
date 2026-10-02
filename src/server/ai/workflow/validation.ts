@@ -1,4 +1,5 @@
-import { buildCookie } from './cookies';
+import { dataTransformTools } from '../../../lib/dataTransform';
+import { validateCookie } from './cookies';
 import { dataTools } from './data';
 import { getDateRange } from './dateRange';
 import { parseNoteMarks } from './notes';
@@ -51,6 +52,7 @@ export function validateWorkflow(workflow: Workflow): ValidationIssue[] {
   const knownKinds = new Set([
     'trigger',
     'http',
+    'transform',
     'dom',
     'cookie',
     'delay',
@@ -102,17 +104,14 @@ export function validateWorkflow(workflow: Workflow): ValidationIssue[] {
       'method',
       'headers',
       'body',
-      'responseDataPath',
+      'dataPath',
       'action',
       'value',
-      'valueSource',
-      'valueDataPath',
       'attribute',
       'cookieName',
       'cookieValue',
       'condition',
       'conditionType',
-      'conditionDataPath',
       'conditionOperator',
       'conditionKey',
       'conditionValue',
@@ -153,9 +152,16 @@ export function validateWorkflow(workflow: Workflow): ValidationIssue[] {
       }
     }
     switch (node.data.kind) {
+      case 'transform':
+        try {
+          dataTransformTools.validate(config);
+        } catch (error) {
+          add((error as Error).message, node.id);
+        }
+        break;
       case 'cookie':
         try {
-          buildCookie(config);
+          validateCookie(config);
         } catch (error) {
           add((error as Error).message, node.id);
         }
@@ -173,7 +179,6 @@ export function validateWorkflow(workflow: Workflow): ValidationIssue[] {
             'Enter a valid HTTP or HTTPS request URL.',
             true,
           );
-          dataTools.validateResponse(config);
         } catch (error) {
           add((error as Error).message, node.id);
         }
@@ -205,7 +210,8 @@ export function validateWorkflow(workflow: Workflow): ValidationIssue[] {
         } catch (error) {
           add((error as Error).message, node.id);
         }
-        selector(config.selector, node.id, 'Choose an element to update.');
+        if (!dataTools.hasVariables(config.selector))
+          selector(config.selector, node.id, 'Choose an element to update.');
         if (
           config.action &&
           !['text', 'html', 'add-class', 'remove-class', 'hide', 'show', 'attribute'].includes(

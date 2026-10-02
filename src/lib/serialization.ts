@@ -1,9 +1,11 @@
+import { type DataTransformation, dataTransformTools } from './dataTransform';
 import { isNoteMarks } from './noteText';
 import type { Workflow } from './types';
 
 const kinds = new Set([
   'trigger',
   'http',
+  'transform',
   'dom',
   'cookie',
   'delay',
@@ -20,17 +22,14 @@ const strings = [
   'method',
   'headers',
   'body',
-  'responseDataPath',
+  'dataPath',
   'action',
   'value',
-  'valueSource',
-  'valueDataPath',
   'attribute',
   'cookieName',
   'cookieValue',
   'condition',
   'conditionType',
-  'conditionDataPath',
   'conditionOperator',
   'conditionKey',
   'conditionValue',
@@ -106,6 +105,16 @@ export function isWorkflow(value: unknown): value is Workflow {
         !/^#[\da-f]{6}$/i.test(config.noteColor as string))
     )
       return false;
+    if (config.transformations !== undefined) {
+      try {
+        dataTransformTools.validate(
+          { transformations: config.transformations as DataTransformation[] },
+          true,
+        );
+      } catch {
+        return false;
+      }
+    }
     nodeIds.add(node.id);
   }
   for (const node of value.nodes) {
@@ -140,7 +149,8 @@ export function isWorkflow(value: unknown): value is Workflow {
       !nodeIds.has(edge.source) ||
       !nodeIds.has(edge.target) ||
       (edge.sourceHandle != null && typeof edge.sourceHandle !== 'string') ||
-      (edge.label != null && typeof edge.label !== 'string')
+      (edge.label != null && typeof edge.label !== 'string') ||
+      (edge.data !== undefined && !object(edge.data))
     )
       return false;
     edgeIds.add(edge.id);

@@ -11,6 +11,7 @@ import {
   validAIModel,
   validBrowserConfiguration,
 } from '../../lib/aiCredentials';
+import { serverEvents } from '../../lib/aiStream';
 import { AIServiceError } from './errors';
 
 export interface ProviderConfiguration {
@@ -21,30 +22,20 @@ export interface ProviderConfiguration {
   baseURL: string;
 }
 export function allowedLocalBaseURL(value: string): string {
-  let base: string;
-  let allowed: string[];
   try {
-    base = normalizeLocalBaseURL(value);
-    allowed = (process.env.AI_LOCAL_ALLOWED_BASE_URLS ?? '')
-      .split(',')
-      .map((s) => s.trim())
-      .filter(Boolean)
-      .map(normalizeLocalBaseURL);
+    const url = new URL(normalizeLocalBaseURL(value));
+    // Avoid DNS resolution for localhost: the destination must remain loopback.
+    if (url.hostname === 'localhost') url.hostname = '127.0.0.1';
+    return url.href.replace(/\/+$/, '');
   } catch {
     throw new AIServiceError(
       400,
-      'Invalid local API base URL or server allowlist.',
+      'Local models require a localhost, 127.0.0.1, or [::1] API base URL on the backend machine.',
       'local_destination',
     );
   }
-  if (!allowed.includes(base))
-    throw new AIServiceError(
-      400,
-      'Local destination is not allowed. Ask the server administrator to add this exact base URL to AI_LOCAL_ALLOWED_BASE_URLS.',
-      'local_destination',
-    );
-  return base;
 }
+
 export function resolveProviderConfiguration(
   input?: AIRequestConfiguration,
 ): ProviderConfiguration {
@@ -116,6 +107,42 @@ function privateFetch(destination: string, apiKey: string): typeof fetch {
     if (Number(response.headers.get('content-length')) > limit) {
       void response.body?.cancel().catch(() => {});
       throw new Error('Provider response too large.');
+    }
+    if (response.headers.get('content-type')?.includes('text/event-stream')) {
+      const encoder = new TextEncoder();
+      const events = serverEvents(response, limit);
+      return new Response(
+        new ReadableStream({
+          async pull(controller) {
+            try {
+              const { value, done } = await events.next();
+              if (done) {
+                controller.close();
+                return;
+              }
+              init?.signal?.throwIfAborted();
+              if (
+                value.data !== '[DONE]' &&
+                apiKey &&
+                JSON.stringify(JSON.parse(value.data)).includes(apiKey)
+              )
+                throw new Error('Unsafe provider response.');
+              controller.enqueue(
+                encoder.encode(
+                  `${value.event ? `event: ${value.event}\n` : ''}data: ${value.data}\n\n`,
+                ),
+              );
+            } catch (error) {
+              controller.error(error);
+              await events.return(undefined);
+            }
+          },
+          async cancel() {
+            await events.return(undefined);
+          },
+        }),
+        { headers: { 'Content-Type': 'text/event-stream' } },
+      );
     }
     const reader = response.body?.getReader();
     if (!reader) throw new Error('Empty provider response.');

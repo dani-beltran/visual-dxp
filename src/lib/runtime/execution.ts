@@ -1,5 +1,6 @@
 import type { buildCookie } from '../cookies';
 import type { createDataTools, DataSelection } from '../data';
+import type { createDataTransformTools } from '../dataTransform';
 import type { getDateRange } from '../dateRange';
 import type { getTimeRange } from '../timeRange';
 import type { Workflow } from '../types';
@@ -9,6 +10,7 @@ import type { showPopover } from './popovers';
 import type { WorkflowRuntime } from './types';
 
 interface ExecutionModules {
+  createDataTransformTools: typeof createDataTransformTools;
   createDataTools: typeof createDataTools;
   buildCookie: typeof buildCookie;
   matchesCondition: typeof matchesCondition;
@@ -27,11 +29,13 @@ export function createExecution(
     getTimeRange,
     showPopover,
     createDataTools,
+    createDataTransformTools,
   }: ExecutionModules,
 ): WorkflowRuntime['run'] {
   const { doc, win, signal, nodes, fetcher, maxSteps, aborted, log, wait, selectorElements } =
     context;
   const dataTools = createDataTools();
+  const transformTools = createDataTransformTools(dataTools);
   type RunState = { steps: number; active: Set<string> };
 
   async function next(
@@ -43,7 +47,15 @@ export function createExecution(
     const edges = workflow.edges.filter(
       (edge) => edge.source === nodeId && (handle === undefined || edge.sourceHandle === handle),
     );
-    for (const edge of edges) await execute(edge.target, state, data);
+    for (const edge of edges) {
+      const preview = { source: data };
+      try {
+        context.onConnectionPreview?.(edge.id, preview);
+      } catch {
+        /* Observers cannot interrupt execution. */
+      }
+      await execute(edge.target, state, data);
+    }
   }
 
   async function execute(nodeId: string, state: RunState, input: DataSelection): Promise<void> {
@@ -75,8 +87,21 @@ export function createExecution(
       log(nodeId, 'running', 'Running step');
       try {
         switch (node.data.kind) {
+          case 'transform':
+            output = transformTools.apply(input, config);
+            break;
           case 'cookie': {
-            const cookie = buildCookie(config);
+            const cookie = buildCookie({
+              ...config,
+              cookieName:
+                typeof config.cookieName === 'string'
+                  ? dataTools.interpolate(config.cookieName, input, undefined, 'cookie name')
+                  : config.cookieName,
+              cookieValue:
+                typeof config.cookieValue === 'string'
+                  ? dataTools.interpolate(config.cookieValue, input)
+                  : config.cookieValue,
+            });
             try {
               doc.cookie = cookie + (win.location.protocol === 'https:' ? '; Secure' : '');
               const pair = cookie.split(';', 1)[0];
@@ -99,7 +124,6 @@ export function createExecution(
           }
           case 'http': {
             dataTools.validateRequest(config);
-            dataTools.validateResponse(config);
             if (!fetcher) throw new Error('This browser does not support fetch.');
             if (!config.url?.trim()) throw new Error('Enter a request URL.');
             const requestUrl = dataTools.requestTemplate(config.url, input);
@@ -108,7 +132,10 @@ export function createExecution(
             if (!['http:', 'https:'].includes(url.protocol))
               throw new Error('Requests require an HTTP or HTTPS URL.');
             const headers = config.headers?.trim()
-              ? (JSON.parse(config.headers) as Record<string, string>)
+              ? (JSON.parse(dataTools.requestTemplate(config.headers, input, true)) as Record<
+                  string,
+                  string
+                >)
               : {};
             if (
               !headers ||
@@ -149,12 +176,23 @@ export function createExecution(
               };
               break;
             }
-            output = dataTools.parseResponse(body, config);
+            output = dataTools.parseResponse(body);
             break;
           }
           case 'dom': {
-            const value = dataTools.elementValue(config, input);
-            const targets = selectorElements(config.selector);
+            const variables = input;
+            const value = dataTools.elementValue(config, variables);
+            const selector = dataTools.interpolate(
+              config.selector ?? '',
+              variables,
+              undefined,
+              true,
+            );
+            const attribute =
+              config.action === 'attribute'
+                ? dataTools.interpolate(config.attribute ?? '', variables, undefined, true)
+                : '';
+            const targets = selectorElements(selector);
             for (const element of targets) {
               switch (config.action ?? 'text') {
                 case 'text':
@@ -180,8 +218,8 @@ export function createExecution(
                   break;
                 }
                 case 'attribute':
-                  if (!config.attribute?.trim()) throw new Error('Enter an attribute name.');
-                  element.setAttribute(config.attribute, value);
+                  if (!attribute.trim()) throw new Error('Enter an attribute name.');
+                  element.setAttribute(attribute, value);
                   break;
                 default:
                   throw new Error('Unknown element action.');

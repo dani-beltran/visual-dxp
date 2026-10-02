@@ -15,10 +15,12 @@ import {
   resolveAIEndpoint,
   validBrowserConfiguration,
 } from './aiCredentials';
+import { responseLines, safeTextEmitter } from './aiStream';
+import { type DataTransformation, dataTransformTools } from './dataTransform';
 import { validateWorkflow } from './export';
 import { framesFirst, removeNodes } from './frames';
 import { isNoteMarks } from './noteText';
-import type { NodeKind, NoteMark, StepConfig, Workflow, WorkflowEdge, WorkflowNode } from './types';
+import type { NodeKind, StepConfig, Workflow, WorkflowEdge, WorkflowNode } from './types';
 
 export interface AIChatMessage {
   role: 'user' | 'assistant';
@@ -81,6 +83,7 @@ export const AI_LIMITS = {
 const kinds = new Set<NodeKind>([
   'trigger',
   'http',
+  'transform',
   'dom',
   'cookie',
   'delay',
@@ -97,17 +100,14 @@ const configStrings = [
   'method',
   'headers',
   'body',
-  'responseDataPath',
+  'dataPath',
   'action',
   'value',
-  'valueSource',
-  'valueDataPath',
   'attribute',
   'cookieName',
   'cookieValue',
   'condition',
   'conditionType',
-  'conditionDataPath',
   'conditionOperator',
   'conditionKey',
   'conditionValue',
@@ -201,7 +201,7 @@ function position(value: unknown): WorkflowNode['position'] {
 
 function config(value: unknown, complete = false): StepConfig {
   const input = record(value, 'Step configuration');
-  const output: Record<string, string | number | boolean | NoteMark[]> = {};
+  const output: Record<string, unknown> = {};
   for (const key of configStrings) {
     if (own(input, key) && input[key] !== undefined)
       output[key] = text(input[key], 'Step configuration text', 20000, true);
@@ -223,6 +223,19 @@ function config(value: unknown, complete = false): StepConfig {
         messageParams: {},
       });
     output[key] = input[key];
+  }
+  if (input.transformations !== undefined) {
+    dataTransformTools.validate(
+      { transformations: input.transformations as DataTransformation[] },
+      true,
+    );
+    output.transformations = (input.transformations as DataTransformation[]).map((item) => {
+      if (item.type === 'fallback' || item.type === 'prefix' || item.type === 'suffix')
+        return { type: item.type, value: structuredClone(item.value) };
+      if (item.type === 'replace')
+        return { type: item.type, find: item.find, replacement: item.replacement };
+      return { type: item.type };
+    });
   }
   if (input.noteMarks !== undefined) {
     const length = complete ? ((output.noteText as string | undefined) ?? '').length : Infinity;
@@ -775,6 +788,7 @@ export async function requestAIChat(
   request: AIChatRequest,
   signal?: AbortSignal,
   configuration?: AIRequestConfiguration,
+  onText?: (text: string) => void,
 ): Promise<AIChatResponse> {
   const override =
     configuration && isBrowserConfiguration(configuration) ? configuration : undefined;
@@ -841,7 +855,7 @@ export async function requestAIChat(
     headers.set(OPENAI_OVERRIDE_HEADER, 'browser');
   }
   headers.set('Content-Type', 'application/json');
-  headers.set('Accept', 'application/json');
+  headers.set('Accept', onText ? 'application/x-ndjson, application/json' : 'application/json');
   try {
     let response: Response;
     try {
@@ -889,7 +903,7 @@ export async function requestAIChat(
       if (override && (response.status === 400 || response.status === 422))
         throw new AIConfigurationError(
           provider === 'local'
-            ? 'Check the local base URL, server allowlist, optional key, and model. The model must support workflow tool calls. No changes were applied.'
+            ? 'Run the demo app and model server locally. Check the localhost base URL, optional key, and model. The model must support workflow tool calls. No changes were applied.'
             : 'Check your browser API key and model in AI Settings. The override was rejected; no server fallback was used.',
         );
       if (response.status === 409)
@@ -927,7 +941,28 @@ export async function requestAIChat(
         messageParams: {},
       });
     }
-    const value = await boundedResponse(response);
+    let value: unknown;
+    if (response.headers.get('content-type')?.includes('application/x-ndjson')) {
+      let finished = false;
+      const emit = safeTextEmitter(override?.apiKey ?? '', (text) => onText?.(text));
+      for await (const line of responseLines(response, AI_LIMITS.payloadBytes)) {
+        requestSignal.throwIfAborted();
+        if (!line) continue;
+        const event = JSON.parse(line);
+        if (finished || !event || typeof event !== 'object') throw new Error('Invalid AI stream.');
+        if (event.type === 'text' && typeof event.text === 'string') {
+          emit(event.text);
+        } else if (event.type === 'result') {
+          value = event.response;
+          finished = true;
+        } else {
+          throw new Error(
+            'The AI request failed. No changes were applied. Try again or check AI Settings.',
+          );
+        }
+      }
+      if (!finished) throw new Error('The AI response was interrupted. No changes were applied.');
+    } else value = await boundedResponse(response);
     requestSignal.throwIfAborted();
     if (override?.apiKey && JSON.stringify(value).includes(override.apiKey))
       throw Object.assign(

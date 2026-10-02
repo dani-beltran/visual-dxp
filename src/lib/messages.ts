@@ -1,14 +1,58 @@
 /** English defaults and the public translation contract. Keys remain stable when copy changes. */
 export const englishMessages = {
+  'nodes.transform.label': 'Data Transform',
+  'nodes.transform.description':
+    'Selects a field from incoming data and transforms its value. The result is passed to downstream steps.',
+  'transform.dataPath': 'Data path',
+  'transform.pathHint':
+    'Leave empty to select the whole input. Use properties and array indexes, e.g. user.items[0].name. Without transformations, the extracted value passes through unchanged.',
+  'transform.wholeValue': 'Whole value',
+  'transform.transformations': 'Transformations',
+  'transform.orderHint':
+    'Runs from top to bottom. Text operations require text. Put a fallback first when a field may be missing or null.',
+  'transform.capitalize': 'Capitalize',
+  'transform.lowercase': 'Lowercase',
+  'transform.uppercase': 'Uppercase',
+  'transform.title-case': 'Title case',
+  'transform.trim': 'Trim whitespace',
+  'transform.prefix': 'Add prefix',
+  'transform.suffix': 'Add suffix',
+  'transform.replace': 'Find and replace',
+  'transform.fallback': 'Fallback for missing or null',
+  'transform.textToAdd': 'Text to add',
+  'transform.find': 'Find',
+  'transform.replacement': 'Replace with',
+  'transform.replaceHint':
+    'Replaces all exact matches. Text is literal; regular expressions are not used.',
+  'transform.fallbackType': 'Fallback type',
+  'transform.fallbackValue': 'Fallback value',
+  'transform.text': 'Text',
+  'transform.json': 'JSON value',
+  'transform.invalidFallback':
+    'Enter valid JSON, such as null, false, 0, "text", an object, or an array. This edit is saved when the JSON is valid.',
+  'transform.add': 'Add transformation',
+  'transform.outputHint': 'Passes the selected and transformed value to the next node',
+  'transform.summary': ({ path, count }: { path: string; count: number }) =>
+    `${path} · ${count} ${count === 1 ? 'transformation' : 'transformations'}`,
+  'transform.operation': ({ number }: { number: number }) => `Transformation ${number}`,
+  'transform.moveUp': ({ number }: { number: number }) => `Move transformation ${number} up`,
+  'transform.moveDown': ({ number }: { number: number }) => `Move transformation ${number} down`,
+  'transform.remove': ({ number }: { number: number }) => `Remove transformation ${number}`,
   'common.enterFullscreen': 'Enter full screen',
   'common.exitFullscreen': 'Exit full screen',
   'nodeInspector.requestTemplates':
-    'Use incoming data in the URL or body with {{variableName}} or {{key.subKey.variableName}}. Array indexes such as {{items[0].id}} also work. Connect an HTTP response to this input to chain requests. Missing variables stop the request.',
+    'Use incoming data in the URL, headers, or body with {{name}} or {{user.name}}. Array indexes such as {{items[0].id}} also work. Missing variables stop the request.',
   'errors.data.emptyRequestTemplatePath': 'Enter a data path inside request template braces.',
   'errors.data.unclosedRequestTemplate':
     'Close request template variables with two closing braces.',
   'errors.data.unresolvedRequestTemplatePath': ({ path }: { path: string }) =>
     `Request template data path “${path}” could not be resolved.`,
+  'errors.data.emptyVariable':
+    'Enter a variable name inside {{ }}; use {{$}} for the whole incoming value.',
+  'errors.data.unclosedVariable': 'Close each variable with matching braces, for example {{name}}.',
+  'errors.data.missingTargetVariable': ({ name }: { name: string }) =>
+    `Variable “${name}” is missing in the element selector or attribute name.`,
+
   'aiSettings.assistantCredentials': 'Assistant credentials',
   'aiSettings.aiSettings': 'AI settings',
   'aiSettings.yourAiConnection': 'YOUR AI CONNECTION',
@@ -38,15 +82,14 @@ export const englishMessages = {
   }) => `${label} saved configuration is ready. Saved model: ${model}.`,
   'aiSettings.configureLabelBelowThenSaveAndActivateIt': ({ label }: { label: string }) =>
     `Configure ${label} below, then save and activate it.`,
-  'aiSettings.selfHostedSetupInformation': 'Self-Hosted setup information',
+  'aiSettings.selfHostedSetupInformation': 'Local setup information',
   'aiSettings.enterTheApiBaseUrlOfYourSelfHostedOpenaiCompatibleModel':
-    'Enter the API base URL of your self-hosted, OpenAI-compatible model server. The URL must be reachable by the application backend and allowed by the administrator. A server hosted locally on your computer won’t work because the backend won’t be able to reach it. The selected model must support tool calls for workflow editing.',
+    'Local is for developers and debugging and only works when running the demo app locally. Run an OpenAI-compatible model server on the same machine as the demo backend, and enter a URL using localhost, 127.0.0.1, or [::1]. Requests come from the backend; the hosted demo cannot connect to a model on your computer. The model must support tool calls for workflow editing.',
   'aiSettings.unlockedUseActivateSavedConfigurationToSelectThisProvider':
     'Unlocked. Use Activate saved configuration to select this provider.',
   'aiSettings.labelSavedAndActivated': ({ label }: { label: string }) =>
     `${label} saved and activated.`,
-  'aiSettings.selfHostedApiBaseUrl': 'Self-Hosted API base URL',
-  'aiSettings.apiKey': 'API key',
+  'aiSettings.selfHostedApiBaseUrl': 'Local API base URL',
   'aiSettings.enterAKeyToReplaceSettingsUseActivateForSavedSettings':
     'Enter a key to replace settings; use Activate for saved settings',
   'aiSettings.hideApiKey': 'Hide API key',
@@ -80,14 +123,13 @@ export const englishMessages = {
   'activityPanel.noActivityYet': 'No activity yet',
   'activityPanel.changesToThisWorkflowWillAppearHere': 'Changes to this workflow will appear here.',
   'canvasChat.addAWelcomePopoverAfterA2SecondDelay': 'Add a welcome popover after a 2-second delay',
-  'canvasChat.explainTheConnectionsInThisWorkflow': 'Explain the connections in this workflow',
+  'canvasChat.explainThisWorkflow': 'Explain what this workflow does',
   'canvasChat.changeTheSelectedStep': 'Change the selected step',
   'canvasChat.stoppedNoChangesWereMade': 'Stopped. No changes were made.',
   'canvasChat.valueNoChangesWereMade': ({ value }: { value: string }) =>
     `${value} No changes were made.`,
   'canvasChat.aiChat': 'AI chat',
   'canvasChat.yourWorkflowAssistant': 'Your workflow assistant',
-  'canvasChat.activeProvider': 'Active provider:',
   'canvasChat.startANewConversation': 'Start a new conversation',
   'canvasChat.newConversation': 'New conversation',
   'canvasChat.closeAiChat': 'Close AI chat',
@@ -101,9 +143,7 @@ export const englishMessages = {
   }: {
     activeProvider: string;
   }) => `AI configuration is incorrect for ${activeProvider}. Check AI Settings.`,
-  'canvasChat.selected': 'Selected:',
   'canvasChat.workingWithYourCurrentCanvas': 'Working with your current canvas',
-  'canvasChat.aiProviderSettings': 'AI provider settings',
   'canvasChat.aiConversation': 'AI conversation',
   'canvasChat.whatWouldYouLikeToCreate': 'What would you like to create?',
   'canvasChat.askMeToAddStepsAdjustTheirSettingsOrConnectYourJourney':
@@ -137,6 +177,9 @@ export const englishMessages = {
   'canvasHelp.dragFromTheCircleOnTheRightOfOneNodeToThe':
     'Drag from the circle on the right of one node to the circle on the left of another. Click a connection to edit its name. A Condition uses its top output when the condition matches and its bottom output otherwise.',
   'canvasHelp.moveAroundTheCanvas': 'Move around the canvas',
+  'canvasHelp.useVariables': 'Use variables',
+  'canvasHelp.useVariablesDescription':
+    'HTTP Request nodes produce data that flows from step to step along connections. In any node text parameter, variables are replaced with the data fields they point to when the workflow runs. Write Hello {{user.name}} to insert a name, {{items[0].name}} for the first item, or {{$}} for the whole incoming value.',
   'canvasHelp.dragEmptySpaceToPanScrollPinchOrUseTheZoomButtons':
     'Drag empty space to pan. Scroll, pinch, or use the zoom buttons to zoom. Fit all nodes brings the whole journey into view; the minimap gives you an overview.',
   'canvasHelp.canvasHelp': 'Canvas help',
@@ -162,16 +205,11 @@ export const englishMessages = {
   'elementPicker.elementFoundOnThePage': 'Element found on the page.',
   'elementPicker.noMatchingElementFoundYouCanStillUseThisSelector':
     'No matching element found. You can still use this selector.',
-  'elementPicker.enterAValidWebsiteUrl': 'Enter a valid website URL.',
   'elementPicker.thisWebsiteCouldnTConnectToThePickerCheckTheSetupBelow':
     'This website couldn’t connect to the picker. Check the setup below, then try Load website again.',
-  'elementPicker.openDemoWebsite': 'Open demo website',
   'elementPicker.selectAnElement': 'Select an element',
   'elementPicker.pointClickAndConnectYourExperience': 'Point, click, and connect your experience.',
   'elementPicker.closeElementPicker': 'Close element picker',
-  'elementPicker.websiteUrl': 'Website URL',
-  'elementPicker.leaveEmptyToUseTheDemoWebsite': 'Leave empty to use the demo website',
-  'elementPicker.loadWebsite': 'Load website',
   'elementPicker.selectionModeIsOn': 'Selection mode is on',
   'elementPicker.connectingToWebsite': 'Connecting to website…',
   'elementPicker.connectionRequired': 'Connection required',
@@ -212,7 +250,6 @@ export const englishMessages = {
   'nodeInspector.pickAnElementFromYourWebsite': 'Pick an element from your website',
   'nodeInspector.selectOnWebsite': 'Select on website',
   'nodeInspector.labelConfiguration': ({ label }: { label: string }) => `${label} configuration`,
-  'nodeInspector.details': 'DETAILS',
   'nodeInspector.closeItemnameDetails': ({ itemName }: { itemName: string }) =>
     `Close ${itemName} details`,
   'nodeInspector.canvasGroup': 'Canvas group',
@@ -235,7 +272,7 @@ export const englishMessages = {
   'nodeInspector.requestUrl': 'Request URL',
   'nodeInspector.headers': 'Headers',
   'nodeInspector.enterAJsonObjectLeaveEmptyForDefaultHeaders':
-    'Enter a JSON object. Leave empty for default headers.',
+    'Enter a JSON object with string values. Leave empty for default headers.',
   'nodeInspector.requestBody': 'Request body',
   'nodeInspector.sentAsTheRawRequestBody': 'Sent as the raw request body.',
   'nodeInspector.theApiMustAllowRequestsFromYourWebsiteThroughCors':
@@ -250,16 +287,6 @@ export const englishMessages = {
   'nodeInspector.setAttribute': 'Set attribute',
   'nodeInspector.attributeName': 'Attribute name',
   'nodeInspector.eGAriaLabel': 'e.g. aria-label',
-  'nodeInspector.useIncomingData': 'Use incoming data',
-  'nodeInspector.usesTheValueReceivedThroughTheBlueInputConnectionSuchAsAn':
-    'Uses the value received through the blue input connection, such as an HTTP response, for this action. The target element and attribute name stay as configured.',
-  'nodeInspector.incomingDataPath': 'Incoming data path',
-  'nodeInspector.eGUserName': 'e.g. user.name',
-  'nodeInspector.optionalLeaveEmptyToUseTheWholeIncomingValueExamplesUserName':
-    'Optional. Leave empty to use the whole incoming value. Examples: user.name or data.items[0].price. Strings, numbers, and booleans become text; null and missing values become empty text.',
-  'nodeInspector.classNamesCanAlsoBeAnArrayOfStringsSeparateMultipleNames':
-    ' Class names can also be an array of strings. Separate multiple names in text with spaces.',
-  'nodeInspector.arraysAndObjectsBecomeJsonText': ' Arrays and objects become JSON text.',
   'nodeInspector.htmlContent': 'HTML content',
   'nodeInspector.cssClassNames': 'CSS class names',
   'nodeInspector.attributeValue': 'Attribute value',
@@ -296,8 +323,6 @@ export const englishMessages = {
   'nodeInspector.cookies': 'Cookies',
   'nodeInspector.evaluatesDataReceivedThroughTheIncomingConnectionSuchAsAnHttpResponse':
     'Evaluates data received through the incoming connection, such as an HTTP response. Choose a value and an operator to route execution through True or False.',
-  'nodeInspector.optionalLeaveEmptyToEvaluateAllIncomingDataExamplesUserNameData':
-    'Optional. Leave empty to evaluate all incoming data. Examples: user.name, data.items[0].price, items[2].tags.',
   'nodeInspector.operator': 'Operator',
   'nodeInspector.comparisonValue': 'Comparison value',
   'nodeInspector.trueWhenThisCssSelectorMatchesAnElement':
@@ -366,10 +391,10 @@ export const englishMessages = {
   'nodeInspector.outputs': 'Outputs',
   'nodeInspector.true': 'True',
   'nodeInspector.conditionMatches': 'Condition matches',
+  'nodeInspector.conditionMatchesWithData': 'Forwards data when the condition matches',
   'nodeInspector.false': 'False',
   'nodeInspector.conditionDoesNotMatch': 'Condition does not match',
-  'nodeInspector.theMatchingOutputPassesAllIncomingDataUnchangedToTheNextStep':
-    'The matching output passes all incoming data unchanged to the next step. The condition’s data path only selects what to compare.',
+  'nodeInspector.conditionDoesNotMatchWithData': 'Forwards data when the condition does not match',
   'nodeInspector.body': 'Body',
   'nodeInspector.runsEachRepetition': 'Runs each repetition',
   'nodeInspector.done': 'Done',
@@ -378,10 +403,6 @@ export const englishMessages = {
     'Connect the steps to repeat to Body. Connect the next step to Done.',
   'nodeInspector.data': 'Data',
   'nodeInspector.next': 'Next',
-  'nodeInspector.responseDataPath': 'Response data path',
-  'nodeInspector.eGDataItems0Price': 'e.g. data.items[0].price',
-  'nodeInspector.responsesAreAutomaticallyParsedAsJsonWhenPossibleOptionallySelectAValue':
-    'Responses are automatically parsed as JSON when possible. Optionally select a value using a path such as user.name, data.items[0].price, or items[2].tags; leave empty for the whole body. A missing JSON path returns undefined; null is passed as null. Non-JSON responses ignore the path and pass as complete text.',
   'nodeInspector.duplicateItemname': ({ itemName }: { itemName: string }) =>
     `Duplicate ${itemName}`,
   'nodeInspector.duplicate': 'Duplicate',
@@ -416,7 +437,6 @@ export const englishMessages = {
   'popoverPreview.bottomLeft': 'Bottom left',
   'popoverPreview.bottomRight': 'Bottom right',
   'popoverPreview.nextToAnElement': 'Next to an element',
-  'popoverPreview.popoverPreview': 'Popover preview',
   'popoverPreview.fullscreenPopoverPreview': 'Fullscreen popover preview',
   'popoverPreview.contentPreview': 'CONTENT PREVIEW',
   'popoverPreview.popover': 'Popover',
@@ -453,7 +473,6 @@ export const englishMessages = {
     'External websites need the preview bridge configured for this builder origin. Previews run in a separate sandbox origin. Page-load triggers run when you start. Other triggers respond to this website, just like the exported script. Reload to reset page changes.',
   'builder.theActivityCouldNotBeSavedYourWorkflowEditIsStillApplied':
     'The activity could not be saved. Your workflow edit is still applied.',
-  'builder.you': 'You',
   'builder.browserStorageIsUnavailableExportYourWorkflowToKeepACopy':
     'Browser storage is unavailable. Export your workflow to keep a copy.',
   'builder.theChangeWasUndoneButItsActivityEntryCouldNotBeRemoved':
@@ -538,13 +557,9 @@ export const englishMessages = {
   'websiteSetup.couldnTCopyAutomaticallySelectTheScriptAboveAndCopyItManually':
     'Couldn’t copy automatically. Select the script above and copy it manually.',
   'workflowCard.incomingData': 'Incoming data',
-  'workflowCard.incomingDataIncomingdatapath': ({
-    incomingDataPath,
-  }: {
-    incomingDataPath: string;
-  }) => `Incoming data: ${incomingDataPath}`,
-  'workflowCard.usesTheWholeIncomingValue': 'Uses the whole incoming value',
-  'workflowCard.usesIncomingData': 'Uses incoming data',
+  'workflowCard.usesIncomingData': 'Receives data',
+  'workflowCard.producesData': 'Produces data',
+  'workflowCard.forwardsData': 'Forwards data',
   'workflowCard.running': 'Running',
   'workflowCard.needsAttention': 'Needs attention',
   'workflowCard.completed': 'Completed',
@@ -574,7 +589,6 @@ export const englishMessages = {
   'activity.nodeDuplicated': ({ label }: { label: string }) => `Duplicated “${label}”`,
   'activity.presetApplied': ({ name }: { name: string }) => `Applied preset “${name}”`,
   'activity.workflowImported': ({ name }: { name: string }) => `Imported workflow “${name}”`,
-  'activity.websiteChanged': ({ url }: { url: string }) => `Changed the target website to “${url}”`,
   'activity.websiteConfigured': ({
     url,
     includeSubpages,
@@ -618,6 +632,8 @@ export const englishMessages = {
     `${count} ${count === 1 ? 'action' : 'actions'}`,
   'errors.cookies.enterACookieNameWithoutSpacesOrSeparatorsSuchAs':
     'Enter a cookie name without spaces or separators such as = and ;.',
+  'errors.cookies.missingNameVariable': ({ name }: { name: string }) =>
+    `Variable “${name}” is missing in the cookie name.`,
   'errors.cookies.cookiesWithAnHttponlyNamePrefixMustBeSetBy':
     'Cookies with an HttpOnly name prefix must be set by a server.',
   'errors.cookies.enterACookieValueAnEmptyStringIsAllowed':
@@ -641,8 +657,6 @@ export const englishMessages = {
   'errors.data.dataPathMustBeText': 'Data path must be text.',
   'errors.data.invalidDataPathPathUsePropertiesAndArrayIndexesE': ({ path }: { path: string }) =>
     `Invalid data path “${path}”. Use properties and array indexes, e.g. data.items[0].price.`,
-  'errors.data.chooseManualValueOrIncomingDataAsTheValueSource':
-    'Choose Manual value or Incoming data as the value source.',
   'errors.data.incomingCssClassesMustBeTextANumberABoolean':
     'Incoming CSS classes must be text, a number, a boolean, or an array of strings.',
   'errors.data.chooseASupportedIncomingDataConditionOperator':
@@ -681,13 +695,6 @@ export const englishMessages = {
   'errors.targeting.chooseYourOwnWebsiteInsteadOfTheBuiltInDemo':
     'Choose your own website instead of the built-in demo.',
   'errors.targeting.includeSubpagesMustBeABoolean': 'Include subpages must be a boolean.',
-  'errors.targeting.exportTargetMessageMessage': ({
-    EXPORT_TARGET_MESSAGE,
-    message,
-  }: {
-    EXPORT_TARGET_MESSAGE: string;
-    message: string;
-  }) => `${EXPORT_TARGET_MESSAGE} ${message}`,
   'errors.aiSettings.webCryptoIsUnavailableUseASecureBrowserContext':
     'Web Crypto is unavailable. Use a secure browser context.',
   'errors.aiSettings.aiConfigurationChangedSendYourMessageAgain':
@@ -717,7 +724,7 @@ export const englishMessages = {
   'errors.aiSettings.theAiServerOriginChangedConfirmTheNewDestinationIn':
     'The AI server origin changed. Confirm the new destination in AI settings or the assistant before sending.',
   'errors.aiCredentials.enterAValidHttpSLocalApiBaseUrlWithout':
-    'Enter a valid HTTP(S) local API base URL without credentials, query, or fragment.',
+    'Enter an HTTP(S) API base URL on localhost, 127.0.0.1, or [::1], without credentials, query, or fragment.',
   'errors.aiCredentials.configureAValidHttpOrHttpsAiEndpointWithoutEmbedded':
     'Configure a valid HTTP or HTTPS AI endpoint without embedded credentials.',
   'errors.ai.labelMustBeAnObject': ({ label }: { label: string }) => `${label} must be an object.`,
@@ -836,25 +843,24 @@ export const englishMessages = {
     'Use a website URL without embedded credentials.',
   'errors.picker.theWebsiteIsNotReadyYet': 'The website is not ready yet.',
   'nodes.trigger.description':
-    'Starts the workflow when a selected event occurs. Use it to respond to page activity or visitor actions. Choose an event and any required target element or thresholds, then connect the first step.',
-  'nodes.http.description':
-    'Sends an HTTP request to an API. Use it to call an external service. Set the URL and method, with headers or a body as needed. Use {{variableName}} or {{key.subKey.variableName}} in the URL or body to read incoming data; the next step receives response data on success or an error object with message and code on failure.',
+    'Starts the workflow when a selected event occurs. Use it to respond to page activity or visitor actions.',
+  'nodes.http.description': 'Sends an HTTP request to an API. Use it to call an external service.',
   'nodes.dom.description':
-    'Updates matching elements on the page. Use it to change content, appearance, or visibility. Choose a target element and an action, then use a manual value or incoming data from a connected step. Set an attribute name when needed.',
+    'Updates matching elements on the page. Use it to change content, appearance, or visibility.',
   'nodes.cookie.description':
-    'Saves a cookie on this website. Use it to remember a value for later steps or visits. Set a name, value, and expiration; a Condition step can check the saved value.',
+    'Saves a cookie on this website. Use it to remember a value for later steps or visits.',
   'nodes.delay.description':
-    'Pauses the workflow before continuing. Use it to space out connected steps. Set a duration in milliseconds; the next step runs after the pause.',
+    'Pauses the workflow before continuing. Use it to space out connected steps.',
   'nodes.fork.description':
-    'Chooses a path based on a condition. Use it to tailor the workflow to the visitor or page. Choose a condition type and its values, then connect the True output for a match and the False output otherwise.',
+    'Chooses a path based on a condition. Use it to tailor the workflow to the visitor or page.',
   'nodes.loop.description':
-    'Repeats connected steps. Use it to run the same sequence more than once. Set a repetition count, connect the steps to Body, and connect the following step to Done.',
+    'Repeats connected steps. Use it to run the same sequence more than once.',
   'nodes.popover.description':
-    'Displays a panel over the page. Use it to show a message or an embedded website. Provide HTML or a website URL, choose a position and width, and select an anchor element when positioning it next to an element.',
+    'Displays a panel over the page. Use it to show a message or an embedded website.',
   'nodes.note.description':
-    'Adds text to the canvas. Use it to document ideas, context, or reminders. Enter the note text and choose its formatting; notes are skipped when the workflow runs.',
+    'Adds text to the canvas. Use it to document ideas, context, or reminders.',
   'nodes.frame.description':
-    'Groups nodes on the canvas so they move together. Use it to organize related parts of a workflow. Name the frame and place nodes fully inside it; frames are skipped when the workflow runs.',
+    'Groups nodes on the canvas so they move together. Use it to organize related parts of a workflow.',
   'nodes.trigger.label': 'Trigger',
   'nodes.http.label': 'HTTP request',
   'nodes.dom.label': 'Update element',

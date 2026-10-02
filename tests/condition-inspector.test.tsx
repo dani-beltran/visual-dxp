@@ -199,21 +199,18 @@ it('edits time-of-day ranges and keeps their time zone and times when switching 
   expect(stepSummary('fork', current)).toBe('Time 22:00–… · Visitor local');
 });
 
-it('edits Data conditions, hides unary comparison inputs, and reports path/regex errors', async () => {
+it('edits condition behavior, leaves paths on connections, and reports regex errors', async () => {
   await change('Condition type', 'data');
-  expect(field('Incoming data path').value).toBe('');
+  expect(() => field('Incoming data path')).toThrow('Missing field');
   expect([...field('Operator').querySelectorAll('option')]).toHaveLength(20);
-  await change('Incoming data path', 'items[2].tags');
   await change('Operator', 'contains');
   await change('Comparison value', '"42"');
   expect(current).toMatchObject({
     conditionType: 'data',
-    conditionDataPath: 'items[2].tags',
     conditionOperator: 'contains',
     conditionValue: '"42"',
   });
   expect(host.textContent).toContain('Objects: exact key');
-  expect(stepSummary('fork', current)).toContain('items[2].tags');
   for (const operator of [
     'exists',
     'not-exists',
@@ -232,11 +229,9 @@ it('edits Data conditions, hides unary comparison inputs, and reports path/regex
   expect(host.querySelector('[role="alert"]')?.textContent).toContain('Invalid regular expression');
   await change('Comparison value', '^premium');
   expect(host.querySelector('[role="alert"]')).toBeNull();
-  await change('Incoming data path', 'items[');
-  expect(host.querySelector('[role="alert"]')?.textContent).toContain('Invalid data path');
 });
 
-it('edits response selection in Outputs without a response format setting', async () => {
+it('edits HTTP request templates without response selection fields', async () => {
   function HttpInspector() {
     const [config, setConfig] = useState<StepConfig>({ url: 'https://example.com' });
     current = config;
@@ -259,21 +254,10 @@ it('edits response selection in Outputs without a response format setting', asyn
   }
   await act(async () => root.render(<HttpInspector />));
   expect(() => field('Response format')).toThrow('Missing field');
-  const outputSection = field('Response data path').closest('section');
-  expect(outputSection?.querySelector('h3')?.textContent).toContain('Outputs');
-  expect(outputSection?.textContent).toContain('automatically parsed as JSON');
-  expect(field('Response data path').value).toBe('');
-  await change('Response data path', 'data.items[0].price');
-  expect(current.responseDataPath).toBe('data.items[0].price');
-  expect(host.textContent).toContain('null is passed as null');
-  await change('Response data path', 'items[');
-  expect(outputSection?.querySelector('[role="alert"]')?.textContent).toContain(
-    'Invalid data path',
-  );
-  await change('Response data path', '');
-  expect(current.responseDataPath).toBe('');
-  expect(outputSection?.querySelector('[role="alert"]')).toBeNull();
-  expect(host.textContent).toContain('{{key.subKey.variableName}}');
+  expect(() => field('Response data path')).toThrow('Missing field');
+  expect(host.textContent).toContain('Passes response data or an error object to the next node');
+  expect(current).not.toHaveProperty('responseDataPath');
+  expect(host.textContent).toContain('{{user.name}}');
   await change('Request URL', '/api/users/{{user.id}}');
   await change('Method', 'POST');
   await change('Request body', '{"name":"{{user.name}}"}');
@@ -290,7 +274,7 @@ it('edits response selection in Outputs without a response format setting', asyn
   expect(host.querySelector('[role="alert"]')?.textContent).toContain('Invalid data path');
 });
 
-it('switches element values between manual and incoming data while preserving manual input', async () => {
+it('edits and validates templated content without a toggle or variable explanations', async () => {
   function ElementInspector() {
     const [config, setConfig] = useState<StepConfig>({
       selector: '#result',
@@ -316,30 +300,32 @@ it('switches element values between manual and incoming data while preserving ma
     );
   }
   await act(async () => root.render(<ElementInspector />));
-  expect((field('Use incoming data') as HTMLInputElement).checked).toBe(false);
-  expect(field('Use incoming data').getAttribute('role')).toBe('switch');
-  expect(host.querySelector('textarea')?.value).toBe('Manual text');
-  await act(async () => field('Use incoming data').click());
-  expect(host.querySelector('textarea')).toBeNull();
-  expect(host.textContent).toContain('blue input connection');
-  await change('Incoming data path', 'user.name');
-  expect(current).toMatchObject({
-    valueSource: 'incoming-data',
-    valueDataPath: 'user.name',
-    value: 'Manual text',
-  });
-  expect(stepSummary('dom', current)).toContain('Incoming data: user.name');
-  await change('Action', 'attribute');
-  expect(field('Attribute name')).toBeTruthy();
-  await change('Action', 'hide');
   expect(() => field('Use incoming data')).toThrow('Missing field');
-  expect(() => field('Incoming data path')).toThrow('Missing field');
-  expect(stepSummary('dom', current)).not.toContain('Incoming data');
+  expect(field('New text').value).toBe('Manual text');
+  expect(host.querySelector('.dxp-inspector-incoming-data')).toBeNull();
+  await change('New text', 'Hello {{name}}!');
+  expect(current.value).toBe('Hello {{name}}!');
+  expect(current).not.toHaveProperty('valueSource');
+  expect(field('New text').value).toBe('Hello {{name}}!');
+  for (const [action, label] of [
+    ['html', 'HTML content'],
+    ['add-class', 'CSS class names'],
+    ['remove-class', 'CSS class names'],
+    ['attribute', 'Attribute value'],
+  ]) {
+    await change('Action', action);
+    expect(field(label).value).toBe('Hello {{name}}!');
+  }
+  await change('Action', 'hide');
+  expect(host.querySelector('textarea')).toBeNull();
+  expect(host.querySelector('.dxp-inspector-incoming-data')).toBeNull();
+  await change('Target element', '#{{id}}');
+  await change('Action', 'show');
+  await change('Target element', '#result');
   await change('Action', 'text');
-  expect(field('Incoming data path').value).toBe('user.name');
-  await change('Incoming data path', 'user[');
-  expect(host.querySelector('[role="alert"]')?.textContent).toContain('Invalid data path');
-  await act(async () => field('Use incoming data').click());
+  await change('New text', 'Hello {{name');
+  expect(host.querySelector('[role="alert"]')?.textContent).toContain('matching braces');
+  await change('New text', 'Static again');
   expect(host.querySelector('[role="alert"]')).toBeNull();
-  expect(host.querySelector('textarea')?.value).toBe('Manual text');
+  expect(host.querySelector('.dxp-inspector-incoming-data')).toBeNull();
 });

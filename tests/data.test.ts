@@ -18,7 +18,7 @@ describe('HTTP response data and selection', () => {
     ['', ''],
     ['{invalid}', '{invalid}'],
   ])('automatically parses %s without losing its type', (body, expected) => {
-    expect(dataTools.parseResponse(body, {})).toEqual(input(expected));
+    expect(dataTools.parseResponse(body)).toEqual(input(expected));
   });
   it.each(['user.name', 'data.items[0].price', 'items[2].tags', '[0][1].name'])(
     'accepts %s',
@@ -60,31 +60,6 @@ describe('HTTP response data and selection', () => {
     'user["name"]',
   ])('rejects malformed path %s', (path) => {
     expect(() => dataTools.parsePath(path)).toThrow('Invalid data path');
-  });
-  it('selects from automatically parsed JSON and returns undefined for unresolved paths', () => {
-    const body = '{"items":[{"price":12},null]}';
-    expect(dataTools.parseResponse(body, { responseDataPath: 'items[0].price' })).toEqual(
-      input(12),
-    );
-    expect(dataTools.parseResponse(body, { responseDataPath: 'items[1]' })).toEqual(input(null));
-    for (const responseDataPath of ['items[2]', 'items[0].missing', 'items[1].name']) {
-      expect(dataTools.parseResponse(body, { responseDataPath })).toEqual({
-        exists: false,
-        value: undefined,
-      });
-    }
-    expect(() => dataTools.parseResponse(body, { responseDataPath: 'invalid[' })).toThrow(
-      'Invalid data path',
-    );
-    expect(dataTools.parseResponse('invalid JSON', { responseDataPath: 'items[0]' })).toEqual(
-      input('invalid JSON'),
-    );
-    expect(dataTools.parseResponse('', { responseDataPath: 'items[0]' })).toEqual(input(''));
-  });
-  it.each(['text', 'json', 'auto'])('ignores the legacy %s response format', (responseFormat) => {
-    const config = { responseFormat, responseDataPath: 'item' };
-    expect(dataTools.parseResponse('{"item":42}', config)).toEqual(input(42));
-    expect(dataTools.parseResponse('plain text', config)).toEqual(input('plain text'));
   });
 });
 
@@ -157,7 +132,7 @@ describe('type-aware Data operators', () => {
       ['is-not-null', false],
     ] as const) {
       expect(
-        dataTools.evaluate({ conditionOperator: operator, conditionDataPath: 'absent' }, input({})),
+        dataTools.evaluate({ conditionOperator: operator }, dataTools.select(input({}), 'absent')),
       ).toBe(result);
       expect(
         dataTools.evaluate({ conditionOperator: operator }, { exists: false, value: undefined }),
@@ -165,8 +140,8 @@ describe('type-aware Data operators', () => {
     }
     expect(() =>
       dataTools.evaluate(
-        { conditionOperator: 'equal', conditionValue: 'null', conditionDataPath: 'absent' },
-        input({}),
+        { conditionOperator: 'equal', conditionValue: 'null' },
+        dataTools.select(input({}), 'absent'),
       ),
     ).toThrow('could not be resolved');
   });

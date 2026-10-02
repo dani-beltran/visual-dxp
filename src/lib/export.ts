@@ -1,5 +1,6 @@
-import { buildCookie } from './cookies';
+import { validateCookie } from './cookies';
 import { dataTools } from './data';
+import { dataTransformTools } from './dataTransform';
 import { getDateRange } from './dateRange';
 import { type BuilderTranslator, formatBuilderError, translateEnglish } from './i18n';
 import { isNoteMarks } from './noteText';
@@ -55,6 +56,7 @@ export function validateWorkflow(
   const knownKinds = new Set([
     'trigger',
     'http',
+    'transform',
     'dom',
     'cookie',
     'delay',
@@ -125,17 +127,14 @@ export function validateWorkflow(
       'method',
       'headers',
       'body',
-      'responseDataPath',
+      'dataPath',
       'action',
       'value',
-      'valueSource',
-      'valueDataPath',
       'attribute',
       'cookieName',
       'cookieValue',
       'condition',
       'conditionType',
-      'conditionDataPath',
       'conditionOperator',
       'conditionKey',
       'conditionValue',
@@ -162,9 +161,16 @@ export function validateWorkflow(
     )
       add(t('validation.noteTextFormattingMustUseSortedNonoverlappingRangesWithinThe'), node.id);
     switch (node.data.kind) {
+      case 'transform':
+        try {
+          dataTransformTools.validate(config);
+        } catch (error) {
+          add(formatBuilderError(error, t), node.id);
+        }
+        break;
       case 'cookie':
         try {
-          buildCookie(config);
+          validateCookie(config);
         } catch (error) {
           add(formatBuilderError(error, t), node.id);
         }
@@ -196,7 +202,6 @@ export function validateWorkflow(
             t('validation.enterAValidHttpOrHttpsRequestUrl'),
             true,
           );
-          dataTools.validateResponse(config);
         } catch (error) {
           add((error as Error).message, node.id);
         }
@@ -228,7 +233,8 @@ export function validateWorkflow(
         } catch (error) {
           add((error as Error).message, node.id);
         }
-        selector(config.selector, node.id, t('validation.chooseAnElementToUpdate'));
+        if (!dataTools.hasVariables(config.selector))
+          selector(config.selector, node.id, t('validation.chooseAnElementToUpdate'));
         if (
           config.action &&
           !['text', 'html', 'add-class', 'remove-class', 'hide', 'show', 'attribute'].includes(

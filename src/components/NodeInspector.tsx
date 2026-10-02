@@ -15,12 +15,14 @@ import {
 } from 'lucide-react';
 import { type ReactNode, useEffect, useId, useState } from 'react';
 import { getCatalog } from '../lib/catalog';
+import { validateCookie } from '../lib/cookies';
 import { dataTools } from '../lib/data';
 import { dataHint, getDataOperators } from '../lib/dataLabels';
 import { formatBuilderError } from '../lib/i18n';
 import { useBuilderI18n } from '../lib/i18nContext';
 import { elementTriggerEvents, getTriggerOptions } from '../lib/triggers';
 import type { ConditionType, NodeKind, StepConfig, StepData, WorkflowNode } from '../lib/types';
+import { DataTransformInspector } from './DataTransformInspector';
 import { InfoBox } from './InfoBox';
 import { NoteControls } from './NoteControls';
 import { NoteTextEditor } from './NoteTextEditor';
@@ -29,6 +31,7 @@ import '../styles/inspector.css';
 
 interface NodeInspectorProps {
   node: WorkflowNode;
+  forwardsData?: boolean;
   onChange: (patch: Partial<StepData>) => void;
   onClose: () => void;
   onPickElement: () => void;
@@ -103,6 +106,7 @@ function NumberInput({
 
 export function NodeInspector({
   node,
+  forwardsData = false,
   onChange,
   onClose,
   onPickElement,
@@ -114,6 +118,7 @@ export function NodeInspector({
   const catalog = getCatalog(t);
   const nextOutputDescriptions = {
     trigger: t('nodeInspector.runsWhenTheSelectedEventOccurs'),
+    transform: t('transform.outputHint'),
     http: t('nodeInspector.passesResponseDataOrAnErrorObjectToTheNextNode'),
     dom: t('nodeInspector.runsAfterTheElementsAreUpdated'),
     cookie: t('nodeInspector.runsAfterTheCookieIsSaved'),
@@ -138,8 +143,8 @@ export function NodeInspector({
   }
   let dataError: string | undefined;
   try {
-    if (node.data.kind === 'http') dataTools.validateResponse(config);
     if (node.data.kind === 'dom') dataTools.validateElementValue(config);
+    if (node.data.kind === 'cookie') validateCookie(config);
     if (node.data.kind === 'fork' && conditionType === 'data') dataTools.validateCondition(config);
   } catch (error) {
     dataError = formatBuilderError(error, t);
@@ -310,9 +315,11 @@ export function NodeInspector({
           </>
         )}
 
+        {node.data.kind === 'transform' && (
+          <DataTransformInspector config={config} onChange={update} />
+        )}
         {node.data.kind === 'http' && (
           <>
-            <InfoBox>{t('nodeInspector.requestTemplates')}</InfoBox>
             {requestTemplateError && (
               <p className="dxp-inspector-hint" role="alert">
                 {requestTemplateError}
@@ -375,6 +382,9 @@ export function NodeInspector({
               <Info size={15} />
               <p>{t('nodeInspector.theApiMustAllowRequestsFromYourWebsiteThroughCors')}</p>
             </div>
+            <InfoBox className="dxp-inspector-incoming-data">
+              {t('nodeInspector.requestTemplates')}
+            </InfoBox>
           </>
         )}
 
@@ -408,87 +418,42 @@ export function NodeInspector({
               </Field>
             )}
             {!['hide', 'show'].includes(config.action ?? 'text') && (
-              <>
-                <div className="dxp-inspector-toggle">
-                  <label htmlFor={id('value-source')}>{t('nodeInspector.useIncomingData')}</label>
-                  <input
-                    id={id('value-source')}
-                    type="checkbox"
-                    role="switch"
-                    aria-checked={config.valueSource === 'incoming-data'}
-                    checked={config.valueSource === 'incoming-data'}
-                    onChange={(event) =>
-                      update({ valueSource: event.target.checked ? 'incoming-data' : 'manual' })
-                    }
-                  />
-                </div>
-                {dataTools.usesIncomingValue(config) ? (
-                  <>
-                    <InfoBox className="dxp-inspector-incoming-data">
-                      {t('nodeInspector.usesTheValueReceivedThroughTheBlueInputConnectionSuchAsAn')}
-                    </InfoBox>
-                    <Field
-                      label={t('nodeInspector.incomingDataPath')}
-                      htmlFor={id('value-data-path')}
-                    >
-                      <input
-                        id={id('value-data-path')}
-                        value={config.valueDataPath ?? ''}
-                        placeholder={t('nodeInspector.eGUserName')}
-                        onChange={(event) => update({ valueDataPath: event.target.value })}
-                        spellCheck={false}
-                      />
-                    </Field>
-                    <InfoBox>
-                      {t(
-                        'nodeInspector.optionalLeaveEmptyToUseTheWholeIncomingValueExamplesUserName',
-                      )}
-                      {['add-class', 'remove-class'].includes(config.action ?? '')
-                        ? t(
-                            'nodeInspector.classNamesCanAlsoBeAnArrayOfStringsSeparateMultipleNames',
-                          )
-                        : t('nodeInspector.arraysAndObjectsBecomeJsonText')}
-                    </InfoBox>
-                  </>
-                ) : (
-                  <Field
-                    label={
-                      config.action === 'html'
-                        ? t('nodeInspector.htmlContent')
-                        : ['add-class', 'remove-class'].includes(config.action ?? '')
-                          ? t('nodeInspector.cssClassNames')
-                          : config.action === 'attribute'
-                            ? t('nodeInspector.attributeValue')
-                            : t('nodeInspector.newText')
-                    }
-                    htmlFor={id('value')}
-                    hint={
-                      ['add-class', 'remove-class'].includes(config.action ?? '')
-                        ? t('nodeInspector.separateMultipleClassNamesWithSpaces')
-                        : undefined
-                    }
-                  >
-                    <textarea
-                      id={id('value')}
-                      className={config.action === 'html' ? 'dxp-inspector-code' : ''}
-                      rows={config.action === 'html' ? 5 : 3}
-                      value={config.value ?? ''}
-                      placeholder={
-                        config.action === 'html'
-                          ? '<p>Your new content</p>'
-                          : t('nodeInspector.enterAValue')
-                      }
-                      onChange={(event) => update({ value: event.target.value })}
-                      spellCheck={config.action !== 'html'}
-                    />
-                  </Field>
-                )}
-                {dataError && (
-                  <p role="alert" className="dxp-inspector-hint">
-                    {dataError}
-                  </p>
-                )}
-              </>
+              <Field
+                label={
+                  config.action === 'html'
+                    ? t('nodeInspector.htmlContent')
+                    : ['add-class', 'remove-class'].includes(config.action ?? '')
+                      ? t('nodeInspector.cssClassNames')
+                      : config.action === 'attribute'
+                        ? t('nodeInspector.attributeValue')
+                        : t('nodeInspector.newText')
+                }
+                htmlFor={id('value')}
+                hint={
+                  ['add-class', 'remove-class'].includes(config.action ?? '')
+                    ? t('nodeInspector.separateMultipleClassNamesWithSpaces')
+                    : undefined
+                }
+              >
+                <textarea
+                  id={id('value')}
+                  className={config.action === 'html' ? 'dxp-inspector-code' : ''}
+                  rows={config.action === 'html' ? 5 : 3}
+                  value={config.value ?? ''}
+                  placeholder={
+                    config.action === 'html'
+                      ? '<p>Hello {{name}}</p>'
+                      : t('nodeInspector.enterAValue')
+                  }
+                  onChange={(event) => update({ value: event.target.value })}
+                  spellCheck={config.action !== 'html'}
+                />
+              </Field>
+            )}
+            {dataError && (
+              <p role="alert" className="dxp-inspector-hint">
+                {dataError}
+              </p>
             )}
           </>
         )}
@@ -517,6 +482,11 @@ export function NodeInspector({
                 spellCheck={false}
               />
             </Field>
+            {dataError && (
+              <p role="alert" className="dxp-inspector-hint">
+                {dataError}
+              </p>
+            )}
             <Field label={t('nodeInspector.expiration')} htmlFor={id('cookie-expiration')}>
               <Select
                 id={id('cookie-expiration')}
@@ -608,21 +578,6 @@ export function NodeInspector({
                     'nodeInspector.evaluatesDataReceivedThroughTheIncomingConnectionSuchAsAnHttpResponse',
                   )}
                 </InfoBox>
-                <Field
-                  label={t('nodeInspector.incomingDataPath')}
-                  htmlFor={id('condition-data-path')}
-                  hint={t(
-                    'nodeInspector.optionalLeaveEmptyToEvaluateAllIncomingDataExamplesUserNameData',
-                  )}
-                >
-                  <input
-                    id={id('condition-data-path')}
-                    value={config.conditionDataPath ?? ''}
-                    placeholder={t('nodeInspector.eGUserName')}
-                    onChange={(event) => update({ conditionDataPath: event.target.value })}
-                    spellCheck={false}
-                  />
-                </Field>
                 <Field label={t('nodeInspector.operator')} htmlFor={id('condition-operator')}>
                   <Select
                     id={id('condition-operator')}
@@ -987,23 +942,32 @@ export function NodeInspector({
             <ArrowRight size={14} aria-hidden="true" /> {t('nodeInspector.outputs')}
           </h3>
           {node.data.kind === 'fork' ? (
-            <>
-              <div className="dxp-inspector-branches">
-                <div>
-                  <i className="dxp-inspector-dot-true" />
-                  <strong>{t('nodeInspector.true')}</strong>
-                  <span>{t('nodeInspector.conditionMatches')}</span>
-                </div>
-                <div>
-                  <i className="dxp-inspector-dot-false" />
-                  <strong>{t('nodeInspector.false')}</strong>
-                  <span>{t('nodeInspector.conditionDoesNotMatch')}</span>
-                </div>
+            <div className="dxp-inspector-branches">
+              <div>
+                <i className={forwardsData ? 'dxp-inspector-dot-data' : 'dxp-inspector-dot-true'} />
+                <strong>{t('nodeInspector.true')}</strong>
+                <span>
+                  {forwardsData
+                    ? t('nodeInspector.conditionMatchesWithData')
+                    : t('nodeInspector.conditionMatches')}
+                </span>
               </div>
-              <p className="dxp-inspector-hint">
-                {t('nodeInspector.theMatchingOutputPassesAllIncomingDataUnchangedToTheNextStep')}
-              </p>
-            </>
+              <div>
+                <i
+                  className={
+                    forwardsData
+                      ? 'dxp-inspector-dot-data dxp-inspector-dot-data-false'
+                      : 'dxp-inspector-dot-false'
+                  }
+                />
+                <strong>{t('nodeInspector.false')}</strong>
+                <span>
+                  {forwardsData
+                    ? t('nodeInspector.conditionDoesNotMatchWithData')
+                    : t('nodeInspector.conditionDoesNotMatch')}
+                </span>
+              </div>
+            </div>
           ) : node.data.kind === 'loop' ? (
             <>
               <div className="dxp-inspector-branches">
@@ -1026,43 +990,22 @@ export function NodeInspector({
             <InfoBox>{t('nodeInspector.annotationOutputs', { kind: itemName })}</InfoBox>
           ) : (
             <div
-              className={`dxp-inspector-branches${node.data.kind === 'http' ? ' dxp-inspector-data-output' : ''}`}
+              className={`dxp-inspector-branches${['http', 'transform'].includes(node.data.kind) ? ' dxp-inspector-data-output' : ''}`}
             >
               <div>
-                {node.data.kind === 'http' ? (
+                {['http', 'transform'].includes(node.data.kind) ? (
                   <i className="dxp-inspector-dot-data" aria-hidden="true" />
                 ) : (
                   <ArrowRight size={13} aria-hidden="true" />
                 )}
                 <strong>
-                  {node.data.kind === 'http' ? t('nodeInspector.data') : t('nodeInspector.next')}
+                  {['http', 'transform'].includes(node.data.kind)
+                    ? t('nodeInspector.data')
+                    : t('nodeInspector.next')}
                 </strong>
                 <span>{nextOutputDescriptions[node.data.kind]}</span>
               </div>
             </div>
-          )}
-          {node.data.kind === 'http' && (
-            <>
-              <Field label={t('nodeInspector.responseDataPath')} htmlFor={id('response-data-path')}>
-                <input
-                  id={id('response-data-path')}
-                  value={config.responseDataPath ?? ''}
-                  placeholder={t('nodeInspector.eGDataItems0Price')}
-                  onChange={(event) => update({ responseDataPath: event.target.value })}
-                  spellCheck={false}
-                />
-              </Field>
-              <InfoBox>
-                {t(
-                  'nodeInspector.responsesAreAutomaticallyParsedAsJsonWhenPossibleOptionallySelectAValue',
-                )}
-              </InfoBox>
-              {dataError && (
-                <p role="alert" className="dxp-inspector-hint">
-                  {dataError}
-                </p>
-              )}
-            </>
           )}
         </section>
       </div>

@@ -45,6 +45,11 @@ export function installPreviewBridge(
         document,
         window,
         onLog: (log) => send('log', { log }),
+        onConnectionPreview: (edgeId, preview) => {
+          // Bound transport and keep samples out of saved workflow/log objects.
+          if (JSON.stringify(preview).length <= 32768)
+            send('connection-preview', { edgeId, preview, runId: data.runId });
+        },
       });
       runtime.start();
     } catch {

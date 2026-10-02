@@ -1,5 +1,6 @@
+import { type DataTransformation, dataTransformTools } from '../../../lib/dataTransform';
 import { parseNoteMarks } from './notes';
-import type { NodeKind, NoteMark, StepConfig, Workflow, WorkflowEdge, WorkflowNode } from './types';
+import type { NodeKind, StepConfig, Workflow, WorkflowEdge, WorkflowNode } from './types';
 import { validateWorkflow } from './validation';
 
 export interface AIChatMessage {
@@ -53,6 +54,7 @@ export const AI_LIMITS = {
 const kinds = new Set<NodeKind>([
   'trigger',
   'http',
+  'transform',
   'dom',
   'cookie',
   'delay',
@@ -69,17 +71,14 @@ const configStrings = [
   'method',
   'headers',
   'body',
-  'responseDataPath',
+  'dataPath',
   'action',
   'value',
-  'valueSource',
-  'valueDataPath',
   'attribute',
   'cookieName',
   'cookieValue',
   'condition',
   'conditionType',
-  'conditionDataPath',
   'conditionOperator',
   'conditionKey',
   'conditionValue',
@@ -148,7 +147,7 @@ function position(value: unknown): WorkflowNode['position'] {
 
 function config(value: unknown): StepConfig {
   const input = record(value, 'Step configuration');
-  const output: Record<string, string | number | boolean | NoteMark[]> = {};
+  const output: Record<string, unknown> = {};
   for (const key of configStrings) {
     if (own(input, key) && input[key] !== undefined)
       output[key] = text(input[key], 'Step configuration text', 20000, true);
@@ -171,6 +170,19 @@ function config(value: unknown): StepConfig {
     !/^#[0-9a-f]{6}$/i.test(output.noteColor as string)
   )
     throw new Error('Note color must be a six-digit hex color or transparent.');
+  if (input.transformations !== undefined) {
+    dataTransformTools.validate(
+      { transformations: input.transformations as DataTransformation[] },
+      true,
+    );
+    output.transformations = (input.transformations as DataTransformation[]).map((item) => {
+      if (item.type === 'fallback' || item.type === 'prefix' || item.type === 'suffix')
+        return { type: item.type, value: structuredClone(item.value) };
+      if (item.type === 'replace')
+        return { type: item.type, find: item.find, replacement: item.replacement };
+      return { type: item.type };
+    });
+  }
   if (own(input, 'noteMarks') && input.noteMarks !== undefined)
     output.noteMarks = parseNoteMarks(input.noteMarks);
   return output as StepConfig;

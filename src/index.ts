@@ -23,6 +23,9 @@ export {
   workflowFingerprint,
 } from './lib/ai';
 export { createNode, defaultWorkflow } from './lib/catalog';
+export type { ConnectionData, ConnectionPreview } from './lib/connections';
+export type { DataTransformation, DataTransformConfig, JsonValue } from './lib/dataTransform';
+export { dataTransformTools } from './lib/dataTransform';
 export { exportWorkflow, validateWorkflow } from './lib/export';
 export type {
   BuilderI18n,

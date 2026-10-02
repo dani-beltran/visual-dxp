@@ -3,10 +3,12 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { dataTools } from '../src/lib/data';
 import { exportWorkflow, validateWorkflow } from '../src/lib/export';
 import { createRuntime } from '../src/lib/runtime';
-import type { RunLog, StepConfig, Workflow } from '../src/lib/types';
+import type { RunLog, StepConfig } from '../src/lib/types';
 import { dataTools as serverDataTools } from '../src/server/ai/workflow/data';
 import type { Workflow as ServerWorkflow } from '../src/server/ai/workflow/types';
 import { validateWorkflow as validateServerWorkflow } from '../src/server/ai/workflow/validation';
+
+import { insertTransform } from './helpers/data-transform';
 
 const runtimes: ReturnType<typeof createRuntime>[] = [];
 afterEach(() => {
@@ -15,8 +17,8 @@ afterEach(() => {
   document.body.innerHTML = '';
 });
 
-function workflow(config: StepConfig): Workflow & ServerWorkflow {
-  return {
+function workflow(config: StepConfig): ServerWorkflow {
+  const graph: ServerWorkflow = {
     version: 1,
     name: 'Chained requests',
     websiteUrl: window.location.href,
@@ -34,7 +36,7 @@ function workflow(config: StepConfig): Workflow & ServerWorkflow {
         data: {
           kind: 'http',
           label: 'First',
-          config: { url: '/api/first', responseDataPath: 'data' },
+          config: { url: '/api/first' },
         },
       },
       {
@@ -50,7 +52,7 @@ function workflow(config: StepConfig): Workflow & ServerWorkflow {
         data: {
           kind: 'dom',
           label: 'Result',
-          config: { selector: '#result', valueSource: 'incoming-data' },
+          config: { selector: '#result', value: '{{$}}' },
         },
       },
     ],
@@ -60,6 +62,8 @@ function workflow(config: StepConfig): Workflow & ServerWorkflow {
       { id: 'second-result', source: 'second', target: 'result' },
     ],
   };
+  insertTransform(graph, 'first-second', { dataPath: 'data' });
+  return graph;
 }
 
 describe.each([
@@ -151,8 +155,8 @@ it.each(['direct', 'exported'] as const)(
       method: 'POST',
       headers: '{"Content-Type":"application/json"}',
       body: '{"name":"{{user.name}}", "id":{{user.id}}, "enabled":{{enabled}}}',
-      responseDataPath: 'receipt',
     });
+    insertTransform(graph, 'second-result', { dataPath: 'receipt' });
     const name = 'Ada "Lovelace"\n{{literal}}';
     const fetcher = vi
       .spyOn(globalThis, 'fetch')
@@ -201,9 +205,76 @@ it.each(['direct', 'exported'] as const)(
   },
 );
 
+describe.each(['direct', 'exported'] as const)('%s HTTP header templates', (mode) => {
+  it.each(['GET', 'HEAD', 'POST'])(
+    'resolves header variables as strings, preserving escaped and literal data for %s',
+    async (method) => {
+      const graph = workflow({
+        url: '/api/second',
+        method,
+        headers: JSON.stringify({
+          Authorization: 'Bearer {{token}}',
+          'X-User': '{{user.name}} / {{user.name}}',
+          'X-Item': '{{items[0].id}}',
+          'X-Values': '{{zero}}|{{disabled}}|{{empty}}|{{nil}}|{{payload}}',
+          'X-{{headerName}}': 'static',
+        }),
+      });
+      graph.edges = graph.edges.filter((edge) => edge.id !== 'second-result');
+      const token = 'quoted"\\token{{missing}}';
+      const fetcher = vi
+        .spyOn(globalThis, 'fetch')
+        .mockResolvedValueOnce(
+          new Response(
+            JSON.stringify({
+              data: {
+                token,
+                user: { name: 'Ada' },
+                items: [{ id: 42 }],
+                zero: 0,
+                disabled: false,
+                empty: '',
+                nil: null,
+                payload: { id: 7 },
+                headerName: 'Custom',
+              },
+            }),
+          ),
+        )
+        .mockResolvedValueOnce(new Response('{}'));
+      expect(validateWorkflow(graph)).toEqual([]);
+      expect(validateServerWorkflow(graph)).toEqual([]);
+      let runtime: ReturnType<typeof createRuntime>;
+      if (mode === 'direct') runtime = createRuntime(graph);
+      else {
+        new Function('window', 'document', exportWorkflow(graph))(window, document);
+        const exported = (window as Window & { visualDXP?: ReturnType<typeof createRuntime> })
+          .visualDXP;
+        if (!exported) throw new Error('Expected exported runtime');
+        runtime = exported;
+      }
+      runtimes.push(runtime);
+      await runtime.run();
+      expect(fetcher).toHaveBeenCalledTimes(2);
+      expect(fetcher.mock.calls[1][1]).toMatchObject({
+        method,
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'X-User': 'Ada / Ada',
+          'X-Item': '42',
+          'X-Values': '0|false||null|{"id":7}',
+          'X-Custom': 'static',
+        },
+      });
+    },
+  );
+});
+
 it.each([
   { url: '/api/{{missing}}' },
   { url: '/api/second', method: 'POST', body: '{{missing}}' },
+  { url: '/api/second', headers: '{"Authorization":"Bearer {{missing}}"}' },
+  { url: '/api/second', headers: '{"X-Id":"{{items[-1]}}"}' },
   { url: '{{url}}' },
 ] as StepConfig[])('stops before sending unresolved or non-HTTP requests: %j', async (config) => {
   const logs: RunLog[] = [];
@@ -227,7 +298,7 @@ it.each(['GET', 'HEAD', 'get', 'head'])('ignores unused body templates for %s', 
   const fetcher = vi.fn<typeof fetch>().mockImplementation(async () => new Response('{}'));
   const runtime = createRuntime(graph, { fetch: fetcher });
   runtimes.push(runtime);
-  graph.edges.pop();
+  graph.edges = graph.edges.filter((edge) => edge.id !== 'second-result');
   await runtime.run();
   expect(fetcher.mock.calls[1][1]).not.toHaveProperty('body');
 });
@@ -239,6 +310,7 @@ it.each([
     body: '{"id":{{user.id}}}',
   },
   { url: '{{nextUrl}}' },
+  { url: '/api/second', headers: '{"Authorization":"Bearer {{token}}"}' },
 ])('accepts dynamic URLs without requiring input data at validation time: %j', (config) => {
   const graph = workflow(config);
   expect(validateWorkflow(graph)).toEqual([]);
@@ -249,9 +321,49 @@ it.each([
   { url: '/api/{{items[-1]}}' },
   { url: '/api/{{id}' },
   { url: '/api/second', method: 'POST', body: '{"id":{{}}}' },
+  { url: '/api/second', headers: '{"X-Id":"{{items[-1]}}"}' },
+  { url: '/api/second', method: 'HEAD', headers: '{"X-Id":"{{id}"}' },
+  { url: '/api/second', headers: '{"X-Id":"{{}}"}' },
 ])('validates templates in both workflow validators: %j', (config) => {
   for (const validate of [validateWorkflow, validateServerWorkflow])
     expect(validate(workflow(config))).toContainEqual(
       expect.objectContaining({ nodeId: 'second' }),
     );
 });
+
+it.each(['direct', 'exported'] as const)(
+  'uses Data Transform nodes before HTTP and element templates (%s)',
+  async (mode) => {
+    document.body.innerHTML = '<button id="start">Start</button><p id="result"></p>';
+    const original = workflow({
+      url: '/api/users/{{id}}',
+      method: 'POST',
+      headers: '{"X-User-Id":"{{id}}"}',
+      body: '{"name":"{{name}}"}',
+    });
+    insertTransform(original, 'first-second-transform-out', { dataPath: 'user' });
+    insertTransform(original, 'second-result', { dataPath: 'receipt' });
+    original.nodes[3].data.config = { selector: '#result', value: 'Saved {{name}}' };
+    const graph = original;
+    const fetcher = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(new Response('{"data":{"user":{"id":42,"name":"Ada"}}}'))
+      .mockResolvedValueOnce(new Response('{"receipt":{"name":"Ada"}}'));
+    expect(validateWorkflow(graph)).toEqual([]);
+    let runtime: ReturnType<typeof createRuntime>;
+    if (mode === 'direct') runtime = createRuntime(graph);
+    else {
+      new Function('window', 'document', exportWorkflow(graph))(window, document);
+      const exported = (window as Window & { visualDXP?: ReturnType<typeof createRuntime> })
+        .visualDXP;
+      if (!exported) throw new Error('Expected exported runtime');
+      runtime = exported;
+    }
+    runtimes.push(runtime);
+    await runtime.run();
+    expect(fetcher.mock.calls[1][0]).toBe(new URL('/api/users/42', document.baseURI).href);
+    expect(fetcher.mock.calls[1][1]?.body).toBe('{"name":"Ada"}');
+    expect(fetcher.mock.calls[1][1]?.headers).toEqual({ 'X-User-Id': '42' });
+    expect(document.querySelector('#result')?.textContent).toBe('Saved Ada');
+  },
+);
