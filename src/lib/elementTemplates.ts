@@ -1,6 +1,6 @@
 import type { Workflow } from './types';
 
-/** Run after connection migration so existing connection selections stay authoritative. */
+/** Legacy standalone template migration. The builder uses Data Transform migration first. */
 export function migrateElementTemplates(workflow: Workflow): Workflow {
   let changed = false;
   const nodes = workflow.nodes.map((node) => {

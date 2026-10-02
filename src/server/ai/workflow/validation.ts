@@ -1,4 +1,4 @@
-import { connectionTools } from '../../../lib/connectionMapping';
+import { dataTransformTools } from '../../../lib/dataTransform';
 import { buildCookie } from './cookies';
 import { dataTools } from './data';
 import { getDateRange } from './dateRange';
@@ -52,6 +52,7 @@ export function validateWorkflow(workflow: Workflow): ValidationIssue[] {
   const knownKinds = new Set([
     'trigger',
     'http',
+    'transform',
     'dom',
     'cookie',
     'delay',
@@ -103,6 +104,8 @@ export function validateWorkflow(workflow: Workflow): ValidationIssue[] {
       'method',
       'headers',
       'body',
+      'dataPath',
+      'migrationWarning',
       'responseDataPath',
       'action',
       'value',
@@ -153,7 +156,16 @@ export function validateWorkflow(workflow: Workflow): ValidationIssue[] {
         add(error instanceof Error ? error.message : 'Invalid note marks.', node.id);
       }
     }
+    if (node.data.kind !== 'transform' && config.migrationWarning)
+      add(config.migrationWarning, node.id);
     switch (node.data.kind) {
+      case 'transform':
+        try {
+          dataTransformTools.validate(config);
+        } catch (error) {
+          add((error as Error).message, node.id);
+        }
+        break;
       case 'cookie':
         try {
           buildCookie(config);
@@ -345,11 +357,8 @@ export function validateWorkflow(workflow: Workflow): ValidationIssue[] {
         'Notes cannot have workflow connections.',
         source.data.kind === 'note' ? source.id : target.id,
       );
-    try {
-      connectionTools.validate(edge.data?.mapping, target.data, source.data.kind);
-    } catch (error) {
-      add((error as Error).message, target.id);
-    }
+    if (edge.data?.mapping)
+      add('Legacy connection mapping needs migration to a Data Transform node.', target.id);
     if (target.data.kind === 'trigger')
       add('Triggers cannot receive incoming connections.', target.id);
     if (source.data.kind === 'fork' && !['true', 'false'].includes(edge.sourceHandle ?? ''))

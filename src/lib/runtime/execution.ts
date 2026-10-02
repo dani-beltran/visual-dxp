@@ -1,6 +1,6 @@
-import type { createConnectionTools } from '../connectionMapping';
 import type { buildCookie } from '../cookies';
 import type { createDataTools, DataSelection } from '../data';
+import type { createDataTransformTools } from '../dataTransform';
 import type { getDateRange } from '../dateRange';
 import type { getTimeRange } from '../timeRange';
 import type { Workflow } from '../types';
@@ -10,7 +10,7 @@ import type { showPopover } from './popovers';
 import type { WorkflowRuntime } from './types';
 
 interface ExecutionModules {
-  createConnectionTools: typeof createConnectionTools;
+  createDataTransformTools: typeof createDataTransformTools;
   createDataTools: typeof createDataTools;
   buildCookie: typeof buildCookie;
   matchesCondition: typeof matchesCondition;
@@ -29,13 +29,13 @@ export function createExecution(
     getTimeRange,
     showPopover,
     createDataTools,
-    createConnectionTools,
+    createDataTransformTools,
   }: ExecutionModules,
 ): WorkflowRuntime['run'] {
   const { doc, win, signal, nodes, fetcher, maxSteps, aborted, log, wait, selectorElements } =
     context;
   const dataTools = createDataTools();
-  const connectionTools = createConnectionTools(dataTools);
+  const transformTools = createDataTransformTools(dataTools);
   type RunState = { steps: number; active: Set<string> };
 
   async function next(
@@ -55,29 +55,7 @@ export function createExecution(
       } catch {
         /* Observers cannot interrupt execution. */
       }
-      const mapping = edge.data?.mapping;
-      let resolved: ReturnType<typeof connectionTools.resolve>;
-      try {
-        connectionTools.validate(
-          mapping,
-          nodes.get(edge.target)?.data,
-          nodes.get(edge.source)?.data.kind,
-        );
-        resolved = connectionTools.resolve(mapping, preview);
-      } catch (error) {
-        log(
-          edge.target,
-          'error',
-          `Connection “${edge.id}”: ${error instanceof Error ? error.message : String(error)}`,
-        );
-        throw error;
-      }
-      await execute(
-        edge.target,
-        state,
-        resolved.incoming,
-        mapping?.targetInput === 'data' ? undefined : resolved.selected,
-      );
+      await execute(edge.target, state, data, jsonResponse);
     }
   }
 
@@ -85,7 +63,7 @@ export function createExecution(
     nodeId: string,
     state: RunState,
     input: DataSelection,
-    selected?: DataSelection,
+    inputJsonResponse = false,
   ): Promise<void> {
     aborted();
     const node = nodes.get(nodeId);
@@ -107,6 +85,10 @@ export function createExecution(
     state.active.add(nodeId);
     try {
       const config = node.data.config;
+      if (config.migrationWarning) {
+        log(nodeId, 'error', config.migrationWarning);
+        throw new Error(config.migrationWarning);
+      }
       // Data belongs to this path, never the shared runtime (runs may overlap).
       let output = input;
       let jsonResponse = false;
@@ -116,6 +98,9 @@ export function createExecution(
       log(nodeId, 'running', 'Running step');
       try {
         switch (node.data.kind) {
+          case 'transform':
+            output = transformTools.apply(input, config, inputJsonResponse);
+            break;
           case 'cookie': {
             const cookie = buildCookie(config);
             try {
@@ -203,7 +188,7 @@ export function createExecution(
             break;
           }
           case 'dom': {
-            const variables = selected ?? input;
+            const variables = input;
             const value = dataTools.elementValue(config, variables);
             const selector = dataTools.interpolate(
               config.selector ?? '',
@@ -253,7 +238,7 @@ export function createExecution(
           case 'fork':
             selectedHandle = matchesCondition(
               config,
-              { ...context, data: selected ?? input },
+              { ...context, data: input },
               { getDateRange, getTimeRange, dataTools },
             )
               ? 'true'

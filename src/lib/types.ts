@@ -1,9 +1,11 @@
 import type { Edge, Node } from '@xyflow/react';
 import type { ConnectionData } from './connectionMapping';
 import type { DataOperator } from './data';
+import type { DataTransformConfig } from './dataTransform';
 export type NodeKind =
   | 'trigger'
   | 'http'
+  | 'transform'
   | 'dom'
   | 'cookie'
   | 'delay'
@@ -43,7 +45,7 @@ export type TriggerEvent =
   | 'inactivity'
   | 'scroll-thrashing'
   | 'scroll-depth';
-export interface StepConfig {
+export interface StepConfig extends DataTransformConfig {
   event?: TriggerEvent;
   /** Nearby primary clicks required for rage clicking. Defaults to 3. */
   rageClickCount?: number;
@@ -66,14 +68,14 @@ export interface StepConfig {
   headers?: string;
   /** Raw request body; accepts {{path}} variables from incoming data (except GET/HEAD). */
   body?: string;
-  /** @deprecated Migrated to connection mappings. Non-JSON responses pass as complete text. */
+  /** @deprecated Legacy import only; migrated to Data Transform nodes. Non-JSON responses pass as complete text. */
   responseDataPath?: string;
   action?: 'text' | 'html' | 'add-class' | 'remove-class' | 'hide' | 'show' | 'attribute';
   /** Update element content supports {{name}}, nested paths, and {{$}} for the whole input. */
   value?: string;
   /** @deprecated Incoming-data mode is migrated to a {{$}} value template. */
   valueSource?: 'manual' | 'incoming-data';
-  /** @deprecated Migrated to the incoming connection’s value mapping. */
+  /** @deprecated Legacy import only; migrated to Data Transform nodes. */
   valueDataPath?: string;
   attribute?: string;
   /** Name of the cookie to create or overwrite on the current host. */
@@ -86,7 +88,7 @@ export interface StepConfig {
   duration?: number;
   /** Omitted in older workflows, which check CSS selector existence. */
   conditionType?: ConditionType;
-  /** @deprecated Migrated to the incoming connection’s condition mapping. */
+  /** @deprecated Legacy import only; migrated to Data Transform nodes. */
   conditionDataPath?: string;
   conditionOperator?: DataOperator;
   /** CSS selector used by selector conditions. */

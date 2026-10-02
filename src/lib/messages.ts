@@ -1,5 +1,57 @@
 /** English defaults and the public translation contract. Keys remain stable when copy changes. */
 export const englishMessages = {
+  'nodes.transform.label': 'Data Transform',
+  'nodes.transform.description':
+    'Selects a field from incoming data and transforms its value. Use nested paths or array indexes, then add text transformations in order or a fallback for missing or null data. The selected result is passed to downstream steps.',
+  'transform.dataPath': 'Data path',
+  'transform.httpHint':
+    'The full response passes downstream. Add a Data Transform to select a field or transform its value.',
+  'transform.pathHint':
+    'Leave empty to select the whole input. Use properties and array indexes, e.g. user.items[0].name. Without transformations, the extracted value passes through unchanged.',
+  'transform.wholeValue': 'Whole value',
+  'transform.transformations': 'Transformations',
+  'transform.orderHint':
+    'Runs from top to bottom. Text operations require text. Put a fallback first when a field may be missing or null.',
+  'transform.capitalize': 'Capitalize',
+  'transform.lowercase': 'Lowercase',
+  'transform.uppercase': 'Uppercase',
+  'transform.title-case': 'Title case',
+  'transform.trim': 'Trim whitespace',
+  'transform.prefix': 'Add prefix',
+  'transform.suffix': 'Add suffix',
+  'transform.replace': 'Find and replace',
+  'transform.fallback': 'Fallback for missing or null',
+  'transform.textToAdd': 'Text to add',
+  'transform.find': 'Find',
+  'transform.replacement': 'Replace with',
+  'transform.replaceHint':
+    'Replaces all exact matches. Text is literal; regular expressions are not used.',
+  'transform.fallbackType': 'Fallback type',
+  'transform.fallbackValue': 'Fallback value',
+  'transform.text': 'Text',
+  'transform.json': 'JSON value',
+  'transform.invalidFallback':
+    'Enter valid JSON, such as null, false, 0, "text", an object, or an array. This edit is saved when the JSON is valid.',
+  'transform.add': 'Add transformation',
+  'transform.preview': 'Latest test run',
+  'transform.unavailable':
+    'No sample available. Test the workflow to preview values. Large samples are omitted.',
+  'transform.source': 'Incoming data',
+  'transform.output': 'Selected and transformed output',
+  'transform.missing': 'Missing — the path did not resolve to a value.',
+  'transform.null': 'null (explicit value)',
+  'transform.empty': '"" (empty string)',
+  'transform.outputHint': 'Passes the selected and transformed value to the next node',
+  'transform.importedJson': 'Preserve imported JSON response selection',
+  'transform.importedHint':
+    'Applies the path only to successful JSON HTTP responses. Complete text and request errors pass through, preserving the imported workflow.',
+  'transform.reviewMigration': 'Confirm reviewed configuration',
+  'transform.summary': ({ path, count }: { path: string; count: number }) =>
+    `${path} · ${count} ${count === 1 ? 'transformation' : 'transformations'}`,
+  'transform.operation': ({ number }: { number: number }) => `Transformation ${number}`,
+  'transform.moveUp': ({ number }: { number: number }) => `Move transformation ${number} up`,
+  'transform.moveDown': ({ number }: { number: number }) => `Move transformation ${number} down`,
+  'transform.remove': ({ number }: { number: number }) => `Remove transformation ${number}`,
   'common.enterFullscreen': 'Enter full screen',
   'common.exitFullscreen': 'Exit full screen',
   'nodeInspector.requestTemplates':
@@ -10,51 +62,14 @@ export const englishMessages = {
   'errors.data.unresolvedRequestTemplatePath': ({ path }: { path: string }) =>
     `Request template data path “${path}” could not be resolved.`,
   'nodeInspector.variablesHint':
-    'Use {{name}} or {{user.name}} in content, selectors, or attribute names. Use {{$}} for the whole value selected on the connection. Variables are filled in when this step runs.',
+    'Use {{name}} or {{user.name}} in content, selectors, or attribute names. Use {{$}} for the whole incoming value. Variables are filled in when this step runs.',
   'nodeInspector.variablesIncomingHint':
-    'Uses incoming data: variables are resolved from the incoming connection. Edit its mapping below to choose the data available to this step.',
-  'mapping.variablesInactive':
-    'Add a variable such as {{name}} or {{$}} to the destination step to use this input.',
+    'Uses incoming data. Add a Data Transform before this step to select a field or transform its value.',
   'errors.data.emptyVariable':
     'Enter a variable name inside {{ }}; use {{$}} for the whole incoming value.',
   'errors.data.unclosedVariable': 'Close each variable with matching braces, for example {{name}}.',
   'errors.data.missingTargetVariable': ({ name }: { name: string }) =>
     `Variable “${name}” is missing in the element selector or attribute name.`,
-
-  'mapping.title': 'Data mapping',
-  'mapping.sourcePath': 'Source data path',
-  'mapping.destination': 'Destination input',
-  'mapping.httpInputHint':
-    'The selected data is available to variables in the request URL, headers, and body. This step passes its own response onward.',
-  'mapping.inputData': 'Data passed to the step',
-  'mapping.inputValue': 'Element value',
-  'mapping.inputCondition': 'Condition value',
-  'mapping.pathHint':
-    'Leave empty to use the whole value. Use properties and array indexes, e.g. data.items[0].price.',
-  'mapping.forwardHint':
-    'The selected data is passed to this step and forwarded to the following steps.',
-  'mapping.consumeHint':
-    'This step uses the selected value and forwards the original incoming data.',
-  'mapping.preview': 'Latest test run',
-  'mapping.unavailable':
-    'No sample available. Test the workflow to preview values. Large samples are omitted.',
-  'mapping.sourceOutput': 'Source output',
-  'mapping.mappedValue': 'Mapped value',
-  'mapping.missing': 'Missing — the path did not resolve to a value.',
-  'mapping.null': 'null (explicit value)',
-  'mapping.incompatible': 'Incompatible with the destination:',
-  'mapping.importedResponse': 'Imported response selection',
-  'mapping.importedHint':
-    'Preserves the saved HTTP selection before the source path. Applies to successful JSON responses; text and request errors pass through.',
-  'mapping.inactive':
-    'This input is inactive. Enable incoming data in the destination step to use it.',
-  'mapping.configureConnections':
-    'Choose the value in Incoming mappings below or select an incoming connection.',
-  'mapping.httpHint':
-    'The full response is available on every outgoing connection. Select a connection to choose which data it sends.',
-  'mapping.incoming': 'Incoming mappings',
-  'mapping.noConnections': 'Connect a step to configure its incoming data.',
-  'mapping.wholeValue': 'Whole value',
 
   'aiSettings.assistantCredentials': 'Assistant credentials',
   'aiSettings.aiSettings': 'AI settings',

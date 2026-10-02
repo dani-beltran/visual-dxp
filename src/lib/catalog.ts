@@ -1,4 +1,5 @@
 import {
+  Braces,
   Cookie,
   Frame,
   GitFork,
@@ -42,6 +43,15 @@ export const catalog: {
     icon: Globe2,
     category: 'Action',
     config: { method: 'GET', url: 'https://jsonplaceholder.typicode.com/todos/1', headers: '{}' },
+  },
+  {
+    kind: 'transform',
+    label: 'Data Transform',
+    description: nodeDescriptions.transform,
+    color: 'blue',
+    icon: Braces,
+    category: 'Action',
+    config: { dataPath: '', transformations: [] },
   },
   {
     kind: 'dom',
@@ -133,7 +143,7 @@ export function createNode(kind: NodeKind, position = { x: 200, y: 200 }): Workf
     type: 'workflow',
     position,
     ...(kind === 'frame' ? { width: FRAME_WIDTH, height: FRAME_HEIGHT } : {}),
-    data: { kind, label: entry.label, config: { ...entry.config } },
+    data: { kind, label: entry.label, config: structuredClone(entry.config) },
   };
 }
 /** The initial workflow is also available in the bundled preset collection. */
@@ -171,6 +181,11 @@ export function stepSummary(
           return t('summary.elementEvent', { event, element });
       }
     }
+    case 'transform':
+      return t('transform.summary', {
+        path: c.dataPath || t('transform.wholeValue'),
+        count: c.transformations?.length ?? 0,
+      });
     case 'http':
       return t('summary.http', {
         method: c.method || 'GET',

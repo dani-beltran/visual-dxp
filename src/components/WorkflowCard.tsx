@@ -33,7 +33,11 @@ export function WorkflowCard({ id, data, selected }: NodeProps<WorkflowNode>) {
   const highlightsOutput = dataFlow === 'forwards' || outputsData;
   const sendsData = dataFlow === 'produces' || dataFlow === 'forwards';
   const outputLabel =
-    dataFlow === 'produces' ? t('workflowCard.responseDataOutput') : t('workflowCard.forwardsData');
+    dataFlow === 'produces'
+      ? data.kind === 'transform'
+        ? t('transform.outputHint')
+        : t('workflowCard.responseDataOutput')
+      : t('workflowCard.forwardsData');
   const dataFlowLabel =
     dataFlow === 'produces'
       ? t('workflowCard.producesData')

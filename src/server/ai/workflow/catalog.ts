@@ -19,6 +19,12 @@ export const catalog: {
     config: { method: 'GET', url: 'https://jsonplaceholder.typicode.com/todos/1', headers: '{}' },
   },
   {
+    kind: 'transform',
+    label: 'Data Transform',
+    description: nodeDescriptions.transform,
+    config: { dataPath: '', transformations: [] },
+  },
+  {
     kind: 'dom',
     label: 'Update element',
     description: nodeDescriptions.dom,

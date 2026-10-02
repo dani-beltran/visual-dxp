@@ -49,7 +49,7 @@ it.each([dataTools, serverData])(
       data.elementValue({ value: '<script>if(true){if(true){}}</script>', action: 'html' }, input),
     ).toBe('<script>if(true){if(true){}}</script>');
     expect(() => data.elementValue({ value: '{{ }}' }, input)).toThrow('variable name');
-  expect(() => data.elementValue({ value: '{{$.}}' }, input)).toThrow('Invalid data path');
+    expect(() => data.elementValue({ value: '{{$.}}' }, input)).toThrow('Invalid data path');
     expect(() => data.elementValue({ value: 'Hello {{name' }, input)).toThrow('matching braces');
     expect(() => data.elementValue({ value: '{{name.toUpperCase()}}' }, input)).toThrow(
       'Invalid data path',
@@ -97,15 +97,16 @@ function graph(config: StepConfig): Workflow {
       node('http', 'http', { url: 'https://example.com/data' }),
       node('update', 'dom', config),
       node('forward', 'dom', { selector: '#forward', value: '{{$}}' }),
+      node('transform', 'transform', { dataPath: 'customer', transformations: [] }),
     ],
     edges: [
       { id: 'start-http', source: 'start', target: 'http' },
       {
         id: 'http-update',
         source: 'http',
-        target: 'update',
-        data: { mapping: { sourcePath: 'customer', targetInput: 'value' } },
+        target: 'transform',
       },
+      { id: 'transform-update', source: 'transform', target: 'update' },
       { id: 'update-forward', source: 'update', target: 'forward' },
     ],
   };
@@ -117,7 +118,7 @@ afterEach(() => {
 });
 
 it.each(['direct', 'exported'] as const)(
-  'supports variables for every element action and preserves upstream data (%s)',
+  'supports variables for every element action and forwards selected data (%s)',
   async (mode) => {
     const payload = {
       customer: { id: 'target', name: 'Ada', attribute: 'name', classes: ['active', 'premium'] },
@@ -170,7 +171,9 @@ it.each(['direct', 'exported'] as const)(
       if (action === 'remove-class') expect(target.className).toBe('base');
       if (action === 'hide') expect(target.style.display).toBe('none');
       if (action === 'show') expect(target.style.display).not.toBe('none');
-      expect(JSON.parse(document.querySelector('#forward')?.textContent ?? '')).toEqual(payload);
+      expect(JSON.parse(document.querySelector('#forward')?.textContent ?? '')).toEqual(
+        payload.customer,
+      );
       runtime.destroy();
     }
   },
@@ -186,7 +189,12 @@ it('migrates legacy modes to editable templates after moving connected paths', (
   delete workflow.edges[1].data;
   const migrated = migrateElementTemplates(migrateConnectionMappings(workflow));
   expect(migrated.nodes[2].data.config).toEqual({ selector: '#target', value: '{{$}}' });
-  expect(migrated.edges[1].data?.mapping).toEqual({ sourcePath: 'name', targetInput: 'value' });
+  expect(migrated.edges.every((edge) => !edge.data?.mapping)).toBe(true);
+  expect(
+    migrated.nodes.find(
+      (node) => node.data.kind === 'transform' && node.data.config.dataPath === 'name',
+    )?.data.config.migrationWarning,
+  ).toContain('forwarded the original data');
   expect(migrateElementTemplates(migrated)).toBe(migrated);
   expect(workflow.nodes[2].data.config.valueSource).toBe('incoming-data');
   for (const path of ['user.name', '[0].name', '$']) {

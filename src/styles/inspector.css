@@ -474,30 +474,34 @@
   color: var(--dxp-data);
 }
 
-.dxp-connection-mapping {
-  border-top: 1px solid var(--dxp-border);
-  padding-top: 16px;
-  margin-top: 16px;
+.dxp-transform-operation {
+  padding: 12px;
+  border: 1px solid var(--dxp-line);
+  border-radius: 8px;
 }
-.dxp-connection-mapping h3 {
+.dxp-transform-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+}
+.dxp-transform-actions button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.dxp-transform-preview {
+  margin-top: 20px;
   font-size: 12px;
-  overflow-wrap: anywhere;
-  margin: 0 0 16px;
 }
-.dxp-mapping-preview {
-  font-size: 12px;
-  line-height: 1.5;
-  color: var(--dxp-muted);
-}
-.dxp-mapping-preview pre {
-  max-height: 200px;
+.dxp-transform-preview pre {
+  max-height: 180px;
   overflow: auto;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   padding: 10px;
-  background: var(--dxp-canvas);
+  background: var(--dxp-surface-muted);
   border-radius: 6px;
 }
-.dxp-mapping-preview details {
-  margin: 8px 0;
+.dxp-transform-preview details,
+.dxp-transform-preview > div {
+  margin-top: 10px;
 }

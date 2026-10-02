@@ -4,22 +4,20 @@ import type { NodeKind, StepConfig, StepData, WorkflowEdge, WorkflowNode } from 
 interface NodeDataPorts {
   acceptsData: boolean;
   outputsData: boolean;
-  incomingDataPath?: string;
 }
 
 // Define data-port behavior once per node kind. Config changes are evaluated on render.
 // These describe data inputs/outputs shown on the canvas, including condition pass-through.
 const dataPorts: Partial<Record<NodeKind, (config: StepConfig) => NodeDataPorts>> = {
+  transform: () => ({ acceptsData: true, outputsData: true }),
   http: () => ({ acceptsData: true, outputsData: true }),
   fork: (config) => ({
     acceptsData: config.conditionType === 'data',
     outputsData: false,
-    incomingDataPath: config.conditionDataPath,
   }),
   dom: (config) => ({
     acceptsData: dataTools.usesIncomingValue(config),
     outputsData: false,
-    incomingDataPath: config.valueDataPath,
   }),
 };
 
@@ -47,7 +45,7 @@ export function getNodeDataFlow(
     node && !['trigger', 'note', 'frame'].includes(node.data.kind);
   const node = nodeMap.get(id);
   if (!isExecutable(node)) return undefined;
-  if (node?.data.kind === 'http') return 'produces';
+  if (['http', 'transform'].includes(node?.data.kind ?? '')) return 'produces';
 
   const sources = new Map<string, string[]>();
   for (const edge of edges) {
@@ -64,7 +62,7 @@ export function getNodeDataFlow(
     visited.add(sourceId);
     const source = nodeMap.get(sourceId);
     if (!isExecutable(source)) continue;
-    if (source?.data.kind === 'http') {
+    if (['http', 'transform'].includes(source?.data.kind ?? '')) {
       return edges.some((edge) => edge.source === id && isExecutable(nodeMap.get(edge.target)))
         ? 'forwards'
         : 'receives';

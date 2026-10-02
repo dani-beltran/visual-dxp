@@ -3,7 +3,7 @@ import { Position } from '@xyflow/react';
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { ConnectionMappingEditor } from '../src/components/ConnectionMappingEditor';
+import { DataTransformInspector } from '../src/components/DataTransformInspector';
 import { VisualDXPBuilder } from '../src/components/VisualDXPBuilder';
 import type { Workflow } from '../src/lib/types';
 
@@ -81,7 +81,7 @@ async function click(selector: string) {
   });
 }
 function pathField() {
-  return element('.dxp-connection-mapping input') as HTMLInputElement;
+  return element('.dxp-data-transform input') as HTMLInputElement;
 }
 
 it.each(['delay', 'fork', 'loop'] as const)(
@@ -191,71 +191,125 @@ async function setPath(value: string) {
   });
 }
 
-it('edits the same connection from both inspectors and preserves mapping through undo/redo and save', async () => {
+it('edits a Data Transform through history and saves its configuration without connection controls', async () => {
+  const workflow = graph();
+  workflow.nodes.push({
+    ...workflow.nodes[1],
+    id: 'transform',
+    type: 'workflow',
+    position: { x: 200, y: 180 },
+    data: { kind: 'transform', label: 'Name', config: { dataPath: '', transformations: [] } },
+  });
+  workflow.edges = [
+    { id: 'source', source: 'http', target: 'transform' },
+    { id: 'result', source: 'transform', target: 'dom' },
+  ];
   const onChange = vi.fn<(workflow: Workflow) => void>();
   await act(async () =>
-    root.render(<VisualDXPBuilder initialWorkflow={graph()} onChange={onChange} />),
+    root.render(<VisualDXPBuilder initialWorkflow={workflow} onChange={onChange} />),
   );
-  await click('[data-id="mapping"]');
+  await click('[data-id="dom"]');
+  expect(host.textContent).not.toContain('Incoming mappings');
+  await click('[data-id="result"]');
+  expect(host.querySelector('.dxp-data-transform')).toBeNull();
+  expect(host.textContent).not.toContain('Destination input');
+  await click('[data-id="transform"]');
   expect(host.textContent).toContain('No sample available');
   await setPath('user.name');
-  expect(onChange.mock.lastCall?.[0].edges[0].data?.mapping).toEqual({
-    sourcePath: 'user.name',
-    targetInput: 'value',
-  });
-  expect(element('.react-flow__edge-text').textContent).toContain('user.name → Element value');
+  expect(
+    onChange.mock.lastCall?.[0].nodes.find((node) => node.id === 'transform')?.data.config.dataPath,
+  ).toBe('user.name');
   await click('[data-id="dom"]');
-  expect(pathField().value).toBe('user.name');
+  await click('[data-id="transform"]');
   await setPath('user.nickname');
-  await click('[data-id="mapping"]');
-  expect(pathField().value).toBe('user.nickname');
+  await click('[data-id="dom"]');
   await click('button[title^="Undo"]');
-  await click('[data-id="mapping"]');
+  await click('[data-id="transform"]');
   expect(pathField().value).toBe('user.name');
   await click('button[title^="Redo"]');
-  await click('[data-id="mapping"]');
+  await click('[data-id="transform"]');
   expect(pathField().value).toBe('user.nickname');
   const saved = JSON.parse(JSON.stringify(onChange.mock.lastCall![0]));
-  expect(saved.nodes[1].data.config.valueDataPath).toBeUndefined();
-  expect(saved.edges[0].data).toEqual({
-    mapping: { sourcePath: 'user.nickname', targetInput: 'value' },
-  });
+  expect(saved.edges.every((edge: Workflow['edges'][number]) => !edge.data?.mapping)).toBe(true);
 });
 
-it('shows missing, null, incompatible and unavailable preview states separately', async () => {
-  const workflow = graph();
-  const edge = workflow.edges[0];
-  const target = workflow.nodes[1];
-  target.data.config.action = 'add-class';
-  for (const [sourcePath, expected] of [
-    ['missing', 'Missing —'],
-    ['nil', 'null (explicit value)'],
-    ['object', 'Incompatible with the destination:'],
+it('shows missing, null, empty string and incompatible preview states separately', async () => {
+  for (const [dataPath, transformations, expected] of [
+    ['missing', [], 'Missing —'],
+    ['nil', [], 'null (explicit value)'],
+    ['empty', [], '"" (empty string)'],
+    ['object', [{ type: 'uppercase' }], 'requires text; received an object'],
   ] as const) {
     await act(async () =>
       root.render(
-        <ConnectionMappingEditor
-          edge={{ ...edge, data: { mapping: { sourcePath, targetInput: 'value' } } }}
-          source={workflow.nodes[0]}
-          target={target}
-          preview={{
-            source: { exists: true, value: { nil: null, object: {} } },
-            jsonResponse: true,
-          }}
+        <DataTransformInspector
+          config={{ dataPath, transformations: [...transformations] }}
+          previews={[
+            {
+              edgeId: 'input',
+              label: 'Source',
+              preview: {
+                source: { exists: true, value: { nil: null, empty: '', object: {} } },
+                jsonResponse: true,
+              },
+            },
+          ]}
           onChange={() => {}}
-          onBlur={() => {}}
         />,
       ),
     );
     expect(host.textContent).toContain(expected);
     expect(host.textContent).not.toContain('No sample available');
   }
-  await act(async () =>
+});
+
+it('offers transformation-specific controls and reorders operations', async () => {
+  let config: Workflow['nodes'][number]['data']['config'] = {
+    transformations: [{ type: 'prefix', value: 'a' }, { type: 'uppercase' }],
+  };
+  const render = () =>
     root.render(
-      <ConnectionMappingEditor edge={edge} target={target} onChange={() => {}} onBlur={() => {}} />,
-    ),
+      <DataTransformInspector
+        config={config}
+        onChange={(patch) => {
+          config = { ...config, ...patch };
+          render();
+        }}
+      />,
+    );
+  await act(async () => render());
+  expect(host.textContent).toContain('Text to add');
+  expect(host.textContent).not.toContain('Replace with');
+  await click('button[aria-label="Move transformation 1 down"]');
+  expect(config.transformations).toEqual([{ type: 'uppercase' }, { type: 'prefix', value: 'a' }]);
+  await click('button[aria-label="Remove transformation 2"]');
+  expect(host.textContent).not.toContain('Text to add');
+});
+
+it('surfaces migration review and blocks export until reviewed', async () => {
+  const workflow = graph();
+  workflow.edges[0].data = { mapping: { sourcePath: 'user.name', targetInput: 'value' } };
+  workflow.nodes.push({
+    ...workflow.nodes[1],
+    id: 'after',
+    data: { kind: 'delay', label: 'After', config: { duration: 0 } },
+  });
+  workflow.edges.push({ id: 'after', source: 'dom', target: 'after' });
+  const onChange = vi.fn<(workflow: Workflow) => void>();
+  await act(async () =>
+    root.render(<VisualDXPBuilder initialWorkflow={workflow} onChange={onChange} />),
   );
-  expect(host.textContent).toContain('No sample available');
+  const transform = element('.react-flow__node[data-id^="transform-"]');
+  await act(async () => transform.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+  expect(host.textContent).toContain('forwarded the original data');
+  const button = [...host.querySelectorAll('button')].find(
+    (entry) => entry.textContent === 'Confirm reviewed configuration',
+  )!;
+  await act(async () => button.click());
+  expect(
+    onChange.mock.lastCall?.[0].nodes.find((node) => node.data.kind === 'transform')?.data.config
+      .migrationWarning,
+  ).toBeUndefined();
 });
 
 it('keeps the receiving badge and data socket while variables are edited, including undo', async () => {

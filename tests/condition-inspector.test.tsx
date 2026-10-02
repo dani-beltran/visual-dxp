@@ -231,7 +231,7 @@ it('edits condition behavior, leaves paths on connections, and reports regex err
   expect(host.querySelector('[role="alert"]')).toBeNull();
 });
 
-it('directs HTTP response selection to outgoing connections', async () => {
+it('directs HTTP response selection to Data Transform nodes', async () => {
   function HttpInspector() {
     const [config, setConfig] = useState<StepConfig>({ url: 'https://example.com' });
     current = config;
@@ -255,7 +255,7 @@ it('directs HTTP response selection to outgoing connections', async () => {
   await act(async () => root.render(<HttpInspector />));
   expect(() => field('Response format')).toThrow('Missing field');
   expect(() => field('Response data path')).toThrow('Missing field');
-  expect(host.textContent).toContain('full response is available on every outgoing connection');
+  expect(host.textContent).toContain('Add a Data Transform to select a field');
   expect(current.responseDataPath).toBeUndefined();
   expect(host.textContent).toContain('{{user.name}}');
   await change('Request URL', '/api/users/{{user.id}}');

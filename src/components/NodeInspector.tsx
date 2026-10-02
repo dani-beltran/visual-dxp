@@ -15,12 +15,14 @@ import {
 } from 'lucide-react';
 import { type ReactNode, useEffect, useId, useState } from 'react';
 import { getCatalog } from '../lib/catalog';
+import type { ConnectionPreview } from '../lib/connectionMapping';
 import { dataTools } from '../lib/data';
 import { dataHint, getDataOperators } from '../lib/dataLabels';
 import { formatBuilderError } from '../lib/i18n';
 import { useBuilderI18n } from '../lib/i18nContext';
 import { elementTriggerEvents, getTriggerOptions } from '../lib/triggers';
 import type { ConditionType, NodeKind, StepConfig, StepData, WorkflowNode } from '../lib/types';
+import { DataTransformInspector } from './DataTransformInspector';
 import { InfoBox } from './InfoBox';
 import { NoteControls } from './NoteControls';
 import { NoteTextEditor } from './NoteTextEditor';
@@ -30,7 +32,7 @@ import '../styles/inspector.css';
 interface NodeInspectorProps {
   node: WorkflowNode;
   forwardsData?: boolean;
-  incomingMappings?: ReactNode;
+  dataTransformPreviews?: { edgeId: string; label: string; preview?: ConnectionPreview }[];
   onChange: (patch: Partial<StepData>) => void;
   onClose: () => void;
   onPickElement: () => void;
@@ -106,7 +108,7 @@ function NumberInput({
 export function NodeInspector({
   node,
   forwardsData = false,
-  incomingMappings,
+  dataTransformPreviews,
   onChange,
   onClose,
   onPickElement,
@@ -118,6 +120,7 @@ export function NodeInspector({
   const catalog = getCatalog(t);
   const nextOutputDescriptions = {
     trigger: t('nodeInspector.runsWhenTheSelectedEventOccurs'),
+    transform: t('transform.outputHint'),
     http: t('nodeInspector.passesResponseDataOrAnErrorObjectToTheNextNode'),
     dom: t('nodeInspector.runsAfterTheElementsAreUpdated'),
     cookie: t('nodeInspector.runsAfterTheCookieIsSaved'),
@@ -314,9 +317,29 @@ export function NodeInspector({
           </>
         )}
 
+        {config.migrationWarning && (
+          <div className="dxp-inspector-field">
+            <p role="alert">{config.migrationWarning}</p>
+            <button
+              type="button"
+              className="dxp-inspector-pick"
+              onClick={() => update({ migrationWarning: undefined })}
+            >
+              {t('transform.reviewMigration')}
+            </button>
+          </div>
+        )}
+        {node.data.kind === 'transform' && (
+          <DataTransformInspector
+            config={config}
+            previews={dataTransformPreviews}
+            onChange={update}
+          />
+        )}
         {node.data.kind === 'http' && (
           <>
             <InfoBox>{t('nodeInspector.requestTemplates')}</InfoBox>
+            <p className="dxp-inspector-hint">{t('transform.httpHint')}</p>
             {requestTemplateError && (
               <p className="dxp-inspector-hint" role="alert">
                 {requestTemplateError}
@@ -992,23 +1015,24 @@ export function NodeInspector({
             <InfoBox>{t('nodeInspector.annotationOutputs', { kind: itemName })}</InfoBox>
           ) : (
             <div
-              className={`dxp-inspector-branches${node.data.kind === 'http' ? ' dxp-inspector-data-output' : ''}`}
+              className={`dxp-inspector-branches${['http', 'transform'].includes(node.data.kind) ? ' dxp-inspector-data-output' : ''}`}
             >
               <div>
-                {node.data.kind === 'http' ? (
+                {['http', 'transform'].includes(node.data.kind) ? (
                   <i className="dxp-inspector-dot-data" aria-hidden="true" />
                 ) : (
                   <ArrowRight size={13} aria-hidden="true" />
                 )}
                 <strong>
-                  {node.data.kind === 'http' ? t('nodeInspector.data') : t('nodeInspector.next')}
+                  {['http', 'transform'].includes(node.data.kind)
+                    ? t('nodeInspector.data')
+                    : t('nodeInspector.next')}
                 </strong>
                 <span>{nextOutputDescriptions[node.data.kind]}</span>
               </div>
             </div>
           )}
         </section>
-        {incomingMappings}
       </div>
       <footer className="dxp-inspector-footer">
         <button

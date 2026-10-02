@@ -1,6 +1,7 @@
-import { connectionTools } from './connectionMapping';
 import { buildCookie } from './cookies';
 import { dataTools } from './data';
+import { dataTransformTools } from './dataTransform';
+import { migrateDataTransforms } from './dataTransformMigration';
 import { getDateRange } from './dateRange';
 import { type BuilderTranslator, formatBuilderError, translateEnglish } from './i18n';
 import { isNoteMarks } from './noteText';
@@ -56,6 +57,7 @@ export function validateWorkflow(
   const knownKinds = new Set([
     'trigger',
     'http',
+    'transform',
     'dom',
     'cookie',
     'delay',
@@ -126,6 +128,8 @@ export function validateWorkflow(
       'method',
       'headers',
       'body',
+      'dataPath',
+      'migrationWarning',
       'responseDataPath',
       'action',
       'value',
@@ -162,7 +166,16 @@ export function validateWorkflow(
       !isNoteMarks(config.noteMarks, (config.noteText ?? '').length)
     )
       add(t('validation.noteTextFormattingMustUseSortedNonoverlappingRangesWithinThe'), node.id);
+    if (node.data.kind !== 'transform' && config.migrationWarning)
+      add(config.migrationWarning, node.id, 'transform.migration');
     switch (node.data.kind) {
+      case 'transform':
+        try {
+          dataTransformTools.validate(config);
+        } catch (error) {
+          add(formatBuilderError(error, t), node.id);
+        }
+        break;
       case 'cookie':
         try {
           buildCookie(config);
@@ -378,11 +391,8 @@ export function validateWorkflow(
       );
       continue;
     }
-    try {
-      connectionTools.validate(edge.data?.mapping, target.data, source.data.kind);
-    } catch (error) {
-      issues.push({ edgeId: edge.id, nodeId: target.id, message: formatBuilderError(error, t) });
-    }
+    if (edge.data?.mapping)
+      add('Legacy connection mapping needs migration to a Data Transform node.', target.id);
     if (target.data.kind === 'trigger')
       add(t('validation.triggersCannotReceiveIncomingConnections'), target.id);
     if (source.data.kind === 'fork' && !['true', 'false'].includes(edge.sourceHandle ?? ''))
@@ -422,6 +432,7 @@ export function validateWorkflow(
 
 /** Create a dependency-free script to load on the target website. */
 export function exportWorkflow(workflow: Workflow, options: ExportOptions = {}): string {
+  workflow = migrateDataTransforms(workflow, false);
   const target = validateExportTarget(workflow, options);
   const issues = validateWorkflow(workflow);
   if (issues.length) throw new Error(issues.map((issue) => issue.message).join('\n'));
@@ -445,12 +456,11 @@ export function exportWorkflow(workflow: Workflow, options: ExportOptions = {}):
       })),
     edges: workflow.edges
       .filter((edge) => !annotations.has(edge.source) && !annotations.has(edge.target))
-      .map(({ id, source, target, sourceHandle, data }) => ({
+      .map(({ id, source, target, sourceHandle }) => ({
         id,
         source,
         target,
         sourceHandle,
-        ...(data?.mapping ? { data: { mapping: data.mapping } } : {}),
       })),
   };
   const json = JSON.stringify(definition, null, 2)

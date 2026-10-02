@@ -66,11 +66,8 @@ import {
 } from '../lib/aiCredentials';
 import { AISettingsStore } from '../lib/aiSettings';
 import { createNode, defaultWorkflow, getCatalog } from '../lib/catalog';
-import {
-  type ConnectionMapping,
-  type ConnectionPreview,
-  migrateConnectionMappings,
-} from '../lib/connectionMapping';
+import type { ConnectionPreview } from '../lib/connectionMapping';
+import { migrateDataTransforms } from '../lib/dataTransformMigration';
 import { migrateElementTemplates } from '../lib/elementTemplates';
 import { validateWorkflow } from '../lib/export';
 import { getFlowLabels } from '../lib/flowLabels';
@@ -99,7 +96,6 @@ import { ActivityPanel } from './ActivityPanel';
 import { AISettings } from './AISettings';
 import { CanvasChat } from './CanvasChat';
 import { CanvasHelp } from './CanvasHelp';
-import { ConnectionMappingEditor } from './ConnectionMappingEditor';
 import { EdgeInspector } from './EdgeInspector';
 import { ElementPicker } from './ElementPicker';
 import { InfoBox } from './InfoBox';
@@ -172,7 +168,7 @@ interface HistoryEntry {
 type BuilderView = 'canvas' | 'presets' | 'activity' | 'settings';
 function copyWorkflow(w: Workflow): Workflow {
   return migrateElementTemplates(
-    migrateConnectionMappings({
+    migrateDataTransforms({
       ...structuredClone(w),
       includeSubpages: w.includeSubpages ?? false,
     }),
@@ -398,31 +394,13 @@ function Builder({
       const carriesData =
         (sourceFlow === 'produces' || sourceFlow === 'forwards') &&
         dataFlows.get(edge.target) !== undefined;
-      const mapping = edge.data?.mapping;
-      const destination =
-        mapping?.targetInput === 'value'
-          ? t('mapping.inputValue')
-          : mapping?.targetInput === 'condition'
-            ? t('mapping.inputCondition')
-            : t('mapping.inputData');
-      const path =
-        [mapping?.responseDataPath, mapping?.sourcePath].filter(Boolean).join(' → ') ||
-        t('mapping.wholeValue');
-      const caption = mapping
-        ? `${path.length > 48 ? `${path.slice(0, 45)}…` : path} → ${destination}`
-        : '';
-      const label = [typeof edge.label === 'string' ? edge.label : '', caption]
-        .filter(Boolean)
-        .join(' · ');
       return {
         ...edge,
-        ...(label ? { label, ariaLabel: label } : {}),
-        ...(carriesData || mapping
-          ? { className: `${edge.className ?? ''} dxp-edge-data`.trim() }
-          : {}),
+        ...(typeof edge.label === 'string' && edge.label ? { ariaLabel: edge.label } : {}),
+        ...(carriesData ? { className: `${edge.className ?? ''} dxp-edge-data`.trim() } : {}),
       };
     });
-  }, [workflow.nodes, workflow.edges, t]);
+  }, [workflow.nodes, workflow.edges]);
 
   const translation = useRef(t);
   translation.current = t;
@@ -537,7 +515,7 @@ function Builder({
   );
   const commit = useCallback(
     (update: (w: Workflow) => Workflow, action: ActivityAction, activityKey?: string) => {
-      const next = migrateElementTemplates(migrateConnectionMappings(update(current.current)));
+      const next = migrateElementTemplates(migrateDataTransforms(update(current.current)));
       if (JSON.stringify(next) === JSON.stringify(current.current)) return;
       const entry = remember(activityKey);
       current.current = next;
@@ -859,6 +837,14 @@ function Builder({
   }
   function patchNode(patch: Partial<StepData>) {
     if (!selected) return;
+    const inputSamples =
+      selected?.data.kind === 'transform' && patch.config
+        ? Object.fromEntries(
+            workflow.edges
+              .filter((edge) => edge.target === selectedId && connectionPreviews[edge.id])
+              .map((edge) => [edge.id, connectionPreviews[edge.id]]),
+          )
+        : undefined;
     commit(
       (w) => ({
         ...w,
@@ -873,38 +859,7 @@ function Builder({
           : activityAction('activity.settingsUpdated', { label: selected.data.label }),
       `node:${selected.id}:${Object.keys(patch).sort().join(',')}`,
     );
-  }
-  function patchMapping(edgeId: string, mapping: ConnectionMapping) {
-    const edge = workflow.edges.find((entry) => entry.id === edgeId);
-    if (!edge) return;
-    const sample = connectionPreviews[edgeId];
-    commit(
-      (w) => ({
-        ...w,
-        edges: w.edges.map((entry) =>
-          entry.id === edgeId ? { ...entry, data: { ...entry.data, mapping } } : entry,
-        ),
-      }),
-      activityAction('activity.settingsUpdated', {
-        label: `${workflow.nodes.find((node) => node.id === edge.source)?.data.label ?? edge.source} → ${workflow.nodes.find((node) => node.id === edge.target)?.data.label ?? edge.target}`,
-      }),
-      `edge:${edgeId}:mapping`,
-    );
-    // The edited connection's source is unchanged; downstream samples are now stale.
-    if (sample) setConnectionPreviews({ [edgeId]: sample });
-  }
-  function mappingEditor(edge: WorkflowEdge) {
-    return (
-      <ConnectionMappingEditor
-        key={edge.id}
-        edge={edge}
-        source={workflow.nodes.find((node) => node.id === edge.source)}
-        target={workflow.nodes.find((node) => node.id === edge.target)}
-        preview={connectionPreviews[edge.id]}
-        onChange={(mapping) => patchMapping(edge.id, mapping)}
-        onBlur={flushActivity}
-      />
-    );
+    if (inputSamples) setConnectionPreviews(inputSamples);
   }
   function renameEdge(label: string) {
     if (!selectedEdge) return;
@@ -1418,17 +1373,14 @@ function Builder({
             forwardsData={
               getNodeDataFlow(selected.id, workflow.nodes, workflow.edges) === 'forwards'
             }
-            incomingMappings={
-              !['note', 'frame', 'trigger'].includes(selected.data.kind) && (
-                <section aria-label={t('mapping.incoming')}>
-                  <h3 className="dxp-inspector-section-label">{t('mapping.incoming')}</h3>
-                  {workflow.edges.filter((edge) => edge.target === selected.id).map(mappingEditor)}
-                  {!workflow.edges.some((edge) => edge.target === selected.id) && (
-                    <p className="dxp-inspector-hint">{t('mapping.noConnections')}</p>
-                  )}
-                </section>
-              )
-            }
+            dataTransformPreviews={workflow.edges
+              .filter((edge) => edge.target === selected.id)
+              .map((edge) => ({
+                edgeId: edge.id,
+                label:
+                  workflow.nodes.find((node) => node.id === edge.source)?.data.label ?? edge.source,
+                preview: connectionPreviews[edge.id],
+              }))}
             onChange={patchNode}
             onClose={() => setSelectedId(null)}
             onPickElement={() => setPicking(true)}
@@ -1455,9 +1407,7 @@ function Builder({
               flushActivity();
               setSelectedEdgeId(null);
             }}
-          >
-            {mappingEditor(selectedEdge)}
-          </EdgeInspector>
+          />
         )}
       </div>
       {showPresets && presets && (

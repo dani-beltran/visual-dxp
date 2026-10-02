@@ -1,10 +1,12 @@
 import { isConnectionMapping } from './connectionMapping';
+import { type DataTransformation, dataTransformTools } from './dataTransform';
 import { isNoteMarks } from './noteText';
 import type { Workflow } from './types';
 
 const kinds = new Set([
   'trigger',
   'http',
+  'transform',
   'dom',
   'cookie',
   'delay',
@@ -21,6 +23,8 @@ const strings = [
   'method',
   'headers',
   'body',
+  'dataPath',
+  'migrationWarning',
   'responseDataPath',
   'action',
   'value',
@@ -59,7 +63,7 @@ const numbers = [
   'scrollMinDistance',
   'scrollThreshold',
 ];
-const booleans = ['noteBold', 'noteItalic', 'noteStrikethrough'];
+const booleans = ['legacyJsonOnly', 'noteBold', 'noteItalic', 'noteStrikethrough'];
 const object = (value: unknown): value is Record<string, unknown> =>
   !!value && typeof value === 'object' && !Array.isArray(value);
 /** Structural check for untrusted JSON; incomplete but editable configurations remain valid. */
@@ -107,6 +111,17 @@ export function isWorkflow(value: unknown): value is Workflow {
         !/^#[\da-f]{6}$/i.test(config.noteColor as string))
     )
       return false;
+    if (config.transformations !== undefined) {
+      try {
+        dataTransformTools.validate(
+          { transformations: config.transformations as DataTransformation[] },
+          false,
+          true,
+        );
+      } catch {
+        return false;
+      }
+    }
     nodeIds.add(node.id);
   }
   for (const node of value.nodes) {

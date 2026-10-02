@@ -1,6 +1,7 @@
-import { createConnectionTools } from '../connectionMapping';
 import { buildCookie } from '../cookies';
 import { createDataTools } from '../data';
+import { createDataTransformTools } from '../dataTransform';
+import { migrateDataTransforms } from '../dataTransformMigration';
 import { getDateRange } from '../dateRange';
 import { getTimeRange } from '../timeRange';
 import type { Workflow } from '../types';
@@ -18,7 +19,7 @@ import { startZoomTrigger } from './zoom-trigger';
 // functions free of module-scope references so their compiled source can also
 // power exported workflows, including after bundling and minification.
 const runtimeModules = {
-  createConnectionTools,
+  createDataTransformTools,
   createDataTools,
   buildCookie,
   createRuntimeContext,
@@ -67,7 +68,11 @@ function createRuntimeFactory(modules: typeof runtimeModules) {
   };
 }
 
-export const createRuntime = createRuntimeFactory(runtimeModules);
+const runtimeFactory = createRuntimeFactory(runtimeModules);
+/** Normalize imported connection mappings before execution; exports already contain explicit nodes. */
+export function createRuntime(workflow: Workflow, options: RuntimeOptions = {}): WorkflowRuntime {
+  return runtimeFactory(migrateDataTransforms(workflow, false), options);
+}
 export const executeWorkflow = createRuntime;
 
 /** Serialize the same runtime modules into a dependency-free factory expression. */

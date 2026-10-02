@@ -369,14 +369,18 @@ it('transports connection source samples from the isolated runtime and rejects s
     [
       node('start', 'trigger', { event: 'page-load' }),
       node('http', 'http', { url: 'https://example.com/data' }),
-      node('update', 'dom', { selector: '#result', valueSource: 'incoming-data' }),
+      node('transform', 'transform', {
+        dataPath: 'user.name',
+        transformations: [{ type: 'uppercase' }],
+      }),
+      node('update', 'dom', { selector: '#result', value: '{{$}}' }),
     ],
     [
       ['start', 'http'],
-      ['http', 'update'],
+      ['http', 'transform'],
+      ['transform', 'update'],
     ],
   );
-  graph.edges[1].data = { mapping: { sourcePath: 'user.name', targetInput: 'value' } };
   const onConnectionPreview = vi.fn();
   vi.mocked(fetch).mockImplementation(
     async (input) =>
@@ -398,10 +402,14 @@ it('transports connection source samples from the isolated runtime and rejects s
   );
   const { frame, doc, win } = await loadWebsite();
   await clickButton('Run workflow');
-  expect(doc.querySelector('#result')?.textContent).toBe('Ada');
+  expect(doc.querySelector('#result')?.textContent).toBe('ADA');
   expect(onConnectionPreview).toHaveBeenCalledWith('edge-1', {
     source: { exists: true, value: { user: { name: 'Ada' } } },
     jsonResponse: true,
+  });
+  expect(onConnectionPreview).toHaveBeenCalledWith('edge-2', {
+    source: { exists: true, value: 'ADA' },
+    jsonResponse: false,
   });
   const sent = vi
     .mocked(win.parent.postMessage)

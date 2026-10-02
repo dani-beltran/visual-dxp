@@ -2,6 +2,58 @@ import type { BuilderMessages } from '../../lib/i18n';
 
 /** Complete Spanish builder catalog supplied by the demo app. */
 export const spanishMessages = {
+  'nodes.transform.label': 'Transformación de datos',
+  'nodes.transform.description':
+    'Selecciona un campo de los datos entrantes y transforma su valor. Usa rutas anidadas o índices, añade transformaciones en orden o un valor alternativo para datos ausentes o null. El resultado se transmite a los siguientes pasos.',
+  'transform.dataPath': 'Ruta de datos',
+  'transform.httpHint':
+    'La respuesta completa pasa al siguiente paso. Añade una Transformación de datos para seleccionar un campo o transformar su valor.',
+  'transform.pathHint':
+    'Déjala vacía para seleccionar toda la entrada. Usa propiedades e índices, p. ej. user.items[0].name. Sin transformaciones, el valor extraído se transmite sin cambios.',
+  'transform.wholeValue': 'Valor completo',
+  'transform.transformations': 'Transformaciones',
+  'transform.orderHint':
+    'Se ejecutan de arriba abajo. Las operaciones de texto requieren texto. Añade primero un valor alternativo si el campo puede estar ausente o ser null.',
+  'transform.capitalize': 'Primera letra mayúscula',
+  'transform.lowercase': 'Minúsculas',
+  'transform.uppercase': 'Mayúsculas',
+  'transform.title-case': 'Iniciales mayúsculas',
+  'transform.trim': 'Recortar espacios',
+  'transform.prefix': 'Añadir prefijo',
+  'transform.suffix': 'Añadir sufijo',
+  'transform.replace': 'Buscar y reemplazar',
+  'transform.fallback': 'Valor alternativo para ausente o null',
+  'transform.textToAdd': 'Texto que añadir',
+  'transform.find': 'Buscar',
+  'transform.replacement': 'Reemplazar por',
+  'transform.replaceHint':
+    'Reemplaza todas las coincidencias exactas. El texto es literal; no se usan expresiones regulares.',
+  'transform.fallbackType': 'Tipo de valor alternativo',
+  'transform.fallbackValue': 'Valor alternativo',
+  'transform.text': 'Texto',
+  'transform.json': 'Valor JSON',
+  'transform.invalidFallback':
+    'Introduce JSON válido, como null, false, 0, "texto", un objeto o una matriz. Se guarda cuando el JSON es válido.',
+  'transform.add': 'Añadir transformación',
+  'transform.preview': 'Última prueba',
+  'transform.unavailable':
+    'No hay muestra disponible. Prueba el flujo para ver los valores. Las muestras grandes se omiten.',
+  'transform.source': 'Datos de entrada',
+  'transform.output': 'Salida seleccionada y transformada',
+  'transform.missing': 'Ausente: la ruta no corresponde a ningún valor.',
+  'transform.null': 'null (valor explícito)',
+  'transform.empty': '"" (cadena vacía)',
+  'transform.outputHint': 'Transmite el valor seleccionado y transformado al siguiente nodo',
+  'transform.importedJson': 'Conservar selección de respuesta JSON importada',
+  'transform.importedHint':
+    'Aplica la ruta solo a respuestas HTTP JSON correctas. El texto completo y los errores se transmiten, conservando el flujo importado.',
+  'transform.reviewMigration': 'Confirmar configuración revisada',
+  'transform.summary': ({ path, count }) =>
+    `${path} · ${count} ${count === 1 ? 'transformación' : 'transformaciones'}`,
+  'transform.operation': ({ number }) => `Transformación ${number}`,
+  'transform.moveUp': ({ number }) => `Subir transformación ${number}`,
+  'transform.moveDown': ({ number }) => `Bajar transformación ${number}`,
+  'transform.remove': ({ number }) => `Eliminar transformación ${number}`,
   'common.enterFullscreen': 'Entrar en pantalla completa',
   'common.exitFullscreen': 'Salir de pantalla completa',
   'nodeInspector.requestTemplates':
@@ -13,51 +65,15 @@ export const spanishMessages = {
   'errors.data.unresolvedRequestTemplatePath': ({ path }: { path: string }) =>
     `No se ha podido resolver la ruta de datos «${path}» de la plantilla de solicitud.`,
   'nodeInspector.variablesHint':
-    'Usa {{name}} o {{user.name}} en el contenido, los selectores o los nombres de atributo. Usa {{$}} para el valor completo seleccionado en la conexión. Las variables se rellenan al ejecutar este paso.',
+    'Usa {{name}} o {{user.name}} en el contenido, los selectores o los nombres de atributo. Usa {{$}} para el valor de entrada completo. Las variables se rellenan al ejecutar este paso.',
   'nodeInspector.variablesIncomingHint':
-    'Usa datos de entrada: las variables se resuelven desde la conexión entrante. Edita su asignación abajo para elegir los datos disponibles para este paso.',
-  'mapping.variablesInactive':
-    'Añade una variable como {{name}} o {{$}} al paso de destino para usar esta entrada.',
+    'Usa datos entrantes. Añade una Transformación de datos antes de este paso para seleccionar un campo o transformar su valor.',
   'errors.data.emptyVariable':
     'Introduce un nombre de variable entre {{ }}; usa {{$}} para el valor de entrada completo.',
   'errors.data.unclosedVariable':
     'Cierra cada variable con sus llaves correspondientes, por ejemplo {{name}}.',
   'errors.data.missingTargetVariable': ({ name }) =>
     `Falta la variable «${name}» en el selector del elemento o el nombre del atributo.`,
-
-  'mapping.title': 'Asignación de datos',
-  'mapping.sourcePath': 'Ruta de datos de origen',
-  'mapping.destination': 'Entrada de destino',
-  'mapping.httpInputHint':
-    'Los datos seleccionados están disponibles para las variables de la URL, las cabeceras y el cuerpo de la petición. Este paso transmite su propia respuesta.',
-  'mapping.inputData': 'Datos enviados al paso',
-  'mapping.inputValue': 'Valor del elemento',
-  'mapping.inputCondition': 'Valor de la condición',
-  'mapping.pathHint':
-    'Déjala vacía para usar el valor completo. Usa propiedades e índices, p. ej. data.items[0].price.',
-  'mapping.forwardHint':
-    'Los datos seleccionados se envían a este paso y se transmiten a los siguientes.',
-  'mapping.consumeHint': 'Este paso usa el valor seleccionado y transmite los datos originales.',
-  'mapping.preview': 'Última prueba',
-  'mapping.unavailable':
-    'No hay muestra disponible. Prueba el flujo para ver los valores. Las muestras grandes se omiten.',
-  'mapping.sourceOutput': 'Salida de origen',
-  'mapping.mappedValue': 'Valor asignado',
-  'mapping.missing': 'Ausente: la ruta no corresponde a ningún valor.',
-  'mapping.null': 'null (valor explícito)',
-  'mapping.incompatible': 'Incompatible con el destino:',
-  'mapping.importedResponse': 'Selección de respuesta importada',
-  'mapping.importedHint':
-    'Conserva la selección HTTP guardada antes de la ruta de origen. Se aplica a respuestas JSON correctas; el texto y los errores se transmiten completos.',
-  'mapping.inactive':
-    'Esta entrada está inactiva. Activa los datos entrantes en el paso de destino para usarla.',
-  'mapping.configureConnections':
-    'Elige el valor en Asignaciones entrantes o selecciona una conexión entrante.',
-  'mapping.httpHint':
-    'La respuesta completa está disponible en cada conexión saliente. Selecciona una conexión para elegir los datos que envía.',
-  'mapping.incoming': 'Asignaciones entrantes',
-  'mapping.noConnections': 'Conecta un paso para configurar sus datos entrantes.',
-  'mapping.wholeValue': 'Valor completo',
 
   'aiSettings.assistantCredentials': 'Credenciales del asistente',
   'aiSettings.aiSettings': 'Configuración de IA',

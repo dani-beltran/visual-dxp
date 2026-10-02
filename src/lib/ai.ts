@@ -16,10 +16,11 @@ import {
   validBrowserConfiguration,
 } from './aiCredentials';
 import { type ConnectionData, isConnectionMapping } from './connectionMapping';
+import { type DataTransformation, dataTransformTools } from './dataTransform';
 import { validateWorkflow } from './export';
 import { framesFirst, removeNodes } from './frames';
 import { isNoteMarks } from './noteText';
-import type { NodeKind, NoteMark, StepConfig, Workflow, WorkflowEdge, WorkflowNode } from './types';
+import type { NodeKind, StepConfig, Workflow, WorkflowEdge, WorkflowNode } from './types';
 
 export interface AIChatMessage {
   role: 'user' | 'assistant';
@@ -83,6 +84,7 @@ export const AI_LIMITS = {
 const kinds = new Set<NodeKind>([
   'trigger',
   'http',
+  'transform',
   'dom',
   'cookie',
   'delay',
@@ -99,6 +101,8 @@ const configStrings = [
   'method',
   'headers',
   'body',
+  'dataPath',
+  'migrationWarning',
   'responseDataPath',
   'action',
   'value',
@@ -137,7 +141,7 @@ const configNumbers = [
   'scrollMinDistance',
   'scrollThreshold',
 ] as const;
-const configBooleans = ['noteBold', 'noteItalic', 'noteStrikethrough'] as const;
+const configBooleans = ['legacyJsonOnly', 'noteBold', 'noteItalic', 'noteStrikethrough'] as const;
 const own = (value: object, key: string) => Object.hasOwn(value, key);
 
 function record(value: unknown, label: string): Record<string, unknown> {
@@ -203,7 +207,7 @@ function position(value: unknown): WorkflowNode['position'] {
 
 function config(value: unknown, complete = false): StepConfig {
   const input = record(value, 'Step configuration');
-  const output: Record<string, string | number | boolean | NoteMark[]> = {};
+  const output: Record<string, unknown> = {};
   for (const key of configStrings) {
     if (own(input, key) && input[key] !== undefined)
       output[key] = text(input[key], 'Step configuration text', 20000, true);
@@ -225,6 +229,20 @@ function config(value: unknown, complete = false): StepConfig {
         messageParams: {},
       });
     output[key] = input[key];
+  }
+  if (input.transformations !== undefined) {
+    dataTransformTools.validate(
+      { transformations: input.transformations as DataTransformation[] },
+      false,
+      true,
+    );
+    output.transformations = (input.transformations as DataTransformation[]).map((item) => {
+      if (item.type === 'fallback' || item.type === 'prefix' || item.type === 'suffix')
+        return { type: item.type, value: structuredClone(item.value) };
+      if (item.type === 'replace')
+        return { type: item.type, find: item.find, replacement: item.replacement };
+      return { type: item.type };
+    });
   }
   if (input.noteMarks !== undefined) {
     const length = complete ? ((output.noteText as string | undefined) ?? '').length : Infinity;
