@@ -231,7 +231,7 @@ it('edits condition behavior, leaves paths on connections, and reports regex err
   expect(host.querySelector('[role="alert"]')).toBeNull();
 });
 
-it('directs HTTP response selection to Data Transform nodes', async () => {
+it('edits HTTP request templates without response selection fields', async () => {
   function HttpInspector() {
     const [config, setConfig] = useState<StepConfig>({ url: 'https://example.com' });
     current = config;
@@ -255,7 +255,7 @@ it('directs HTTP response selection to Data Transform nodes', async () => {
   await act(async () => root.render(<HttpInspector />));
   expect(() => field('Response format')).toThrow('Missing field');
   expect(() => field('Response data path')).toThrow('Missing field');
-  expect(host.textContent).toContain('Add a Data Transform to select a field');
+  expect(host.textContent).toContain('Passes response data or an error object to the next node');
   expect(current).not.toHaveProperty('responseDataPath');
   expect(host.textContent).toContain('{{user.name}}');
   await change('Request URL', '/api/users/{{user.id}}');
@@ -274,7 +274,7 @@ it('directs HTTP response selection to Data Transform nodes', async () => {
   expect(host.querySelector('[role="alert"]')?.textContent).toContain('Invalid data path');
 });
 
-it('edits templated content without a toggle and detects variables in each active field', async () => {
+it('edits and validates templated content without a toggle or variable explanations', async () => {
   function ElementInspector() {
     const [config, setConfig] = useState<StepConfig>({
       selector: '#result',
@@ -306,7 +306,6 @@ it('edits templated content without a toggle and detects variables in each activ
   await change('New text', 'Hello {{name}}!');
   expect(current.value).toBe('Hello {{name}}!');
   expect(current).not.toHaveProperty('valueSource');
-  expect(host.querySelector('.dxp-inspector-incoming-data')).not.toBeNull();
   expect(field('New text').value).toBe('Hello {{name}}!');
   for (const [action, label] of [
     ['html', 'HTML content'],
@@ -316,15 +315,12 @@ it('edits templated content without a toggle and detects variables in each activ
   ]) {
     await change('Action', action);
     expect(field(label).value).toBe('Hello {{name}}!');
-    expect(host.querySelector('.dxp-inspector-incoming-data')).not.toBeNull();
   }
   await change('Action', 'hide');
   expect(host.querySelector('textarea')).toBeNull();
   expect(host.querySelector('.dxp-inspector-incoming-data')).toBeNull();
   await change('Target element', '#{{id}}');
-  expect(host.querySelector('.dxp-inspector-incoming-data')).not.toBeNull();
   await change('Action', 'show');
-  expect(host.querySelector('.dxp-inspector-incoming-data')).not.toBeNull();
   await change('Target element', '#result');
   await change('Action', 'text');
   await change('New text', 'Hello {{name');

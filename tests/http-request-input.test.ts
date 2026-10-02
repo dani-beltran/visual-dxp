@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { dataTools } from '../src/lib/data';
 import { exportWorkflow, validateWorkflow } from '../src/lib/export';
 import { createRuntime } from '../src/lib/runtime';
-import type { RunLog, StepConfig, Workflow } from '../src/lib/types';
+import type { RunLog, StepConfig } from '../src/lib/types';
 import { dataTools as serverDataTools } from '../src/server/ai/workflow/data';
 import type { Workflow as ServerWorkflow } from '../src/server/ai/workflow/types';
 import { validateWorkflow as validateServerWorkflow } from '../src/server/ai/workflow/validation';
@@ -17,8 +17,8 @@ afterEach(() => {
   document.body.innerHTML = '';
 });
 
-function workflow(config: StepConfig): Workflow & ServerWorkflow {
-  const graph: Workflow & ServerWorkflow = {
+function workflow(config: StepConfig): ServerWorkflow {
+  const graph: ServerWorkflow = {
     version: 1,
     name: 'Chained requests',
     websiteUrl: window.location.href,
