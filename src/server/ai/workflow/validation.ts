@@ -1,5 +1,5 @@
 import { dataTransformTools } from '../../../lib/dataTransform';
-import { buildCookie } from './cookies';
+import { validateCookie } from './cookies';
 import { dataTools } from './data';
 import { getDateRange } from './dateRange';
 import { parseNoteMarks } from './notes';
@@ -168,7 +168,7 @@ export function validateWorkflow(workflow: Workflow): ValidationIssue[] {
         break;
       case 'cookie':
         try {
-          buildCookie(config);
+          validateCookie(config);
         } catch (error) {
           add((error as Error).message, node.id);
         }

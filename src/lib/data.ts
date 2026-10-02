@@ -281,7 +281,7 @@ export function createDataTools() {
     template: string,
     input: DataSelection,
     action?: string,
-    required = false,
+    required: boolean | 'cookie name' = false,
   ): string {
     validateTemplate(template);
     // One pass: data containing braces is inserted literally, never evaluated again.
@@ -290,10 +290,13 @@ export function createDataTools() {
       if (required && (!selected.exists || selected.value === null || selected.value === undefined))
         throw Object.assign(
           new Error(
-            `Variable “${expression.trim()}” is missing in the element selector or attribute name.`,
+            `Variable “${expression.trim()}” is missing in the ${required === 'cookie name' ? 'cookie name' : 'element selector or attribute name'}.`,
           ),
           {
-            messageKey: 'errors.data.missingTargetVariable',
+            messageKey:
+              required === 'cookie name'
+                ? 'errors.cookies.missingNameVariable'
+                : 'errors.data.missingTargetVariable',
             messageParams: { name: expression.trim() },
           },
         );

@@ -76,9 +76,9 @@ export interface StepConfig extends DataTransformConfig {
   /** @deprecated Legacy import only; migrated to Data Transform nodes. */
   valueDataPath?: string;
   attribute?: string;
-  /** Name of the cookie to create or overwrite on the current host. */
+  /** Cookie name on the current host; supports {{variables}} from incoming data. */
   cookieName?: string;
-  /** Cookie value, encoded when written. An empty string is allowed. */
+  /** Cookie value; supports {{variables}} and {{$}}. Encoded when written; may be empty. */
   cookieValue?: string;
   /** Lifetime in whole days, from 0 (browser session, default) to 400. */
   cookieDays?: number;

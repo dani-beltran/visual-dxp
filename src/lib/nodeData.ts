@@ -19,6 +19,11 @@ const dataPorts: Partial<Record<NodeKind, (config: StepConfig) => NodeDataPorts>
     acceptsData: dataTools.usesIncomingValue(config),
     outputsData: false,
   }),
+  cookie: (config) => ({
+    acceptsData:
+      dataTools.hasVariables(config.cookieName) || dataTools.hasVariables(config.cookieValue),
+    outputsData: false,
+  }),
 };
 
 /** Describes configured socket capabilities independently of connected data flow. */

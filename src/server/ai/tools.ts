@@ -148,10 +148,14 @@ const config = z.object({
     .optional(),
   attribute: text.describe('Attribute name for Update element; supports {{variables}}.').optional(),
   cookieName: text
-    .describe('Name of a cookie to set on the current host; no spaces or cookie separators.')
+    .describe(
+      'Cookie name on the current host; supports {{name}}, nested paths, and {{$}} from incoming data. Missing/null name variables stop the step. The resolved name must have no spaces or cookie separators.',
+    )
     .optional(),
   cookieValue: text
-    .describe('Cookie value; may be empty. Names and values are percent-encoded when written.')
+    .describe(
+      'Cookie value; supports {{name}}, nested paths, and {{$}} from incoming data. Missing/null value variables become empty text; objects and arrays become JSON. Names and values are percent-encoded after substitution.',
+    )
     .optional(),
   cookieDays: z
     .number()

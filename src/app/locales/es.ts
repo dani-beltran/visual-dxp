@@ -305,6 +305,8 @@ export const spanishMessages = {
   'nodeInspector.separateMultipleClassNamesWithSpaces': 'Separa los nombres de clase con espacios.',
   'nodeInspector.enterAValue': 'Introduce un valor…',
   'nodeInspector.cookieName': 'Nombre de la cookie',
+  'nodeInspector.cookieVariablesHint':
+    'Usa {{name}}, {{user.name}} o {{items[0].id}} en el nombre o el valor de la cookie. Usa {{$}} para todo el valor de entrada. Las variables de nombre que faltan detienen este paso; las de valor se convierten en texto vacío.',
   'nodeInspector.eGAudience': 'p. ej. audience',
   'nodeInspector.cookieValue': 'Valor de la cookie',
   'nodeInspector.anEmptyValueIsAllowed': 'Se permite un valor vacío.',
@@ -589,6 +591,8 @@ export const spanishMessages = {
   'workflowCard.responseDataOutput': 'Salida de datos de respuesta',
   'errors.cookies.enterACookieNameWithoutSpacesOrSeparatorsSuchAs':
     'Introduce un nombre de cookie sin espacios ni separadores como = y ;.',
+  'errors.cookies.missingNameVariable': ({ name }) =>
+    `La variable «${name}» no está disponible en el nombre de la cookie.`,
   'errors.cookies.cookiesWithAnHttponlyNamePrefixMustBeSetBy':
     'Las cookies con un prefijo de nombre HttpOnly deben establecerse desde un servidor.',
   'errors.cookies.enterACookieValueAnEmptyStringIsAllowed':

@@ -16,6 +16,7 @@ import {
 import { type ReactNode, useEffect, useId, useState } from 'react';
 import { getCatalog } from '../lib/catalog';
 import type { ConnectionPreview } from '../lib/connectionMapping';
+import { validateCookie } from '../lib/cookies';
 import { dataTools } from '../lib/data';
 import { dataHint, getDataOperators } from '../lib/dataLabels';
 import { formatBuilderError } from '../lib/i18n';
@@ -147,6 +148,7 @@ export function NodeInspector({
   try {
     if (node.data.kind === 'http') dataTools.validateResponse(config);
     if (node.data.kind === 'dom') dataTools.validateElementValue(config);
+    if (node.data.kind === 'cookie') validateCookie(config);
     if (node.data.kind === 'fork' && conditionType === 'data') dataTools.validateCondition(config);
   } catch (error) {
     dataError = formatBuilderError(error, t);
@@ -505,6 +507,18 @@ export function NodeInspector({
                 spellCheck={false}
               />
             </Field>
+            <InfoBox>{t('nodeInspector.cookieVariablesHint')}</InfoBox>
+            {(dataTools.hasVariables(config.cookieName) ||
+              dataTools.hasVariables(config.cookieValue)) && (
+              <InfoBox className="dxp-inspector-incoming-data">
+                {t('nodeInspector.variablesIncomingHint')}
+              </InfoBox>
+            )}
+            {dataError && (
+              <p role="alert" className="dxp-inspector-hint">
+                {dataError}
+              </p>
+            )}
             <Field label={t('nodeInspector.expiration')} htmlFor={id('cookie-expiration')}>
               <Select
                 id={id('cookie-expiration')}

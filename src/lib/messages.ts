@@ -330,6 +330,8 @@ export const englishMessages = {
     'Separate multiple class names with spaces.',
   'nodeInspector.enterAValue': 'Enter a value…',
   'nodeInspector.cookieName': 'Cookie name',
+  'nodeInspector.cookieVariablesHint':
+    'Use {{name}}, {{user.name}}, or {{items[0].id}} in the cookie name or value. Use {{$}} for the whole incoming value. Missing name variables stop this step; missing value variables become empty text.',
   'nodeInspector.eGAudience': 'e.g. audience',
   'nodeInspector.cookieValue': 'Cookie value',
   'nodeInspector.anEmptyValueIsAllowed': 'An empty value is allowed.',
@@ -685,6 +687,8 @@ export const englishMessages = {
     `${count} ${count === 1 ? 'action' : 'actions'}`,
   'errors.cookies.enterACookieNameWithoutSpacesOrSeparatorsSuchAs':
     'Enter a cookie name without spaces or separators such as = and ;.',
+  'errors.cookies.missingNameVariable': ({ name }: { name: string }) =>
+    `Variable “${name}” is missing in the cookie name.`,
   'errors.cookies.cookiesWithAnHttponlyNamePrefixMustBeSetBy':
     'Cookies with an HttpOnly name prefix must be set by a server.',
   'errors.cookies.enterACookieValueAnEmptyStringIsAllowed':

@@ -1,4 +1,22 @@
+import { dataTools } from './data';
 import type { StepConfig } from './types';
+
+/** Check template syntax and literal cookie settings without requiring incoming data. */
+export function validateCookie(config: StepConfig): void {
+  dataTools.validateTemplate(config.cookieName);
+  dataTools.validateTemplate(config.cookieValue);
+  buildCookie({
+    ...config,
+    cookieName:
+      typeof config.cookieName === 'string'
+        ? config.cookieName.replace(/\{\{[\s\S]*?\}\}/g, 'x')
+        : config.cookieName,
+    cookieValue:
+      typeof config.cookieValue === 'string'
+        ? config.cookieValue.replace(/\{\{[\s\S]*?\}\}/g, '')
+        : config.cookieValue,
+  });
+}
 
 /** Self-contained so validation and standalone workflow scripts use the same rules. */
 export function buildCookie(config: StepConfig): string {

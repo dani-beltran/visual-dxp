@@ -102,7 +102,17 @@ export function createExecution(
             output = transformTools.apply(input, config, inputJsonResponse);
             break;
           case 'cookie': {
-            const cookie = buildCookie(config);
+            const cookie = buildCookie({
+              ...config,
+              cookieName:
+                typeof config.cookieName === 'string'
+                  ? dataTools.interpolate(config.cookieName, input, undefined, 'cookie name')
+                  : config.cookieName,
+              cookieValue:
+                typeof config.cookieValue === 'string'
+                  ? dataTools.interpolate(config.cookieValue, input)
+                  : config.cookieValue,
+            });
             try {
               doc.cookie = cookie + (win.location.protocol === 'https:' ? '; Secure' : '');
               const pair = cookie.split(';', 1)[0];

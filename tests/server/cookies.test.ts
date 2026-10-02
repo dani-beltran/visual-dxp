@@ -28,6 +28,9 @@ it.each([
   { cookieName: 'audience', cookieValue: '', cookieDays: 0 },
   { cookieName: 'campaign%code', cookieValue: 'summer; token=a=b & café 🍪', cookieDays: 30 },
   { cookieName: '__Host-audience', cookieValue: 'returning', cookieDays: 400 },
+  { cookieName: 'audience_{{user.id}}', cookieValue: '{{items[0].label}}' },
+  { cookieName: '{{$.name}}', cookieValue: 'Value: {{$}}', cookieDays: 30 },
+  { cookieName: 'audience', cookieValue: '{{missing}}/{{nil}}' },
 ])('creates and edits a cookie node through the tools and AI contracts: %j', async (config) => {
   const toolkit = createWorkflowTools(base, []);
   const add = toolkit.tools.find((item) => item.name === 'add_node')!;
@@ -75,6 +78,14 @@ it.each([
   { cookieName: 'a=b', cookieValue: 'x' },
   { cookieName: 'a; Path=/', cookieValue: 'x' },
   { cookieName: '__Http-session', cookieValue: 'x' },
+  { cookieName: '{{ }}', cookieValue: 'x' },
+  { cookieName: '{{user.id', cookieValue: 'x' },
+  { cookieName: '{{user[id]}}', cookieValue: 'x' },
+  { cookieName: 'bad {{name}}', cookieValue: 'x' },
+  { cookieName: '__Http-{{name}}', cookieValue: 'x' },
+  { cookieName: 'audience', cookieValue: '{{ }}' },
+  { cookieName: 'audience', cookieValue: '{{user.name' },
+  { cookieName: 'audience', cookieValue: '{{name.toUpperCase()}}' },
   { cookieName: 'audience' },
   { cookieName: 'audience', cookieValue: 42 },
   { cookieName: 'audience', cookieValue: '\uD800' },

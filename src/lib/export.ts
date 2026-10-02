@@ -1,4 +1,4 @@
-import { buildCookie } from './cookies';
+import { validateCookie } from './cookies';
 import { dataTools } from './data';
 import { dataTransformTools } from './dataTransform';
 import { migrateDataTransforms } from './dataTransformMigration';
@@ -178,7 +178,7 @@ export function validateWorkflow(
         break;
       case 'cookie':
         try {
-          buildCookie(config);
+          validateCookie(config);
         } catch (error) {
           add(formatBuilderError(error, t), node.id);
         }
