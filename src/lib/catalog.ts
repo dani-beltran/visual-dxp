@@ -4,11 +4,11 @@ import {
   Frame,
   GitFork,
   Globe2,
-  MousePointer2,
   MousePointerClick,
   PanelTop,
   Repeat2,
   StickyNote,
+  SquareDashedMousePointer,
   Timer,
 } from 'lucide-react';
 import { welcomeJourneyPreset } from '../presets/welcome-journey';
@@ -49,7 +49,7 @@ export const catalog: {
     label: 'Update element',
     description: nodeDescriptions.dom,
     color: 'orange',
-    icon: MousePointer2,
+    icon: SquareDashedMousePointer,
     category: 'Action',
     config: { selector: '#shop-now', action: 'text', value: 'Discover your next favorite' },
   },
