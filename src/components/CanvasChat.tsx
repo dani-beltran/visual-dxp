@@ -12,6 +12,7 @@ import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import type { AIChatMessage } from '../lib/ai';
 import { formatBuilderError } from '../lib/i18n';
 import { useBuilderI18n } from '../lib/i18nContext';
+import { ChatMarkdown } from './ChatMarkdown';
 import '../styles/chat.css';
 
 export interface CanvasChatProps {
@@ -307,7 +308,7 @@ export function CanvasChat({
                 <span className="dxp-ai-message-author">
                   {message.role === 'user' ? t('canvasChat.you') : t('canvasChat.visualDxpAi')}
                 </span>
-                <p>{message.content}</p>
+                <ChatMarkdown content={message.content} />
                 {!!message.changeCount && (
                   <span className="dxp-ai-applied">
                     <Check size={12} aria-hidden="true" />

@@ -272,6 +272,104 @@ describe('canvas AI chat', () => {
     expect(onSend.mock.calls[2][0]).toEqual([{ role: 'user', content: 'Start again' }]);
   });
 
+  it('renders Markdown in both roles while keeping the original text in request history', async () => {
+    const reply = [
+      '## Workflow plan',
+      '',
+      '**Welcome** with *emphasis*, ~~old copy~~ and `delay`.',
+      '',
+      '- First step',
+      '  - Nested step',
+      '',
+      '1. Ordered step',
+      '',
+      '> A helpful note',
+      '',
+      '```js',
+      'const delay = 2000;',
+      '```',
+      '',
+      '| Step | Status |',
+      '| --- | --- |',
+      '| Welcome | Ready |',
+      '',
+      '- [x] Complete',
+      '- [ ] Pending',
+      '',
+      '[Documentation](https://example.com/docs)',
+    ].join('\n');
+    const onSend = vi.fn<CanvasChatProps['onSend']>().mockResolvedValue({
+      message: reply,
+      changeCount: 2,
+    });
+    await renderChat({ open: true, onSend });
+    await typeMessage('Please add **welcome** and `delay`.');
+    await click(button('Send message'));
+    expect(host.querySelector('.dxp-ai-message-user strong')?.textContent).toBe('welcome');
+    const message = host.querySelector('.dxp-ai-message-assistant');
+    if (!message) throw new Error('Assistant message should exist');
+    expect(message.querySelector('h2')?.textContent).toBe('Workflow plan');
+    expect(message.querySelector('strong')?.textContent).toBe('Welcome');
+    expect(message.querySelector('em')?.textContent).toBe('emphasis');
+    expect(message.querySelector('del')?.textContent).toBe('old copy');
+    expect(message.querySelector('p code')?.textContent).toBe('delay');
+    expect(message.querySelector('ul ul li')?.textContent).toBe('Nested step');
+    expect(message.querySelector('ol li')?.textContent).toBe('Ordered step');
+    expect(message.querySelector('blockquote')?.textContent).toContain('A helpful note');
+    expect(message.querySelector('pre code.language-js')?.textContent).toBe(
+      'const delay = 2000;\n',
+    );
+    expect(message.querySelectorAll('th')).toHaveLength(2);
+    expect(message.querySelector('td')?.textContent).toBe('Welcome');
+    const tasks = message.querySelectorAll<HTMLInputElement>('input[type="checkbox"]');
+    expect([...tasks].map((task) => [task.checked, task.disabled])).toEqual([
+      [true, true],
+      [false, true],
+    ]);
+    const link = message.querySelector('a');
+    if (!link) throw new Error('Documentation link should exist');
+    expect(link.href).toBe('https://example.com/docs');
+    expect(link.target).toBe('_blank');
+    expect(link.rel).toBe('noopener noreferrer');
+    expect(message.querySelector('.dxp-ai-applied')?.textContent).toContain('2 edits applied');
+    await typeMessage('Continue');
+    await click(button('Send message'));
+    expect(onSend.mock.calls[1][0]).toEqual([
+      { role: 'user', content: 'Please add **welcome** and `delay`.' },
+      { role: 'assistant', content: reply },
+      { role: 'user', content: 'Continue' },
+    ]);
+  });
+
+  it('treats raw HTML as text and blocks executable Markdown links', async () => {
+    const content = [
+      '<script>alert(1)</script>',
+      '',
+      '<img src="x" onerror="alert(1)">',
+      '',
+      '[Unsafe](javascript:alert%281%29)',
+      '',
+      '[Data](data:text/html,test)',
+      '',
+      '```html',
+      '<button onclick="alert(1)">Example</button>',
+      '```',
+    ].join('\n');
+    await renderChat({
+      open: true,
+      onSend: async () => ({ message: content, changeCount: 0 }),
+    });
+    await typeMessage(content);
+    await click(button('Send message'));
+    for (const message of host.querySelectorAll('.dxp-ai-markdown')) {
+      expect(message.querySelector('script, img, button, [onclick], [onerror]')).toBeNull();
+      expect(message.textContent).toContain('<script>alert(1)</script>');
+      expect(message.querySelectorAll('a')).toHaveLength(2);
+      expect(message.querySelector('a[href]')).toBeNull();
+      expect(message.querySelector('pre code')?.textContent).toContain('<button onclick=');
+    }
+  });
+
   it('restores a failed draft for retry without adding the failed turn to request history', async () => {
     const onSend = vi
       .fn<CanvasChatProps['onSend']>()
@@ -545,15 +643,23 @@ it('displays streamed text before completion and replaces it with the validated 
   });
   await typeMessage('Explain this');
   await pressKey('Enter');
-  await act(async () => emit('First words'));
+  await act(async () => emit('**First words'));
   expect(host.querySelector('.dxp-ai-message-assistant')?.textContent).toContain('First words');
   expect(host.querySelector('.dxp-ai-applied')).toBeNull();
-  await act(async () => emit(' arrive early'));
+  await act(async () => emit(' arrive early**\n\n```js\nconst ready = true;'));
   expect(host.querySelector('.dxp-ai-message-assistant')?.textContent).toContain(
     'First words arrive early',
   );
-  await act(async () => pending.resolve({ message: 'Final reply', changeCount: 1 }));
+  expect(host.querySelector('.dxp-ai-message-assistant strong')?.textContent).toBe(
+    'First words arrive early',
+  );
+  expect(host.querySelector('.dxp-ai-message-assistant pre code')?.textContent).toContain(
+    'const ready = true;',
+  );
+  await act(async () => pending.resolve({ message: '## Final reply', changeCount: 1 }));
   expect(host.querySelectorAll('.dxp-ai-message-assistant')).toHaveLength(1);
   expect(host.querySelector('.dxp-ai-message-assistant')?.textContent).toContain('Final reply');
+  expect(host.querySelector('.dxp-ai-message-assistant h2')?.textContent).toBe('Final reply');
+  expect(host.querySelector('.dxp-ai-message-assistant pre')).toBeNull();
   expect(host.querySelector('.dxp-ai-applied')).not.toBeNull();
 });
