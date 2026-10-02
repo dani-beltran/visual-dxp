@@ -179,3 +179,16 @@ The application does not log credentialed requests or SDK errors, and the browse
 Connections represent unchanged data flow. For field selection or transformation, add a node with `kind: "transform"`, `config.dataPath`, and an ordered `config.transformations` list. Supported transformation types are `capitalize`, `lowercase`, `uppercase`, `title-case`, `trim`, `prefix`/`suffix` (string `value`), `replace` (`find` and `replacement`), and `fallback` (JSON `value`). An empty list performs extraction only. New proposals must not create edge mappings or legacy node path fields. Existing version-1 mappings are accepted at import boundaries and migrated to explicit nodes by the editor/runtime. Imported `migrationWarning` values indicate a downstream data decision requiring review and must be preserved during unrelated AI edits. See [ADR 0002](decisions/0002-data-transform-nodes.md).
 
 Update element content accepts `{{name}}`, nested paths, and `{{$}}` for the entire selected input. The selector supports variables for every action; attribute names also support them. Omit `valueSource` and `valueDataPath` for new nodes. Incoming-data indicators are derived from variables in active fields. See [ADR 0001](decisions/0001-element-template-variables.md).
+
+### Streaming replies
+
+The chat requests `Accept: application/x-ndjson, application/json`. The integrated route streams newline-delimited JSON records as text becomes available:
+
+```json
+{"type":"text","text":"Hello"}
+{"type":"result","response":{"message":"Hello","operations":[]}}
+```
+
+The final `result` contains the validated reply and complete operation batch. A `{"type":"error"}` record or a stream ending without a result fails the request without applying edits. Partial text is removed on failure or cancellation. Existing custom endpoints that return `application/json` remain supported; they display the complete reply when it arrives. Requests without the streaming Accept header retain the JSON response contract.
+
+Direct providers use the AI SDK streaming API. LangGraph uses `/runs/stream` with custom text events and final state values; redeploy the graph from this revision to enable incremental text on existing deployments. Reverse proxies should forward chunks without buffering; the route sends `Cache-Control: no-store, no-transform` and `X-Accel-Buffering: no`.

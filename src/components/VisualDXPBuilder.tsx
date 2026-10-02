@@ -991,7 +991,11 @@ function Builder({
       setWebsiteError(formatBuilderError(error, t));
     }
   }
-  async function sendAIMessage(messages: AIChatMessage[], signal: AbortSignal) {
+  async function sendAIMessage(
+    messages: AIChatMessage[],
+    signal: AbortSignal,
+    onText?: (text: string) => void,
+  ) {
     if (!aiEnabled || !ai) throw new Error(t('builder.connectTheAssistantServiceToStartChatting'));
     const snapshot = copyWorkflow(current.current);
     const baseline = workflowFingerprint(snapshot);
@@ -1006,6 +1010,7 @@ function Builder({
       },
       AbortSignal.any([signal, controller.signal]),
       override,
+      onText,
     )
       .then((result) => {
         setAIRequestConfigurationError(false);

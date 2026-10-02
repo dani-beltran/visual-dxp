@@ -15,6 +15,7 @@ import {
   resolveAIEndpoint,
   validBrowserConfiguration,
 } from './aiCredentials';
+import { responseLines, safeTextEmitter } from './aiStream';
 import { type ConnectionData, isConnectionMapping } from './connectionMapping';
 import { type DataTransformation, dataTransformTools } from './dataTransform';
 import { validateWorkflow } from './export';
@@ -820,6 +821,7 @@ export async function requestAIChat(
   request: AIChatRequest,
   signal?: AbortSignal,
   configuration?: AIRequestConfiguration,
+  onText?: (text: string) => void,
 ): Promise<AIChatResponse> {
   const override =
     configuration && isBrowserConfiguration(configuration) ? configuration : undefined;
@@ -886,7 +888,7 @@ export async function requestAIChat(
     headers.set(OPENAI_OVERRIDE_HEADER, 'browser');
   }
   headers.set('Content-Type', 'application/json');
-  headers.set('Accept', 'application/json');
+  headers.set('Accept', onText ? 'application/x-ndjson, application/json' : 'application/json');
   try {
     let response: Response;
     try {
@@ -972,7 +974,28 @@ export async function requestAIChat(
         messageParams: {},
       });
     }
-    const value = await boundedResponse(response);
+    let value: unknown;
+    if (response.headers.get('content-type')?.includes('application/x-ndjson')) {
+      let finished = false;
+      const emit = safeTextEmitter(override?.apiKey ?? '', (text) => onText?.(text));
+      for await (const line of responseLines(response, AI_LIMITS.payloadBytes)) {
+        requestSignal.throwIfAborted();
+        if (!line) continue;
+        const event = JSON.parse(line);
+        if (finished || !event || typeof event !== 'object') throw new Error('Invalid AI stream.');
+        if (event.type === 'text' && typeof event.text === 'string') {
+          emit(event.text);
+        } else if (event.type === 'result') {
+          value = event.response;
+          finished = true;
+        } else {
+          throw new Error(
+            'The AI request failed. No changes were applied. Try again or check AI Settings.',
+          );
+        }
+      }
+      if (!finished) throw new Error('The AI response was interrupted. No changes were applied.');
+    } else value = await boundedResponse(response);
     requestSignal.throwIfAborted();
     if (override?.apiKey && JSON.stringify(value).includes(override.apiKey))
       throw Object.assign(

@@ -1,5 +1,6 @@
-import { generateText, jsonSchema, type ModelMessage, type ToolSet } from 'ai';
+import { generateText, jsonSchema, type ModelMessage, streamText, type ToolSet } from 'ai';
 import { type AIRequestConfiguration, isBrowserConfiguration } from '../../lib/aiCredentials';
+import { safeTextEmitter, serverEvents } from '../../lib/aiStream';
 import { AIServiceError } from './errors';
 import { createProviderModel, resolveProviderConfiguration } from './providers';
 import { createWorkflowTools } from './tools';
@@ -25,6 +26,7 @@ export async function runLocalAgent(
   request: AIChatRequest,
   signal: AbortSignal,
   input?: AIRequestConfiguration,
+  onText?: (text: string) => void,
 ): Promise<AIChatResponse> {
   const config = resolveProviderConfiguration(input);
   const model = createProviderModel(config);
@@ -45,7 +47,7 @@ export async function runLocalAgent(
     for (let turn = 0; turn < 40; turn++) {
       signal.throwIfAborted();
       const requireWorkflowRead = config.provider === 'local' && turn === 0;
-      const result = await generateText({
+      const options = {
         model,
         system: systemPrompt,
         messages,
@@ -56,7 +58,7 @@ export async function runLocalAgent(
         telemetry: { isEnabled: false, recordInputs: false, recordOutputs: false },
         // Some local servers reject named tool choices. Offering only the read tool
         // with required selection preserves the mandatory first workflow read.
-        toolChoice: requireWorkflowRead ? 'required' : 'auto',
+        toolChoice: requireWorkflowRead ? ('required' as const) : ('auto' as const),
         ...(config.provider === 'openai'
           ? {
               providerOptions: {
@@ -68,7 +70,30 @@ export async function runLocalAgent(
               },
             }
           : {}),
-      });
+      };
+      const result = onText
+        ? await (async () => {
+            const stream = streamText({
+              ...options,
+              // Handle failures below without the SDK logging provider payloads.
+              onError: () => {},
+            });
+            const emit = safeTextEmitter(config.apiKey, onText);
+            for await (const part of stream.fullStream) {
+              signal.throwIfAborted();
+              if (part.type === 'error') throw new Error('Provider stream failed.');
+              if (part.type === 'text-delta') emit(part.text);
+            }
+            emit('', true);
+            return {
+              content: await stream.content,
+              finishReason: await stream.finishReason,
+              toolCalls: await stream.toolCalls,
+              text: await stream.text,
+              responseMessages: await stream.responseMessages,
+            };
+          })()
+        : await generateText(options);
       signal.throwIfAborted();
       if (config.apiKey && JSON.stringify(result.content).includes(config.apiKey))
         throw new Error('Unsafe response.');
@@ -157,6 +182,7 @@ async function readDeploymentResult(response: Response): Promise<unknown> {
 export async function runRemoteAgent(
   request: AIChatRequest,
   signal: AbortSignal,
+  onText?: (text: string) => void,
 ): Promise<AIChatResponse> {
   let base: URL;
   try {
@@ -172,7 +198,7 @@ export async function runRemoteAgent(
   } catch {
     throw new AIServiceError(503, 'LANGGRAPH_API_URL must be a valid Agent Server HTTP(S) URL.');
   }
-  base.pathname = `${base.pathname.replace(/\/$/, '')}/runs/wait`;
+  base.pathname = `${base.pathname.replace(/\/$/, '')}/runs/${onText ? 'stream' : 'wait'}`;
   const key = process.env.LANGSMITH_API_KEY?.trim();
   const upstream = await fetch(base, {
     method: 'POST',
@@ -181,6 +207,9 @@ export async function runRemoteAgent(
       assistant_id: process.env.LANGGRAPH_ASSISTANT_ID?.trim() || 'workflow_editor',
       input: { request },
       on_disconnect: 'cancel',
+      ...(onText
+        ? { stream_mode: ['custom', 'values'], config: { configurable: { streamAIText: true } } }
+        : {}),
     }),
     signal,
     redirect: 'error',
@@ -193,7 +222,18 @@ export async function runRemoteAgent(
       `The AI deployment returned HTTP ${upstream.status}. Check its URL, assistant ID and server-side credentials.`,
     );
   }
-  const payload = await readDeploymentResult(upstream);
+  let payload: unknown;
+  if (onText) {
+    for await (const event of serverEvents(upstream, 2 * 1024 * 1024)) {
+      signal.throwIfAborted();
+      if (event.event === 'error') throw new AIServiceError(502, 'The AI deployment failed.');
+      if (event.event === 'custom') {
+        const data = JSON.parse(event.data);
+        if (data.type === 'text' && typeof data.text === 'string') onText(data.text);
+      }
+      if (event.event === 'values') payload = JSON.parse(event.data);
+    }
+  } else payload = await readDeploymentResult(upstream);
   if (!payload || typeof payload !== 'object' || !('response' in payload)) {
     throw new AIServiceError(
       502,
@@ -209,9 +249,11 @@ export async function respondToAIChat(
   request: AIChatRequest,
   signal: AbortSignal,
   config?: AIRequestConfiguration,
+  onText?: (text: string) => void,
 ): Promise<AIChatResponse> {
   // Browser credentials never enter deployment state, checkpoints or LangSmith.
-  if (config && isBrowserConfiguration(config)) return runLocalAgent(request, signal, config);
+  if (config && isBrowserConfiguration(config))
+    return runLocalAgent(request, signal, config, onText);
   if (process.env.LANGGRAPH_API_URL?.trim()) {
     if (config && config.provider !== 'openai')
       throw new AIServiceError(
@@ -219,7 +261,7 @@ export async function respondToAIChat(
         'This provider is unavailable in the current execution mode. Save its configuration in AI Settings.',
         'unsupported_execution',
       );
-    return runRemoteAgent(request, signal);
+    return runRemoteAgent(request, signal, onText);
   }
-  return runLocalAgent(request, signal, config);
+  return runLocalAgent(request, signal, config, onText);
 }

@@ -25,6 +25,7 @@ export interface CanvasChatProps {
   onSend: (
     messages: AIChatMessage[],
     signal: AbortSignal,
+    onText?: (text: string) => void,
   ) => Promise<{
     message: string;
     changeCount: number;
@@ -46,7 +47,7 @@ export function CanvasChat({
   const { t } = useBuilderI18n();
   const suggestions = [
     t('canvasChat.addAWelcomePopoverAfterA2SecondDelay'),
-    t('canvasChat.explainTheConnectionsInThisWorkflow'),
+    t('canvasChat.explainThisWorkflow'),
     t('canvasChat.changeTheSelectedStep'),
   ];
   const [internalOpen, setInternalOpen] = useState(false);
@@ -126,21 +127,32 @@ export function CanvasChat({
     setDraft('');
     setError('');
     setBusy(true);
+    const assistantId = sequence.current++;
+    let partial = '';
     try {
-      const result = await onSend(conversation, controller.signal);
+      const result = await onSend(conversation, controller.signal, (text) => {
+        if (controller.signal.aborted || request.current !== controller) return;
+        partial += text;
+        const content = partial;
+        setMessages((previous) => [
+          ...previous.filter((message) => message.id !== assistantId),
+          { role: 'assistant', content, id: assistantId },
+        ]);
+      });
       if (controller.signal.aborted || request.current !== controller) return;
       history.current = [...conversation, { role: 'assistant', content: result.message }];
       setMessages((previous) => [
-        ...previous,
+        ...previous.filter((message) => message.id !== assistantId),
         {
           role: 'assistant',
           content: result.message,
           changeCount: result.changeCount,
-          id: sequence.current++,
+          id: assistantId,
         },
       ]);
     } catch (cause) {
       if (request.current !== controller) return;
+      setMessages((previous) => previous.filter((message) => message.id !== assistantId));
       setError(
         controller.signal.aborted
           ? t('canvasChat.stoppedNoChangesWereMade')

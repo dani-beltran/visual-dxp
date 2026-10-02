@@ -1,8 +1,8 @@
-import { Annotation, END, START, StateGraph } from '@langchain/langgraph';
 import type { RunnableConfig } from '@langchain/core/runnables';
-import { parseAIChatRequest } from './workflow/ai';
-import type { AIChatRequest, AIChatResponse } from './workflow/ai';
+import { Annotation, END, getWriter, START, StateGraph } from '@langchain/langgraph';
 import { runLocalAgent } from './agent';
+import type { AIChatRequest, AIChatResponse } from './workflow/ai';
+import { parseAIChatRequest } from './workflow/ai';
 
 const State = Annotation.Root({
   request: Annotation<AIChatRequest>(),
@@ -16,7 +16,15 @@ export const graph = new StateGraph(State)
     const signal = config.signal
       ? AbortSignal.any([config.signal, AbortSignal.timeout(90000)])
       : AbortSignal.timeout(90000);
-    return { response: await runLocalAgent(parseAIChatRequest(state.request), signal) };
+    const writer = config.configurable?.streamAIText ? getWriter(config) : undefined;
+    return {
+      response: await runLocalAgent(
+        parseAIChatRequest(state.request),
+        signal,
+        undefined,
+        writer ? (text) => writer({ type: 'text', text }) : undefined,
+      ),
+    };
   })
   .addEdge(START, 'edit_workflow')
   .addEdge('edit_workflow', END)

@@ -235,6 +235,7 @@ describe('canvas AI chat', () => {
     expect(onSend).toHaveBeenCalledWith(
       [{ role: 'user', content: 'Add a welcome step' }],
       expect.any(AbortSignal),
+      expect.any(Function),
     );
     expect(composer().value).toBe('');
     expect(document.activeElement).toBe(composer());
@@ -530,4 +531,29 @@ it('browsing provider tabs preserves requests, but cross-tab activation cancels 
   expect(onChange.mock.lastCall![0]).toEqual(baseline);
   expect(host.textContent).not.toContain('1 edit applied');
   expect(host.querySelector('.dxp-ai-header')?.textContent).toContain('Active provider: Local');
+});
+
+it('displays streamed text before completion and replaces it with the validated reply', async () => {
+  const pending = pendingResponse();
+  let emit!: (text: string) => void;
+  await renderChat({
+    open: true,
+    onSend: (_messages, _signal, onText) => {
+      emit = onText!;
+      return pending.promise;
+    },
+  });
+  await typeMessage('Explain this');
+  await pressKey('Enter');
+  await act(async () => emit('First words'));
+  expect(host.querySelector('.dxp-ai-message-assistant')?.textContent).toContain('First words');
+  expect(host.querySelector('.dxp-ai-applied')).toBeNull();
+  await act(async () => emit(' arrive early'));
+  expect(host.querySelector('.dxp-ai-message-assistant')?.textContent).toContain(
+    'First words arrive early',
+  );
+  await act(async () => pending.resolve({ message: 'Final reply', changeCount: 1 }));
+  expect(host.querySelectorAll('.dxp-ai-message-assistant')).toHaveLength(1);
+  expect(host.querySelector('.dxp-ai-message-assistant')?.textContent).toContain('Final reply');
+  expect(host.querySelector('.dxp-ai-applied')).not.toBeNull();
 });

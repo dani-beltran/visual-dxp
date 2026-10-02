@@ -111,8 +111,8 @@ export const spanishMessages = {
     'Los cambios de este flujo de trabajo aparecerán aquí.',
   'canvasChat.addAWelcomePopoverAfterA2SecondDelay':
     'Añade una ventana emergente de bienvenida tras una espera de 2 segundos',
-  'canvasChat.explainTheConnectionsInThisWorkflow':
-    'Explica las conexiones de este flujo de trabajo',
+  'canvasChat.explainThisWorkflow':
+    'Explica qué hace este flujo de trabajo',
   'canvasChat.changeTheSelectedStep': 'Cambia el paso seleccionado',
   'canvasChat.stoppedNoChangesWereMade': 'Detenido. No se ha realizado ningún cambio.',
   'canvasChat.aiChat': 'Chat de IA',

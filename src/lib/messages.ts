@@ -127,7 +127,7 @@ export const englishMessages = {
   'activityPanel.noActivityYet': 'No activity yet',
   'activityPanel.changesToThisWorkflowWillAppearHere': 'Changes to this workflow will appear here.',
   'canvasChat.addAWelcomePopoverAfterA2SecondDelay': 'Add a welcome popover after a 2-second delay',
-  'canvasChat.explainTheConnectionsInThisWorkflow': 'Explain the connections in this workflow',
+  'canvasChat.explainThisWorkflow': 'Explain what this workflow does',
   'canvasChat.changeTheSelectedStep': 'Change the selected step',
   'canvasChat.stoppedNoChangesWereMade': 'Stopped. No changes were made.',
   'canvasChat.valueNoChangesWereMade': ({ value }: { value: string }) =>

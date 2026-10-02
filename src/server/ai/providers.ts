@@ -11,6 +11,7 @@ import {
   validAIModel,
   validBrowserConfiguration,
 } from '../../lib/aiCredentials';
+import { serverEvents } from '../../lib/aiStream';
 import { AIServiceError } from './errors';
 
 export interface ProviderConfiguration {
@@ -106,6 +107,42 @@ function privateFetch(destination: string, apiKey: string): typeof fetch {
     if (Number(response.headers.get('content-length')) > limit) {
       void response.body?.cancel().catch(() => {});
       throw new Error('Provider response too large.');
+    }
+    if (response.headers.get('content-type')?.includes('text/event-stream')) {
+      const encoder = new TextEncoder();
+      const events = serverEvents(response, limit);
+      return new Response(
+        new ReadableStream({
+          async pull(controller) {
+            try {
+              const { value, done } = await events.next();
+              if (done) {
+                controller.close();
+                return;
+              }
+              init?.signal?.throwIfAborted();
+              if (
+                value.data !== '[DONE]' &&
+                apiKey &&
+                JSON.stringify(JSON.parse(value.data)).includes(apiKey)
+              )
+                throw new Error('Unsafe provider response.');
+              controller.enqueue(
+                encoder.encode(
+                  `${value.event ? `event: ${value.event}\n` : ''}data: ${value.data}\n\n`,
+                ),
+              );
+            } catch (error) {
+              controller.error(error);
+              await events.return(undefined);
+            }
+          },
+          async cancel() {
+            await events.return(undefined);
+          },
+        }),
+        { headers: { 'Content-Type': 'text/event-stream' } },
+      );
     }
     const reader = response.body?.getReader();
     if (!reader) throw new Error('Empty provider response.');

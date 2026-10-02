@@ -383,7 +383,7 @@ The builder does not contact an activity server or store activity in localStorag
 
 ## AI workflow assistant
 
-The **AI chat** button to the left of Canvas Help opens a conversation for creating, updating, removing, and connecting steps. It sends the current workflow and selected node with each message. Valid edits are applied together as one undoable change. If you edit the canvas while the assistant is working, its response is rejected so your changes are preserved. Chat history stays in memory and is not saved to browser storage.
+The **AI chat** button to the left of Canvas Help opens a conversation for creating, updating, removing, and connecting steps. It sends the current workflow and selected node with each message. Valid edits are applied together as one undoable change. If you edit the canvas while the assistant is working, its response is rejected so your changes are preserved. Chat history stays in memory and is not saved to browser storage. Replies appear incrementally as the provider generates text. Workflow edits are applied only after the complete response passes validation; stopping or interrupting a stream applies no edits.
 
 The demo configures the reusable builder with the same-origin endpoint:
 
