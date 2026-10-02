@@ -1373,14 +1373,6 @@ function Builder({
             forwardsData={
               getNodeDataFlow(selected.id, workflow.nodes, workflow.edges) === 'forwards'
             }
-            dataTransformPreviews={workflow.edges
-              .filter((edge) => edge.target === selected.id)
-              .map((edge) => ({
-                edgeId: edge.id,
-                label:
-                  workflow.nodes.find((node) => node.id === edge.source)?.data.label ?? edge.source,
-                preview: connectionPreviews[edge.id],
-              }))}
             onChange={patchNode}
             onClose={() => setSelectedId(null)}
             onPickElement={() => setPicking(true)}

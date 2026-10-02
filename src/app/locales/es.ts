@@ -6,8 +6,6 @@ export const spanishMessages = {
   'nodes.transform.description':
     'Selecciona un campo de los datos entrantes y transforma su valor. El resultado se transmite a los siguientes pasos.',
   'transform.dataPath': 'Ruta de datos',
-  'transform.httpHint':
-    'La respuesta completa pasa al siguiente paso. Añade una Transformación de datos para seleccionar un campo o transformar su valor.',
   'transform.pathHint':
     'Déjala vacía para seleccionar toda la entrada. Usa propiedades e índices, p. ej. user.items[0].name. Sin transformaciones, el valor extraído se transmite sin cambios.',
   'transform.wholeValue': 'Valor completo',
@@ -35,14 +33,6 @@ export const spanishMessages = {
   'transform.invalidFallback':
     'Introduce JSON válido, como null, false, 0, "texto", un objeto o una matriz. Se guarda cuando el JSON es válido.',
   'transform.add': 'Añadir transformación',
-  'transform.preview': 'Última prueba',
-  'transform.unavailable':
-    'No hay muestra disponible. Prueba el flujo para ver los valores. Las muestras grandes se omiten.',
-  'transform.source': 'Datos de entrada',
-  'transform.output': 'Salida seleccionada y transformada',
-  'transform.missing': 'Ausente: la ruta no corresponde a ningún valor.',
-  'transform.null': 'null (valor explícito)',
-  'transform.empty': '"" (cadena vacía)',
   'transform.outputHint': 'Transmite el valor seleccionado y transformado al siguiente nodo',
   'transform.importedJson': 'Conservar selección de respuesta JSON importada',
   'transform.importedHint':
@@ -92,7 +82,6 @@ export const spanishMessages = {
   'aiSettings.unlockedUseActivateSavedConfigurationToSelectThisProvider':
     'Desbloqueado. Usa Activar configuración guardada para seleccionar este proveedor.',
   'aiSettings.selfHostedApiBaseUrl': 'URL base de la API del servidor propio',
-  'aiSettings.apiKey': 'Clave de API',
   'aiSettings.enterAKeyToReplaceSettingsUseActivateForSavedSettings':
     'Introduce una clave para reemplazar la configuración; usa Activar para la configuración guardada',
   'aiSettings.hideApiKey': 'Ocultar clave de API',
@@ -128,13 +117,10 @@ export const spanishMessages = {
   'canvasChat.stoppedNoChangesWereMade': 'Detenido. No se ha realizado ningún cambio.',
   'canvasChat.aiChat': 'Chat de IA',
   'canvasChat.yourWorkflowAssistant': 'Tu asistente de flujos de trabajo',
-  'canvasChat.activeProvider': 'Proveedor activo:',
   'canvasChat.startANewConversation': 'Iniciar una nueva conversación',
   'canvasChat.newConversation': 'Nueva conversación',
   'canvasChat.closeAiChat': 'Cerrar chat de IA',
-  'canvasChat.selected': 'Seleccionado:',
   'canvasChat.workingWithYourCurrentCanvas': 'Trabajando con tu lienzo actual',
-  'canvasChat.aiProviderSettings': 'Configuración del proveedor de IA',
   'canvasChat.aiConversation': 'Conversación de IA',
   'canvasChat.whatWouldYouLikeToCreate': '¿Qué te gustaría crear?',
   'canvasChat.askMeToAddStepsAdjustTheirSettingsOrConnectYourJourney':
@@ -193,17 +179,11 @@ export const spanishMessages = {
   'elementPicker.elementFoundOnThePage': 'Elemento encontrado en la página.',
   'elementPicker.noMatchingElementFoundYouCanStillUseThisSelector':
     'No se ha encontrado ningún elemento coincidente. Puedes seguir usando este selector.',
-  'elementPicker.enterAValidWebsiteUrl': 'Introduce una URL de sitio web válida.',
   'elementPicker.thisWebsiteCouldnTConnectToThePickerCheckTheSetupBelow':
     'Este sitio web no ha podido conectarse al selector. Revisa la configuración de abajo y vuelve a pulsar Cargar sitio web.',
-  'elementPicker.openDemoWebsite': 'Abrir sitio web de demostración',
   'elementPicker.selectAnElement': 'Seleccionar un elemento',
   'elementPicker.pointClickAndConnectYourExperience': 'Apunta, haz clic y conecta tu experiencia.',
   'elementPicker.closeElementPicker': 'Cerrar selector de elementos',
-  'elementPicker.websiteUrl': 'URL del sitio web',
-  'elementPicker.leaveEmptyToUseTheDemoWebsite':
-    'Déjalo vacío para usar el sitio web de demostración',
-  'elementPicker.loadWebsite': 'Cargar sitio web',
   'elementPicker.selectionModeIsOn': 'El modo de selección está activo',
   'elementPicker.connectingToWebsite': 'Conectando al sitio web…',
   'elementPicker.connectionRequired': 'Se requiere conexión',
@@ -247,7 +227,6 @@ export const spanishMessages = {
   'nodeInspector.eGSignupButton': 'p. ej. #signup-button',
   'nodeInspector.pickAnElementFromYourWebsite': 'Elige un elemento de tu sitio web',
   'nodeInspector.selectOnWebsite': 'Seleccionar en el sitio web',
-  'nodeInspector.details': 'DETALLES',
   'nodeInspector.canvasGroup': 'Grupo del lienzo',
   'nodeInspector.canvasAnnotation': 'Anotación del lienzo',
   'nodeInspector.workflowStep': 'Paso del flujo de trabajo',
@@ -268,7 +247,7 @@ export const spanishMessages = {
   'nodeInspector.requestUrl': 'URL de la solicitud',
   'nodeInspector.headers': 'Cabeceras',
   'nodeInspector.enterAJsonObjectLeaveEmptyForDefaultHeaders':
-    'Introduce un objeto JSON con valores de texto. Usa variables como "Bearer {{token}}". Déjalo vacío para usar las cabeceras predeterminadas.',
+    'Introduce un objeto JSON con valores de texto. Déjalo vacío para usar las cabeceras predeterminadas.',
   'nodeInspector.requestBody': 'Cuerpo de la solicitud',
   'nodeInspector.sentAsTheRawRequestBody': 'Se envía como cuerpo de la solicitud sin procesar.',
   'nodeInspector.theApiMustAllowRequestsFromYourWebsiteThroughCors':
@@ -283,17 +262,6 @@ export const spanishMessages = {
   'nodeInspector.setAttribute': 'Establecer atributo',
   'nodeInspector.attributeName': 'Nombre del atributo',
   'nodeInspector.eGAriaLabel': 'p. ej. aria-label',
-  'nodeInspector.useIncomingData': 'Usar datos de entrada',
-  'nodeInspector.usesTheValueReceivedThroughTheBlueInputConnectionSuchAsAn':
-    'Usa el valor recibido a través de la conexión de entrada azul, como una respuesta HTTP, para esta acción. El elemento de destino y el nombre del atributo se mantienen según la configuración.',
-  'nodeInspector.incomingDataPath': 'Ruta de los datos de entrada',
-  'nodeInspector.eGUserName': 'p. ej. user.name',
-  'nodeInspector.optionalLeaveEmptyToUseTheWholeIncomingValueExamplesUserName':
-    'Opcional. Déjalo vacío para usar todo el valor de entrada. Ejemplos: user.name o data.items[0].price. Las cadenas, los números y los booleanos se convierten en texto; null y los valores ausentes se convierten en texto vacío.',
-  'nodeInspector.classNamesCanAlsoBeAnArrayOfStringsSeparateMultipleNames':
-    ' Los nombres de clase también pueden ser un array de cadenas. Separa los nombres en el texto con espacios.',
-  'nodeInspector.arraysAndObjectsBecomeJsonText':
-    ' Los arrays y objetos se convierten en texto JSON.',
   'nodeInspector.htmlContent': 'Contenido HTML',
   'nodeInspector.cssClassNames': 'Nombres de clases CSS',
   'nodeInspector.attributeValue': 'Valor del atributo',
@@ -329,8 +297,6 @@ export const spanishMessages = {
   'nodeInspector.cookies': 'Cookies',
   'nodeInspector.evaluatesDataReceivedThroughTheIncomingConnectionSuchAsAnHttpResponse':
     'Evalúa los datos recibidos a través de la conexión de entrada, como una respuesta HTTP. Elige un valor y un operador para dirigir la ejecución por Verdadero o Falso.',
-  'nodeInspector.optionalLeaveEmptyToEvaluateAllIncomingDataExamplesUserNameData':
-    'Opcional. Déjalo vacío para evaluar todos los datos de entrada. Ejemplos: user.name, data.items[0].price, items[2].tags.',
   'nodeInspector.operator': 'Operador',
   'nodeInspector.comparisonValue': 'Valor de comparación',
   'nodeInspector.trueWhenThisCssSelectorMatchesAnElement':
@@ -404,8 +370,6 @@ export const spanishMessages = {
   'nodeInspector.false': 'Falso',
   'nodeInspector.conditionDoesNotMatch': 'La condición no se cumple',
   'nodeInspector.conditionDoesNotMatchWithData': 'Reenvía datos si la condición no se cumple',
-  'nodeInspector.theMatchingOutputPassesAllIncomingDataUnchangedToTheNextStep':
-    'La salida coincidente transmite los datos entrantes. Asigna la conexión entrante a Valor de la condición para elegir qué comparar sin cambiar los datos transmitidos.',
   'nodeInspector.body': 'Cuerpo',
   'nodeInspector.runsEachRepetition': 'Se ejecuta en cada repetición',
   'nodeInspector.done': 'Finalizado',
@@ -414,10 +378,6 @@ export const spanishMessages = {
     'Conecta los pasos que quieras repetir a Cuerpo. Conecta el siguiente paso a Finalizado.',
   'nodeInspector.data': 'Datos',
   'nodeInspector.next': 'Siguiente',
-  'nodeInspector.responseDataPath': 'Ruta de los datos de respuesta',
-  'nodeInspector.eGDataItems0Price': 'p. ej. data.items[0].price',
-  'nodeInspector.responsesAreAutomaticallyParsedAsJsonWhenPossibleOptionallySelectAValue':
-    'Las respuestas se interpretan automáticamente como JSON cuando es posible. Puedes seleccionar un valor con una ruta como user.name, data.items[0].price o items[2].tags; déjalo vacío para usar todo el cuerpo. Una ruta JSON inexistente devuelve undefined; null se pasa como null. Las respuestas que no son JSON ignoran la ruta y se pasan como texto completo.',
   'nodeInspector.duplicate': 'Duplicar',
   'nodeInspector.delete': 'Eliminar',
   'nodeLibrary.nodeLibrary': 'Biblioteca de nodos',
@@ -446,7 +406,6 @@ export const spanishMessages = {
   'popoverPreview.bottomLeft': 'Abajo a la izquierda',
   'popoverPreview.bottomRight': 'Abajo a la derecha',
   'popoverPreview.nextToAnElement': 'Junto a un elemento',
-  'popoverPreview.popoverPreview': 'Vista previa de la ventana emergente',
   'popoverPreview.fullscreenPopoverPreview':
     'Vista previa de la ventana emergente a pantalla completa',
   'popoverPreview.contentPreview': 'VISTA PREVIA DEL CONTENIDO',
@@ -483,7 +442,6 @@ export const spanishMessages = {
     'Los sitios web externos necesitan el puente de vista previa configurado para el origen de este editor. Las vistas previas se ejecutan en un origen aislado. Los disparadores de carga de página se ejecutan al iniciar. Los demás responden a este sitio web igual que el script exportado. Recarga para restablecer los cambios de la página.',
   'builder.theActivityCouldNotBeSavedYourWorkflowEditIsStillApplied':
     'No se ha podido guardar la actividad. El cambio en tu flujo de trabajo sigue aplicado.',
-  'builder.you': 'Tú',
   'builder.browserStorageIsUnavailableExportYourWorkflowToKeepACopy':
     'El almacenamiento del navegador no está disponible. Exporta tu flujo de trabajo para conservar una copia.',
   'builder.theChangeWasUndoneButItsActivityEntryCouldNotBeRemoved':
@@ -564,9 +522,6 @@ export const spanishMessages = {
   'websiteSetup.couldnTCopyAutomaticallySelectTheScriptAboveAndCopyItManually':
     'No se ha podido copiar automáticamente. Selecciona el script de arriba y cópialo manualmente.',
   'workflowCard.incomingData': 'Datos de entrada',
-  'workflowCard.usesTheWholeIncomingValue': 'Usa todo el valor de entrada',
-  'workflowCard.templateVariables':
-    'Las variables de este paso usan datos de su conexión entrante.',
   'workflowCard.usesIncomingData': 'Recibe datos',
   'workflowCard.producesData': 'Produce datos',
   'workflowCard.forwardsData': 'Reenvía datos',
@@ -1013,8 +968,6 @@ export const spanishMessages = {
     `No se ha podido aplicar «${name}». ${value}`,
   'builder.appliedNameUseUndoToRestoreYourPreviousWorkflow': ({ name }) =>
     `Se ha aplicado «${name}». Usa Deshacer para restaurar el flujo de trabajo anterior.`,
-  'workflowCard.incomingDataIncomingdatapath': ({ incomingDataPath }) =>
-    `Datos de entrada: ${incomingDataPath}`,
   'activity.previewOpened': ({ name }) => `Se abrió una vista previa de prueba de «${name}»`,
   'activity.workflowRenamed': ({ name }) => `Se cambió el nombre del flujo de trabajo a «${name}»`,
   'activity.settingsUpdated': ({ label }) => `Se actualizó la configuración de «${label}»`,
@@ -1030,7 +983,6 @@ export const spanishMessages = {
   'activity.nodeDuplicated': ({ label }) => `Se duplicó «${label}»`,
   'activity.presetApplied': ({ name }) => `Se aplicó la plantilla «${name}»`,
   'activity.workflowImported': ({ name }) => `Se importó el flujo de trabajo «${name}»`,
-  'activity.websiteChanged': ({ url }) => `Se cambió el sitio web de destino a «${url}»`,
   'activity.websiteConfigured': ({ url, includeSubpages }) =>
     `Se cambió el sitio web de destino a «${url}» (${includeSubpages ? 'incluidas las subpáginas' : 'solo esta página'})`,
   'activity.aiEditsApplied': ({ count }) =>
@@ -1060,8 +1012,6 @@ export const spanishMessages = {
     `«${value1}» no es compatible con datos de tipo ${type}.`,
   'errors.data.enterAJsonTypeToCompareWithType2Data': ({ type, type2 }) =>
     `Introduce un valor JSON de tipo ${type} para compararlo con datos de tipo ${type2}.`,
-  'errors.targeting.exportTargetMessageMessage': ({ EXPORT_TARGET_MESSAGE, message }) =>
-    `${EXPORT_TARGET_MESSAGE} ${message}`,
   'errors.aiSettings.unlockValue1InAiSettingsBeforeUsingAi': ({ value1 }) =>
     `Desbloquea ${value1} en Configuración de IA antes de usar la IA.`,
   'errors.ai.labelMustBeAnObject': ({ label }) => `${label} debe ser un objeto.`,

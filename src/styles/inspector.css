@@ -488,20 +488,3 @@
   opacity: 0.35;
   cursor: default;
 }
-.dxp-transform-preview {
-  margin-top: 20px;
-  font-size: 12px;
-}
-.dxp-transform-preview pre {
-  max-height: 180px;
-  overflow: auto;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  padding: 10px;
-  background: var(--dxp-surface-muted);
-  border-radius: 6px;
-}
-.dxp-transform-preview details,
-.dxp-transform-preview > div {
-  margin-top: 10px;
-}

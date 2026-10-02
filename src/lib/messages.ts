@@ -4,8 +4,6 @@ export const englishMessages = {
   'nodes.transform.description':
     'Selects a field from incoming data and transforms its value. The result is passed to downstream steps.',
   'transform.dataPath': 'Data path',
-  'transform.httpHint':
-    'The full response passes downstream. Add a Data Transform to select a field or transform its value.',
   'transform.pathHint':
     'Leave empty to select the whole input. Use properties and array indexes, e.g. user.items[0].name. Without transformations, the extracted value passes through unchanged.',
   'transform.wholeValue': 'Whole value',
@@ -33,14 +31,6 @@ export const englishMessages = {
   'transform.invalidFallback':
     'Enter valid JSON, such as null, false, 0, "text", an object, or an array. This edit is saved when the JSON is valid.',
   'transform.add': 'Add transformation',
-  'transform.preview': 'Latest test run',
-  'transform.unavailable':
-    'No sample available. Test the workflow to preview values. Large samples are omitted.',
-  'transform.source': 'Incoming data',
-  'transform.output': 'Selected and transformed output',
-  'transform.missing': 'Missing — the path did not resolve to a value.',
-  'transform.null': 'null (explicit value)',
-  'transform.empty': '"" (empty string)',
   'transform.outputHint': 'Passes the selected and transformed value to the next node',
   'transform.importedJson': 'Preserve imported JSON response selection',
   'transform.importedHint':
@@ -104,7 +94,6 @@ export const englishMessages = {
   'aiSettings.labelSavedAndActivated': ({ label }: { label: string }) =>
     `${label} saved and activated.`,
   'aiSettings.selfHostedApiBaseUrl': 'Self-Hosted API base URL',
-  'aiSettings.apiKey': 'API key',
   'aiSettings.enterAKeyToReplaceSettingsUseActivateForSavedSettings':
     'Enter a key to replace settings; use Activate for saved settings',
   'aiSettings.hideApiKey': 'Hide API key',
@@ -145,7 +134,6 @@ export const englishMessages = {
     `${value} No changes were made.`,
   'canvasChat.aiChat': 'AI chat',
   'canvasChat.yourWorkflowAssistant': 'Your workflow assistant',
-  'canvasChat.activeProvider': 'Active provider:',
   'canvasChat.startANewConversation': 'Start a new conversation',
   'canvasChat.newConversation': 'New conversation',
   'canvasChat.closeAiChat': 'Close AI chat',
@@ -159,9 +147,7 @@ export const englishMessages = {
   }: {
     activeProvider: string;
   }) => `AI configuration is incorrect for ${activeProvider}. Check AI Settings.`,
-  'canvasChat.selected': 'Selected:',
   'canvasChat.workingWithYourCurrentCanvas': 'Working with your current canvas',
-  'canvasChat.aiProviderSettings': 'AI provider settings',
   'canvasChat.aiConversation': 'AI conversation',
   'canvasChat.whatWouldYouLikeToCreate': 'What would you like to create?',
   'canvasChat.askMeToAddStepsAdjustTheirSettingsOrConnectYourJourney':
@@ -220,16 +206,11 @@ export const englishMessages = {
   'elementPicker.elementFoundOnThePage': 'Element found on the page.',
   'elementPicker.noMatchingElementFoundYouCanStillUseThisSelector':
     'No matching element found. You can still use this selector.',
-  'elementPicker.enterAValidWebsiteUrl': 'Enter a valid website URL.',
   'elementPicker.thisWebsiteCouldnTConnectToThePickerCheckTheSetupBelow':
     'This website couldn’t connect to the picker. Check the setup below, then try Load website again.',
-  'elementPicker.openDemoWebsite': 'Open demo website',
   'elementPicker.selectAnElement': 'Select an element',
   'elementPicker.pointClickAndConnectYourExperience': 'Point, click, and connect your experience.',
   'elementPicker.closeElementPicker': 'Close element picker',
-  'elementPicker.websiteUrl': 'Website URL',
-  'elementPicker.leaveEmptyToUseTheDemoWebsite': 'Leave empty to use the demo website',
-  'elementPicker.loadWebsite': 'Load website',
   'elementPicker.selectionModeIsOn': 'Selection mode is on',
   'elementPicker.connectingToWebsite': 'Connecting to website…',
   'elementPicker.connectionRequired': 'Connection required',
@@ -270,7 +251,6 @@ export const englishMessages = {
   'nodeInspector.pickAnElementFromYourWebsite': 'Pick an element from your website',
   'nodeInspector.selectOnWebsite': 'Select on website',
   'nodeInspector.labelConfiguration': ({ label }: { label: string }) => `${label} configuration`,
-  'nodeInspector.details': 'DETAILS',
   'nodeInspector.closeItemnameDetails': ({ itemName }: { itemName: string }) =>
     `Close ${itemName} details`,
   'nodeInspector.canvasGroup': 'Canvas group',
@@ -293,7 +273,7 @@ export const englishMessages = {
   'nodeInspector.requestUrl': 'Request URL',
   'nodeInspector.headers': 'Headers',
   'nodeInspector.enterAJsonObjectLeaveEmptyForDefaultHeaders':
-    'Enter a JSON object with string values. Use variables such as "Bearer {{token}}". Leave empty for default headers.',
+    'Enter a JSON object with string values. Leave empty for default headers.',
   'nodeInspector.requestBody': 'Request body',
   'nodeInspector.sentAsTheRawRequestBody': 'Sent as the raw request body.',
   'nodeInspector.theApiMustAllowRequestsFromYourWebsiteThroughCors':
@@ -308,16 +288,6 @@ export const englishMessages = {
   'nodeInspector.setAttribute': 'Set attribute',
   'nodeInspector.attributeName': 'Attribute name',
   'nodeInspector.eGAriaLabel': 'e.g. aria-label',
-  'nodeInspector.useIncomingData': 'Use incoming data',
-  'nodeInspector.usesTheValueReceivedThroughTheBlueInputConnectionSuchAsAn':
-    'Uses the value received through the blue input connection, such as an HTTP response, for this action. The target element and attribute name stay as configured.',
-  'nodeInspector.incomingDataPath': 'Incoming data path',
-  'nodeInspector.eGUserName': 'e.g. user.name',
-  'nodeInspector.optionalLeaveEmptyToUseTheWholeIncomingValueExamplesUserName':
-    'Optional. Leave empty to use the whole incoming value. Examples: user.name or data.items[0].price. Strings, numbers, and booleans become text; null and missing values become empty text.',
-  'nodeInspector.classNamesCanAlsoBeAnArrayOfStringsSeparateMultipleNames':
-    ' Class names can also be an array of strings. Separate multiple names in text with spaces.',
-  'nodeInspector.arraysAndObjectsBecomeJsonText': ' Arrays and objects become JSON text.',
   'nodeInspector.htmlContent': 'HTML content',
   'nodeInspector.cssClassNames': 'CSS class names',
   'nodeInspector.attributeValue': 'Attribute value',
@@ -354,8 +324,6 @@ export const englishMessages = {
   'nodeInspector.cookies': 'Cookies',
   'nodeInspector.evaluatesDataReceivedThroughTheIncomingConnectionSuchAsAnHttpResponse':
     'Evaluates data received through the incoming connection, such as an HTTP response. Choose a value and an operator to route execution through True or False.',
-  'nodeInspector.optionalLeaveEmptyToEvaluateAllIncomingDataExamplesUserNameData':
-    'Optional. Leave empty to evaluate all incoming data. Examples: user.name, data.items[0].price, items[2].tags.',
   'nodeInspector.operator': 'Operator',
   'nodeInspector.comparisonValue': 'Comparison value',
   'nodeInspector.trueWhenThisCssSelectorMatchesAnElement':
@@ -428,8 +396,6 @@ export const englishMessages = {
   'nodeInspector.false': 'False',
   'nodeInspector.conditionDoesNotMatch': 'Condition does not match',
   'nodeInspector.conditionDoesNotMatchWithData': 'Forwards data when the condition does not match',
-  'nodeInspector.theMatchingOutputPassesAllIncomingDataUnchangedToTheNextStep':
-    'The matching output forwards the incoming data. Map to Condition value on the incoming connection to select what to compare without changing forwarded data.',
   'nodeInspector.body': 'Body',
   'nodeInspector.runsEachRepetition': 'Runs each repetition',
   'nodeInspector.done': 'Done',
@@ -438,10 +404,6 @@ export const englishMessages = {
     'Connect the steps to repeat to Body. Connect the next step to Done.',
   'nodeInspector.data': 'Data',
   'nodeInspector.next': 'Next',
-  'nodeInspector.responseDataPath': 'Response data path',
-  'nodeInspector.eGDataItems0Price': 'e.g. data.items[0].price',
-  'nodeInspector.responsesAreAutomaticallyParsedAsJsonWhenPossibleOptionallySelectAValue':
-    'Responses are automatically parsed as JSON when possible. Optionally select a value using a path such as user.name, data.items[0].price, or items[2].tags; leave empty for the whole body. A missing JSON path returns undefined; null is passed as null. Non-JSON responses ignore the path and pass as complete text.',
   'nodeInspector.duplicateItemname': ({ itemName }: { itemName: string }) =>
     `Duplicate ${itemName}`,
   'nodeInspector.duplicate': 'Duplicate',
@@ -476,7 +438,6 @@ export const englishMessages = {
   'popoverPreview.bottomLeft': 'Bottom left',
   'popoverPreview.bottomRight': 'Bottom right',
   'popoverPreview.nextToAnElement': 'Next to an element',
-  'popoverPreview.popoverPreview': 'Popover preview',
   'popoverPreview.fullscreenPopoverPreview': 'Fullscreen popover preview',
   'popoverPreview.contentPreview': 'CONTENT PREVIEW',
   'popoverPreview.popover': 'Popover',
@@ -513,7 +474,6 @@ export const englishMessages = {
     'External websites need the preview bridge configured for this builder origin. Previews run in a separate sandbox origin. Page-load triggers run when you start. Other triggers respond to this website, just like the exported script. Reload to reset page changes.',
   'builder.theActivityCouldNotBeSavedYourWorkflowEditIsStillApplied':
     'The activity could not be saved. Your workflow edit is still applied.',
-  'builder.you': 'You',
   'builder.browserStorageIsUnavailableExportYourWorkflowToKeepACopy':
     'Browser storage is unavailable. Export your workflow to keep a copy.',
   'builder.theChangeWasUndoneButItsActivityEntryCouldNotBeRemoved':
@@ -598,13 +558,6 @@ export const englishMessages = {
   'websiteSetup.couldnTCopyAutomaticallySelectTheScriptAboveAndCopyItManually':
     'Couldn’t copy automatically. Select the script above and copy it manually.',
   'workflowCard.incomingData': 'Incoming data',
-  'workflowCard.incomingDataIncomingdatapath': ({
-    incomingDataPath,
-  }: {
-    incomingDataPath: string;
-  }) => `Incoming data: ${incomingDataPath}`,
-  'workflowCard.usesTheWholeIncomingValue': 'Uses the whole incoming value',
-  'workflowCard.templateVariables': 'Variables in this step use data from its incoming connection.',
   'workflowCard.usesIncomingData': 'Receives data',
   'workflowCard.producesData': 'Produces data',
   'workflowCard.forwardsData': 'Forwards data',
@@ -637,7 +590,6 @@ export const englishMessages = {
   'activity.nodeDuplicated': ({ label }: { label: string }) => `Duplicated “${label}”`,
   'activity.presetApplied': ({ name }: { name: string }) => `Applied preset “${name}”`,
   'activity.workflowImported': ({ name }: { name: string }) => `Imported workflow “${name}”`,
-  'activity.websiteChanged': ({ url }: { url: string }) => `Changed the target website to “${url}”`,
   'activity.websiteConfigured': ({
     url,
     includeSubpages,
@@ -746,13 +698,6 @@ export const englishMessages = {
   'errors.targeting.chooseYourOwnWebsiteInsteadOfTheBuiltInDemo':
     'Choose your own website instead of the built-in demo.',
   'errors.targeting.includeSubpagesMustBeABoolean': 'Include subpages must be a boolean.',
-  'errors.targeting.exportTargetMessageMessage': ({
-    EXPORT_TARGET_MESSAGE,
-    message,
-  }: {
-    EXPORT_TARGET_MESSAGE: string;
-    message: string;
-  }) => `${EXPORT_TARGET_MESSAGE} ${message}`,
   'errors.aiSettings.webCryptoIsUnavailableUseASecureBrowserContext':
     'Web Crypto is unavailable. Use a secure browser context.',
   'errors.aiSettings.aiConfigurationChangedSendYourMessageAgain':

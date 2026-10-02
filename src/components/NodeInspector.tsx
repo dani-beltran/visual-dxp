@@ -15,7 +15,6 @@ import {
 } from 'lucide-react';
 import { type ReactNode, useEffect, useId, useState } from 'react';
 import { getCatalog } from '../lib/catalog';
-import type { ConnectionPreview } from '../lib/connectionMapping';
 import { validateCookie } from '../lib/cookies';
 import { dataTools } from '../lib/data';
 import { dataHint, getDataOperators } from '../lib/dataLabels';
@@ -33,7 +32,6 @@ import '../styles/inspector.css';
 interface NodeInspectorProps {
   node: WorkflowNode;
   forwardsData?: boolean;
-  dataTransformPreviews?: { edgeId: string; label: string; preview?: ConnectionPreview }[];
   onChange: (patch: Partial<StepData>) => void;
   onClose: () => void;
   onPickElement: () => void;
@@ -109,7 +107,6 @@ function NumberInput({
 export function NodeInspector({
   node,
   forwardsData = false,
-  dataTransformPreviews,
   onChange,
   onClose,
   onPickElement,
@@ -332,16 +329,10 @@ export function NodeInspector({
           </div>
         )}
         {node.data.kind === 'transform' && (
-          <DataTransformInspector
-            config={config}
-            previews={dataTransformPreviews}
-            onChange={update}
-          />
+          <DataTransformInspector config={config} onChange={update} />
         )}
         {node.data.kind === 'http' && (
           <>
-            <InfoBox>{t('nodeInspector.requestTemplates')}</InfoBox>
-            <p className="dxp-inspector-hint">{t('transform.httpHint')}</p>
             {requestTemplateError && (
               <p className="dxp-inspector-hint" role="alert">
                 {requestTemplateError}
@@ -404,6 +395,9 @@ export function NodeInspector({
               <Info size={15} />
               <p>{t('nodeInspector.theApiMustAllowRequestsFromYourWebsiteThroughCors')}</p>
             </div>
+            <InfoBox className="dxp-inspector-incoming-data">
+              {t('nodeInspector.requestTemplates')}
+            </InfoBox>
           </>
         )}
 
@@ -961,39 +955,32 @@ export function NodeInspector({
             <ArrowRight size={14} aria-hidden="true" /> {t('nodeInspector.outputs')}
           </h3>
           {node.data.kind === 'fork' ? (
-            <>
-              <div className="dxp-inspector-branches">
-                <div>
-                  <i
-                    className={forwardsData ? 'dxp-inspector-dot-data' : 'dxp-inspector-dot-true'}
-                  />
-                  <strong>{t('nodeInspector.true')}</strong>
-                  <span>
-                    {forwardsData
-                      ? t('nodeInspector.conditionMatchesWithData')
-                      : t('nodeInspector.conditionMatches')}
-                  </span>
-                </div>
-                <div>
-                  <i
-                    className={
-                      forwardsData
-                        ? 'dxp-inspector-dot-data dxp-inspector-dot-data-false'
-                        : 'dxp-inspector-dot-false'
-                    }
-                  />
-                  <strong>{t('nodeInspector.false')}</strong>
-                  <span>
-                    {forwardsData
-                      ? t('nodeInspector.conditionDoesNotMatchWithData')
-                      : t('nodeInspector.conditionDoesNotMatch')}
-                  </span>
-                </div>
+            <div className="dxp-inspector-branches">
+              <div>
+                <i className={forwardsData ? 'dxp-inspector-dot-data' : 'dxp-inspector-dot-true'} />
+                <strong>{t('nodeInspector.true')}</strong>
+                <span>
+                  {forwardsData
+                    ? t('nodeInspector.conditionMatchesWithData')
+                    : t('nodeInspector.conditionMatches')}
+                </span>
               </div>
-              <p className="dxp-inspector-hint">
-                {t('nodeInspector.theMatchingOutputPassesAllIncomingDataUnchangedToTheNextStep')}
-              </p>
-            </>
+              <div>
+                <i
+                  className={
+                    forwardsData
+                      ? 'dxp-inspector-dot-data dxp-inspector-dot-data-false'
+                      : 'dxp-inspector-dot-false'
+                  }
+                />
+                <strong>{t('nodeInspector.false')}</strong>
+                <span>
+                  {forwardsData
+                    ? t('nodeInspector.conditionDoesNotMatchWithData')
+                    : t('nodeInspector.conditionDoesNotMatch')}
+                </span>
+              </div>
+            </div>
           ) : node.data.kind === 'loop' ? (
             <>
               <div className="dxp-inspector-branches">

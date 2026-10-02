@@ -1,7 +1,5 @@
 import { ArrowDown, ArrowUp, Plus, Trash2 } from 'lucide-react';
 import { useEffect, useId, useRef, useState } from 'react';
-import type { ConnectionPreview } from '../lib/connectionMapping';
-import type { DataSelection } from '../lib/data';
 import { type DataTransformation, dataTransformTools, type JsonValue } from '../lib/dataTransform';
 import { useBuilderI18n } from '../lib/i18nContext';
 import type { StepConfig } from '../lib/types';
@@ -71,11 +69,9 @@ function FallbackInput({
 
 export function DataTransformInspector({
   config,
-  previews = [],
   onChange,
 }: {
   config: StepConfig;
-  previews?: { edgeId: string; label: string; preview?: ConnectionPreview }[];
   onChange: (patch: Partial<StepConfig>) => void;
 }) {
   const { t } = useBuilderI18n();
@@ -107,14 +103,6 @@ export function DataTransformInspector({
     [next[index], next[index + direction]] = [next[index + direction], next[index]];
     onChange({ transformations: next });
   };
-  const show = (selection: DataSelection) =>
-    !selection.exists || selection.value === undefined
-      ? t('transform.missing')
-      : selection.value === null
-        ? t('transform.null')
-        : selection.value === ''
-          ? t('transform.empty')
-          : JSON.stringify(selection.value, null, 2);
   return (
     <section className="dxp-data-transform" aria-label={t('nodes.transform.label')}>
       <div className="dxp-inspector-field">
@@ -258,43 +246,6 @@ export function DataTransformInspector({
           {error}
         </p>
       )}
-      <div className="dxp-transform-preview" aria-live="polite">
-        <strong>{t('transform.preview')}</strong>
-        {!previews.some((entry) => entry.preview) && <p>{t('transform.unavailable')}</p>}
-        {previews
-          .filter((entry) => entry.preview)
-          .map(({ edgeId, label, preview }) => {
-            if (!preview) return null;
-            let output: DataSelection | undefined;
-            let previewError = '';
-            try {
-              output = dataTransformTools.apply(
-                preview.source,
-                config,
-                preview.jsonResponse,
-                false,
-              );
-            } catch (cause) {
-              previewError = (cause as Error).message;
-            }
-            return (
-              <div key={edgeId}>
-                <span>{label}</span>
-                <details>
-                  <summary>{t('transform.source')}</summary>
-                  <pre>{show(preview.source)}</pre>
-                </details>
-                {output && (
-                  <>
-                    <span>{t('transform.output')}</span>
-                    <pre>{show(output)}</pre>
-                  </>
-                )}
-                {previewError && <p role="alert">{previewError}</p>}
-              </div>
-            );
-          })}
-      </div>
     </section>
   );
 }

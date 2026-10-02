@@ -214,7 +214,8 @@ it('edits a Data Transform through history and saves its configuration without c
   expect(host.querySelector('.dxp-data-transform')).toBeNull();
   expect(host.textContent).not.toContain('Destination input');
   await click('[data-id="transform"]');
-  expect(host.textContent).toContain('No sample available');
+  expect(host.textContent).not.toContain('Latest test run');
+  expect(host.textContent).not.toContain('No sample available');
   await setPath('user.name');
   expect(
     onChange.mock.lastCall?.[0].nodes.find((node) => node.id === 'transform')?.data.config.dataPath,
@@ -231,36 +232,6 @@ it('edits a Data Transform through history and saves its configuration without c
   expect(pathField().value).toBe('user.nickname');
   const saved = JSON.parse(JSON.stringify(onChange.mock.lastCall![0]));
   expect(saved.edges.every((edge: Workflow['edges'][number]) => !edge.data?.mapping)).toBe(true);
-});
-
-it('shows missing, null, empty string and incompatible preview states separately', async () => {
-  for (const [dataPath, transformations, expected] of [
-    ['missing', [], 'Missing —'],
-    ['nil', [], 'null (explicit value)'],
-    ['empty', [], '"" (empty string)'],
-    ['object', [{ type: 'uppercase' }], 'requires text; received an object'],
-  ] as const) {
-    await act(async () =>
-      root.render(
-        <DataTransformInspector
-          config={{ dataPath, transformations: [...transformations] }}
-          previews={[
-            {
-              edgeId: 'input',
-              label: 'Source',
-              preview: {
-                source: { exists: true, value: { nil: null, empty: '', object: {} } },
-                jsonResponse: true,
-              },
-            },
-          ]}
-          onChange={() => {}}
-        />,
-      ),
-    );
-    expect(host.textContent).toContain(expected);
-    expect(host.textContent).not.toContain('No sample available');
-  }
 });
 
 it('offers transformation-specific controls and reorders operations', async () => {
