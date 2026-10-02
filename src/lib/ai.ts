@@ -1,3 +1,4 @@
+import { context, propagation } from '@opentelemetry/api';
 import {
   AI_BASE_URL_HEADER,
   AI_KEY_HEADER,
@@ -854,6 +855,11 @@ export async function requestAIChat(
     if (override.baseURL) headers.set(AI_BASE_URL_HEADER, override.baseURL);
     headers.set(OPENAI_OVERRIDE_HEADER, 'browser');
   }
+  // Reuse a host application's active browser trace, if it has configured OTel.
+  const carrier: Record<string, string> = {};
+  propagation.inject(context.active(), carrier);
+  for (const name of ['traceparent', 'tracestate'])
+    if (carrier[name]) headers.set(name, carrier[name]);
   headers.set('Content-Type', 'application/json');
   headers.set('Accept', onText ? 'application/x-ndjson, application/json' : 'application/json');
   try {

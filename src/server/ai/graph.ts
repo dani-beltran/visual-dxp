@@ -1,5 +1,7 @@
 import type { RunnableConfig } from '@langchain/core/runnables';
 import { Annotation, END, getWriter, START, StateGraph } from '@langchain/langgraph';
+import { type Carrier, withWorkflow } from '../observability';
+import { flushTelemetry } from '../observability/sdk';
 import { runLocalAgent } from './agent';
 import type { AIChatRequest, AIChatResponse } from './workflow/ai';
 import { parseAIChatRequest } from './workflow/ai';
@@ -17,14 +19,23 @@ export const graph = new StateGraph(State)
       ? AbortSignal.any([config.signal, AbortSignal.timeout(90000)])
       : AbortSignal.timeout(90000);
     const writer = config.configurable?.streamAIText ? getWriter(config) : undefined;
-    return {
-      response: await runLocalAgent(
-        parseAIChatRequest(state.request),
-        signal,
-        undefined,
-        writer ? (text) => writer({ type: 'text', text }) : undefined,
-      ),
-    };
+    try {
+      return {
+        response: await withWorkflow(
+          state.request.workflow,
+          () =>
+            runLocalAgent(
+              parseAIChatRequest(state.request),
+              signal,
+              undefined,
+              writer ? (text) => writer({ type: 'text', text }) : undefined,
+            ),
+          config.configurable?.dxpTelemetry as Carrier | undefined,
+        ),
+      };
+    } finally {
+      await flushTelemetry();
+    }
   })
   .addEdge(START, 'edit_workflow')
   .addEdge('edit_workflow', END)

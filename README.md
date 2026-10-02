@@ -491,3 +491,7 @@ HTML and DOM actions are author-controlled content. Import workflows from truste
 - `public/demo-site.html` — working sample website.
 
 The library entry point is `src/index.ts`. Build outputs include ESM, UMD, TypeScript declarations, CSS, and both public demo/bridge assets. React Flow's custom node and provider APIs are documented at [reactflow.dev](https://reactflow.dev/learn/customization/custom-nodes).
+
+### AI observability
+
+Server-side AI workflows export OpenTelemetry traces, metrics, and opt-in full conversation logs to Grafana Cloud Free (14-day retention), or to the local console when no OTLP endpoint is configured. See [setup, privacy controls, dashboards, and conversation inspection](docs/observability.md). No additional database or monitoring stack is required.

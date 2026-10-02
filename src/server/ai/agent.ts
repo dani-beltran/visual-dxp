@@ -1,6 +1,18 @@
+import { randomUUID } from 'node:crypto';
 import { generateText, jsonSchema, type ModelMessage, streamText, type ToolSet } from 'ai';
 import { type AIRequestConfiguration, isBrowserConfiguration } from '../../lib/aiCredentials';
 import { safeTextEmitter, serverEvents } from '../../lib/aiStream';
+import {
+  addSecrets,
+  capture,
+  capturing,
+  outboundContext,
+  withGeneration,
+  withSpan,
+  withStep,
+  withWorkflow,
+} from '../observability';
+import { StreamCapture } from '../observability/content';
 import { AIServiceError } from './errors';
 import { createProviderModel, resolveProviderConfiguration } from './providers';
 import { createWorkflowTools } from './tools';
@@ -28,7 +40,19 @@ export async function runLocalAgent(
   input?: AIRequestConfiguration,
   onText?: (text: string) => void,
 ): Promise<AIChatResponse> {
+  return withWorkflow(request.workflow, () =>
+    withStep('edit_workflow', () => executeLocalAgent(request, signal, input, onText)),
+  );
+}
+
+async function executeLocalAgent(
+  request: AIChatRequest,
+  signal: AbortSignal,
+  input?: AIRequestConfiguration,
+  onText?: (text: string) => void,
+): Promise<AIChatResponse> {
   const config = resolveProviderConfiguration(input);
+  addSecrets(config.apiKey);
   const model = createProviderModel(config);
   const toolkit = createWorkflowTools(request.workflow, request.selectedNodeIds);
   const tools: ToolSet = Object.fromEntries(
@@ -45,94 +69,160 @@ export async function runLocalAgent(
     if (config.apiKey && JSON.stringify(request).includes(config.apiKey))
       throw new Error('Unsafe request.');
     for (let turn = 0; turn < 40; turn++) {
-      signal.throwIfAborted();
-      const requireWorkflowRead = config.provider === 'local' && turn === 0;
-      const options = {
-        model,
-        system: systemPrompt,
-        messages,
-        tools: requireWorkflowRead ? { read_workflow: tools.read_workflow } : tools,
-        abortSignal: signal,
-        maxRetries: 0,
-        maxOutputTokens: 8192,
-        telemetry: { isEnabled: false, recordInputs: false, recordOutputs: false },
-        // Some local servers reject named tool choices. Offering only the read tool
-        // with required selection preserves the mandatory first workflow read.
-        toolChoice: requireWorkflowRead ? ('required' as const) : ('auto' as const),
-        ...(config.provider === 'openai'
-          ? {
-              providerOptions: {
-                openai: {
-                  store: false,
-                  strictJsonSchema: false,
-                  include: ['reasoning.encrypted_content'],
-                },
-              },
-            }
-          : {}),
-      };
-      const result = onText
-        ? await (async () => {
-            const stream = streamText({
-              ...options,
-              // Handle failures below without the SDK logging provider payloads.
-              onError: () => {},
-            });
-            const emit = safeTextEmitter(config.apiKey, onText);
-            for await (const part of stream.fullStream) {
-              signal.throwIfAborted();
-              if (part.type === 'error') throw new Error('Provider stream failed.');
-              if (part.type === 'text-delta') emit(part.text);
-            }
-            emit('', true);
-            return {
-              content: await stream.content,
-              finishReason: await stream.finishReason,
-              toolCalls: await stream.toolCalls,
-              text: await stream.text,
-              responseMessages: await stream.responseMessages,
-            };
-          })()
-        : await generateText(options);
-      signal.throwIfAborted();
-      if (config.apiKey && JSON.stringify(result.content).includes(config.apiKey))
-        throw new Error('Unsafe response.');
-      if (!['stop', 'tool-calls'].includes(result.finishReason))
-        throw new Error('Incomplete provider response.');
-      const calls = result.toolCalls;
-      if (
-        config.provider === 'local' &&
-        turn === 0 &&
-        !calls.some((call) => call.toolName === 'read_workflow')
-      )
-        throw new Error('Local model did not honor required tool choice.');
-      if (!calls.length) {
-        if (result.finishReason !== 'stop') throw new Error('Incomplete provider response.');
-        const response = parseAIChatResponse({
-          message: result.text,
-          operations: toolkit.getOperations(),
-        });
-        applyWorkflowOperations(request.workflow, response.operations);
-        return response;
-      }
-      if (calls.length > 100) throw new Error('Too many tool calls.');
-      messages.push(...result.responseMessages);
-      for (const call of calls) {
+      const completed = await withStep(`turn-${turn}`, async () => {
         signal.throwIfAborted();
-        const output = toolkit.invokePrivate(call.toolName, call.input);
-        if (JSON.parse(output).ok === false) throw new Error('Invalid workflow tool operation.');
-        messages.push({
-          role: 'tool',
-          content: [
+        const requireWorkflowRead = config.provider === 'local' && turn === 0;
+        const options = {
+          model,
+          system: systemPrompt,
+          messages,
+          tools: requireWorkflowRead ? { read_workflow: tools.read_workflow } : tools,
+          abortSignal: signal,
+          maxRetries: 0,
+          maxOutputTokens: 8192,
+          telemetry: { isEnabled: false, recordInputs: false, recordOutputs: false },
+          // Some local servers reject named tool choices. Offering only the read tool
+          // with required selection preserves the mandatory first workflow read.
+          toolChoice: requireWorkflowRead ? ('required' as const) : ('auto' as const),
+          ...(config.provider === 'openai'
+            ? {
+                providerOptions: {
+                  openai: {
+                    store: false,
+                    strictJsonSchema: false,
+                    include: ['reasoning.encrypted_content'],
+                  },
+                },
+              }
+            : {}),
+        };
+        const callId = randomUUID();
+        const result = await withGeneration(
+          {
+            callId,
+            provider: config.provider,
+            model: config.model,
+            system: systemPrompt,
+            messages,
+          },
+          async (firstToken) =>
+            onText
+              ? await (async () => {
+                  const stream = streamText({
+                    ...options,
+                    streamRetries: 0,
+                    // Handle failures below without the SDK logging provider payloads.
+                    onError: () => {},
+                  });
+                  const emit = safeTextEmitter(config.apiKey, onText);
+                  const partial = new StreamCapture(capturing());
+                  let finished = false;
+                  try {
+                    for await (const part of stream.fullStream) {
+                      signal.throwIfAborted();
+                      if (part.type === 'error' || part.type === 'abort')
+                        throw new Error('Provider stream failed.');
+                      if (part.type === 'finish') finished = true;
+                      if (part.type === 'text-delta' || part.type === 'reasoning-delta') {
+                        firstToken();
+                        partial.append(part.type, part.text);
+                      }
+                      if (part.type === 'tool-input-start')
+                        partial.append(
+                          'tool-input-start',
+                          JSON.stringify({ id: part.id, toolName: part.toolName }),
+                        );
+                      if (part.type === 'tool-input-delta') {
+                        firstToken();
+                        partial.append(`tool:${part.id}`, part.delta);
+                      }
+                      if (part.type === 'text-delta') emit(part.text);
+                    }
+                    if (!finished) throw new Error('Provider stream interrupted.');
+                    emit('', true);
+                    return {
+                      content: await stream.content,
+                      finishReason: await stream.finishReason,
+                      toolCalls: await stream.toolCalls,
+                      text: await stream.text,
+                      responseMessages: await stream.responseMessages,
+                      usage: await stream.usage,
+                      response: await stream.response,
+                    };
+                  } catch (error) {
+                    capture('llm.output', 'assistant', partial.value(), {
+                      llm_call_id: callId,
+                      partial: true,
+                      interrupted: true,
+                      truncated: partial.truncated,
+                      finish_reason: 'interrupted',
+                    });
+                    throw error;
+                  }
+                })()
+              : await generateText(options),
+        );
+        signal.throwIfAborted();
+        if (config.apiKey && JSON.stringify(result.content).includes(config.apiKey))
+          throw new Error('Unsafe response.');
+        if (!['stop', 'tool-calls'].includes(result.finishReason))
+          throw new Error('Incomplete provider response.');
+        const calls = result.toolCalls;
+        if (
+          config.provider === 'local' &&
+          turn === 0 &&
+          !calls.some((call) => call.toolName === 'read_workflow')
+        )
+          throw new Error('Local model did not honor required tool choice.');
+        if (!calls.length) {
+          if (result.finishReason !== 'stop') throw new Error('Incomplete provider response.');
+          const response = parseAIChatResponse({
+            message: result.text,
+            operations: toolkit.getOperations(),
+          });
+          applyWorkflowOperations(request.workflow, response.operations);
+          return response;
+        }
+        if (calls.length > 100) throw new Error('Too many tool calls.');
+        messages.push(...result.responseMessages);
+        for (const call of calls) {
+          signal.throwIfAborted();
+          const output = await withSpan(
+            'execute_tool',
             {
-              type: 'tool-result',
-              toolCallId: call.toolCallId,
-              toolName: call.toolName,
-              output: { type: 'text', value: output },
+              'gen_ai.operation.name': 'execute_tool',
+              'gen_ai.tool.name': call.toolName,
+              'gen_ai.tool.call.id': call.toolCallId,
+              'llm.call.id': callId,
             },
-          ],
-        });
-      }
+            async () => {
+              const fields = {
+                llm_call_id: callId,
+                tool_call_id: call.toolCallId,
+                tool_name: call.toolName,
+              };
+              capture('tool.input', 'assistant', call.input, fields);
+              const value = toolkit.invokePrivate(call.toolName, call.input);
+              capture('tool.result', 'tool', value, fields);
+              if (JSON.parse(value).ok === false)
+                throw new Error('Invalid workflow tool operation.');
+              return value;
+            },
+          );
+          messages.push({
+            role: 'tool',
+            content: [
+              {
+                type: 'tool-result',
+                toolCallId: call.toolCallId,
+                toolName: call.toolName,
+                output: { type: 'text', value: output },
+              },
+            ],
+          });
+        }
+      });
+      if (completed) return completed;
     }
     throw new Error('Too many agent turns.');
   } catch {
@@ -184,6 +274,16 @@ export async function runRemoteAgent(
   signal: AbortSignal,
   onText?: (text: string) => void,
 ): Promise<AIChatResponse> {
+  return withWorkflow(request.workflow, () =>
+    withSpan('workflow.deployment', {}, () => executeRemoteAgent(request, signal, onText)),
+  );
+}
+
+async function executeRemoteAgent(
+  request: AIChatRequest,
+  signal: AbortSignal,
+  onText?: (text: string) => void,
+): Promise<AIChatResponse> {
   let base: URL;
   try {
     base = new URL(process.env.LANGGRAPH_API_URL!);
@@ -200,16 +300,22 @@ export async function runRemoteAgent(
   }
   base.pathname = `${base.pathname.replace(/\/$/, '')}/runs/${onText ? 'stream' : 'wait'}`;
   const key = process.env.LANGSMITH_API_KEY?.trim();
+  const carrier = outboundContext();
   const upstream = await fetch(base, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...(key ? { 'X-Api-Key': key } : {}) },
+    headers: {
+      'Content-Type': 'application/json',
+      ...carrier,
+      ...(key ? { 'X-Api-Key': key } : {}),
+    },
     body: JSON.stringify({
       assistant_id: process.env.LANGGRAPH_ASSISTANT_ID?.trim() || 'workflow_editor',
       input: { request },
       on_disconnect: 'cancel',
-      ...(onText
-        ? { stream_mode: ['custom', 'values'], config: { configurable: { streamAIText: true } } }
-        : {}),
+      config: {
+        configurable: { dxpTelemetry: carrier, ...(onText ? { streamAIText: true } : {}) },
+      },
+      ...(onText ? { stream_mode: ['custom', 'values'] } : {}),
     }),
     signal,
     redirect: 'error',

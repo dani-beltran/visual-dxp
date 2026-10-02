@@ -488,6 +488,7 @@ export const spanishMessages = {
   'builder.addYourFirstTrigger': 'Añade tu primer disparador',
   'builder.step': 'Paso',
   'builder.createdWithLoveByDanielJLBeltran': 'CREADO CON CARIÑO POR DANIEL J.L. BELTRAN',
+  'builder.reactFlowAttribution': 'BASADO EN REACT FLOW',
   'builder.zToUndo': 'Z para deshacer',
   'builder.dismissNotification': 'Descartar notificación',
   'builder.targetElementSelected': 'Elemento de destino seleccionado',
