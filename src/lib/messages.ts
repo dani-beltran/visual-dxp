@@ -181,6 +181,9 @@ export const englishMessages = {
   'canvasHelp.dragFromTheCircleOnTheRightOfOneNodeToThe':
     'Drag from the circle on the right of one node to the circle on the left of another. Click a connection to edit its name. A Condition uses its top output when the condition matches and its bottom output otherwise.',
   'canvasHelp.moveAroundTheCanvas': 'Move around the canvas',
+  'canvasHelp.useVariables': 'Use variables',
+  'canvasHelp.useVariablesDescription':
+    'HTTP Request nodes produce data that flows from step to step along connections. In any node text parameter, variables are replaced with the data fields they point to when the workflow runs. Write Hello {{user.name}} to insert a name, {{items[0].name}} for the first item, or {{$}} for the whole incoming value.',
   'canvasHelp.dragEmptySpaceToPanScrollPinchOrUseTheZoomButtons':
     'Drag empty space to pan. Scroll, pinch, or use the zoom buttons to zoom. Fit all nodes brings the whole journey into view; the minimap gives you an overview.',
   'canvasHelp.canvasHelp': 'Canvas help',

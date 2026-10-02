@@ -154,6 +154,9 @@ export const spanishMessages = {
   'canvasHelp.dragFromTheCircleOnTheRightOfOneNodeToThe':
     'Arrastra desde el círculo de la derecha de un nodo hasta el de la izquierda de otro. Haz clic en una conexión para editar su nombre. Una Condición usa la salida superior cuando se cumple y la inferior en caso contrario.',
   'canvasHelp.moveAroundTheCanvas': 'Moverse por el lienzo',
+  'canvasHelp.useVariables': 'Usar variables',
+  'canvasHelp.useVariablesDescription':
+    'Los nodos de petición HTTP producen datos que fluyen de un paso a otro por las conexiones. En cualquier parámetro de texto de un nodo, las variables se sustituyen por los campos de datos a los que apuntan cuando se ejecuta el flujo. Escribe Hola {{user.name}} para insertar un nombre, {{items[0].name}} para el primer elemento o {{$}} para el valor completo de entrada.',
   'canvasHelp.dragEmptySpaceToPanScrollPinchOrUseTheZoomButtons':
     'Arrastra un espacio vacío para desplazarte. Usa la rueda, el gesto de pellizco o los botones de zoom para acercar o alejar. Ajustar todos los nodos muestra el recorrido completo; el minimapa ofrece una vista general.',
   'canvasHelp.canvasHelp': 'Ayuda del lienzo',
