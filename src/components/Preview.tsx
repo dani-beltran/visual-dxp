@@ -11,7 +11,7 @@ import {
   X,
 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
-import type { ConnectionPreview } from '../lib/connectionMapping';
+import type { ConnectionPreview } from '../lib/connections';
 import { validateWorkflow } from '../lib/export';
 import { useBuilderI18n } from '../lib/i18nContext';
 import type { RunLog, Workflow } from '../lib/types';

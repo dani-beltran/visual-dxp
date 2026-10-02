@@ -7,7 +7,7 @@ import {
   workflowFingerprint,
 } from '../src/lib/ai';
 import { createNode } from '../src/lib/catalog';
-import type { ConnectionPreview } from '../src/lib/connectionMapping';
+import type { ConnectionPreview } from '../src/lib/connections';
 import {
   type DataTransformation,
   dataTransformTools,

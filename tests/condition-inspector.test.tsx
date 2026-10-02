@@ -256,7 +256,7 @@ it('directs HTTP response selection to Data Transform nodes', async () => {
   expect(() => field('Response format')).toThrow('Missing field');
   expect(() => field('Response data path')).toThrow('Missing field');
   expect(host.textContent).toContain('Add a Data Transform to select a field');
-  expect(current.responseDataPath).toBeUndefined();
+  expect(current).not.toHaveProperty('responseDataPath');
   expect(host.textContent).toContain('{{user.name}}');
   await change('Request URL', '/api/users/{{user.id}}');
   await change('Method', 'POST');
@@ -305,7 +305,7 @@ it('edits templated content without a toggle and detects variables in each activ
   expect(host.querySelector('.dxp-inspector-incoming-data')).toBeNull();
   await change('New text', 'Hello {{name}}!');
   expect(current.value).toBe('Hello {{name}}!');
-  expect(current.valueSource).toBeUndefined();
+  expect(current).not.toHaveProperty('valueSource');
   expect(host.querySelector('.dxp-inspector-incoming-data')).not.toBeNull();
   expect(field('New text').value).toBe('Hello {{name}}!');
   for (const [action, label] of [

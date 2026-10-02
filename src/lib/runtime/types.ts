@@ -1,4 +1,4 @@
-import type { ConnectionPreview } from '../connectionMapping';
+import type { ConnectionPreview } from '../connections';
 import type { RunLog } from '../types';
 
 export interface RuntimeOptions {

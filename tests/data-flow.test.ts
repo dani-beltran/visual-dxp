@@ -6,23 +6,26 @@ import { createRuntime } from '../src/lib/runtime';
 import { isWorkflow } from '../src/lib/serialization';
 import type { RunLog, StepConfig, Workflow, WorkflowNode } from '../src/lib/types';
 
+import { insertTransform } from './helpers/data-transform';
+
 function node(id: string, kind: WorkflowNode['data']['kind'], config: StepConfig): WorkflowNode {
   return { id, type: 'workflow', position: { x: 0, y: 0 }, data: { kind, label: id, config } };
 }
 function graph(response: StepConfig = {}, condition: StepConfig = {}): Workflow {
-  return {
+  const workflow: Workflow = {
     version: 1,
     name: 'Response data',
     websiteUrl: window.location.href,
     nodes: [
       node('start', 'trigger', { event: 'click', selector: '#start' }),
-      node('http', 'http', { url: 'https://api.example.com', ...response }),
+      node('http', 'http', { url: 'https://api.example.com' }),
       node('pass', 'dom', { selector: '#result', value: 'waiting' }),
       node('condition', 'fork', {
         conditionType: 'data',
         conditionOperator: 'greater-than',
         conditionValue: '10',
         ...condition,
+        dataPath: undefined,
       }),
       node('yes', 'dom', { selector: '#result', value: 'yes' }),
       node('no', 'dom', { selector: '#result', value: 'no' }),
@@ -35,6 +38,10 @@ function graph(response: StepConfig = {}, condition: StepConfig = {}): Workflow 
       { id: 'e', source: 'condition', target: 'no', sourceHandle: 'false' },
     ],
   };
+  if (response.dataPath !== undefined) insertTransform(workflow, 'b', response);
+  if (condition.dataPath !== undefined)
+    insertTransform(workflow, 'c', { dataPath: condition.dataPath });
+  return workflow;
 }
 const instances: ReturnType<typeof createRuntime>[] = [];
 beforeEach(() => {
@@ -77,18 +84,17 @@ it.each(['direct', 'exported'] as const)(
       },
     ];
     for (const failure of failures) {
-      // A success-only response selection must not hide the error payload.
       const workflow = graph(
-        { responseDataPath: 'data.items[0].price' },
+        {},
         {
-          conditionDataPath: 'error.code',
+          dataPath: 'error.code',
           conditionOperator: 'equal',
           conditionValue: String(failure.code),
         },
       );
       workflow.nodes.find((item) => item.id === 'yes')!.data.config = {
         selector: '#result',
-        valueSource: 'incoming-data',
+        value: '{{$}}',
       };
       const fetcher = vi.spyOn(globalThis, 'fetch').mockImplementation(failure.fetch);
       let runtime: ReturnType<typeof createRuntime>;
@@ -99,9 +105,7 @@ it.each(['direct', 'exported'] as const)(
       }
       instances.push(runtime);
       await expect(runtime.run()).resolves.toBeUndefined();
-      expect(JSON.parse(document.querySelector('#result')!.textContent!)).toEqual({
-        error: { message: failure.message, code: failure.code },
-      });
+      expect(document.querySelector('#result')!.textContent).toBe(String(failure.code));
       runtime.destroy();
       fetcher.mockRestore();
     }
@@ -114,8 +118,8 @@ it.each(['direct', 'exported'] as const)(
     for (const selected of [false, true]) {
       for (const price of [12, 4]) {
         const workflow = graph(
-          selected ? { responseDataPath: 'data.items[0].price' } : {},
-          selected ? {} : { conditionDataPath: 'data.items[0].price' },
+          selected ? { dataPath: 'data.items[0].price' } : {},
+          selected ? {} : { dataPath: 'data.items[0].price' },
         );
         const fetcher = vi
           .spyOn(globalThis, 'fetch')
@@ -140,19 +144,14 @@ it.each(['direct', 'exported'] as const)(
 );
 
 it.each([
-  ['null', { responseDataPath: '' }, { conditionOperator: 'is-null' }, 'yes'],
-  ['{}', { responseDataPath: 'missing' }, { conditionOperator: 'not-exists' }, 'yes'],
-  ['{}', { responseDataPath: 'missing' }, { conditionOperator: 'exists' }, 'no'],
-  ['{}', { responseDataPath: 'missing' }, { conditionOperator: 'is-null' }, 'no'],
-  ['{"item":null}', { responseDataPath: 'item' }, { conditionOperator: 'exists' }, 'yes'],
-  ['{}', {}, { conditionDataPath: 'item', conditionOperator: 'not-exists' }, 'yes'],
-  [
-    'plain text',
-    { responseDataPath: 'item' },
-    { conditionOperator: 'equal', conditionValue: 'plain text' },
-    'yes',
-  ],
-  ['{"item":12}', { responseDataPath: 'item' }, {}, 'yes'],
+  ['null', { dataPath: '' }, { conditionOperator: 'is-null' }, 'yes'],
+  ['{}', { dataPath: 'missing' }, { conditionOperator: 'not-exists' }, 'yes'],
+  ['{}', { dataPath: 'missing' }, { conditionOperator: 'exists' }, 'no'],
+  ['{}', { dataPath: 'missing' }, { conditionOperator: 'is-null' }, 'no'],
+  ['{"item":null}', { dataPath: 'item' }, { conditionOperator: 'exists' }, 'yes'],
+  ['{}', {}, { dataPath: 'item', conditionOperator: 'not-exists' }, 'yes'],
+  ['plain text', {}, { conditionOperator: 'equal', conditionValue: 'plain text' }, 'yes'],
+  ['{"item":12}', { dataPath: 'item' }, {}, 'yes'],
   ['false', {}, { conditionOperator: 'is-false' }, 'yes'],
   ['0', {}, { conditionOperator: 'is-empty' }, 'no'],
 ] as [string, StepConfig, StepConfig, string][])(
@@ -168,7 +167,7 @@ it.each([
 );
 
 it.each([
-  ['{}', { responseDataPath: 'items[' }, {}, 'http', 'Invalid data path'],
+  ['{}', { dataPath: 'items[' }, {}, 'b-transform', 'Invalid data path'],
   [
     '"text"',
     {},
@@ -176,7 +175,7 @@ it.each([
     'condition',
     'Invalid regular expression',
   ],
-  ['{}', {}, { conditionDataPath: 'missing' }, 'condition', 'could not be resolved'],
+  ['{}', {}, { dataPath: 'missing' }, 'condition', 'could not be resolved'],
   [
     'false',
     {},
@@ -203,8 +202,8 @@ it.each([
 
 it('retains data configuration through JSON saving/reloading and AI request/operation contracts', () => {
   const workflow = graph(
-    { responseDataPath: 'data.items[0].price' },
-    { conditionOperator: 'less-than-or-equal', conditionDataPath: '', conditionValue: '12' },
+    { dataPath: 'data.items[0].price' },
+    { conditionOperator: 'less-than-or-equal', dataPath: '', conditionValue: '12' },
   );
   const saved: unknown = JSON.parse(JSON.stringify(workflow));
   expect(isWorkflow(saved)).toBe(true);
@@ -261,11 +260,8 @@ it('starts each invocation without stale response data', async () => {
   expect(document.querySelector('#result')!.textContent).toBe('yes');
 });
 
-it('continues an exported flow with undefined output from a missing response path', async () => {
-  const workflow = graph(
-    { responseDataPath: 'items[2].price' },
-    { conditionOperator: 'not-exists' },
-  );
+it('continues an exported flow with undefined output from a missing transform path', async () => {
+  const workflow = graph({ dataPath: 'items[2].price' }, { conditionOperator: 'not-exists' });
   vi.spyOn(globalThis, 'fetch').mockImplementation(async () => new Response('{"items":[]}'));
   new Function('window', 'document', exportWorkflow(workflow))(window, document);
   const runtime = (window as Window & { visualDXP?: ReturnType<typeof createRuntime> }).visualDXP;
@@ -292,7 +288,7 @@ it.each(['direct', 'exported'] as const)(
       ['add-class', ['active', 'premium'], 'base active premium'],
       ['remove-class', ['active', 'premium'], 'base'],
     ];
-    for (const selectedByHttp of [false, true]) {
+    for (const selectedBeforeElement of [false, true]) {
       for (const [action, value, expected] of cases) {
         document.querySelector('#target')?.remove();
         const target = document.createElement('div');
@@ -300,17 +296,15 @@ it.each(['direct', 'exported'] as const)(
         target.className = action === 'remove-class' ? 'base active premium' : 'base';
         target.textContent = 'before';
         document.body.appendChild(target);
-        const workflow = graph(selectedByHttp ? { responseDataPath: 'item' } : {}, {
+        const workflow = graph(selectedBeforeElement ? { dataPath: 'item' } : {}, {
           conditionOperator: 'not-exists',
-          conditionDataPath: selectedByHttp ? '' : 'item',
+          dataPath: selectedBeforeElement ? '' : 'item',
         });
         workflow.nodes[2].data.config = {
           selector: '#target',
           action,
           attribute: 'data-value',
-          value: 'old manual value',
-          valueSource: 'incoming-data',
-          valueDataPath: selectedByHttp ? '' : 'item',
+          value: selectedBeforeElement ? '{{$}}' : '{{item}}',
         };
         vi.spyOn(globalThis, 'fetch').mockImplementation(
           async () => new Response(JSON.stringify({ item: value })),
@@ -351,9 +345,7 @@ it('preserves incoming element settings across save/reload and AI edits', () => 
   const config: StepConfig = {
     selector: '#result',
     action: 'text',
-    valueSource: 'incoming-data',
-    valueDataPath: 'items[0].name',
-    value: 'manual fallback',
+    value: '{{items[0].name}}',
   };
   workflow.nodes[2].data.config = config;
   const saved = JSON.parse(JSON.stringify(workflow));
@@ -374,9 +366,9 @@ it('preserves incoming element settings across save/reload and AI edits', () => 
 
 it('keeps manual values and hide/show independent of incoming-data settings', async () => {
   for (const config of [
-    { value: 'manual', valueDataPath: 'ignored[' },
-    { action: 'hide', valueSource: 'incoming-data', valueDataPath: 'ignored[' },
-    { action: 'show', valueSource: 'incoming-data', valueDataPath: 'ignored[' },
+    { value: 'manual' },
+    { action: 'hide', value: '{{ignored[}}' },
+    { action: 'show', value: '{{ignored[}}' },
   ] as StepConfig[]) {
     const workflow = graph({}, { conditionOperator: 'exists' });
     workflow.nodes[2].data.config = { selector: '#result', ...config };
@@ -400,8 +392,7 @@ it('validates incoming element paths and rejects unsupported CSS class data befo
   workflow.nodes[2].data.config = {
     selector: '#result',
     action: 'text',
-    valueSource: 'incoming-data',
-    valueDataPath: 'items[',
+    value: '{{items[}}',
   };
   expect(validateWorkflow(workflow)).toContainEqual(
     expect.objectContaining({
@@ -412,7 +403,7 @@ it('validates incoming element paths and rejects unsupported CSS class data befo
   workflow.nodes[2].data.config = {
     selector: '#result',
     action: 'add-class',
-    valueSource: 'incoming-data',
+    value: '{{$}}',
   };
   const runtime = createRuntime(workflow, {
     fetch: vi.fn<typeof fetch>().mockImplementation(async () => new Response('{"class":"active"}')),

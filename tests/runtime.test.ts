@@ -309,7 +309,7 @@ describe('workflow runtime', () => {
             headers: '{"Content-Type":"application/json"}',
             body: '{"hello":true}',
           }),
-          node('update', 'dom', { selector: '#result', valueSource: 'incoming-data' }),
+          node('update', 'dom', { selector: '#result', value: '{{$}}' }),
         ],
         [
           ['start', 'request'],

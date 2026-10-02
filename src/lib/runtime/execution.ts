@@ -43,28 +43,22 @@ export function createExecution(
     state: RunState,
     data: DataSelection,
     handle?: string,
-    jsonResponse = false,
   ): Promise<void> {
     const edges = workflow.edges.filter(
       (edge) => edge.source === nodeId && (handle === undefined || edge.sourceHandle === handle),
     );
     for (const edge of edges) {
-      const preview = { source: data, jsonResponse };
+      const preview = { source: data };
       try {
         context.onConnectionPreview?.(edge.id, preview);
       } catch {
         /* Observers cannot interrupt execution. */
       }
-      await execute(edge.target, state, data, jsonResponse);
+      await execute(edge.target, state, data);
     }
   }
 
-  async function execute(
-    nodeId: string,
-    state: RunState,
-    input: DataSelection,
-    inputJsonResponse = false,
-  ): Promise<void> {
+  async function execute(nodeId: string, state: RunState, input: DataSelection): Promise<void> {
     aborted();
     const node = nodes.get(nodeId);
     if (!node) throw new Error(`Step “${nodeId}” does not exist.`);
@@ -85,13 +79,8 @@ export function createExecution(
     state.active.add(nodeId);
     try {
       const config = node.data.config;
-      if (config.migrationWarning) {
-        log(nodeId, 'error', config.migrationWarning);
-        throw new Error(config.migrationWarning);
-      }
       // Data belongs to this path, never the shared runtime (runs may overlap).
       let output = input;
-      let jsonResponse = false;
       let requestError: string | undefined;
       let selectedHandle: string | undefined;
       let loopIterations = 0;
@@ -99,7 +88,7 @@ export function createExecution(
       try {
         switch (node.data.kind) {
           case 'transform':
-            output = transformTools.apply(input, config, inputJsonResponse);
+            output = transformTools.apply(input, config);
             break;
           case 'cookie': {
             const cookie = buildCookie({
@@ -135,7 +124,6 @@ export function createExecution(
           }
           case 'http': {
             dataTools.validateRequest(config);
-            dataTools.validateResponse(config);
             if (!fetcher) throw new Error('This browser does not support fetch.');
             if (!config.url?.trim()) throw new Error('Enter a request URL.');
             const requestUrl = dataTools.requestTemplate(config.url, input);
@@ -188,13 +176,7 @@ export function createExecution(
               };
               break;
             }
-            output = dataTools.parseResponse(body, config);
-            try {
-              JSON.parse(body);
-              jsonResponse = true;
-            } catch {
-              /* Complete text response. */
-            }
+            output = dataTools.parseResponse(body);
             break;
           }
           case 'dom': {
@@ -288,7 +270,7 @@ export function createExecution(
         }
         await next(nodeId, state, output, 'done');
       } else {
-        await next(nodeId, state, output, selectedHandle, jsonResponse);
+        await next(nodeId, state, output, selectedHandle);
       }
     } finally {
       state.active.delete(nodeId);

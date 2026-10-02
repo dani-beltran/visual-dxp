@@ -1,4 +1,3 @@
-import { isConnectionMapping } from './connectionMapping';
 import { type DataTransformation, dataTransformTools } from './dataTransform';
 import { isNoteMarks } from './noteText';
 import type { Workflow } from './types';
@@ -24,18 +23,13 @@ const strings = [
   'headers',
   'body',
   'dataPath',
-  'migrationWarning',
-  'responseDataPath',
   'action',
   'value',
-  'valueSource',
-  'valueDataPath',
   'attribute',
   'cookieName',
   'cookieValue',
   'condition',
   'conditionType',
-  'conditionDataPath',
   'conditionOperator',
   'conditionKey',
   'conditionValue',
@@ -63,7 +57,7 @@ const numbers = [
   'scrollMinDistance',
   'scrollThreshold',
 ];
-const booleans = ['legacyJsonOnly', 'noteBold', 'noteItalic', 'noteStrikethrough'];
+const booleans = ['noteBold', 'noteItalic', 'noteStrikethrough'];
 const object = (value: unknown): value is Record<string, unknown> =>
   !!value && typeof value === 'object' && !Array.isArray(value);
 /** Structural check for untrusted JSON; incomplete but editable configurations remain valid. */
@@ -115,7 +109,6 @@ export function isWorkflow(value: unknown): value is Workflow {
       try {
         dataTransformTools.validate(
           { transformations: config.transformations as DataTransformation[] },
-          false,
           true,
         );
       } catch {
@@ -157,9 +150,7 @@ export function isWorkflow(value: unknown): value is Workflow {
       !nodeIds.has(edge.target) ||
       (edge.sourceHandle != null && typeof edge.sourceHandle !== 'string') ||
       (edge.label != null && typeof edge.label !== 'string') ||
-      (edge.data !== undefined &&
-        (!object(edge.data) ||
-          (edge.data.mapping !== undefined && !isConnectionMapping(edge.data.mapping))))
+      (edge.data !== undefined && !object(edge.data))
     )
       return false;
     edgeIds.add(edge.id);

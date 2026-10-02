@@ -1,6 +1,5 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { migrateConnectionMappings } from '../src/lib/connectionMapping';
 import { dataTools } from '../src/lib/data';
 import { exportWorkflow, validateWorkflow } from '../src/lib/export';
 import { createRuntime } from '../src/lib/runtime';
@@ -8,6 +7,8 @@ import type { RunLog, StepConfig, Workflow } from '../src/lib/types';
 import { dataTools as serverDataTools } from '../src/server/ai/workflow/data';
 import type { Workflow as ServerWorkflow } from '../src/server/ai/workflow/types';
 import { validateWorkflow as validateServerWorkflow } from '../src/server/ai/workflow/validation';
+
+import { insertTransform } from './helpers/data-transform';
 
 const runtimes: ReturnType<typeof createRuntime>[] = [];
 afterEach(() => {
@@ -17,7 +18,7 @@ afterEach(() => {
 });
 
 function workflow(config: StepConfig): Workflow & ServerWorkflow {
-  return {
+  const graph: Workflow & ServerWorkflow = {
     version: 1,
     name: 'Chained requests',
     websiteUrl: window.location.href,
@@ -35,7 +36,7 @@ function workflow(config: StepConfig): Workflow & ServerWorkflow {
         data: {
           kind: 'http',
           label: 'First',
-          config: { url: '/api/first', responseDataPath: 'data' },
+          config: { url: '/api/first' },
         },
       },
       {
@@ -51,7 +52,7 @@ function workflow(config: StepConfig): Workflow & ServerWorkflow {
         data: {
           kind: 'dom',
           label: 'Result',
-          config: { selector: '#result', valueSource: 'incoming-data' },
+          config: { selector: '#result', value: '{{$}}' },
         },
       },
     ],
@@ -61,6 +62,8 @@ function workflow(config: StepConfig): Workflow & ServerWorkflow {
       { id: 'second-result', source: 'second', target: 'result' },
     ],
   };
+  insertTransform(graph, 'first-second', { dataPath: 'data' });
+  return graph;
 }
 
 describe.each([
@@ -152,8 +155,8 @@ it.each(['direct', 'exported'] as const)(
       method: 'POST',
       headers: '{"Content-Type":"application/json"}',
       body: '{"name":"{{user.name}}", "id":{{user.id}}, "enabled":{{enabled}}}',
-      responseDataPath: 'receipt',
     });
+    insertTransform(graph, 'second-result', { dataPath: 'receipt' });
     const name = 'Ada "Lovelace"\n{{literal}}';
     const fetcher = vi
       .spyOn(globalThis, 'fetch')
@@ -217,7 +220,7 @@ describe.each(['direct', 'exported'] as const)('%s HTTP header templates', (mode
           'X-{{headerName}}': 'static',
         }),
       });
-      graph.edges.pop();
+      graph.edges = graph.edges.filter((edge) => edge.id !== 'second-result');
       const token = 'quoted"\\token{{missing}}';
       const fetcher = vi
         .spyOn(globalThis, 'fetch')
@@ -295,7 +298,7 @@ it.each(['GET', 'HEAD', 'get', 'head'])('ignores unused body templates for %s', 
   const fetcher = vi.fn<typeof fetch>().mockImplementation(async () => new Response('{}'));
   const runtime = createRuntime(graph, { fetch: fetcher });
   runtimes.push(runtime);
-  graph.edges.pop();
+  graph.edges = graph.edges.filter((edge) => edge.id !== 'second-result');
   await runtime.run();
   expect(fetcher.mock.calls[1][1]).not.toHaveProperty('body');
 });
@@ -329,7 +332,7 @@ it.each([
 });
 
 it.each(['direct', 'exported'] as const)(
-  'uses connection mappings before HTTP and element templates (%s)',
+  'uses Data Transform nodes before HTTP and element templates (%s)',
   async (mode) => {
     document.body.innerHTML = '<button id="start">Start</button><p id="result"></p>';
     const original = workflow({
@@ -338,10 +341,10 @@ it.each(['direct', 'exported'] as const)(
       headers: '{"X-User-Id":"{{id}}"}',
       body: '{"name":"{{name}}"}',
     });
-    original.edges[1].data = { mapping: { sourcePath: 'user', targetInput: 'data' } };
-    original.edges[2].data = { mapping: { sourcePath: 'receipt', targetInput: 'value' } };
+    insertTransform(original, 'first-second-transform-out', { dataPath: 'user' });
+    insertTransform(original, 'second-result', { dataPath: 'receipt' });
     original.nodes[3].data.config = { selector: '#result', value: 'Saved {{name}}' };
-    const graph = migrateConnectionMappings(original);
+    const graph = original;
     const fetcher = vi
       .spyOn(globalThis, 'fetch')
       .mockResolvedValueOnce(new Response('{"data":{"user":{"id":42,"name":"Ada"}}}'))

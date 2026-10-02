@@ -1,5 +1,5 @@
 import type { Edge, Node } from '@xyflow/react';
-import type { ConnectionData } from './connectionMapping';
+import type { ConnectionData } from './connections';
 import type { DataOperator } from './data';
 import type { DataTransformConfig } from './dataTransform';
 export type NodeKind =
@@ -68,15 +68,9 @@ export interface StepConfig extends DataTransformConfig {
   headers?: string;
   /** Raw request body; accepts {{path}} variables from incoming data (except GET/HEAD). */
   body?: string;
-  /** @deprecated Legacy import only; migrated to Data Transform nodes. Non-JSON responses pass as complete text. */
-  responseDataPath?: string;
   action?: 'text' | 'html' | 'add-class' | 'remove-class' | 'hide' | 'show' | 'attribute';
   /** Update element content supports {{name}}, nested paths, and {{$}} for the whole input. */
   value?: string;
-  /** @deprecated Incoming-data mode is migrated to a {{$}} value template. */
-  valueSource?: 'manual' | 'incoming-data';
-  /** @deprecated Legacy import only; migrated to Data Transform nodes. */
-  valueDataPath?: string;
   attribute?: string;
   /** Cookie name on the current host; supports {{variables}} from incoming data. */
   cookieName?: string;
@@ -88,8 +82,6 @@ export interface StepConfig extends DataTransformConfig {
   duration?: number;
   /** Omitted in older workflows, which check CSS selector existence. */
   conditionType?: ConditionType;
-  /** @deprecated Legacy import only; migrated to Data Transform nodes. */
-  conditionDataPath?: string;
   conditionOperator?: DataOperator;
   /** CSS selector used by selector conditions. */
   condition?: string;

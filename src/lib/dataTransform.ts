@@ -15,10 +15,6 @@ export type DataTransformation =
 export interface DataTransformConfig {
   dataPath?: string;
   transformations?: DataTransformation[];
-  /** Imported HTTP selections apply only to successful JSON responses. */
-  legacyJsonOnly?: boolean;
-  /** Blocks execution until the imported selection has been reviewed. */
-  migrationWarning?: string;
 }
 
 /** Self-contained so the editor, runtime and exported script share the same rules. */
@@ -46,13 +42,8 @@ export function createDataTransformTools(data: Pick<typeof dataTools, 'parsePath
       Object.values(value).every((item) => jsonValue(item, depth + 1))
     );
   }
-  function validate(config: DataTransformConfig, checkMigration = true, structural = false): void {
+  function validate(config: DataTransformConfig, structural = false): void {
     data.parsePath(config.dataPath);
-    if (config.legacyJsonOnly !== undefined && typeof config.legacyJsonOnly !== 'boolean')
-      throw new Error('Imported JSON selection must be a boolean.');
-    if (config.migrationWarning !== undefined && typeof config.migrationWarning !== 'string')
-      throw new Error('Migration warning must be text.');
-    if (checkMigration && config.migrationWarning) throw new Error(config.migrationWarning);
     if (config.transformations !== undefined && !Array.isArray(config.transformations))
       throw new Error('Transformations must be an ordered list.');
     if ((config.transformations?.length ?? 0) > 100)
@@ -79,15 +70,9 @@ export function createDataTransformTools(data: Pick<typeof dataTools, 'parsePath
         error('Choose a JSON fallback value, including an empty string or null.');
     }
   }
-  function apply(
-    input: DataSelection,
-    config: DataTransformConfig,
-    jsonResponse = false,
-    checkMigration = true,
-  ): DataSelection {
-    validate(config, checkMigration);
-    let selected =
-      config.legacyJsonOnly && !jsonResponse ? input : data.select(input, config.dataPath);
+  function apply(input: DataSelection, config: DataTransformConfig): DataSelection {
+    validate(config);
+    let selected = data.select(input, config.dataPath);
     if (selected.value === undefined) selected = { exists: false, value: undefined };
     for (const [index, transform] of (config.transformations ?? []).entries()) {
       if (transform.type === 'fallback') {

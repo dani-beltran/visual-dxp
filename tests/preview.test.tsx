@@ -405,11 +405,9 @@ it('transports connection source samples from the isolated runtime and rejects s
   expect(doc.querySelector('#result')?.textContent).toBe('ADA');
   expect(onConnectionPreview).toHaveBeenCalledWith('edge-1', {
     source: { exists: true, value: { user: { name: 'Ada' } } },
-    jsonResponse: true,
   });
   expect(onConnectionPreview).toHaveBeenCalledWith('edge-2', {
     source: { exists: true, value: 'ADA' },
-    jsonResponse: false,
   });
   const sent = vi
     .mocked(win.parent.postMessage)

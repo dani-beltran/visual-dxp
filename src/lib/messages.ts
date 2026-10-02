@@ -32,10 +32,6 @@ export const englishMessages = {
     'Enter valid JSON, such as null, false, 0, "text", an object, or an array. This edit is saved when the JSON is valid.',
   'transform.add': 'Add transformation',
   'transform.outputHint': 'Passes the selected and transformed value to the next node',
-  'transform.importedJson': 'Preserve imported JSON response selection',
-  'transform.importedHint':
-    'Applies the path only to successful JSON HTTP responses. Complete text and request errors pass through, preserving the imported workflow.',
-  'transform.reviewMigration': 'Confirm reviewed configuration',
   'transform.summary': ({ path, count }: { path: string; count: number }) =>
     `${path} · ${count} ${count === 1 ? 'transformation' : 'transformations'}`,
   'transform.operation': ({ number }: { number: number }) => `Transformation ${number}`,
@@ -661,8 +657,6 @@ export const englishMessages = {
   'errors.data.dataPathMustBeText': 'Data path must be text.',
   'errors.data.invalidDataPathPathUsePropertiesAndArrayIndexesE': ({ path }: { path: string }) =>
     `Invalid data path “${path}”. Use properties and array indexes, e.g. data.items[0].price.`,
-  'errors.data.chooseManualValueOrIncomingDataAsTheValueSource':
-    'Choose Manual value or Incoming data as the value source.',
   'errors.data.incomingCssClassesMustBeTextANumberABoolean':
     'Incoming CSS classes must be text, a number, a boolean, or an array of strings.',
   'errors.data.chooseASupportedIncomingDataConditionOperator':

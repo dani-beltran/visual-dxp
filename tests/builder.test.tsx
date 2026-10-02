@@ -89,7 +89,7 @@ describe('builder and host boundary', () => {
         { type: 'target', position: Position.Left, x: 0, y: 70 },
       ],
     }));
-    workflow.nodes[3].data.config = { selector: '#result', valueSource: 'incoming-data' };
+    workflow.nodes[3].data.config = { selector: '#result', value: '{{$}}' };
     workflow.edges = [
       { id: 'trigger-http', source: 'node-0', target: 'node-1' },
       { id: 'http-http', source: 'node-1', target: 'node-2' },

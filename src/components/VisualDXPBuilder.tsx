@@ -66,9 +66,7 @@ import {
 } from '../lib/aiCredentials';
 import { AISettingsStore } from '../lib/aiSettings';
 import { createNode, defaultWorkflow, getCatalog } from '../lib/catalog';
-import type { ConnectionPreview } from '../lib/connectionMapping';
-import { migrateDataTransforms } from '../lib/dataTransformMigration';
-import { migrateElementTemplates } from '../lib/elementTemplates';
+import type { ConnectionPreview } from '../lib/connections';
 import { validateWorkflow } from '../lib/export';
 import { getFlowLabels } from '../lib/flowLabels';
 import { duplicateNode, framesFirst, groupNodes, nodeSize, removeNodes } from '../lib/frames';
@@ -167,12 +165,7 @@ interface HistoryEntry {
 }
 type BuilderView = 'canvas' | 'presets' | 'activity' | 'settings';
 function copyWorkflow(w: Workflow): Workflow {
-  return migrateElementTemplates(
-    migrateDataTransforms({
-      ...structuredClone(w),
-      includeSubpages: w.includeSubpages ?? false,
-    }),
-  );
+  return { ...structuredClone(w), includeSubpages: w.includeSubpages ?? false };
 }
 export function VisualDXPBuilder(props: VisualDXPBuilderProps) {
   return (
@@ -515,7 +508,7 @@ function Builder({
   );
   const commit = useCallback(
     (update: (w: Workflow) => Workflow, action: ActivityAction, activityKey?: string) => {
-      const next = migrateElementTemplates(migrateDataTransforms(update(current.current)));
+      const next = update(current.current);
       if (JSON.stringify(next) === JSON.stringify(current.current)) return;
       const entry = remember(activityKey);
       current.current = next;

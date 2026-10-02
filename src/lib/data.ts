@@ -4,13 +4,8 @@ export interface DataSelection {
 }
 
 interface DataConditionConfig {
-  conditionDataPath?: string;
   conditionOperator?: string;
   conditionValue?: string;
-}
-
-interface ResponseConfig {
-  responseDataPath?: string;
 }
 
 interface RequestConfig {
@@ -25,8 +20,6 @@ interface ElementValueConfig {
   attribute?: string;
   action?: string;
   value?: string;
-  valueSource?: string;
-  valueDataPath?: string;
 }
 
 /** Self-contained so preview and exported scripts use exactly the same rules. */
@@ -239,8 +232,7 @@ export function createDataTools() {
     return (
       hasVariables(config.selector) ||
       (config.action === 'attribute' && hasVariables(config.attribute)) ||
-      (hasElementValue(config) &&
-        (config.valueSource === 'incoming-data' || hasVariables(config.value)))
+      (hasElementValue(config) && hasVariables(config.value))
     );
   }
 
@@ -248,13 +240,7 @@ export function createDataTools() {
     validateTemplate(config.selector);
     if (config.action === 'attribute') validateTemplate(config.attribute);
     if (!hasElementValue(config)) return;
-    if (!['manual', 'incoming-data'].includes(config.valueSource ?? 'manual'))
-      throw Object.assign(new Error('Choose Manual value or Incoming data as the value source.'), {
-        messageKey: 'errors.data.chooseManualValueOrIncomingDataAsTheValueSource',
-        messageParams: {},
-      });
-    if (config.valueSource === 'incoming-data') parsePath(config.valueDataPath);
-    else validateTemplate(config.value);
+    validateTemplate(config.value);
   }
 
   function valueText(value: unknown, action?: string): string {
@@ -307,18 +293,10 @@ export function createDataTools() {
   function elementValue(config: ElementValueConfig, input: DataSelection): string {
     validateElementValue(config);
     if (!hasElementValue(config)) return '';
-    // Retain execution compatibility for callers passing unmigrated version-1 JSON.
-    if (config.valueSource === 'incoming-data')
-      return valueText(select(input, config.valueDataPath).value, config.action);
     return interpolate(config.value ?? '', input, config.action);
   }
 
-  function validateResponse(config: ResponseConfig): void {
-    parsePath(config.responseDataPath);
-  }
-
-  function parseResponse(body: string, config: ResponseConfig): DataSelection {
-    validateResponse(config);
+  function parseResponse(body: string): DataSelection {
     let value: unknown;
     try {
       value = JSON.parse(body);
@@ -326,12 +304,10 @@ export function createDataTools() {
       // Non-JSON bodies are always passed through as complete text.
       return { exists: true, value: body };
     }
-    // Preserve missingness so downstream Exists checks distinguish it from null.
-    return select({ exists: true, value }, config.responseDataPath);
+    return { exists: true, value };
   }
 
   function validateCondition(config: DataConditionConfig): void {
-    parsePath(config.conditionDataPath);
     const operator = config.conditionOperator ?? 'equal';
     if (!Object.hasOwn(operators, operator))
       throw Object.assign(new Error('Choose a supported Incoming data condition operator.'), {
@@ -412,7 +388,7 @@ export function createDataTools() {
   function evaluate(config: DataConditionConfig, input: DataSelection): boolean {
     validateCondition(config);
     const operator = config.conditionOperator ?? 'equal';
-    const { exists, value } = select(input, config.conditionDataPath);
+    const { exists, value } = input;
     if (operator === 'exists') return exists;
     if (operator === 'not-exists') return !exists;
     if (operator === 'is-null') return exists && value === null;
@@ -420,11 +396,11 @@ export function createDataTools() {
     if (!exists)
       throw Object.assign(
         new Error(
-          `Data path “${config.conditionDataPath?.trim() || '(incoming data)'}” could not be resolved. Use Exists or Does not exist to check missing data.`,
+          `Data path “(incoming data)” could not be resolved. Use Exists or Does not exist to check missing data.`,
         ),
         {
           messageKey: 'errors.data.dataPathValue1CouldNotBeResolvedUseExistsOr',
-          messageParams: { value1: String(config.conditionDataPath?.trim() || '(incoming data)') },
+          messageParams: { value1: '(incoming data)' },
         },
       );
     const type = value === null ? 'null' : Array.isArray(value) ? 'array' : typeof value;
@@ -551,7 +527,6 @@ export function createDataTools() {
     needsValue,
     parsePath,
     select,
-    validateResponse,
     parseResponse,
     validateCondition,
     evaluate,

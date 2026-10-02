@@ -25,12 +25,8 @@ Invalid or unfinished placeholders produce configuration errors. Selectors are c
 
 ## Compatibility
 
-The builder first runs `migrateDataTransforms`, as described in [ADR 0002](0002-data-transform-nodes.md), then `migrateElementTemplates`. Legacy incoming-data nodes become content templates, usually `{{$}}`, and lose the legacy valueSource/valueDataPath fields. Active legacy paths become explicit Data Transform nodes. Legacy manual nodes retain their content and lose the obsolete mode fields. Inactive manual fallback text from an incoming-data node is replaced by its active incoming-value template, since there is no longer a mode to switch back to. Dormant Hide/Show content remains inactive. Unknown legacy modes remain validation errors.
-
-Both migrations are non-mutating and idempotent. Initial state, browser restoration, import, presets, and committed edits use them. Programmatic direct runtime/export callers can continue supplying old version-1 JSON. AI tools accept templates as normal string configuration; their instructions discourage writing deprecated mode/path fields.
+The app has not been deployed to production. Templates are the only element content mechanism; legacy value modes and selection fields are removed without automatic migration. Use explicit Data Transform nodes for upstream selection, as described in [ADR 0002](0002-data-transform-nodes.md).
 
 ## Validation
 
-Tests cover substitution, nested paths, root values, repeated variables, null/missing/false/zero handling, one-pass expansion, malformed syntax, class conversion, required selector variables, each action in direct/exported runtime, preserved downstream data, migration, synchronized incoming-data indicators, removal of the toggle, undo, and server tool/transport validation. Built ESM/UMD tests also exercise migrated templates.
-
-Verification on 2026-10-01 after integrating HTTP request templates from main: type checking, lint (no errors), Next production build, and Vite library build passed. All 70 focused template/mapping/HTTP/builder tests passed, including direct and exported execution combining migrated response selection, connection mappings, HTTP request templates, and element templates. The full suite passed 1,242 tests with seven pre-existing failures (AI settings UI, AI error copy, preset loop timing, condition summary copy, and export-scope copy). Built ESM and UMD exports passed 20 targeting cases and 24 data-flow cases, including migrated templates.
+Tests cover substitution, nested paths, root values, repeated variables, null/missing/false/zero handling, one-pass expansion, malformed syntax, class conversion, required selector variables, each action in direct/exported runtime, preserved downstream data, synchronized incoming-data indicators, removal of the toggle, undo, and server tool/transport validation. Built ESM/UMD tests also exercise templates with explicit Data Transform nodes.

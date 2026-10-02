@@ -1,7 +1,6 @@
 import { buildCookie } from '../cookies';
 import { createDataTools } from '../data';
 import { createDataTransformTools } from '../dataTransform';
-import { migrateDataTransforms } from '../dataTransformMigration';
 import { getDateRange } from '../dateRange';
 import { getTimeRange } from '../timeRange';
 import type { Workflow } from '../types';
@@ -69,9 +68,8 @@ function createRuntimeFactory(modules: typeof runtimeModules) {
 }
 
 const runtimeFactory = createRuntimeFactory(runtimeModules);
-/** Normalize imported connection mappings before execution; exports already contain explicit nodes. */
 export function createRuntime(workflow: Workflow, options: RuntimeOptions = {}): WorkflowRuntime {
-  return runtimeFactory(migrateDataTransforms(workflow, false), options);
+  return runtimeFactory(workflow, options);
 }
 export const executeWorkflow = createRuntime;
 

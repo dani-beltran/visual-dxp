@@ -88,7 +88,7 @@ export function DataTransformInspector({
   };
   let error = '';
   try {
-    dataTransformTools.validate(config, false);
+    dataTransformTools.validate(config);
   } catch (cause) {
     error = (cause as Error).message;
   }
@@ -120,19 +120,6 @@ export function DataTransformInspector({
           {t('transform.pathHint')}
         </p>
       </div>
-      {config.legacyJsonOnly !== undefined && (
-        <div className="dxp-inspector-field">
-          <label>
-            <input
-              type="checkbox"
-              checked={config.legacyJsonOnly}
-              onChange={(event) => onChange({ legacyJsonOnly: event.target.checked })}
-            />{' '}
-            {t('transform.importedJson')}
-          </label>
-          <p className="dxp-inspector-hint">{t('transform.importedHint')}</p>
-        </div>
-      )}
       <h3 className="dxp-inspector-section-label">{t('transform.transformations')}</h3>
       <p className="dxp-inspector-hint">{t('transform.orderHint')}</p>
       {transformations.map((transformation, index) => (

@@ -105,18 +105,13 @@ export function validateWorkflow(workflow: Workflow): ValidationIssue[] {
       'headers',
       'body',
       'dataPath',
-      'migrationWarning',
-      'responseDataPath',
       'action',
       'value',
-      'valueSource',
-      'valueDataPath',
       'attribute',
       'cookieName',
       'cookieValue',
       'condition',
       'conditionType',
-      'conditionDataPath',
       'conditionOperator',
       'conditionKey',
       'conditionValue',
@@ -156,8 +151,6 @@ export function validateWorkflow(workflow: Workflow): ValidationIssue[] {
         add(error instanceof Error ? error.message : 'Invalid note marks.', node.id);
       }
     }
-    if (node.data.kind !== 'transform' && config.migrationWarning)
-      add(config.migrationWarning, node.id);
     switch (node.data.kind) {
       case 'transform':
         try {
@@ -186,7 +179,6 @@ export function validateWorkflow(workflow: Workflow): ValidationIssue[] {
             'Enter a valid HTTP or HTTPS request URL.',
             true,
           );
-          dataTools.validateResponse(config);
         } catch (error) {
           add((error as Error).message, node.id);
         }
@@ -357,8 +349,6 @@ export function validateWorkflow(workflow: Workflow): ValidationIssue[] {
         'Notes cannot have workflow connections.',
         source.data.kind === 'note' ? source.id : target.id,
       );
-    if (edge.data?.mapping)
-      add('Legacy connection mapping needs migration to a Data Transform node.', target.id);
     if (target.data.kind === 'trigger')
       add('Triggers cannot receive incoming connections.', target.id);
     if (source.data.kind === 'fork' && !['true', 'false'].includes(edge.sourceHandle ?? ''))

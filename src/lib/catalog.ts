@@ -196,7 +196,7 @@ export function stepSummary(
         action: c.action || 'text',
         element,
         incoming: dataTools.usesIncomingValue(c),
-        path: c.valueDataPath || '',
+        path: '',
       });
     case 'cookie':
       return t('summary.cookie', {
@@ -210,7 +210,7 @@ export function stepSummary(
       switch (c.conditionType ?? 'selector') {
         case 'data':
           return t('summary.data', {
-            path: c.conditionDataPath || t('summary.dataLabel'),
+            path: t('summary.dataLabel'),
             operator: t(`data.operator.${c.conditionOperator ?? 'equal'}`),
             value: dataTools.needsValue(c.conditionOperator ?? 'equal')
               ? JSON.stringify(c.conditionValue ?? '')

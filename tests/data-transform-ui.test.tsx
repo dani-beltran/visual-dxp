@@ -55,7 +55,7 @@ function graph(): Workflow {
         data: {
           kind: 'dom',
           label: 'Greeting',
-          config: { selector: '#result', valueSource: 'incoming-data' },
+          config: { selector: '#result', value: '{{$}}' },
         },
       },
     ].map((node) => ({
@@ -255,32 +255,6 @@ it('offers transformation-specific controls and reorders operations', async () =
   expect(config.transformations).toEqual([{ type: 'uppercase' }, { type: 'prefix', value: 'a' }]);
   await click('button[aria-label="Remove transformation 2"]');
   expect(host.textContent).not.toContain('Text to add');
-});
-
-it('surfaces migration review and blocks export until reviewed', async () => {
-  const workflow = graph();
-  workflow.edges[0].data = { mapping: { sourcePath: 'user.name', targetInput: 'value' } };
-  workflow.nodes.push({
-    ...workflow.nodes[1],
-    id: 'after',
-    data: { kind: 'delay', label: 'After', config: { duration: 0 } },
-  });
-  workflow.edges.push({ id: 'after', source: 'dom', target: 'after' });
-  const onChange = vi.fn<(workflow: Workflow) => void>();
-  await act(async () =>
-    root.render(<VisualDXPBuilder initialWorkflow={workflow} onChange={onChange} />),
-  );
-  const transform = element('.react-flow__node[data-id^="transform-"]');
-  await act(async () => transform.dispatchEvent(new MouseEvent('click', { bubbles: true })));
-  expect(host.textContent).toContain('forwarded the original data');
-  const button = [...host.querySelectorAll('button')].find(
-    (entry) => entry.textContent === 'Confirm reviewed configuration',
-  )!;
-  await act(async () => button.click());
-  expect(
-    onChange.mock.lastCall?.[0].nodes.find((node) => node.data.kind === 'transform')?.data.config
-      .migrationWarning,
-  ).toBeUndefined();
 });
 
 it('keeps the receiving badge and data socket while variables are edited, including undo', async () => {

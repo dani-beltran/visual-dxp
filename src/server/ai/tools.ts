@@ -113,12 +113,6 @@ const config = z.object({
       'Request body; supports incoming data templates such as {{user.name}}. Ignored for GET/HEAD.',
     )
     .optional(),
-  responseDataPath: text
-    .describe('Legacy import only. For new workflows add a Data Transform node with dataPath.')
-    .optional(),
-  conditionDataPath: text
-    .describe('Legacy import only. For new field selection add a Data Transform node.')
-    .optional(),
   conditionOperator: z
     .enum(
       Object.keys(dataTools.operators) as [
@@ -133,17 +127,6 @@ const config = z.object({
   value: text
     .describe(
       'Update element content. Mix literal text and incoming variables such as Hello {{name}}, {{user.name}}, or {{$}} for the whole incoming input.',
-    )
-    .optional(),
-  valueSource: z
-    .enum(['manual', 'incoming-data'])
-    .describe(
-      'Legacy only. For new Update element nodes omit valueSource and use {{variables}} in value.',
-    )
-    .optional(),
-  valueDataPath: text
-    .describe(
-      'Legacy only. New source selections belong to Data Transform nodes; interpolate {{variables}} in element content.',
     )
     .optional(),
   attribute: text.describe('Attribute name for Update element; supports {{variables}}.').optional(),

@@ -22,7 +22,7 @@ const base: Workflow = {
   ],
   edges: [],
 };
-const cases: ['http' | 'fork' | 'dom', StepConfig][] = [
+const cases: ['http' | 'fork' | 'dom' | 'transform', StepConfig][] = [
   ['dom', { selector: '#{{id}}', action: 'text', value: 'Hello {{name}}' }],
   [
     'dom',
@@ -34,8 +34,7 @@ const cases: ['http' | 'fork' | 'dom', StepConfig][] = [
     {
       selector: '#result',
       action: 'text',
-      valueSource: 'incoming-data',
-      valueDataPath: 'user.name',
+      value: '{{user.name}}',
     },
   ],
   [
@@ -44,7 +43,7 @@ const cases: ['http' | 'fork' | 'dom', StepConfig][] = [
       selector: '#result',
       action: 'attribute',
       attribute: 'data-price',
-      valueSource: 'incoming-data',
+      value: '{{$}}',
     },
   ],
   [
@@ -52,12 +51,11 @@ const cases: ['http' | 'fork' | 'dom', StepConfig][] = [
     {
       selector: '#result',
       action: 'hide',
-      valueSource: 'incoming-data',
-      valueDataPath: 'ignored[',
+      value: '{{ignored[}}',
     },
   ],
-  ['http', { url: 'https://example.com', responseDataPath: 'items[0].price' }],
-  ['http', { url: 'https://example.com', responseDataPath: '' }],
+  ['transform', { dataPath: 'items[0].price' }],
+  ['transform', { dataPath: '' }],
   [
     'http',
     {
@@ -70,12 +68,11 @@ const cases: ['http' | 'fork' | 'dom', StepConfig][] = [
     'fork',
     {
       conditionType: 'data',
-      conditionDataPath: 'items[0].price',
       conditionOperator: 'greater-than',
       conditionValue: '12',
     },
   ],
-  ['fork', { conditionType: 'data', conditionDataPath: '', conditionOperator: 'exists' }],
+  ['fork', { conditionType: 'data', conditionOperator: 'exists' }],
   ['fork', { conditionType: 'data', conditionOperator: 'matches', conditionValue: '^premium' }],
 ];
 it.each(cases)('retains %s config through tools and transport', async (kind, config) => {
@@ -102,12 +99,11 @@ it.each([
   ['dom', { selector: '#result', value: '{{name' }],
   ['dom', { selector: '#result', value: '{{name()}}' }],
   ['dom', { selector: '#{{ }}', action: 'hide' }],
-  ['dom', { selector: '#result', valueSource: 'unknown' }],
-  ['dom', { selector: '#result', valueSource: 'incoming-data', valueDataPath: 'items[' }],
-  ['http', { url: 'https://example.com', responseDataPath: 'items[' }],
+  ['dom', { selector: '#result', value: '{{items[}}' }],
+  ['transform', { dataPath: 'items[' }],
   ['fork', { conditionType: 'data', conditionOperator: 'matches', conditionValue: '[' }],
   ['fork', { conditionType: 'data', conditionOperator: 'not-matches', conditionValue: '(' }],
-  ['fork', { conditionType: 'data', conditionOperator: 'exists', conditionDataPath: 'items[-1]' }],
+  ['transform', { dataPath: 'items[-1]' }],
   ['fork', { conditionType: 'data', conditionOperator: 'unsupported' }],
   ['fork', { conditionType: 'data', conditionOperator: 'equal' }],
 ])('validates invalid %s configs', (kind, config) => {

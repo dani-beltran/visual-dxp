@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { ConnectionPreview } from '../lib/connectionMapping';
+import type { ConnectionPreview } from '../lib/connections';
 import { useBuilderI18n } from '../lib/i18nContext';
 import { PREVIEW_PROTOCOL, previewBridgeSource } from '../lib/previewBridge';
 import type { RunLog, Workflow } from '../lib/types';
@@ -120,7 +120,6 @@ export function IsolatedPreview({
           typeof data.edgeId !== 'string' ||
           !current.current.edges.some((edge) => edge.id === data.edgeId) ||
           !sample ||
-          typeof sample.jsonResponse !== 'boolean' ||
           !sample.source ||
           typeof sample.source.exists !== 'boolean'
         )
@@ -129,7 +128,6 @@ export function IsolatedPreview({
           const encoded = JSON.stringify(sample.source.value);
           if (encoded && encoded.length > 32768) return;
           callbacks.current.onConnectionPreview?.(data.edgeId, {
-            jsonResponse: sample.jsonResponse,
             source: {
               exists: sample.source.exists,
               value: encoded === undefined ? undefined : JSON.parse(encoded),

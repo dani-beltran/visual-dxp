@@ -143,7 +143,6 @@ export function NodeInspector({
   }
   let dataError: string | undefined;
   try {
-    if (node.data.kind === 'http') dataTools.validateResponse(config);
     if (node.data.kind === 'dom') dataTools.validateElementValue(config);
     if (node.data.kind === 'cookie') validateCookie(config);
     if (node.data.kind === 'fork' && conditionType === 'data') dataTools.validateCondition(config);
@@ -316,18 +315,6 @@ export function NodeInspector({
           </>
         )}
 
-        {config.migrationWarning && (
-          <div className="dxp-inspector-field">
-            <p role="alert">{config.migrationWarning}</p>
-            <button
-              type="button"
-              className="dxp-inspector-pick"
-              onClick={() => update({ migrationWarning: undefined })}
-            >
-              {t('transform.reviewMigration')}
-            </button>
-          </div>
-        )}
         {node.data.kind === 'transform' && (
           <DataTransformInspector config={config} onChange={update} />
         )}

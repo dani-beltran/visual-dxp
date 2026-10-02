@@ -1,7 +1,6 @@
 import { validateCookie } from './cookies';
 import { dataTools } from './data';
 import { dataTransformTools } from './dataTransform';
-import { migrateDataTransforms } from './dataTransformMigration';
 import { getDateRange } from './dateRange';
 import { type BuilderTranslator, formatBuilderError, translateEnglish } from './i18n';
 import { isNoteMarks } from './noteText';
@@ -129,18 +128,13 @@ export function validateWorkflow(
       'headers',
       'body',
       'dataPath',
-      'migrationWarning',
-      'responseDataPath',
       'action',
       'value',
-      'valueSource',
-      'valueDataPath',
       'attribute',
       'cookieName',
       'cookieValue',
       'condition',
       'conditionType',
-      'conditionDataPath',
       'conditionOperator',
       'conditionKey',
       'conditionValue',
@@ -166,8 +160,6 @@ export function validateWorkflow(
       !isNoteMarks(config.noteMarks, (config.noteText ?? '').length)
     )
       add(t('validation.noteTextFormattingMustUseSortedNonoverlappingRangesWithinThe'), node.id);
-    if (node.data.kind !== 'transform' && config.migrationWarning)
-      add(config.migrationWarning, node.id, 'transform.migration');
     switch (node.data.kind) {
       case 'transform':
         try {
@@ -210,7 +202,6 @@ export function validateWorkflow(
             t('validation.enterAValidHttpOrHttpsRequestUrl'),
             true,
           );
-          dataTools.validateResponse(config);
         } catch (error) {
           add((error as Error).message, node.id);
         }
@@ -391,8 +382,6 @@ export function validateWorkflow(
       );
       continue;
     }
-    if (edge.data?.mapping)
-      add('Legacy connection mapping needs migration to a Data Transform node.', target.id);
     if (target.data.kind === 'trigger')
       add(t('validation.triggersCannotReceiveIncomingConnections'), target.id);
     if (source.data.kind === 'fork' && !['true', 'false'].includes(edge.sourceHandle ?? ''))
@@ -432,7 +421,6 @@ export function validateWorkflow(
 
 /** Create a dependency-free script to load on the target website. */
 export function exportWorkflow(workflow: Workflow, options: ExportOptions = {}): string {
-  workflow = migrateDataTransforms(workflow, false);
   const target = validateExportTarget(workflow, options);
   const issues = validateWorkflow(workflow);
   if (issues.length) throw new Error(issues.map((issue) => issue.message).join('\n'));

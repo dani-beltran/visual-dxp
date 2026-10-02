@@ -1,8 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, expect, it, vi } from 'vitest';
-import { migrateConnectionMappings } from '../src/lib/connectionMapping';
 import { dataTools } from '../src/lib/data';
-import { migrateElementTemplates } from '../src/lib/elementTemplates';
 import { exportWorkflow, validateWorkflow } from '../src/lib/export';
 import { getNodeDataPorts } from '../src/lib/nodeData';
 import { createRuntime } from '../src/lib/runtime';
@@ -178,36 +176,6 @@ it.each(['direct', 'exported'] as const)(
     }
   },
 );
-
-it('migrates legacy modes to editable templates after moving connected paths', () => {
-  const workflow = graph({
-    selector: '#target',
-    valueSource: 'incoming-data',
-    valueDataPath: 'name',
-    value: 'inactive manual value',
-  });
-  delete workflow.edges[1].data;
-  const migrated = migrateElementTemplates(migrateConnectionMappings(workflow));
-  expect(migrated.nodes[2].data.config).toEqual({ selector: '#target', value: '{{$}}' });
-  expect(migrated.edges.every((edge) => !edge.data?.mapping)).toBe(true);
-  expect(
-    migrated.nodes.find(
-      (node) => node.data.kind === 'transform' && node.data.config.dataPath === 'name',
-    )?.data.config.migrationWarning,
-  ).toContain('forwarded the original data');
-  expect(migrateElementTemplates(migrated)).toBe(migrated);
-  expect(workflow.nodes[2].data.config.valueSource).toBe('incoming-data');
-  for (const path of ['user.name', '[0].name', '$']) {
-    const disconnected = graph({ valueSource: 'incoming-data', valueDataPath: path });
-    disconnected.edges = [];
-    const config = migrateElementTemplates(disconnected).nodes[2].data.config;
-    const data = {
-      exists: true,
-      value: path === '[0].name' ? [{ name: 'Ada' }] : { user: { name: 'Ada' }, $: 'Ada' },
-    };
-    expect(dataTools.elementValue(config, data)).toBe('Ada');
-  }
-});
 
 it('rejects missing selector variables before mutating any element', async () => {
   document.body.innerHTML = '<button id="run"></button><div id="target">unchanged</div>';

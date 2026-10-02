@@ -34,10 +34,6 @@ export const spanishMessages = {
     'Introduce JSON válido, como null, false, 0, "texto", un objeto o una matriz. Se guarda cuando el JSON es válido.',
   'transform.add': 'Añadir transformación',
   'transform.outputHint': 'Transmite el valor seleccionado y transformado al siguiente nodo',
-  'transform.importedJson': 'Conservar selección de respuesta JSON importada',
-  'transform.importedHint':
-    'Aplica la ruta solo a respuestas HTTP JSON correctas. El texto completo y los errores se transmiten, conservando el flujo importado.',
-  'transform.reviewMigration': 'Confirmar configuración revisada',
   'transform.summary': ({ path, count }) =>
     `${path} · ${count} ${count === 1 ? 'transformación' : 'transformaciones'}`,
   'transform.operation': ({ number }) => `Transformación ${number}`,
@@ -562,8 +558,6 @@ export const spanishMessages = {
   'errors.timeRange.chooseVisitorLocalTimeOrUtcForTheTimeOf':
     'Elige la hora local del visitante o UTC para la hora del día.',
   'errors.data.dataPathMustBeText': 'La ruta de datos debe ser texto.',
-  'errors.data.chooseManualValueOrIncomingDataAsTheValueSource':
-    'Elige Valor manual o Datos de entrada como fuente del valor.',
   'errors.data.incomingCssClassesMustBeTextANumberABoolean':
     'Las clases CSS de entrada deben ser texto, un número, un booleano o un array de cadenas.',
   'errors.data.chooseASupportedIncomingDataConditionOperator':
