@@ -2,7 +2,7 @@
 export const englishMessages = {
   'nodes.transform.label': 'Data Transform',
   'nodes.transform.description':
-    'Selects a field from incoming data and transforms its value. Use nested paths or array indexes, then add text transformations in order or a fallback for missing or null data. The selected result is passed to downstream steps.',
+    'Selects a field from incoming data and transforms its value. The result is passed to downstream steps.',
   'transform.dataPath': 'Data path',
   'transform.httpHint':
     'The full response passes downstream. Add a Data Transform to select a field or transform its value.',
@@ -61,10 +61,6 @@ export const englishMessages = {
     'Close request template variables with two closing braces.',
   'errors.data.unresolvedRequestTemplatePath': ({ path }: { path: string }) =>
     `Request template data path “${path}” could not be resolved.`,
-  'nodeInspector.variablesHint':
-    'Use {{name}} or {{user.name}} in content, selectors, or attribute names. Use {{$}} for the whole incoming value. Variables are filled in when this step runs.',
-  'nodeInspector.variablesIncomingHint':
-    'Uses incoming data. Add a Data Transform before this step to select a field or transform its value.',
   'errors.data.emptyVariable':
     'Enter a variable name inside {{ }}; use {{$}} for the whole incoming value.',
   'errors.data.unclosedVariable': 'Close each variable with matching braces, for example {{name}}.',
@@ -330,8 +326,6 @@ export const englishMessages = {
     'Separate multiple class names with spaces.',
   'nodeInspector.enterAValue': 'Enter a value…',
   'nodeInspector.cookieName': 'Cookie name',
-  'nodeInspector.cookieVariablesHint':
-    'Use {{name}}, {{user.name}}, or {{items[0].id}} in the cookie name or value. Use {{$}} for the whole incoming value. Missing name variables stop this step; missing value variables become empty text.',
   'nodeInspector.eGAudience': 'e.g. audience',
   'nodeInspector.cookieValue': 'Cookie value',
   'nodeInspector.anEmptyValueIsAllowed': 'An empty value is allowed.',
@@ -907,25 +901,24 @@ export const englishMessages = {
     'Use a website URL without embedded credentials.',
   'errors.picker.theWebsiteIsNotReadyYet': 'The website is not ready yet.',
   'nodes.trigger.description':
-    'Starts the workflow when a selected event occurs. Use it to respond to page activity or visitor actions. Choose an event and any required target element or thresholds, then connect the first step.',
-  'nodes.http.description':
-    'Sends an HTTP request to an API. Use it to call an external service. Set the URL and method, with headers or a body as needed.',
+    'Starts the workflow when a selected event occurs. Use it to respond to page activity or visitor actions.',
+  'nodes.http.description': 'Sends an HTTP request to an API. Use it to call an external service.',
   'nodes.dom.description':
-    'Updates matching elements on the page. Use it to change content, appearance, or visibility. Choose a target element and an action, then use a manual value or incoming data from a connected step. Set an attribute name when needed.',
+    'Updates matching elements on the page. Use it to change content, appearance, or visibility.',
   'nodes.cookie.description':
-    'Saves a cookie on this website. Use it to remember a value for later steps or visits. Set a name, value, and expiration; a Condition step can check the saved value.',
+    'Saves a cookie on this website. Use it to remember a value for later steps or visits.',
   'nodes.delay.description':
-    'Pauses the workflow before continuing. Use it to space out connected steps. Set a duration in milliseconds; the next step runs after the pause.',
+    'Pauses the workflow before continuing. Use it to space out connected steps.',
   'nodes.fork.description':
-    'Chooses a path based on a condition. Use it to tailor the workflow to the visitor or page. Choose a condition type and its values, then connect the True output for a match and the False output otherwise.',
+    'Chooses a path based on a condition. Use it to tailor the workflow to the visitor or page.',
   'nodes.loop.description':
-    'Repeats connected steps. Use it to run the same sequence more than once. Set a repetition count, connect the steps to Body, and connect the following step to Done.',
+    'Repeats connected steps. Use it to run the same sequence more than once.',
   'nodes.popover.description':
-    'Displays a panel over the page. Use it to show a message or an embedded website. Provide HTML or a website URL, choose a position and width, and select an anchor element when positioning it next to an element.',
+    'Displays a panel over the page. Use it to show a message or an embedded website.',
   'nodes.note.description':
-    'Adds text to the canvas. Use it to document ideas, context, or reminders. Enter the note text and choose its formatting; notes are skipped when the workflow runs.',
+    'Adds text to the canvas. Use it to document ideas, context, or reminders.',
   'nodes.frame.description':
-    'Groups nodes on the canvas so they move together. Use it to organize related parts of a workflow. Name the frame and place nodes fully inside it; frames are skipped when the workflow runs.',
+    'Groups nodes on the canvas so they move together. Use it to organize related parts of a workflow.',
   'nodes.trigger.label': 'Trigger',
   'nodes.http.label': 'HTTP request',
   'nodes.dom.label': 'Update element',

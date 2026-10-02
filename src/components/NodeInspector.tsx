@@ -469,12 +469,6 @@ export function NodeInspector({
                 />
               </Field>
             )}
-            <InfoBox>{t('nodeInspector.variablesHint')}</InfoBox>
-            {dataTools.usesIncomingValue(config) && (
-              <InfoBox className="dxp-inspector-incoming-data">
-                {t('nodeInspector.variablesIncomingHint')}
-              </InfoBox>
-            )}
             {dataError && (
               <p role="alert" className="dxp-inspector-hint">
                 {dataError}
@@ -507,13 +501,6 @@ export function NodeInspector({
                 spellCheck={false}
               />
             </Field>
-            <InfoBox>{t('nodeInspector.cookieVariablesHint')}</InfoBox>
-            {(dataTools.hasVariables(config.cookieName) ||
-              dataTools.hasVariables(config.cookieValue)) && (
-              <InfoBox className="dxp-inspector-incoming-data">
-                {t('nodeInspector.variablesIncomingHint')}
-              </InfoBox>
-            )}
             {dataError && (
               <p role="alert" className="dxp-inspector-hint">
                 {dataError}

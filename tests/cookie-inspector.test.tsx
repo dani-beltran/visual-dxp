@@ -95,19 +95,19 @@ it('edits cookie name, value, and session or persistent expiration', async () =>
   expect(host.textContent).not.toContain('Expires after');
 });
 
-it('explains cookie templates and derives incoming data use from either field', async () => {
+it('validates cookie templates and derives incoming data use without variable explanations', async () => {
   await act(async () => root.render(<Inspector />));
-  expect(host.textContent).toContain('in the cookie name or value');
+  expect(host.textContent).not.toContain('in the cookie name or value');
   const incoming = () => host.querySelector('.dxp-inspector-incoming-data');
   expect(incoming()).toBeNull();
   expect(getNodeDataPorts({ kind: 'cookie', config: current }).acceptsData).toBe(false);
   await change('Cookie name', 'audience_{{user.id}}');
-  expect(incoming()?.textContent).toContain('Uses incoming data');
+  expect(incoming()).toBeNull();
   expect(getNodeDataPorts({ kind: 'cookie', config: current }).acceptsData).toBe(true);
   expect(host.querySelector('[role="alert"]')).toBeNull();
   await change('Cookie value', '{{$}}');
   await change('Cookie name', 'audience');
-  expect(incoming()).not.toBeNull();
+  expect(incoming()).toBeNull();
   expect(getNodeDataPorts({ kind: 'cookie', config: current }).acceptsData).toBe(true);
   await change('Cookie value', 'returning');
   expect(incoming()).toBeNull();

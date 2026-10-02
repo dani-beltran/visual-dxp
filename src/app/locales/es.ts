@@ -4,7 +4,7 @@ import type { BuilderMessages } from '../../lib/i18n';
 export const spanishMessages = {
   'nodes.transform.label': 'Transformación de datos',
   'nodes.transform.description':
-    'Selecciona un campo de los datos entrantes y transforma su valor. Usa rutas anidadas o índices, añade transformaciones en orden o un valor alternativo para datos ausentes o null. El resultado se transmite a los siguientes pasos.',
+    'Selecciona un campo de los datos entrantes y transforma su valor. El resultado se transmite a los siguientes pasos.',
   'transform.dataPath': 'Ruta de datos',
   'transform.httpHint':
     'La respuesta completa pasa al siguiente paso. Añade una Transformación de datos para seleccionar un campo o transformar su valor.',
@@ -64,10 +64,6 @@ export const spanishMessages = {
     'Cierra las variables de la plantilla de solicitud con dos llaves de cierre.',
   'errors.data.unresolvedRequestTemplatePath': ({ path }: { path: string }) =>
     `No se ha podido resolver la ruta de datos «${path}» de la plantilla de solicitud.`,
-  'nodeInspector.variablesHint':
-    'Usa {{name}} o {{user.name}} en el contenido, los selectores o los nombres de atributo. Usa {{$}} para el valor de entrada completo. Las variables se rellenan al ejecutar este paso.',
-  'nodeInspector.variablesIncomingHint':
-    'Usa datos entrantes. Añade una Transformación de datos antes de este paso para seleccionar un campo o transformar su valor.',
   'errors.data.emptyVariable':
     'Introduce un nombre de variable entre {{ }}; usa {{$}} para el valor de entrada completo.',
   'errors.data.unclosedVariable':
@@ -305,8 +301,6 @@ export const spanishMessages = {
   'nodeInspector.separateMultipleClassNamesWithSpaces': 'Separa los nombres de clase con espacios.',
   'nodeInspector.enterAValue': 'Introduce un valor…',
   'nodeInspector.cookieName': 'Nombre de la cookie',
-  'nodeInspector.cookieVariablesHint':
-    'Usa {{name}}, {{user.name}} o {{items[0].id}} en el nombre o el valor de la cookie. Usa {{$}} para todo el valor de entrada. Las variables de nombre que faltan detienen este paso; las de valor se convierten en texto vacío.',
   'nodeInspector.eGAudience': 'p. ej. audience',
   'nodeInspector.cookieValue': 'Valor de la cookie',
   'nodeInspector.anEmptyValueIsAllowed': 'Se permite un valor vacío.',
@@ -769,25 +763,25 @@ export const spanishMessages = {
     'Usa una URL de sitio web sin credenciales incrustadas.',
   'errors.picker.theWebsiteIsNotReadyYet': 'El sitio web aún no está listo.',
   'nodes.trigger.description':
-    'Inicia el flujo de trabajo cuando ocurre un evento seleccionado. Úsalo para responder a la actividad de la página o a las acciones del visitante. Elige un evento y los elementos de destino o umbrales necesarios y conecta el primer paso.',
+    'Inicia el flujo de trabajo cuando ocurre un evento seleccionado. Úsalo para responder a la actividad de la página o a las acciones del visitante.',
   'nodes.http.description':
-    'Envía una solicitud HTTP a una API. Úsalo para llamar a un servicio externo. Configura la URL y el método, con cabeceras o un cuerpo si hace falta.',
+    'Envía una solicitud HTTP a una API. Úsalo para llamar a un servicio externo.',
   'nodes.dom.description':
-    'Actualiza los elementos coincidentes de la página. Úsalo para cambiar su contenido, apariencia o visibilidad. Elige un elemento de destino y una acción y usa un valor manual o los datos de entrada de un paso conectado. Configura el nombre del atributo cuando sea necesario.',
+    'Actualiza los elementos coincidentes de la página. Úsalo para cambiar su contenido, apariencia o visibilidad.',
   'nodes.cookie.description':
-    'Guarda una cookie en este sitio web. Úsalo para recordar un valor en pasos o visitas posteriores. Configura un nombre, valor y caducidad; un paso de Condición puede comprobar el valor guardado.',
+    'Guarda una cookie en este sitio web. Úsalo para recordar un valor en pasos o visitas posteriores.',
   'nodes.delay.description':
-    'Pausa el flujo de trabajo antes de continuar. Úsalo para espaciar los pasos conectados. Configura una duración en milisegundos; el siguiente paso se ejecuta después de la pausa.',
+    'Pausa el flujo de trabajo antes de continuar. Úsalo para espaciar los pasos conectados.',
   'nodes.fork.description':
-    'Elige una ruta según una condición. Úsalo para adaptar el flujo de trabajo al visitante o a la página. Elige un tipo de condición y sus valores y conecta la salida Verdadero cuando se cumpla y la salida Falso en caso contrario.',
+    'Elige una ruta según una condición. Úsalo para adaptar el flujo de trabajo al visitante o a la página.',
   'nodes.loop.description':
-    'Repite los pasos conectados. Úsalo para ejecutar la misma secuencia más de una vez. Configura el número de repeticiones, conecta los pasos a Cuerpo y el paso siguiente a Finalizado.',
+    'Repite los pasos conectados. Úsalo para ejecutar la misma secuencia más de una vez.',
   'nodes.popover.description':
-    'Muestra un panel sobre la página. Úsalo para mostrar un mensaje o un sitio web incrustado. Proporciona HTML o una URL, elige una posición y un ancho y selecciona un elemento de anclaje si lo sitúas junto a un elemento.',
+    'Muestra un panel sobre la página. Úsalo para mostrar un mensaje o un sitio web incrustado.',
   'nodes.note.description':
-    'Añade texto al lienzo. Úsalo para documentar ideas, contexto o recordatorios. Introduce el texto de la nota y elige su formato; las notas se omiten al ejecutar el flujo de trabajo.',
+    'Añade texto al lienzo. Úsalo para documentar ideas, contexto o recordatorios.',
   'nodes.frame.description':
-    'Agrupa nodos en el lienzo para que se muevan juntos. Úsalo para organizar partes relacionadas de un flujo de trabajo. Asigna un nombre al marco y coloca los nodos completamente dentro; los marcos se omiten al ejecutar el flujo de trabajo.',
+    'Agrupa nodos en el lienzo para que se muevan juntos. Úsalo para organizar partes relacionadas de un flujo de trabajo.',
   'nodes.trigger.label': 'Disparador',
   'nodes.http.label': 'Solicitud HTTP',
   'nodes.dom.label': 'Actualizar elemento',
