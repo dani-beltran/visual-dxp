@@ -43,16 +43,16 @@ export const catalog: {
     config: { conditionType: 'selector', condition: '#shop-now' },
   },
   {
-    kind: 'experiment',
-    label: 'Experiment',
-    description: nodeDescriptions.experiment,
-    config: { experimentSplit: 50 },
-  },
-  {
     kind: 'loop',
     label: 'Loop',
     description: nodeDescriptions.loop,
     config: { iterations: 3 },
+  },
+  {
+    kind: 'experiment',
+    label: 'Experiment',
+    description: nodeDescriptions.experiment,
+    config: { experimentSplit: 50 },
   },
   {
     kind: 'popover',

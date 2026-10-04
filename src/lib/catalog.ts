@@ -64,15 +64,6 @@ export const catalog: {
     config: { conditionType: 'selector', condition: '#shop-now' },
   },
   {
-    kind: 'experiment',
-    label: 'Experiment',
-    description: nodeDescriptions.experiment,
-    color: 'violet',
-    icon: FlaskConical,
-    category: 'Logic',
-    config: { experimentSplit: 50 },
-  },
-  {
     kind: 'loop',
     label: 'Loop',
     description: nodeDescriptions.loop,
@@ -80,6 +71,15 @@ export const catalog: {
     icon: Repeat2,
     category: 'Logic',
     config: { iterations: 3 },
+  },
+  {
+    kind: 'experiment',
+    label: 'Experiment',
+    description: nodeDescriptions.experiment,
+    color: 'violet',
+    icon: FlaskConical,
+    category: 'Logic',
+    config: { experimentSplit: 50 },
   },
   {
     kind: 'http',
