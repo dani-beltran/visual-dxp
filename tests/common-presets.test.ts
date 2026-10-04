@@ -101,7 +101,11 @@ describe('common DXP preset contracts and layout', () => {
     expect(
       new Set(commonDXPPresets.flatMap((p) => p.workflow.nodes.map((n) => n.data.kind))),
     ).toEqual(
-      new Set(catalog.filter((entry) => entry.kind !== 'transform').map((entry) => entry.kind)),
+      new Set(
+        catalog
+          .filter((entry) => !['transform', 'experiment'].includes(entry.kind))
+          .map((entry) => entry.kind),
+      ),
     );
   });
 

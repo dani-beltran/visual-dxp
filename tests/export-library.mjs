@@ -2,10 +2,16 @@
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { JSDOM } from 'jsdom';
-import * as esm from '../dist/visual-dxp.js';
+
+// The browser editor bundle includes DOM-based Markdown entity decoding.
+const editorDom = new JSDOM('');
+globalThis.document = editorDom.window.document;
+const esm = await import('../dist/visual-dxp.js');
 
 const require = createRequire(import.meta.url);
 const umd = require('../dist/visual-dxp.umd.cjs');
+delete globalThis.document;
+editorDom.window.close();
 let cases = 0;
 for (const library of [esm, umd]) {
   for (const includeSubpages of [false, true]) {
@@ -159,3 +165,150 @@ for (const library of [esm, umd]) {
 console.log(
   `Built ESM and UMD standalone scripts: ${dataCases} HTTP → Update element → Incoming data condition → branch cases passed.`,
 );
+
+let experimentCases = 0;
+for (const library of [esm, umd]) {
+  for (const split of [0, 100]) {
+    const node = (id, kind, config) => ({
+      id,
+      type: 'workflow',
+      position: { x: 0, y: 0 },
+      data: { kind, label: id, config },
+    });
+    const workflow = {
+      version: 1,
+      name: 'Built experiment',
+      websiteUrl: 'https://example.com',
+      nodes: [
+        node('start', 'trigger', { event: 'click', selector: '#start' }),
+        node('test', 'experiment', { experimentSplit: split }),
+        node('a', 'dom', { selector: '#result', value: 'A' }),
+        node('b', 'dom', { selector: '#result', value: 'B' }),
+      ],
+      edges: [
+        { id: 'start-test', source: 'start', target: 'test' },
+        { id: 'test-a', source: 'test', target: 'a', sourceHandle: 'a' },
+        { id: 'test-b', source: 'test', target: 'b', sourceHandle: 'b' },
+      ],
+    };
+    const dom = new JSDOM('<button id="start">Run</button><p id="result">waiting</p>', {
+      url: 'https://example.com',
+      runScripts: 'outside-only',
+    });
+    try {
+      dom.window.eval(library.exportWorkflow(workflow));
+      await dom.window.visualDXP.run();
+      const expected = split === 100 ? 'A' : 'B';
+      assert.equal(dom.window.document.querySelector('#result').textContent, expected);
+      workflow.nodes[1].data.config.experimentSplit = 100 - split;
+      dom.window.eval(library.exportWorkflow(workflow));
+      await dom.window.visualDXP.run();
+      assert.equal(dom.window.document.querySelector('#result').textContent, expected);
+      experimentCases += 1;
+    } finally {
+      dom.window.visualDXP?.destroy();
+      dom.window.close();
+    }
+  }
+}
+console.log(
+  `Built ESM and UMD standalone scripts: ${experimentCases} Experiment routing and persistence cases passed.`,
+);
+
+let analyticsCases = 0;
+for (const library of [esm, umd]) {
+  for (const variant of ['a', 'b']) {
+    for (const interaction of ['click', 'change']) {
+      for (const delivery of ['gtag', 'gtm']) {
+        const dom = new JSDOM('<button id="start">Run</button><main id="slot"></main>', {
+          url: 'https://example.com',
+          runScripts: 'outside-only',
+        });
+        const page = dom.window;
+        Object.defineProperty(page.document, 'hidden', { get: () => false });
+        page.Element.prototype.getBoundingClientRect = () => ({
+          top: 10,
+          bottom: 40,
+          left: 10,
+          right: 110,
+          width: 100,
+          height: 30,
+        });
+        const events = [];
+        page.gtag = (...args) => events.push(args);
+        page.dataLayer = [];
+        const step = (id, kind, config) => ({
+          id,
+          type: 'workflow',
+          position: { x: 0, y: 0 },
+          data: { kind, label: id, config },
+        });
+        const workflow = {
+          version: 1,
+          name: 'Built analytics',
+          websiteUrl: 'https://example.com',
+          nodes: [
+            step('start', 'trigger', { event: 'click', selector: '#start' }),
+            step('experiment', 'experiment', {
+              experimentSplit: variant === 'a' ? 100 : 0,
+              experimentAnalytics: 'ga4',
+              experimentId: 'built-test',
+              experimentSelector: '.cta',
+              experimentInteraction: interaction,
+              experimentDelivery: delivery,
+            }),
+            ...['a', 'b'].map((id) =>
+              step(id, 'dom', {
+                selector: '#slot',
+                action: 'html',
+                value: `<button class="cta"><span>${id}</span></button>`,
+              }),
+            ),
+          ],
+          edges: [
+            { id: 'start-experiment', source: 'start', target: 'experiment' },
+            ...['a', 'b'].map((id) => ({ id, source: 'experiment', target: id, sourceHandle: id })),
+          ],
+        };
+        try {
+          page.eval(library.exportWorkflow(workflow));
+          await page.visualDXP.run();
+          await new Promise((resolve) => page.setTimeout(resolve, 25));
+          assert.equal(page.document.querySelector('.cta').textContent, variant);
+          await page.visualDXP.run();
+          await new Promise((resolve) => page.setTimeout(resolve, 25));
+          page.document
+            .querySelector('.cta span')
+            .dispatchEvent(new page.Event(interaction, { bubbles: true }));
+          const parameters = { experiment_id: 'built-test', variant_id: variant };
+          if (delivery === 'gtag') {
+            assert.deepEqual(JSON.parse(JSON.stringify(events)), [
+              ['event', 'experiment_view', parameters],
+              ['event', 'experiment_cta', { ...parameters, cta_type: interaction }],
+            ]);
+            assert.equal(page.dataLayer.length, 0);
+          } else {
+            assert.equal(events.length, 0);
+            assert.equal(
+              JSON.stringify(page.dataLayer),
+              JSON.stringify([
+                { event: 'experiment_view', ...parameters },
+                { event: 'experiment_cta', ...parameters, cta_type: interaction },
+              ]),
+            );
+          }
+          page.visualDXP.destroy();
+          page.document
+            .querySelector('.cta')
+            .dispatchEvent(new page.Event(interaction, { bubbles: true }));
+          assert.equal(delivery === 'gtag' ? events.length : page.dataLayer.length, 2);
+          analyticsCases += 1;
+        } finally {
+          page.visualDXP?.destroy();
+          page.close();
+        }
+      }
+    }
+  }
+}
+console.log(`Built ESM and UMD standalone scripts: ${analyticsCases} analytics cases passed.`);

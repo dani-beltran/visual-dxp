@@ -1,5 +1,70 @@
 /** English defaults and the public translation contract. Keys remain stable when copy changes. */
 export const englishMessages = {
+  'nodes.experiment.label': 'Experiment',
+  'nodes.experiment.description':
+    'Splits visitors between variants A and B. Use it to test two experiences with a configurable traffic split and consistent browser assignments.',
+  'experiment.analytics': 'Analytics',
+  'experiment.none': 'No tracking',
+  'experiment.premium': 'Premium',
+  'experiment.id': 'Experiment ID',
+  'experiment.idHint':
+    'Required. Identifies this experiment in analytics (e.g. homepage-cta-v1). This is not the GA measurement ID or the assignment key above.',
+  'experiment.cta': 'CTA element',
+  'experiment.interaction': 'CTA interaction',
+  'experiment.click': 'Click',
+  'experiment.change': 'Field value committed',
+  'experiment.interactionHint':
+    'Click tracks activation, including nested elements. Change tracks committed changes on inputs, selects, and checkboxes. Element text and field values are never collected.',
+  'experiment.mapping':
+    'Fixed analytics mapping: Variant A → a; Variant B → b. Tracking uses the assigned branch. experiment_view is recorded when the CTA becomes visible; experiment_cta is recorded only after exposure.',
+  'experiment.delivery': 'Event delivery',
+  'experiment.gtag': 'Google tag',
+  'experiment.gtm': 'Google Tag Manager',
+  'experiment.gtagHint':
+    'Calls the website’s existing window.gtag. Leave the measurement ID empty to use its existing destinations.',
+  'experiment.gtmHint':
+    'Pushes experiment_view and experiment_cta with experiment_id, variant_id, and cta_type (CTA only) to the existing window.dataLayer. The website owner must configure GTM custom event triggers, data layer variables for these parameters, and GA4 event tags to forward them.',
+  'experiment.measurementId': 'GA4 measurement ID (optional)',
+  'experiment.privacyHint':
+    'Uses only the selected delivery method. Visual DXP does not install another tag or change website consent. Queued events are not confirmed delivery; blocked or missing analytics will not stop the workflow. Editor previews simulate events in the execution log.',
+  'experiment.reporting': 'Set up reporting in Google Analytics',
+  'experiment.guideInstall':
+    'Install or reuse the website’s GA4 tag. For Google Tag Manager, configure forwarding as described above.',
+  'experiment.guideId': 'Choose an Experiment ID in Visual DXP, such as homepage-cta-v1.',
+  'experiment.guideDimensions':
+    'In GA4 Admin → Custom definitions, create event-scoped custom dimensions for experiment_id, variant_id, and cta_type.',
+  'experiment.guideValues':
+    'Values such as homepage-cta-v1, a, and b arrive automatically with events. You do not manually register each value.',
+  'experiment.guideExplore':
+    'In Explorations, filter by experiment_id and compare the experiment_view → experiment_cta funnel by variant_id.',
+  'experiment.guideDebug':
+    'Verify both events and their parameters in DebugView using your website’s GA4 debug mode or GTM Preview.',
+  'experiment.guideScope':
+    'Visual DXP runs the experiment; GA4 reports its results. This does not create a native Google Analytics experiment or automatically determine statistical significance.',
+  'experiment.guideIntegrationLink': 'Create an experiment integration with Google Analytics',
+  'experiment.guideIntegrationHint': 'Read “In-house and custom experiments”.',
+  'experiment.guideFunnelLink': 'GA4 funnel exploration',
+  'experiment.invalidPlatform': 'Choose a supported analytics platform.',
+  'experiment.requiredId': 'Enter an Experiment ID for analytics.',
+  'experiment.requiredSelector': 'Choose a CTA element for analytics.',
+  'experiment.invalidInteraction': 'Choose click or change for the CTA interaction.',
+  'experiment.invalidDelivery': 'Choose Google tag or Google Tag Manager delivery.',
+  'experiment.invalidMeasurementId':
+    'Enter a valid GA4 measurement ID, such as G-XXXXXXXXXX, or leave it empty.',
+  'experiment.trafficA': 'Traffic to A (%)',
+  'experiment.splitHint':
+    'B receives the remaining traffic. Changes apply to new assignments; existing visitors keep their variant.',
+  'experiment.key': 'Experiment key (optional)',
+  'experiment.keyHint':
+    'Defaults to this node’s ID. Change the key to start a fresh experiment. Nodes with the same key on this website share assignments.',
+  'experiment.assignmentHint':
+    'Assignments are saved in this browser on this website. If storage is unavailable, including sandboxed previews, they last only until the workflow restarts. Connect A and B to the experiences you want to compare. Conversion tracking is not collected automatically.',
+  'experiment.variantA': 'Variant A',
+  'experiment.variantB': 'Variant B',
+  'experiment.outputA': 'Runs for A; passes incoming data unchanged.',
+  'experiment.outputB': 'Runs for B; passes incoming data unchanged.',
+  'experiment.invalidOutput': 'Connect experiments using the A or B outputs.',
+  'experiment.summary': ({ a, b }: { a: number; b: number }) => `A ${a}% · B ${b}%`,
   'nodes.transform.label': 'Data Transform',
   'nodes.transform.description':
     'Selects a field from incoming data and transforms its value. The result is passed to downstream steps.',

@@ -88,6 +88,7 @@ const kinds = new Set<NodeKind>([
   'dom',
   'cookie',
   'delay',
+  'experiment',
   'fork',
   'loop',
   'popover',
@@ -105,6 +106,13 @@ const configStrings = [
   'action',
   'value',
   'attribute',
+  'experimentKey',
+  'experimentAnalytics',
+  'experimentId',
+  'experimentSelector',
+  'experimentInteraction',
+  'experimentDelivery',
+  'experimentMeasurementId',
   'cookieName',
   'cookieValue',
   'condition',
@@ -124,6 +132,7 @@ const configStrings = [
   'noteColor',
 ] as const;
 const configNumbers = [
+  'experimentSplit',
   'cookieDays',
   'duration',
   'iterations',
@@ -206,6 +215,16 @@ function config(value: unknown, complete = false): StepConfig {
   for (const key of configStrings) {
     if (own(input, key) && input[key] !== undefined)
       output[key] = text(input[key], 'Step configuration text', 20000, true);
+  }
+  for (const [key, values, messageKey] of [
+    ['experimentAnalytics', ['none', 'ga4'], 'invalidPlatform'],
+    ['experimentDelivery', ['gtag', 'gtm'], 'invalidDelivery'],
+    ['experimentInteraction', ['click', 'change'], 'invalidInteraction'],
+  ] as const) {
+    if (output[key] !== undefined && !(values as readonly string[]).includes(output[key] as string))
+      throw Object.assign(new Error('Choose a supported Experiment analytics option.'), {
+        messageKey: `experiment.${messageKey}`,
+      });
   }
   for (const key of configNumbers) {
     if (!own(input, key) || input[key] === undefined) continue;
@@ -310,7 +329,7 @@ function node(value: unknown): WorkflowNode {
 
 function handle(value: unknown): string | null {
   if (value === null) return null;
-  if (!['true', 'false', 'body', 'done'].includes(value as string))
+  if (!['true', 'false', 'body', 'done', 'a', 'b'].includes(value as string))
     throw Object.assign(new Error('Connections must use a supported output handle.'), {
       messageKey: 'errors.ai.connectionsMustUseASupportedOutputHandle',
       messageParams: {},
@@ -500,11 +519,13 @@ function assertGraph(workflow: Workflow): void {
         messageParams: {},
       });
     const allowed =
-      source.data.kind === 'fork'
-        ? ['true', 'false']
-        : source.data.kind === 'loop'
-          ? ['body', 'done']
-          : [];
+      source.data.kind === 'experiment'
+        ? ['a', 'b']
+        : source.data.kind === 'fork'
+          ? ['true', 'false']
+          : source.data.kind === 'loop'
+            ? ['body', 'done']
+            : [];
     if (allowed.length ? !allowed.includes(entry.sourceHandle ?? '') : entry.sourceHandle != null)
       throw Object.assign(new Error('A connection uses an invalid output for its source step.'), {
         messageKey: 'errors.ai.aConnectionUsesAnInvalidOutputForItsSourceStep',

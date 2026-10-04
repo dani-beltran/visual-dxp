@@ -147,6 +147,45 @@ const config = z.object({
     .max(400)
     .describe('Cookie lifetime in whole days. Zero (default) means browser session.')
     .optional(),
+  experimentKey: text
+    .describe(
+      'Stable experiment assignment key; empty uses the node ID. Change it to start a new experiment.',
+    )
+    .optional(),
+  experimentAnalytics: z
+    .enum(['none', 'ga4'])
+    .describe('Analytics platform; default none. PostHog is unavailable.')
+    .optional(),
+  experimentId: text
+    .describe(
+      'Required for GA4; reporting Experiment ID, distinct from experimentKey and GA measurement ID.',
+    )
+    .optional(),
+  experimentSelector: text
+    .describe('Required for GA4; CSS selector for visible CTA exposure and interactions.')
+    .optional(),
+  experimentInteraction: z
+    .enum(['click', 'change'])
+    .describe(
+      'CTA event, default click. Change means field value committed; no values are collected.',
+    )
+    .optional(),
+  experimentDelivery: z
+    .enum(['gtag', 'gtm'])
+    .describe(
+      'Exactly one: existing window.gtag (default), or existing window.dataLayer with GTM forwarding configured by the website owner.',
+    )
+    .optional(),
+  experimentMeasurementId: text
+    .describe('Optional G-XXXXXXXXXX send_to destination for gtag.')
+    .optional(),
+  experimentSplit: z
+    .number()
+    .int()
+    .min(0)
+    .max(100)
+    .describe('Percentage of new visitors assigned to A; B receives the remainder. Defaults to 50.')
+    .optional(),
   duration: z.number().min(0).max(86400000).describe('Milliseconds.').optional(),
   conditionType: z
     .enum([
@@ -334,6 +373,7 @@ export function createWorkflowTools(workflow: Workflow, selectedNodeIds: string[
             'dom',
             'cookie',
             'delay',
+            'experiment',
             'fork',
             'loop',
             'popover',
@@ -380,11 +420,11 @@ export function createWorkflowTools(workflow: Workflow, selectedNodeIds: string[
       {
         name: 'add_connection',
         description:
-          'Connect existing executable nodes. Connections carry data unchanged. Use a Data Transform node for field selection or transformation. Notes cannot have incoming or outgoing connections. Condition sourceHandle must be true/false; Loop must be body/done; all other executable nodes use null or omit it. Cycles and incoming trigger connections are unsupported.',
+          'Connect existing executable nodes. Connections carry data unchanged. Use a Data Transform node for field selection or transformation. Notes cannot have incoming or outgoing connections. Condition sourceHandle must be true/false; Loop must be body/done; Experiment must be a/b; all other executable nodes use null or omit it. Cycles and incoming trigger connections are unsupported.',
         schema: z.object({
           source: id,
           target: id,
-          sourceHandle: z.enum(['true', 'false', 'body', 'done']).nullable().optional(),
+          sourceHandle: z.enum(['true', 'false', 'body', 'done', 'a', 'b']).nullable().optional(),
           label: shortText.optional(),
         }),
       },
@@ -397,7 +437,7 @@ export function createWorkflowTools(workflow: Workflow, selectedNodeIds: string[
         id,
         source: id.optional(),
         target: id.optional(),
-        sourceHandle: z.enum(['true', 'false', 'body', 'done']).nullable().optional(),
+        sourceHandle: z.enum(['true', 'false', 'body', 'done', 'a', 'b']).nullable().optional(),
         label: shortText.optional(),
       }),
     }),

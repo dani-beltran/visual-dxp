@@ -28,7 +28,7 @@ export function WorkflowCard({ id, data, selected }: NodeProps<WorkflowNode>) {
     return <NoteCard id={id} data={data} selected={selected} onChange={editNote} />;
   const entry = catalog.find((x) => x.kind === data.kind)!;
   const Icon = entry.icon;
-  const split = data.kind === 'fork' || data.kind === 'loop';
+  const split = data.kind === 'fork' || data.kind === 'loop' || data.kind === 'experiment';
   const { outputsData } = getNodeDataPorts(data);
   const highlightsOutput = dataFlow === 'forwards' || outputsData;
   const sendsData = dataFlow === 'produces' || dataFlow === 'forwards';
@@ -98,28 +98,42 @@ export function WorkflowCard({ id, data, selected }: NodeProps<WorkflowNode>) {
                 : 'ACTION'}
         </span>
       </div>
+      {data.kind === 'experiment' && (
+        <>
+          <span className="dxp-experiment-port dxp-experiment-port-a" aria-hidden="true">
+            A
+          </span>
+          <span className="dxp-experiment-port dxp-experiment-port-b" aria-hidden="true">
+            B
+          </span>
+        </>
+      )}
       {split ? (
         <>
           <Handle
             type="source"
-            id={data.kind === 'fork' ? 'true' : 'body'}
+            id={data.kind === 'experiment' ? 'a' : data.kind === 'fork' ? 'true' : 'body'}
             className={sendsData ? 'dxp-handle-data' : undefined}
             title={
-              data.kind === 'fork'
-                ? t('workflowCard.truePassesIncomingDataUnchanged')
-                : t('workflowCard.body')
+              data.kind === 'experiment'
+                ? t('experiment.variantA')
+                : data.kind === 'fork'
+                  ? t('workflowCard.truePassesIncomingDataUnchanged')
+                  : t('workflowCard.body')
             }
             position={Position.Right}
             style={{ top: '37%' }}
           />
           <Handle
             type="source"
-            id={data.kind === 'fork' ? 'false' : 'done'}
+            id={data.kind === 'experiment' ? 'b' : data.kind === 'fork' ? 'false' : 'done'}
             className={sendsData ? 'dxp-handle-data' : undefined}
             title={
-              data.kind === 'fork'
-                ? t('workflowCard.falsePassesIncomingDataUnchanged')
-                : t('workflowCard.done')
+              data.kind === 'experiment'
+                ? t('experiment.variantB')
+                : data.kind === 'fork'
+                  ? t('workflowCard.falsePassesIncomingDataUnchanged')
+                  : t('workflowCard.done')
             }
             position={Position.Right}
             style={{ top: '73%' }}

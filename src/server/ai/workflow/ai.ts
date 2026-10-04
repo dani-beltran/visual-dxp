@@ -58,6 +58,7 @@ const kinds = new Set<NodeKind>([
   'dom',
   'cookie',
   'delay',
+  'experiment',
   'fork',
   'loop',
   'popover',
@@ -75,6 +76,13 @@ const configStrings = [
   'action',
   'value',
   'attribute',
+  'experimentKey',
+  'experimentAnalytics',
+  'experimentId',
+  'experimentSelector',
+  'experimentInteraction',
+  'experimentDelivery',
+  'experimentMeasurementId',
   'cookieName',
   'cookieValue',
   'condition',
@@ -94,6 +102,7 @@ const configStrings = [
   'noteColor',
 ] as const;
 const configNumbers = [
+  'experimentSplit',
   'cookieDays',
   'duration',
   'iterations',
@@ -151,6 +160,16 @@ function config(value: unknown): StepConfig {
   for (const key of configStrings) {
     if (own(input, key) && input[key] !== undefined)
       output[key] = text(input[key], 'Step configuration text', 20000, true);
+  }
+  for (const [key, values, messageKey] of [
+    ['experimentAnalytics', ['none', 'ga4'], 'invalidPlatform'],
+    ['experimentDelivery', ['gtag', 'gtm'], 'invalidDelivery'],
+    ['experimentInteraction', ['click', 'change'], 'invalidInteraction'],
+  ] as const) {
+    if (output[key] !== undefined && !(values as readonly string[]).includes(output[key] as string))
+      throw Object.assign(new Error('Choose a supported Experiment analytics option.'), {
+        messageKey: `experiment.${messageKey}`,
+      });
   }
   for (const key of configNumbers) {
     if (!own(input, key) || input[key] === undefined) continue;
@@ -225,7 +244,7 @@ function node(value: unknown): WorkflowNode {
 
 function handle(value: unknown): string | null {
   if (value === null) return null;
-  if (!['true', 'false', 'body', 'done'].includes(value as string))
+  if (!['true', 'false', 'body', 'done', 'a', 'b'].includes(value as string))
     throw new Error('Connections must use a supported output handle.');
   return value as string;
 }
@@ -347,11 +366,13 @@ function assertGraph(workflow: Workflow): void {
     if (target.data.kind === 'trigger')
       throw new Error('Triggers cannot receive incoming connections.');
     const allowed =
-      source.data.kind === 'fork'
-        ? ['true', 'false']
-        : source.data.kind === 'loop'
-          ? ['body', 'done']
-          : [];
+      source.data.kind === 'experiment'
+        ? ['a', 'b']
+        : source.data.kind === 'fork'
+          ? ['true', 'false']
+          : source.data.kind === 'loop'
+            ? ['body', 'done']
+            : [];
     if (allowed.length ? !allowed.includes(entry.sourceHandle ?? '') : entry.sourceHandle != null)
       throw new Error('A connection uses an invalid output for its source step.');
     if (entry.targetHandle != null) throw new Error('Connections cannot specify target handles.');

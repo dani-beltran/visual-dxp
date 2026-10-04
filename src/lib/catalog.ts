@@ -1,6 +1,7 @@
 import {
   Braces,
   Cookie,
+  FlaskConical,
   Frame,
   GitFork,
   Globe2,
@@ -61,6 +62,15 @@ export const catalog: {
     icon: GitFork,
     category: 'Logic',
     config: { conditionType: 'selector', condition: '#shop-now' },
+  },
+  {
+    kind: 'experiment',
+    label: 'Experiment',
+    description: nodeDescriptions.experiment,
+    color: 'violet',
+    icon: FlaskConical,
+    category: 'Logic',
+    config: { experimentSplit: 50 },
   },
   {
     kind: 'loop',
@@ -247,6 +257,11 @@ export function stepSummary(
           return t('summary.chooseCondition');
       }
     }
+    case 'experiment':
+      return t('experiment.summary', {
+        a: c.experimentSplit ?? 50,
+        b: 100 - (c.experimentSplit ?? 50),
+      });
     case 'loop':
       return t('summary.loop', { count: c.iterations ?? 3 });
     case 'popover':

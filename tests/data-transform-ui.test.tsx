@@ -84,7 +84,7 @@ function pathField() {
   return element('.dxp-data-transform input') as HTMLInputElement;
 }
 
-it.each(['delay', 'fork', 'loop'] as const)(
+it.each(['delay', 'fork', 'loop', 'experiment'] as const)(
   'updates data badges and sockets through %s when connections change',
   async (kind) => {
     const workflow = graph();
@@ -97,7 +97,12 @@ it.each(['delay', 'fork', 'loop'] as const)(
         { type: 'target', position: Position.Left, x: 0, y: 70 },
         ...(kind === 'delay'
           ? [{ type: 'source' as const, position: Position.Right, x: 220, y: 70 }]
-          : (kind === 'fork' ? ['true', 'false'] : ['body', 'done']).map((id, index) => ({
+          : (kind === 'experiment'
+              ? ['a', 'b']
+              : kind === 'fork'
+                ? ['true', 'false']
+                : ['body', 'done']
+            ).map((id, index) => ({
               id,
               type: 'source' as const,
               position: Position.Right,
@@ -113,7 +118,14 @@ it.each(['delay', 'fork', 'loop'] as const)(
         source: 'delay',
         target: 'dom',
         type: 'smoothstep',
-        sourceHandle: kind === 'fork' ? 'true' : kind === 'loop' ? 'body' : undefined,
+        sourceHandle:
+          kind === 'experiment'
+            ? 'a'
+            : kind === 'fork'
+              ? 'true'
+              : kind === 'loop'
+                ? 'body'
+                : undefined,
       },
     ];
     await act(async () => root.render(<VisualDXPBuilder initialWorkflow={workflow} />));

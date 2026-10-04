@@ -44,6 +44,7 @@ export function installPreviewBridge(
       runtime = runtimeFactory(data.workflow as Workflow, {
         document,
         window,
+        analyticsMode: 'simulate',
         onLog: (log) => send('log', { log }),
         onConnectionPreview: (edgeId, preview) => {
           // Bound transport and keep samples out of saved workflow/log objects.

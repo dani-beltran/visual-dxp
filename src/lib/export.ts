@@ -2,6 +2,7 @@ import { validateCookie } from './cookies';
 import { dataTools } from './data';
 import { dataTransformTools } from './dataTransform';
 import { getDateRange } from './dateRange';
+import { createExperimentTools } from './experiment';
 import { type BuilderTranslator, formatBuilderError, translateEnglish } from './i18n';
 import { isNoteMarks } from './noteText';
 import { getRuntimeSource } from './runtime';
@@ -60,6 +61,7 @@ export function validateWorkflow(
     'dom',
     'cookie',
     'delay',
+    'experiment',
     'fork',
     'loop',
     'popover',
@@ -131,6 +133,13 @@ export function validateWorkflow(
       'action',
       'value',
       'attribute',
+      'experimentKey',
+      'experimentAnalytics',
+      'experimentId',
+      'experimentSelector',
+      'experimentInteraction',
+      'experimentDelivery',
+      'experimentMeasurementId',
       'cookieName',
       'cookieValue',
       'condition',
@@ -327,6 +336,16 @@ export function validateWorkflow(
             add(t('validation.chooseASupportedConditionType'), node.id);
         }
         break;
+      case 'experiment':
+        try {
+          createExperimentTools().validate(config);
+          createExperimentTools().validateAnalytics(config);
+          if (config.experimentAnalytics === 'ga4')
+            selector(config.experimentSelector, node.id, t('experiment.requiredSelector'));
+        } catch (error) {
+          add(formatBuilderError(error, t), node.id);
+        }
+        break;
       case 'loop':
         if (
           config.iterations !== undefined &&
@@ -386,6 +405,8 @@ export function validateWorkflow(
       add(t('validation.triggersCannotReceiveIncomingConnections'), target.id);
     if (source.data.kind === 'fork' && !['true', 'false'].includes(edge.sourceHandle ?? ''))
       add(t('validation.connectBranchesUsingTheYesOrNoOutputs'), source.id);
+    if (source.data.kind === 'experiment' && !['a', 'b'].includes(edge.sourceHandle ?? ''))
+      add(t('experiment.invalidOutput'), source.id);
     if (source.data.kind === 'loop' && !['body', 'done'].includes(edge.sourceHandle ?? ''))
       add(t('validation.connectRepeatsUsingTheRepeatOrDoneOutputs'), source.id);
   }

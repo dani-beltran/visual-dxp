@@ -32,7 +32,7 @@ it('labels producers, forwarding steps and receivers across intermediate steps',
   expect(getNodeDataFlow('request', nodes, [])).toBe('produces');
 });
 
-it.each(['dom', 'fork', 'delay', 'cookie', 'popover', 'loop'] as const)(
+it.each(['dom', 'fork', 'experiment', 'delay', 'cookie', 'popover', 'loop'] as const)(
   '%s forwards data regardless of whether its settings consume it',
   (kind) => {
     const nodes = [node('http', 'http'), node('middle', kind), node('end', 'dom')];

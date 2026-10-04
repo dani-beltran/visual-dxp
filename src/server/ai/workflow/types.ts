@@ -8,6 +8,7 @@ export type NodeKind =
   | 'dom'
   | 'cookie'
   | 'delay'
+  | 'experiment'
   | 'fork'
   | 'loop'
   | 'popover'
@@ -97,6 +98,20 @@ export interface StepConfig extends DataTransformConfig {
   conditionEndTime?: string;
   /** Time zone used by date and time conditions. Defaults to the visitor's local time zone. */
   conditionTimeZone?: 'local' | 'utc';
+  /** Percentage of new assignments sent to A, from 0 to 100. Defaults to 50. */
+  experimentSplit?: number;
+  /** Stable assignment key on this origin. Empty or omitted uses the node ID. */
+  experimentKey?: string;
+  /** Omitted in older workflows: no analytics tracking. */
+  experimentAnalytics?: 'none' | 'ga4';
+  /** Reporting ID, independent from the browser assignment key. */
+  experimentId?: string;
+  experimentSelector?: string;
+  experimentInteraction?: 'click' | 'change';
+  /** Exactly one delivery method, reusing the website installation. */
+  experimentDelivery?: 'gtag' | 'gtm';
+  /** Optional GA4 send_to destination, used only with gtag. */
+  experimentMeasurementId?: string;
   iterations?: number;
   contentType?: 'html' | 'iframe';
   content?: string;

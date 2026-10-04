@@ -23,6 +23,7 @@ import { useBuilderI18n } from '../lib/i18nContext';
 import { elementTriggerEvents, getTriggerOptions } from '../lib/triggers';
 import type { ConditionType, NodeKind, StepConfig, StepData, WorkflowNode } from '../lib/types';
 import { DataTransformInspector } from './DataTransformInspector';
+import { ExperimentAnalyticsInspector } from './ExperimentAnalyticsInspector';
 import { InfoBox } from './InfoBox';
 import { NoteControls } from './NoteControls';
 import { NoteTextEditor } from './NoteTextEditor';
@@ -124,7 +125,7 @@ export function NodeInspector({
     cookie: t('nodeInspector.runsAfterTheCookieIsSaved'),
     delay: t('nodeInspector.runsAfterThePause'),
     popover: t('nodeInspector.runsAfterThePopoverIsDisplayed'),
-  } satisfies Record<Exclude<NodeKind, 'fork' | 'loop' | 'note' | 'frame'>, string>;
+  } satisfies Record<Exclude<NodeKind, 'experiment' | 'fork' | 'loop' | 'note' | 'frame'>, string>;
   const triggerOptions = getTriggerOptions(t);
   const prefix = useId();
   const config = node.data.config;
@@ -158,10 +159,14 @@ export function NodeInspector({
   const Icon = metadata.icon;
   const id = (name: string) => `${prefix}-${name}`;
   const update = (patch: Partial<StepConfig>) => onChange({ config: { ...config, ...patch } });
-  const targetField = (label = t('nodeInspector.targetElement'), optional = false) => (
+  const targetField = (
+    label = t('nodeInspector.targetElement'),
+    optional = false,
+    key: 'selector' | 'experimentSelector' = 'selector',
+  ) => (
     <Field
       label={label}
-      htmlFor={id('selector')}
+      htmlFor={id(key)}
       hint={
         optional
           ? t('nodeInspector.optionalWithoutAnAnchorChooseAFixedScreenPosition')
@@ -170,11 +175,11 @@ export function NodeInspector({
     >
       <div className="dxp-inspector-selector">
         <input
-          id={id('selector')}
+          id={id(key)}
           className="dxp-inspector-code"
-          value={config.selector ?? ''}
+          value={config[key] ?? ''}
           placeholder={t('nodeInspector.eGSignupButton')}
-          onChange={(event) => update({ selector: event.target.value })}
+          onChange={(event) => update({ [key]: event.target.value })}
           spellCheck={false}
           autoComplete="off"
         />
@@ -816,6 +821,49 @@ export function NodeInspector({
           </>
         )}
 
+        {node.data.kind === 'experiment' && (
+          <>
+            <Field
+              label={t('experiment.trafficA')}
+              htmlFor={id('experimentSplit')}
+              hint={t('experiment.splitHint')}
+            >
+              <NumberInput
+                id={id('experimentSplit')}
+                min={0}
+                max={100}
+                step={1}
+                value={config.experimentSplit ?? 50}
+                onChange={(experimentSplit) => update({ experimentSplit })}
+              />
+            </Field>
+            <p className="dxp-inspector-hint">
+              {t('experiment.summary', {
+                a: config.experimentSplit ?? 50,
+                b: 100 - (config.experimentSplit ?? 50),
+              })}
+            </p>
+            <Field
+              label={t('experiment.key')}
+              htmlFor={id('experimentKey')}
+              hint={t('experiment.keyHint')}
+            >
+              <input
+                id={id('experimentKey')}
+                value={config.experimentKey ?? ''}
+                placeholder={node.id}
+                onChange={(event) => update({ experimentKey: event.target.value })}
+              />
+            </Field>
+            <InfoBox>{t('experiment.assignmentHint')}</InfoBox>
+            <ExperimentAnalyticsInspector
+              config={config}
+              update={update}
+              id={id}
+              targetField={targetField(t('experiment.cta'), false, 'experimentSelector')}
+            />
+          </>
+        )}
         {node.data.kind === 'loop' && (
           <Field label={t('nodeInspector.numberOfRepetitions')} htmlFor={id('iterations')}>
             <div className="dxp-inspector-unit-field">
@@ -941,7 +989,20 @@ export function NodeInspector({
           <h3 id={id('outputs-heading')} className="dxp-inspector-section-label">
             <ArrowRight size={14} aria-hidden="true" /> {t('nodeInspector.outputs')}
           </h3>
-          {node.data.kind === 'fork' ? (
+          {node.data.kind === 'experiment' ? (
+            <div className="dxp-inspector-branches">
+              <div>
+                <ArrowRight size={13} />
+                <strong>{t('experiment.variantA')}</strong>
+                <span>{t('experiment.outputA')}</span>
+              </div>
+              <div>
+                <ArrowRight size={13} />
+                <strong>{t('experiment.variantB')}</strong>
+                <span>{t('experiment.outputB')}</span>
+              </div>
+            </div>
+          ) : node.data.kind === 'fork' ? (
             <div className="dxp-inspector-branches">
               <div>
                 <i className={forwardsData ? 'dxp-inspector-dot-data' : 'dxp-inspector-dot-true'} />

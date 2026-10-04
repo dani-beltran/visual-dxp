@@ -495,3 +495,44 @@ The library entry point is `src/index.ts`. Build outputs include ESM, UMD, TypeS
 ### AI observability
 
 Server-side AI workflows export OpenTelemetry traces, metrics, and opt-in full conversation logs to Grafana Cloud Free (14-day retention), or to the local console when no OTLP endpoint is configured. See [setup, privacy controls, dashboards, and conversation inspection](docs/observability.md). No additional database or monitoring stack is required.
+
+## Experiment (A/B testing)
+
+Add **Experiment** from the Logic section of the node library. Connect a trigger or preceding step to it, then connect its **A** and **B** outputs to the two experiences. It executes only the assigned variant and passes incoming data through unchanged. The execution log shows the selected variant.
+
+**Traffic to A (%)** defaults to 50; B receives the remainder. Whole percentages from 0 to 100 are supported. Assignments are random for new browsers and stored in localStorage on the target website's origin. Returning visitors keep their variant, even if you change the split. Clearing browser storage resets the assignment. An optional **Experiment key** identifies the test; leaving it empty uses the node ID. Change the key to start a fresh test. Nodes using the same key on the same origin share assignments.
+
+The live preview and exported JavaScript use the same execution logic. When storage is unavailable (including sandboxed previews), assignments remain consistent within the current runtime and reset when it restarts. To preview a particular branch, set its traffic to 100% and restart the sandboxed preview. This node allocates experiences; conversion tracking and statistical reporting are not collected automatically.
+
+Saved workflow configuration uses `kind: 'experiment'`, `config: { experimentSplit: 50, experimentKey: 'checkout-v1' }`, and outgoing `sourceHandle` values of `'a'` and `'b'`.
+
+
+### Optional Google Analytics 4 tracking
+
+Existing experiments default to **No tracking**. Select **Google Analytics** in the Experiment inspector to configure a reporting **Experiment ID**, a CTA CSS selector (or reuse **Select on website**), and a CTA interaction: `click` (default) or `change` for committed field changes. The reporting ID is independent of the assignment key and GA4 measurement ID. PostHog is displayed as an unavailable Premium integration.
+
+The target website must already have analytics installed. Choose exactly one delivery method:
+
+- **Google tag** calls existing `window.gtag('event', name, parameters)`. An optional `experimentMeasurementId` supplies `send_to`; omission uses the tag’s existing destinations.
+- **Google Tag Manager** pushes `{ event: name, ...parameters }` to existing `window.dataLayer`. The website owner must configure custom event triggers for `experiment_view` / `experiment_cta`, data layer variables for the parameters, and GA4 event tags to forward them. A data layer push alone does not deliver a GA4 event.
+
+Visual DXP installs no Google tag, requests no API secret, and does not configure consent. Logs distinguish simulated events, events queued to the selected API (delivery unconfirmed), and unavailable analytics. Missing or throwing analytics never stops the workflow. Editor previews always simulate tracking and show the event name and parameters in the execution log.
+
+`experiment_view` contains `experiment_id` and `variant_id` (`a` or `b` from the actual assigned branch). It records exposure only when the configured CTA is visible in the viewport, including content inserted or replaced by downstream DOM steps. Exposure is deduplicated per reporting ID and variant within the runtime. `experiment_cta` adds `cta_type` (`click` or `change`), tracks matching interactions only after exposure, and supports nested click targets. Delegated passive listeners survive DOM replacement without interception of navigation or form submission. Repeated execution does not duplicate a single interaction; simultaneous experiments remain independent. Runtime destruction removes listeners and observers. No element text, input values, or visitor identifiers are collected by this tracking integration.
+
+Example Experiment configuration (the assignment key remains unchanged):
+
+```json
+{
+  "experimentSplit": 50,
+  "experimentKey": "checkout-assignment-v1",
+  "experimentAnalytics": "ga4",
+  "experimentId": "homepage-cta-v1",
+  "experimentSelector": ".checkout-cta",
+  "experimentInteraction": "click",
+  "experimentDelivery": "gtag",
+  "experimentMeasurementId": "G-XXXXXXXXXX"
+}
+```
+
+The inspector’s collapsible guide explains event-scoped custom dimensions (`experiment_id`, `variant_id`, `cta_type`), automatic parameter values, comparison of the `experiment_view → experiment_cta` funnel in Explorations, and verification in DebugView. See [Google’s experiment integration guide](https://developers.google.com/analytics/devguides/collection/ga4/integration), specifically **In-house and custom experiments**, and [GA4 funnel exploration](https://support.google.com/analytics/answer/9327974?hl=en). Visual DXP executes experiments and GA4 reports results; the integration does not create native GA experiments or calculate statistical significance.
