@@ -10,7 +10,7 @@ import { matchesCondition } from './conditions';
 import { createRuntimeContext } from './context';
 import { createExecution } from './execution';
 import { createExperimentAnalytics } from './experiment-analytics';
-import { showPopover } from './popovers';
+import { createPopoverElements, showPopover } from './popovers';
 import { startSwipeTrigger } from './swipe-trigger';
 import { startTriggers } from './triggers';
 import type { RuntimeOptions, WorkflowRuntime } from './types';
@@ -30,6 +30,7 @@ const runtimeModules = {
   matchesCondition,
   getDateRange,
   getTimeRange,
+  createPopoverElements,
   showPopover,
   startTriggers,
   startBehaviorTrigger,
