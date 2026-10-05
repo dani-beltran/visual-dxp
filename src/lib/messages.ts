@@ -13,12 +13,11 @@ export const englishMessages = {
   'experiment.interaction': 'CTA interaction',
   'experiment.click': 'Click',
   'experiment.change': 'Field value committed',
-  'experiment.clickInteractionHint':
-    'Click tracks activation, including nested elements. Element text and field values are never collected.',
+  'experiment.clickInteractionHint': 'Click tracks activation, including nested elements.',
   'experiment.changeInteractionHint':
-    'Change tracks committed changes on inputs, selects, and checkboxes. Element text and field values are never collected.',
+    'Change tracks committed changes on inputs, selects, and checkboxes.',
   'experiment.interactionHint':
-    'Click tracks activation, including nested elements. Change tracks committed changes on inputs, selects, and checkboxes. Element text and field values are never collected.',
+    'Click tracks activation, including nested elements. Change tracks committed changes on inputs, selects, and checkboxes.',
   'experiment.mapping':
     'Fixed analytics mapping: Variant A → a; Variant B → b. Tracking uses the assigned branch. experiment_view is recorded when the CTA becomes visible; experiment_cta is recorded only after exposure.',
   'experiment.delivery': 'Event delivery',

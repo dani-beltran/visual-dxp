@@ -16,11 +16,11 @@ export const spanishMessages = {
   'experiment.click': 'Clic',
   'experiment.change': 'Valor del campo confirmado',
   'experiment.clickInteractionHint':
-    'Clic registra la activación, incluidos los elementos anidados. Nunca se recopilan textos ni valores de los campos.',
+    'Clic registra la activación, incluidos los elementos anidados.',
   'experiment.changeInteractionHint':
-    'Registra cambios confirmados en campos, selectores y casillas. Nunca se recopilan textos ni valores de los campos.',
+    'Registra cambios confirmados en campos, selectores y casillas.',
   'experiment.interactionHint':
-    'Clic registra la activación, incluidos los elementos anidados. Change registra cambios confirmados en campos, selectores y casillas. Nunca se recopilan textos ni valores de los campos.',
+    'Clic registra la activación, incluidos los elementos anidados. Change registra cambios confirmados en campos, selectores y casillas.',
   'experiment.mapping':
     'Correspondencia fija en analítica: Variante A → a; Variante B → b. Se usa la rama asignada. experiment_view se registra cuando el CTA es visible; experiment_cta solo después de la exposición.',
   'experiment.delivery': 'Envío de eventos',

@@ -102,18 +102,14 @@ it('edits independent GA4 fields, reuses the picker, and explains mapping, priva
   const interactionHint = () =>
     field('CTA interaction').closest('.dxp-inspector-field')?.querySelector('.dxp-inspector-hint')
       ?.textContent;
-  expect(interactionHint()).toBe(
-    'Click tracks activation, including nested elements. Element text and field values are never collected.',
-  );
+  expect(interactionHint()).toBe('Click tracks activation, including nested elements.');
   await change('CTA interaction', 'change');
   expect(current.experimentInteraction).toBe('change');
   expect(interactionHint()).toBe(
-    'Change tracks committed changes on inputs, selects, and checkboxes. Element text and field values are never collected.',
+    'Change tracks committed changes on inputs, selects, and checkboxes.',
   );
   await change('CTA interaction', 'click');
-  expect(interactionHint()).toBe(
-    'Click tracks activation, including nested elements. Element text and field values are never collected.',
-  );
+  expect(interactionHint()).toBe('Click tracks activation, including nested elements.');
   const picker = [...host.querySelectorAll('button')].find((button) =>
     button.textContent?.includes('Select on website'),
   );
@@ -177,13 +173,9 @@ it('translates all analytics controls, guide, and validation into Spanish', asyn
     field('Interacción del CTA')
       .closest('.dxp-inspector-field')
       ?.querySelector('.dxp-inspector-hint')?.textContent;
-  expect(interactionHint()).toBe(
-    'Clic registra la activación, incluidos los elementos anidados. Nunca se recopilan textos ni valores de los campos.',
-  );
+  expect(interactionHint()).toBe('Clic registra la activación, incluidos los elementos anidados.');
   await change('Interacción del CTA', 'change');
-  expect(interactionHint()).toBe(
-    'Registra cambios confirmados en campos, selectores y casillas. Nunca se recopilan textos ni valores de los campos.',
-  );
+  expect(interactionHint()).toBe('Registra cambios confirmados en campos, selectores y casillas.');
   expect(host.textContent).toContain('Variante A → a; Variante B → b');
   expect(host.querySelector('summary')?.textContent).toBe(
     'Configurar informes en Google Analytics',
