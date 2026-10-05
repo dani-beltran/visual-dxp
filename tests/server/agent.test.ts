@@ -118,7 +118,7 @@ describe('LangChain workflow tools', () => {
     ['browser', 'browser-model'],
     ['graph', 'gpt-6-luna'],
   ])(
-    'completes the local %s with %s through the Responses API tool loop',
+    'corrects an invalid connection in the local %s with %s through the Responses API tool loop',
     async (entrypoint, model) => {
       vi.stubEnv('OPENAI_API_KEY', 'test-key');
       vi.stubEnv('OPENAI_MODEL', model);
@@ -140,18 +140,21 @@ describe('LangChain workflow tools', () => {
             config: { duration: 2000 },
           };
         }
-        if (current === 2) {
+        if (current === 2 || current === 3) {
           const nodeResult = body.input
             .filter((item: { type: string }) => item.type === 'function_call_output')
-            .at(-1);
+            .find(
+              (item: { output: string }) => JSON.parse(item.output).operation?.type === 'add_node',
+            );
           name = 'add_connection';
           args = {
             source: 'start',
             target: JSON.parse(nodeResult.output).operation.node.id,
+            ...(current === 2 ? { sourceHandle: 'true' } : {}),
           };
         }
         const output =
-          current < 3
+          current < 4
             ? [
                 {
                   type: 'function_call',
@@ -221,7 +224,7 @@ describe('LangChain workflow tools', () => {
         edge: { source: 'start' },
       });
       expect(input.workflow.nodes).toHaveLength(1);
-      expect(provider).toHaveBeenCalledTimes(4);
+      expect(provider).toHaveBeenCalledTimes(5);
     },
   );
 

@@ -4,7 +4,7 @@ The active backend is `src/server/ai/` in this Next.js project. Direct model exe
 
 ## Direct execution
 
-Copy `.env.example` to `.env.local`; use browser AI Settings for normal use. Server-side provider credentials are intended only for development and debugging. Leave `LANGGRAPH_API_URL` empty for direct server-default execution. OpenAI retains its Responses API and default model; Claude requires an Anthropic key/model; Local requires a loopback model server and a tool-capable model, and is intended for developers running the demo app locally for debugging. The 90-second route deadline includes the complete bounded tool loop and propagates cancellation. Provider redirects are rejected and automatic retries are disabled. Tools stage definitions only; they never browse, publish or execute workflows.
+Copy `.env.example` to `.env.local`; use browser AI Settings for normal use. Server-side provider credentials are intended only for development and debugging. Leave `LANGGRAPH_API_URL` empty for direct server-default execution. OpenAI retains its Responses API and default model; Claude requires an Anthropic key/model; Local requires a loopback model server and a tool-capable model, and is intended for developers running the demo app locally for debugging. The 180-second route deadline includes the complete bounded tool loop and propagates cancellation. Provider redirects are rejected and automatic retries are disabled. Tools stage definitions only; they never browse, publish or execute workflows.
 
 ## Tracing
 

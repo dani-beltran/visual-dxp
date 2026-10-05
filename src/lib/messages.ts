@@ -618,6 +618,11 @@ export const englishMessages = {
     'Also run this experience on pages beneath this URL.',
   'builder.useTheDemoWebsite': 'Use the demo website',
   'website.save': 'Save website',
+  'websiteConnectionCheck.readingBranding': 'Reading website branding…',
+  'websiteConnectionCheck.brandingUnavailable':
+    'Website connected, but branding could not be read. Update bridge.js to the latest version and reopen this dialog to retry.',
+  'websiteConnectionCheck.brandingStorageUnavailable':
+    'Branding is available for this session, but could not be saved in this browser.',
   'websiteConnectionCheck.websiteConnectionCheck': 'Website connection check',
   'websiteConnectionCheck.connectingToYourWebsite': 'Connecting to your website…',
   'websiteConnectionCheck.websiteConnectedSuccessfully': 'Website connected successfully',

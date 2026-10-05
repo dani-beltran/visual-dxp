@@ -2,6 +2,8 @@ import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import { applicableAIConfigDefaults } from '../../lib/aiConfig';
 import { semanticJSON } from '../../lib/aiProgress';
+import { RecoverableToolError } from '../../lib/aiToolErrors';
+import type { BrandingProfile } from '../../lib/branding';
 import type { WorkflowOperation } from './workflow/ai';
 import { applyWorkflowOperations } from './workflow/ai';
 import { catalog } from './workflow/catalog';
@@ -100,7 +102,7 @@ const config = z.object({
     .optional(),
   selector: text
     .describe(
-      'CSS selector for element triggers, Update element actions, or anchored popovers. Omit for page-wide triggers and non-anchored popovers. Update element actions, including hide/show, may interpolate {{variables}} here.',
+      'CSS selector for element triggers, Update element actions, or anchored popovers. Required and non-empty for popovers with position: anchor. Omit for page-wide triggers and non-anchored popovers. Update element actions, including hide/show, may interpolate {{variables}} here.',
     )
     .optional(),
   url: text
@@ -251,6 +253,9 @@ const config = z.object({
     .optional(),
   position: z
     .enum(['center', 'top-left', 'top-right', 'bottom-left', 'bottom-right', 'anchor'])
+    .describe(
+      'Popover placement. Position anchor requires a non-empty config.selector identifying the anchor element. Without an anchor selector, use a non-anchored position such as bottom-right (the default). If anchoring is requested but the selector is unknown, ask the user; never invent it. A page-load trigger does not supply an anchor.',
+    )
     .optional(),
   width: z.number().min(240).max(960).optional(),
   noteText: text.describe('Plain text for a non-executable canvas note.').optional(),
@@ -278,7 +283,11 @@ const config = z.object({
 });
 
 /** Every invocation owns its draft; tools never mutate the caller's workflow. */
-export function createWorkflowTools(workflow: Workflow, selectedNodeIds: string[]) {
+export function createWorkflowTools(
+  workflow: Workflow,
+  selectedNodeIds: string[],
+  brandingProfile?: BrandingProfile,
+) {
   let draft = structuredClone(workflow);
   const operations: WorkflowOperation[] = [];
 
@@ -312,6 +321,7 @@ export function createWorkflowTools(workflow: Workflow, selectedNodeIds: string[
       return JSON.stringify({
         ok: false,
         error: error instanceof Error ? error.message : 'Invalid change.',
+        ...(error instanceof RecoverableToolError ? { code: error.code, retryable: true } : {}),
       });
     }
   }
@@ -329,7 +339,18 @@ export function createWorkflowTools(workflow: Workflow, selectedNodeIds: string[
     handler: (input: z.output<S>) => string,
     fields: { name: Name; description: string; schema: S },
   ) {
-    privateHandlers.set(fields.name, (input) => handler(fields.schema.parse(input)));
+    const invoke = (input: unknown) => {
+      const parsed = fields.schema.safeParse(input);
+      if (!parsed.success)
+        return JSON.stringify({
+          ok: false,
+          code: 'invalid_arguments',
+          error: `Invalid tool arguments at ${parsed.error.issues.map((issue) => issue.path.join('.') || 'input').join(', ')}. Follow the tool schema and resubmit the corrected call.`,
+          retryable: true,
+        });
+      return handler(parsed.data);
+    };
+    privateHandlers.set(fields.name, invoke);
     definitions.push({
       type: 'function',
       name: fields.name,
@@ -337,13 +358,13 @@ export function createWorkflowTools(workflow: Workflow, selectedNodeIds: string[
       parameters: z.toJSONSchema(fields.schema),
       strict: false,
     });
-    return { ...fields, invoke: async (input: unknown) => handler(fields.schema.parse(input)) };
+    return { ...fields, invoke: async (input: unknown) => invoke(input) };
   }
   const tools = [
-    defineTool(() => JSON.stringify({ workflow: draft, selectedNodeIds }), {
+    defineTool(() => JSON.stringify({ workflow: draft, selectedNodeIds, brandingProfile }), {
       name: 'read_workflow',
       description:
-        'Read the current workflow draft, node IDs, connections and selected nodes. Read before editing.',
+        'Read the current workflow draft, node IDs, connections, selected nodes and detected website branding. Read before editing.',
       schema: z.object({}),
     }),
     defineTool(

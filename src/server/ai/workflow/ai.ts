@@ -1,4 +1,6 @@
 import { configBeforeAIPatch, validateAIConfigWrite } from '../../../lib/aiConfig';
+import { RecoverableToolError } from '../../../lib/aiToolErrors';
+import { type BrandingProfile, parseBrandingProfile } from '../../../lib/branding';
 import { type DataTransformation, dataTransformTools } from '../../../lib/dataTransform';
 import { parseNoteMarks } from './notes';
 import type { NodeKind, StepConfig, Workflow, WorkflowEdge, WorkflowNode } from './types';
@@ -13,6 +15,7 @@ export interface AIChatRequest {
   messages: AIChatMessage[];
   workflow: Workflow;
   selectedNodeIds: string[];
+  brandingProfile?: BrandingProfile;
 }
 
 export type WorkflowOperation =
@@ -49,7 +52,7 @@ export const AI_LIMITS = {
   messages: 40,
   messageCharacters: 12000,
   payloadBytes: 1024 * 1024,
-  timeoutMs: 120000,
+  timeoutMs: 240000,
 } as const;
 
 const kinds = new Set<NodeKind>([
@@ -375,7 +378,12 @@ function assertGraph(workflow: Workflow): void {
             ? ['body', 'done']
             : [];
     if (allowed.length ? !allowed.includes(entry.sourceHandle ?? '') : entry.sourceHandle != null)
-      throw new Error('A connection uses an invalid output for its source step.');
+      throw new RecoverableToolError(
+        'invalid_source_handle',
+        allowed.length
+          ? `Set sourceHandle to one of: ${allowed.join(', ')} for this source node.`
+          : `${source.data.kind === 'trigger' ? 'Trigger nodes' : 'These source nodes'} have no named output. Omit sourceHandle or set it to null.`,
+      );
     if (entry.targetHandle != null) throw new Error('Connections cannot specify target handles.');
     const key = JSON.stringify([entry.source, entry.target, entry.sourceHandle ?? null]);
     if (connections.has(key)) throw new Error('Duplicate connections are not allowed.');
@@ -552,7 +560,14 @@ export function parseAIChatRequest(value: unknown): AIChatRequest {
     selectedNodeIds.some((key) => !nodeIds.has(key))
   )
     throw new Error('Selected steps must identify existing steps without duplicates.');
-  const request = { messages, workflow, selectedNodeIds };
+  const request = {
+    messages,
+    workflow,
+    selectedNodeIds,
+    ...(input.brandingProfile !== undefined
+      ? { brandingProfile: parseBrandingProfile(input.brandingProfile, workflow.websiteUrl) }
+      : {}),
+  };
   if (new TextEncoder().encode(JSON.stringify(request)).byteLength > AI_LIMITS.payloadBytes)
     throw new Error('This workflow and conversation are too large for an AI request.');
   return request;

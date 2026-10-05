@@ -16,8 +16,8 @@ const State = Annotation.Root({
 export const graph = new StateGraph(State)
   .addNode('edit_workflow', async (state, config: RunnableConfig) => {
     const signal = config.signal
-      ? AbortSignal.any([config.signal, AbortSignal.timeout(90000)])
-      : AbortSignal.timeout(90000);
+      ? AbortSignal.any([config.signal, AbortSignal.timeout(180000)])
+      : AbortSignal.timeout(180000);
     const writer = config.configurable?.streamAIText ? getWriter(config) : undefined;
     try {
       return {

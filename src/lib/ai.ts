@@ -19,6 +19,7 @@ import {
 } from './aiCredentials';
 import { getAIEditFailure } from './aiErrors';
 import { responseLines, safeTextEmitter } from './aiStream';
+import { type BrandingProfile, parseBrandingProfile } from './branding';
 import { type DataTransformation, dataTransformTools } from './dataTransform';
 import { validateWorkflow } from './export';
 import { framesFirst, removeNodes } from './frames';
@@ -34,6 +35,7 @@ export interface AIChatRequest {
   messages: AIChatMessage[];
   workflow: Workflow;
   selectedNodeIds: string[];
+  brandingProfile?: BrandingProfile;
 }
 
 export type WorkflowOperation =
@@ -80,7 +82,7 @@ export const AI_LIMITS = {
   messages: 40,
   messageCharacters: 12000,
   payloadBytes: 1024 * 1024,
-  timeoutMs: 120000,
+  timeoutMs: 240000,
 } as const;
 
 const kinds = new Set<NodeKind>([
@@ -742,7 +744,14 @@ export function parseAIChatRequest(value: unknown): AIChatRequest {
         messageParams: {},
       },
     );
-  const request = { messages, workflow, selectedNodeIds };
+  const request = {
+    messages,
+    workflow,
+    selectedNodeIds,
+    ...(input.brandingProfile !== undefined
+      ? { brandingProfile: parseBrandingProfile(input.brandingProfile, workflow.websiteUrl) }
+      : {}),
+  };
   if (new TextEncoder().encode(JSON.stringify(request)).byteLength > AI_LIMITS.payloadBytes)
     throw Object.assign(
       new Error('This workflow and conversation are too large for an AI request.'),

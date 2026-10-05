@@ -87,20 +87,34 @@ afterEach(() => {
 });
 
 function provider(
-  calls: Call[],
+  calls: (Call | Call[] | (() => Call | Call[]))[],
   streaming: boolean,
   finalText = 'Changed the selected trigger to scroll thrashing.',
 ) {
   let turn = 0;
   function result() {
     const index = turn++;
-    const call = calls[index];
+    const step = calls[index];
+    const call = typeof step === 'function' ? step() : step;
+    const batch = call ? (typeof call[0] === 'string' ? [call as Call] : (call as Call[])) : [];
+    const toolCalls = batch.map(([toolName, input], offset) => ({
+      toolCallId: offset === 0 ? `unique-${index}` : `unique-${index}-${offset}`,
+      toolName,
+      input,
+    }));
     return {
       content: [],
-      responseMessages: [],
+      responseMessages: toolCalls.length
+        ? [
+            {
+              role: 'assistant',
+              content: toolCalls.map((tool) => ({ type: 'tool-call', ...tool })),
+            },
+          ]
+        : [],
       text: call ? '' : finalText,
       finishReason: call ? 'tool-calls' : 'stop',
-      toolCalls: call ? [{ toolCallId: `unique-${index}`, toolName: call[0], input: call[1] }] : [],
+      toolCalls,
     };
   }
   if (streaming)
@@ -181,7 +195,7 @@ describe.each([false, true])('agent progress (streaming: %s)', (streaming) => {
     expect(invocations()).toHaveLength(9);
   });
 
-  it('classifies invalid mutations separately from provider failure and discards earlier staged edits', async () => {
+  it('rejects completion after a recoverable error and discards earlier staged edits', async () => {
     const input = request();
     const invocations = provider(
       [
@@ -198,8 +212,263 @@ describe.each([false, true])('agent progress (streaming: %s)', (streaming) => {
       code: 'invalid_workflow_edit',
       message: expect.stringContaining('No workflow changes were applied'),
     });
-    expect(invocations()).toHaveLength(3);
+    expect(invocations()).toHaveLength(4);
     expect(input.workflow.nodes[0].data.config.event).toBe('rage-click');
+  });
+
+  const invalidConnection: Call = ['update_connection', { id: 'edge', sourceHandle: 'true' }];
+  const correctedConnection: Call = ['update_connection', { id: 'edge', sourceHandle: null }];
+
+  function outputs(invocations: ReturnType<ReturnType<typeof provider>>) {
+    return invocations
+      .at(-1)?.[0]
+      ?.messages?.flatMap((message) => (message.role === 'tool' ? message.content : []));
+  }
+
+  it('corrects a connection without recreating successful nodes or changing generated IDs', async () => {
+    const input = request();
+    input.workflow.nodes = [];
+    input.workflow.edges = [];
+    const before = structuredClone(input);
+    let source = '';
+    let target = '';
+    const invocations = provider(
+      [
+        read,
+        [
+          ['add_node', { kind: 'trigger' }],
+          ['add_node', { kind: 'popover', config: { content: '<p>Offer</p>' } }],
+        ],
+        () => {
+          [source, target] = toolkit.getWorkflow().nodes.map((node) => node.id);
+          return ['add_connection', { source, target, sourceHandle: 'true' }];
+        },
+        read,
+        () => ['add_connection', { source, target }],
+      ],
+      streaming,
+    );
+    const response = await runLocalAgent(input, new AbortController().signal, config, emit());
+    expect(response.operations).toHaveLength(3);
+    expect(response.operations[2]).toMatchObject({ type: 'add_edge', edge: { source, target } });
+    expect(toolkit.getWorkflow().nodes.map((node) => node.id)).toEqual([source, target]);
+    expect(applyClient(input.workflow, response.operations)).toEqual(toolkit.getWorkflow());
+    expect(outputs(invocations())).toContainEqual(
+      expect.objectContaining({
+        toolCallId: 'unique-2',
+        output: {
+          type: 'text',
+          value: JSON.stringify({
+            ok: false,
+            error: 'Trigger nodes have no named output. Omit sourceHandle or set it to null.',
+            code: 'invalid_source_handle',
+            retryable: true,
+          }),
+        },
+      }),
+    );
+    expect(input).toEqual(before);
+  });
+
+  it('allows exactly two corrections after the initial failed call', async () => {
+    const invocations = provider(
+      [read, invalidConnection, invalidConnection, correctedConnection],
+      streaming,
+    );
+    const response = await runLocalAgent(request(), new AbortController().signal, config, emit());
+    expect(response.operations).toEqual([{ type: 'update_edge', id: 'edge', sourceHandle: null }]);
+    expect(invocations()).toHaveLength(5);
+  });
+
+  it('exhausts its budget across reads and successful corrections without returning any changes', async () => {
+    const input = request();
+    const before = structuredClone(input);
+    const invocations = provider(
+      [
+        read,
+        edit,
+        invalidConnection,
+        read,
+        correctedConnection,
+        invalidConnection,
+        ['update_node', { id: 'offer', label: 'New offer' }],
+        correctedConnection,
+        read,
+        invalidConnection,
+      ],
+      streaming,
+    );
+    await expect(
+      runLocalAgent(input, new AbortController().signal, config, emit()),
+    ).rejects.toMatchObject({
+      code: 'invalid_workflow_edit',
+      message: expect.stringContaining('No workflow changes were applied'),
+    });
+    expect(invocations()).toHaveLength(10);
+    expect(toolkit.getOperations().length).toBeGreaterThan(0);
+    expect(input).toEqual(before);
+  });
+
+  it('does not let reads or unrelated successful mutations resolve a failed edit', async () => {
+    const invocations = provider(
+      [
+        read,
+        invalidConnection,
+        read,
+        ['update_connection', { id: 'edge', label: 'Unrelated label' }],
+        edit,
+      ],
+      streaming,
+    );
+    await expect(
+      runLocalAgent(request(), new AbortController().signal, config, emit()),
+    ).rejects.toMatchObject({
+      code: 'invalid_workflow_edit',
+    });
+    expect(invocations()).toHaveLength(6);
+  });
+
+  it('pairs every call with a result and skips dependent calls until the next response', async () => {
+    const invocations = provider(
+      [
+        [
+          read,
+          edit,
+          invalidConnection,
+          ['remove_node', { id: 'offer' }],
+          ['read_workflow', {}],
+          correctedConnection,
+        ],
+        () => {
+          expect(toolkit.getOperations()).toEqual([
+            { type: 'update_node', id: 'start', config: scroll },
+          ]);
+          expect(toolkit.getWorkflow().nodes).toHaveLength(2);
+          return correctedConnection;
+        },
+      ],
+      streaming,
+    );
+    const response = await runLocalAgent(request(), new AbortController().signal, config, emit());
+    expect(response.operations).toHaveLength(2);
+    const results = outputs(invocations()) ?? [];
+    expect(results).toHaveLength(7);
+    for (const index of [3, 4, 5]) {
+      expect(results[index]).toMatchObject({
+        toolCallId: `unique-0-${index}`,
+        output: { type: 'text', value: expect.stringContaining('skipped_after_failure') },
+      });
+    }
+  });
+
+  it('corrects schema and configuration errors using their repair hints', async () => {
+    const invocations = provider(
+      [
+        ['update_node', { id: 'start', config: { scrollDirectionChanges: 'four' } }],
+        ['update_node', { id: 'start', config: { ...scroll, iterations: 3 } }],
+        edit,
+      ],
+      streaming,
+    );
+    const response = await runLocalAgent(request(), new AbortController().signal, config, emit());
+    expect(response.operations).toHaveLength(1);
+    const results = outputs(invocations()) ?? [];
+    expect(results[0]).toMatchObject({
+      output: { value: expect.stringContaining('config.scrollDirectionChanges') },
+    });
+    expect(results[1]).toMatchObject({
+      output: { value: expect.stringContaining('Send only fields supported') },
+    });
+  });
+
+  it('can repair malformed identity arguments without recreating a successful node', async () => {
+    provider(
+      [
+        read,
+        ['add_node', { kind: 'unsupported' }],
+        ['add_node', { kind: 'delay', config: { duration: 100 } }],
+        ['update_node', { id: null, label: 'Renamed' }],
+        ['update_node', { id: 'offer', label: 'Renamed' }],
+      ],
+      streaming,
+    );
+    const response = await runLocalAgent(request(), new AbortController().signal, config, emit());
+    expect(response.operations).toHaveLength(2);
+    expect(toolkit.getWorkflow().nodes).toHaveLength(3);
+  });
+
+  it('does not treat an empty configuration patch as resolving a failed edit', async () => {
+    provider(
+      [
+        ['update_node', { id: 'start', config: { iterations: 3 } }],
+        ['update_node', { id: 'start', config: {} }],
+      ],
+      streaming,
+    );
+    await expect(
+      runLocalAgent(request(), new AbortController().signal, config, emit()),
+    ).rejects.toMatchObject({
+      code: 'invalid_workflow_edit',
+    });
+  });
+
+  it('does not mask unsafe provider output after a recoverable tool error', async () => {
+    const input = request();
+    provider([read, edit, invalidConnection], streaming);
+    if (streaming) {
+      const complete = vi.mocked(streamText).getMockImplementation()!;
+      let turn = 0;
+      vi.mocked(streamText).mockImplementation((...args) => {
+        const result = complete(...args);
+        return ++turn === 4
+          ? ({ ...result, content: [{ type: 'text', text: config.apiKey }] } as never)
+          : result;
+      });
+    } else {
+      const complete = vi.mocked(generateText).getMockImplementation()!;
+      let turn = 0;
+      vi.mocked(generateText).mockImplementation(async (...args) => {
+        const result = await complete(...args);
+        return ++turn === 4
+          ? ({ ...result, content: [{ type: 'text', text: config.apiKey }] } as never)
+          : result;
+      });
+    }
+    await expect(
+      runLocalAgent(input, new AbortController().signal, config, emit()),
+    ).rejects.toMatchObject({ code: 'provider_failed' });
+    expect(input.workflow.nodes[0].data.config.event).toBe('rage-click');
+  });
+
+  it('does not retry an internal tool exception after a recoverable error', async () => {
+    const invocations = provider(
+      [
+        read,
+        edit,
+        invalidConnection,
+        () => {
+          vi.spyOn(toolkit, 'invokePrivate').mockImplementation(() => {
+            throw new Error('Internal failure');
+          });
+          return correctedConnection;
+        },
+      ],
+      streaming,
+    );
+    await expect(
+      runLocalAgent(request(), new AbortController().signal, config, emit()),
+    ).rejects.toMatchObject({ code: 'provider_failed' });
+    expect(invocations()).toHaveLength(4);
+  });
+
+  it('keeps unclassified tool failures fatal without spending a correction turn', async () => {
+    const invocations = provider([read, edit, ['remove_node', { id: 'missing' }]], streaming);
+    await expect(
+      runLocalAgent(request(), new AbortController().signal, config, emit()),
+    ).rejects.toMatchObject({
+      code: 'invalid_workflow_edit',
+    });
+    expect(invocations()).toHaveLength(3);
   });
 
   it('keeps staged operations private when final output is empty', async () => {
@@ -213,13 +482,13 @@ describe.each([false, true])('agent progress (streaming: %s)', (streaming) => {
 
   it('discards staged edits if the subsequent provider turn is interrupted', async () => {
     const input = request();
-    provider([read, edit], streaming);
+    provider([read, edit, invalidConnection], streaming);
     if (streaming) {
       const complete = vi.mocked(streamText).getMockImplementation();
       if (!complete) throw new Error('Expected a mocked streaming provider.');
       let turn = 0;
       vi.mocked(streamText).mockImplementation((...args) =>
-        ++turn < 3
+        ++turn < 4
           ? complete(...args)
           : ({
               fullStream: (async function* () {
@@ -232,7 +501,7 @@ describe.each([false, true])('agent progress (streaming: %s)', (streaming) => {
       if (!complete) throw new Error('Expected a mocked provider.');
       let turn = 0;
       vi.mocked(generateText).mockImplementation(async (...args) =>
-        ++turn < 3
+        ++turn < 4
           ? complete(...args)
           : ({
               content: [],
@@ -254,13 +523,13 @@ describe.each([false, true])('agent progress (streaming: %s)', (streaming) => {
     const input = request();
     const controller = new AbortController();
     const cancelled = new DOMException('Cancelled', 'AbortError');
-    provider([read, edit], streaming);
+    provider([read, edit, invalidConnection], streaming);
     if (streaming) {
       const complete = vi.mocked(streamText).getMockImplementation();
       if (!complete) throw new Error('Expected a mocked streaming provider.');
       let turn = 0;
       vi.mocked(streamText).mockImplementation((...args) => {
-        if (++turn === 3) controller.abort(cancelled);
+        if (++turn === 4) controller.abort(cancelled);
         return complete(...args);
       });
     } else {
@@ -268,7 +537,7 @@ describe.each([false, true])('agent progress (streaming: %s)', (streaming) => {
       if (!complete) throw new Error('Expected a mocked provider.');
       let turn = 0;
       vi.mocked(generateText).mockImplementation((...args) => {
-        if (++turn === 3) controller.abort(cancelled);
+        if (++turn === 4) controller.abort(cancelled);
         return complete(...args);
       });
     }
@@ -284,13 +553,13 @@ describe.each([false, true])('agent progress (streaming: %s)', (streaming) => {
     const pending = new Promise<void>((resolve) => {
       stalled = resolve;
     });
-    provider([read, edit], streaming);
+    provider([read, edit, invalidConnection], streaming);
     if (streaming) {
       const complete = vi.mocked(streamText).getMockImplementation();
       if (!complete) throw new Error('Expected a mocked streaming provider.');
       let turn = 0;
       vi.mocked(streamText).mockImplementation((...args) =>
-        ++turn < 3
+        ++turn < 4
           ? complete(...args)
           : ({
               fullStream: (async function* () {
@@ -304,7 +573,7 @@ describe.each([false, true])('agent progress (streaming: %s)', (streaming) => {
       if (!complete) throw new Error('Expected a mocked provider.');
       let turn = 0;
       vi.mocked(generateText).mockImplementation((...args) => {
-        if (++turn < 3) return complete(...args);
+        if (++turn < 4) return complete(...args);
         stalled();
         return new Promise(() => {});
       });
@@ -347,6 +616,10 @@ describe.each([false, true])('agent progress (streaming: %s)', (streaming) => {
                 'update_node',
                 { id: 'start', config: { iterations: 3, content: 'private provider payload' } },
               ] as Call,
+              read,
+              invalidConnection,
+              read,
+              invalidConnection,
             ]
           : [read, edit, read, edit, read, edit];
       provider(calls, streaming);

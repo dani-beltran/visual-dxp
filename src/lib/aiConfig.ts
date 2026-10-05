@@ -1,3 +1,4 @@
+import { RecoverableToolError } from './aiToolErrors';
 import { dataTools } from './data';
 import { elementTriggerEvents, triggerOptions } from './triggers';
 import type { NodeKind, StepConfig } from './types';
@@ -194,7 +195,8 @@ export function validateAIConfigWrite(
     const target = modes.length
       ? `${kind} (${modes.map(([key, value]) => `${key}=${value}`).join(', ')})`
       : kind;
-    throw new Error(
+    throw new RecoverableToolError(
+      'invalid_configuration',
       `Invalid configuration fields: ${invalid.join(', ')} for ${target}. Send only fields supported by the resulting configuration.`,
     );
   }

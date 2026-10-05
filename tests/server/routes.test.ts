@@ -249,7 +249,7 @@ describe('Next Node Route Handlers', () => {
     },
   );
 
-  it('times out the route and aborts an uncooperative provider at 90 seconds', async () => {
+  it('times out the route and aborts an uncooperative provider at 180 seconds', async () => {
     vi.useFakeTimers();
     provider.mockImplementation(() => new Promise(() => {}));
     const pending = POST(request());
