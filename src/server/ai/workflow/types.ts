@@ -6,6 +6,7 @@ export type NodeKind =
   | 'http'
   | 'transform'
   | 'dom'
+  | 'track-event'
   | 'cookie'
   | 'delay'
   | 'experiment'
@@ -98,6 +99,9 @@ export interface StepConfig extends DataTransformConfig {
   conditionEndTime?: string;
   /** Time zone used by date and time conditions. Defaults to the visitor's local time zone. */
   conditionTimeZone?: 'local' | 'utc';
+  /** Static custom event name emitted by a Track event node. */
+  analyticsEventName?: string;
+  analyticsPayload?: string;
   /** Percentage of new assignments sent to A, from 0 to 100. Defaults to 50. */
   experimentSplit?: number;
   /** Stable assignment key on this origin. Empty or omitted uses the node ID. */
@@ -156,6 +160,7 @@ export interface Workflow {
   websiteUrl: string;
   /** Run on descendant paths on the same origin. Missing in older workflows means false. */
   includeSubpages?: boolean;
+  analytics?: import('../../../lib/types').AnalyticsSettings;
   nodes: WorkflowNode[];
   edges: WorkflowEdge[];
 }

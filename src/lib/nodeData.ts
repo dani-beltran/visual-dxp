@@ -9,6 +9,10 @@ interface NodeDataPorts {
 // Define data-port behavior once per node kind. Config changes are evaluated on render.
 // These describe data inputs/outputs shown on the canvas, including condition pass-through.
 const dataPorts: Partial<Record<NodeKind, (config: StepConfig) => NodeDataPorts>> = {
+  'track-event': (config) => ({
+    acceptsData: dataTools.hasVariables(config.analyticsPayload),
+    outputsData: false,
+  }),
   transform: () => ({ acceptsData: true, outputsData: true }),
   http: () => ({ acceptsData: true, outputsData: true }),
   fork: (config) => ({

@@ -19,6 +19,7 @@ import {
 } from './aiCredentials';
 import { getAIEditFailure } from './aiErrors';
 import { responseLines, safeTextEmitter } from './aiStream';
+import { isAnalyticsSettings } from './analytics';
 import { type BrandingProfile, parseBrandingProfile } from './branding';
 import { type DataTransformation, dataTransformTools } from './dataTransform';
 import { validateWorkflow } from './export';
@@ -93,6 +94,7 @@ const kinds = new Set<NodeKind>([
   'cookie',
   'delay',
   'experiment',
+  'track-event',
   'fork',
   'loop',
   'popover',
@@ -110,6 +112,8 @@ const configStrings = [
   'action',
   'value',
   'attribute',
+  'analyticsEventName',
+  'analyticsPayload',
   'experimentKey',
   'experimentAnalytics',
   'experimentId',
@@ -437,6 +441,10 @@ function operations(value: unknown): WorkflowOperation[] {
 
 function workflowShape(value: unknown): Workflow {
   const input = record(value, 'Workflow');
+  if (input.analytics !== undefined && !isAnalyticsSettings(input.analytics))
+    throw Object.assign(new Error('Choose a supported analytics platform.'), {
+      messageKey: 'experiment.invalidPlatform',
+    });
   if (input.includeSubpages !== undefined && typeof input.includeSubpages !== 'boolean')
     throw Object.assign(new Error('Include subpages must be a boolean.'), {
       messageKey: 'errors.ai.includeSubpagesMustBeABoolean',
@@ -467,6 +475,7 @@ function workflowShape(value: unknown): Workflow {
     name: text(input.name, 'Workflow name', 500, true),
     websiteUrl: text(input.websiteUrl, 'Website URL', 4000, true),
     includeSubpages: input.includeSubpages ?? false,
+    ...(input.analytics === undefined ? {} : { analytics: { ...input.analytics } }),
     nodes: input.nodes.map(node),
     edges: input.edges.map(edge),
   };

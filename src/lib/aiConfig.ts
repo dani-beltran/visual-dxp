@@ -76,6 +76,7 @@ const configPolicies: Record<NodeKind, ConfigPolicy> = {
       },
     ],
   },
+  'track-event': { fields: ['analyticsEventName', 'analyticsPayload'] },
   cookie: { fields: ['cookieName', 'cookieValue', 'cookieDays'] },
   delay: { fields: ['duration'] },
   experiment: {

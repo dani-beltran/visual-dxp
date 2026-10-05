@@ -1,3 +1,4 @@
+import { isAnalyticsSettings } from './analytics';
 import { type DataTransformation, dataTransformTools } from './dataTransform';
 import { isNoteMarks } from './noteText';
 import type { Workflow } from './types';
@@ -10,6 +11,7 @@ const kinds = new Set([
   'cookie',
   'delay',
   'experiment',
+  'track-event',
   'fork',
   'loop',
   'popover',
@@ -27,6 +29,8 @@ const strings = [
   'action',
   'value',
   'attribute',
+  'analyticsEventName',
+  'analyticsPayload',
   'experimentKey',
   'experimentAnalytics',
   'experimentId',
@@ -77,6 +81,7 @@ export function isWorkflow(value: unknown): value is Workflow {
     typeof value.name !== 'string' ||
     typeof value.websiteUrl !== 'string' ||
     (value.includeSubpages !== undefined && typeof value.includeSubpages !== 'boolean') ||
+    (value.analytics !== undefined && !isAnalyticsSettings(value.analytics)) ||
     !Array.isArray(value.nodes) ||
     !Array.isArray(value.edges)
   )

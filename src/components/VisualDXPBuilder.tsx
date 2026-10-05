@@ -15,6 +15,7 @@ import {
 } from '@xyflow/react';
 import {
   ArrowRight,
+  ChartNoAxesColumn,
   Check,
   ChevronDown,
   Command,
@@ -93,6 +94,7 @@ import type {
 import { useDialogFocus } from '../lib/useDialogFocus';
 import { ActivityPanel } from './ActivityPanel';
 import { AISettings } from './AISettings';
+import { AnalyticsSettings } from './AnalyticsSettings';
 import { CanvasChat } from './CanvasChat';
 import { CanvasHelp } from './CanvasHelp';
 import { EdgeInspector } from './EdgeInspector';
@@ -164,7 +166,7 @@ interface HistoryEntry {
   workflow: Workflow;
   activity?: RecordedActivity;
 }
-type BuilderView = 'canvas' | 'presets' | 'activity' | 'settings';
+type BuilderView = 'canvas' | 'presets' | 'activity' | 'analytics' | 'settings';
 function copyWorkflow(w: Workflow): Workflow {
   return { ...structuredClone(w), includeSubpages: w.includeSubpages ?? false };
 }
@@ -1071,7 +1073,7 @@ function Builder({
             event.preventDefault();
             const tabs: BuilderView[] = ['canvas'];
             if (showPresets) tabs.push('presets');
-            tabs.push('activity');
+            tabs.push('activity', 'analytics');
             if (showAISettings) tabs.push('settings');
             const index = tabs.indexOf(view);
             const next =
@@ -1127,6 +1129,18 @@ function Builder({
             onClick={() => changeView('activity')}
           >
             <History size={15} /> {t('builder.activity')}
+          </button>
+          <button
+            type="button"
+            role="tab"
+            id={`${viewId}-analytics-tab`}
+            aria-selected={view === 'analytics'}
+            aria-controls={`${viewId}-analytics-panel`}
+            tabIndex={view === 'analytics' ? 0 : -1}
+            className={view === 'analytics' ? 'active' : ''}
+            onClick={() => changeView('analytics')}
+          >
+            <ChartNoAxesColumn size={15} /> {t('builder.analytics')}
           </button>
           {showAISettings && (
             <button
@@ -1392,6 +1406,12 @@ function Builder({
         {selected && (
           <NodeInspector
             node={selected}
+            analytics={workflow.analytics}
+            analyticsTabId={`${viewId}-analytics-tab`}
+            onOpenAnalytics={() => {
+              changeView('analytics');
+              document.getElementById(`${viewId}-analytics-tab`)?.focus();
+            }}
             forwardsData={
               getNodeDataFlow(selected.id, workflow.nodes, workflow.edges) === 'forwards'
             }
@@ -1443,6 +1463,26 @@ function Builder({
         hidden={view !== 'activity'}
       >
         {view === 'activity' && <ActivityPanel entries={activity} />}
+      </div>
+      <div
+        className="dxp-work-area"
+        role="tabpanel"
+        id={`${viewId}-analytics-panel`}
+        aria-labelledby={`${viewId}-analytics-tab`}
+        hidden={view !== 'analytics'}
+      >
+        {view === 'analytics' && (
+          <AnalyticsSettings
+            workflow={workflow}
+            onChange={(analytics) =>
+              commit(
+                (current) => ({ ...current, analytics }),
+                activityAction('activity.analyticsUpdated'),
+                'analytics-settings',
+              )
+            }
+          />
+        )}
       </div>
       {showAISettings && (
         <div

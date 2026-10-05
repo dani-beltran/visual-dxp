@@ -1,3 +1,4 @@
+import type { createAnalyticsTools } from '../analytics';
 import type { buildCookie } from '../cookies';
 import type { createDataTools, DataSelection } from '../data';
 import type { createDataTransformTools } from '../dataTransform';
@@ -10,8 +11,11 @@ import type { RuntimeContext } from './context';
 import type { createExperimentAnalytics } from './experiment-analytics';
 import type { createPopoverElements, showPopover } from './popovers';
 import type { WorkflowRuntime } from './types';
+import type { createWorkflowAnalytics } from './workflow-analytics';
 
 interface ExecutionModules {
+  createAnalyticsTools: typeof createAnalyticsTools;
+  createWorkflowAnalytics: typeof createWorkflowAnalytics;
   createExperimentTools: typeof createExperimentTools;
   createExperimentAnalytics: typeof createExperimentAnalytics;
   createDataTransformTools: typeof createDataTransformTools;
@@ -28,6 +32,8 @@ export function createExecution(
   workflow: Workflow,
   context: RuntimeContext,
   {
+    createAnalyticsTools,
+    createWorkflowAnalytics,
     createExperimentTools,
     createExperimentAnalytics,
     buildCookie,
@@ -44,9 +50,20 @@ export function createExecution(
     context;
   const experimentTools = createExperimentTools();
   const experimentAnalytics = createExperimentAnalytics(context, experimentTools);
+  const workflowAnalytics = createWorkflowAnalytics(
+    workflow,
+    context,
+    createAnalyticsTools(),
+    experimentTools,
+  );
   const dataTools = createDataTools();
   const transformTools = createDataTransformTools(dataTools);
-  type RunState = { steps: number; active: Set<string> };
+  type RunState = {
+    steps: number;
+    active: Set<string>;
+    hadError: boolean;
+    analytics: ReturnType<typeof workflowAnalytics.begin>;
+  };
 
   async function next(
     nodeId: string,
@@ -123,6 +140,12 @@ export function createExecution(
             }
             break;
           }
+          case 'track-event':
+            state.analytics.custom(
+              node,
+              dataTools.requestTemplate(config.analyticsPayload ?? '', input, true),
+            );
+            break;
           case 'trigger':
             break;
           case 'delay': {
@@ -240,7 +263,11 @@ export function createExecution(
           case 'experiment': {
             const variant = experimentTools.assign(nodeId, config, win);
             selectedHandle = variant;
-            experimentAnalytics.track(nodeId, config, variant);
+            experimentAnalytics.track(
+              nodeId,
+              experimentTools.resolveAnalytics(config, workflow.analytics),
+              variant,
+            );
             break;
           }
           case 'fork':
@@ -281,11 +308,15 @@ export function createExecution(
           log(nodeId, 'error', error instanceof Error ? error.message : String(error));
         throw error;
       }
+      if (requestError !== undefined) state.hadError = true;
+      if (!loopIterations && node.data.kind !== 'trigger' && requestError === undefined)
+        state.analytics.step(node, selectedHandle);
       if (loopIterations) {
         for (let index = 0; index < loopIterations; index += 1) {
           aborted();
           await next(nodeId, state, output, 'body');
         }
+        if (!state.hadError) state.analytics.step(node);
         await next(nodeId, state, output, 'done');
       } else {
         await next(nodeId, state, output, selectedHandle);
@@ -305,11 +336,16 @@ export function createExecution(
       for (const trigger of triggers) {
         if (trigger?.data.kind !== 'trigger')
           throw new Error('Choose a valid trigger to run this workflow.');
-        await execute(
-          trigger.id,
-          { steps: 0, active: new Set() },
-          { exists: false, value: undefined },
-        );
+        aborted();
+        const state: RunState = {
+          steps: 0,
+          active: new Set(),
+          hadError: false,
+          analytics: workflowAnalytics.begin(trigger.id),
+        };
+        await execute(trigger.id, state, { exists: false, value: undefined });
+        aborted();
+        if (!state.hadError) state.analytics.complete();
       }
     } catch (error) {
       if (!signal.aborted) throw error;

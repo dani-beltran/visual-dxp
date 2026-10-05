@@ -79,6 +79,10 @@
   background: #fff0e5;
   color: #dc7f39;
 }
+.dxp-inspector-node-icon-analytics {
+  background: #fff3e0;
+  color: #e37400;
+}
 .dxp-inspector-node-icon-blue {
   background: #ebf2fc;
   color: #578bd0;
@@ -487,14 +491,14 @@
   cursor: default;
 }
 
-.dxp-experiment-analytics {
-  border-top: 1px solid var(--dxp-line);
-  margin-top: 22px;
-  padding-top: 16px;
+.dxp-inspector-settings-link {
+  color: var(--dxp-data);
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
-.dxp-experiment-analytics h3 {
-  margin: 0 0 12px;
-  font-size: 12px;
+.dxp-inspector-settings-link:focus-visible {
+  outline: 2px solid var(--dxp-data);
+  outline-offset: 3px;
 }
 .dxp-analytics-platforms {
   display: grid;
@@ -544,28 +548,7 @@
   font-size: 9px;
   font-weight: 650;
 }
-.dxp-analytics-guide {
-  font-size: 11px;
-  line-height: 1.65;
-  color: var(--dxp-text-secondary);
-  overflow-wrap: anywhere;
-}
-.dxp-analytics-guide summary {
-  color: var(--dxp-text);
-  font-weight: 600;
-  cursor: pointer;
-}
-.dxp-analytics-guide ol {
-  padding-inline-start: 18px;
-}
-.dxp-analytics-guide li {
-  margin-bottom: 8px;
-}
-.dxp-analytics-guide a {
-  color: var(--dxp-data);
-  text-decoration: underline;
-}
-.dxp-experiment-analytics .dxp-sr-only {
+.dxp-analytics-settings .dxp-sr-only {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -574,7 +557,7 @@
   clip-path: inset(50%);
   white-space: nowrap;
 }
-.dxp-experiment-analytics .dxp-field-error {
+.dxp-analytics-settings .dxp-field-error {
   color: var(--dxp-danger);
   font-size: 11px;
   line-height: 1.6;

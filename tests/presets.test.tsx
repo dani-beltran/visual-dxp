@@ -273,11 +273,11 @@ describe('optional builder presets', () => {
       await key(tab('Presets'), 'ArrowRight');
       expect(document.activeElement).toBe(tab('Activity'));
       await key(tab('Activity'), 'End');
-      expect(document.activeElement).toBe(tab(settings ? 'AI Settings' : 'Activity'));
+      expect(document.activeElement).toBe(tab(settings ? 'AI Settings' : 'Analytics'));
       await key(document.activeElement as HTMLElement, 'ArrowRight');
       expect(document.activeElement).toBe(tab('Canvas'));
       await key(tab('Canvas'), 'ArrowLeft');
-      expect(document.activeElement).toBe(tab(settings ? 'AI Settings' : 'Activity'));
+      expect(document.activeElement).toBe(tab(settings ? 'AI Settings' : 'Analytics'));
       await key(document.activeElement as HTMLElement, 'Home');
       expect(document.activeElement).toBe(tab('Canvas'));
     },

@@ -46,6 +46,7 @@ export { isWorkflow } from './lib/serialization';
 export type { ExportOptions } from './lib/targeting';
 export { validateExportTarget } from './lib/targeting';
 export type {
+  AnalyticsSettings,
   ConditionType,
   NodeKind,
   NoteMark,

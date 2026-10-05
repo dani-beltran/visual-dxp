@@ -1,3 +1,4 @@
+import { createAnalyticsTools } from './analytics';
 import { validateCookie } from './cookies';
 import { dataTools } from './data';
 import { dataTransformTools } from './dataTransform';
@@ -62,6 +63,7 @@ export function validateWorkflow(
     'cookie',
     'delay',
     'experiment',
+    'track-event',
     'fork',
     'loop',
     'popover',
@@ -72,6 +74,14 @@ export function validateWorkflow(
   const nodeMap = new Map(workflow.nodes.map((node) => [node.id, node]));
   const add = (message: string, nodeId?: string, code?: string) =>
     issues.push({ message, ...(nodeId ? { nodeId } : {}), ...(code ? { code } : {}) });
+  if (workflow.analytics !== undefined) {
+    try {
+      createExperimentTools().validateSettings(workflow.analytics);
+      createAnalyticsTools().validateIdentity(workflow.analytics);
+    } catch (error) {
+      add(formatBuilderError(error, t));
+    }
+  }
   const selector = (value: string | undefined, nodeId: string, message: string) => {
     if (!value?.trim()) {
       add(message, nodeId);
@@ -133,6 +143,8 @@ export function validateWorkflow(
       'action',
       'value',
       'attribute',
+      'analyticsEventName',
+      'analyticsPayload',
       'experimentKey',
       'experimentAnalytics',
       'experimentId',
@@ -336,11 +348,24 @@ export function validateWorkflow(
             add(t('validation.chooseASupportedConditionType'), node.id);
         }
         break;
+      case 'track-event':
+        try {
+          createAnalyticsTools().validateEventName(config.analyticsEventName);
+          createAnalyticsTools().validatePayload(config.analyticsPayload, dataTools);
+        } catch (error) {
+          add(formatBuilderError(error, t), node.id);
+        }
+        break;
       case 'experiment':
         try {
           createExperimentTools().validate(config);
-          createExperimentTools().validateAnalytics(config);
-          if (config.experimentAnalytics === 'ga4')
+          createExperimentTools().validateAnalytics(
+            createExperimentTools().resolveAnalytics(config, workflow.analytics),
+          );
+          if (
+            createExperimentTools().resolveAnalytics(config, workflow.analytics)
+              .experimentAnalytics === 'ga4'
+          )
             selector(config.experimentSelector, node.id, t('experiment.requiredSelector'));
         } catch (error) {
           add(formatBuilderError(error, t), node.id);
@@ -455,6 +480,7 @@ export function exportWorkflow(workflow: Workflow, options: ExportOptions = {}):
   const definition = {
     version: workflow.version,
     name: workflow.name,
+    analytics: workflow.analytics,
     websiteUrl: target.href,
     includeSubpages: workflow.includeSubpages ?? false,
     nodes: workflow.nodes

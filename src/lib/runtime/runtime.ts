@@ -1,3 +1,4 @@
+import { createAnalyticsTools } from '../analytics';
 import { buildCookie } from '../cookies';
 import { createDataTools } from '../data';
 import { createDataTransformTools } from '../dataTransform';
@@ -14,12 +15,15 @@ import { createPopoverElements, showPopover } from './popovers';
 import { startSwipeTrigger } from './swipe-trigger';
 import { startTriggers } from './triggers';
 import type { RuntimeOptions, WorkflowRuntime } from './types';
+import { createWorkflowAnalytics } from './workflow-analytics';
 import { startZoomTrigger } from './zoom-trigger';
 
 // Each module function receives its dependencies through arguments. Keep these
 // functions free of module-scope references so their compiled source can also
 // power exported workflows, including after bundling and minification.
 const runtimeModules = {
+  createAnalyticsTools,
+  createWorkflowAnalytics,
   createExperimentTools,
   createExperimentAnalytics,
   createDataTransformTools,

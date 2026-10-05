@@ -7,6 +7,7 @@ export type NodeKind =
   | 'http'
   | 'transform'
   | 'dom'
+  | 'track-event'
   | 'cookie'
   | 'delay'
   | 'experiment'
@@ -100,6 +101,9 @@ export interface StepConfig extends DataTransformConfig {
   conditionEndTime?: string;
   /** Time zone used by date and time conditions. Defaults to the visitor's local time zone. */
   conditionTimeZone?: 'local' | 'utc';
+  /** Static custom event name emitted by a Track event node. */
+  analyticsEventName?: string;
+  analyticsPayload?: string;
   /** Percentage of new assignments sent to A, from 0 to 100. Defaults to 50. */
   experimentSplit?: number;
   /** Stable assignment key on this origin. Empty or omitted uses the node ID. */
@@ -140,12 +144,22 @@ export type StepData = {
 };
 export type WorkflowNode = Node<StepData, 'workflow'>;
 export type WorkflowEdge = Edge<ConnectionData>;
+export interface AnalyticsSettings {
+  provider: 'none' | 'ga4';
+  /** Stable reporting ID; omitted legacy settings use the workflow name. */
+  workflowId?: string;
+  /** Reporting revision, distinct from the workflow JSON schema version. */
+  workflowVersion?: string;
+  delivery?: 'gtag' | 'gtm';
+  measurementId?: string;
+}
 export interface Workflow {
   version: 1;
   name: string;
   websiteUrl: string;
   /** Run on descendant paths on the same origin. Missing in older workflows means false. */
   includeSubpages?: boolean;
+  analytics?: AnalyticsSettings;
   nodes: WorkflowNode[];
   edges: WorkflowEdge[];
 }

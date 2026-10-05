@@ -1,5 +1,6 @@
 import { configBeforeAIPatch, validateAIConfigWrite } from '../../../lib/aiConfig';
 import { RecoverableToolError } from '../../../lib/aiToolErrors';
+import { isAnalyticsSettings } from '../../../lib/analytics';
 import { type BrandingProfile, parseBrandingProfile } from '../../../lib/branding';
 import { type DataTransformation, dataTransformTools } from '../../../lib/dataTransform';
 import { parseNoteMarks } from './notes';
@@ -63,6 +64,7 @@ const kinds = new Set<NodeKind>([
   'cookie',
   'delay',
   'experiment',
+  'track-event',
   'fork',
   'loop',
   'popover',
@@ -80,6 +82,8 @@ const configStrings = [
   'action',
   'value',
   'attribute',
+  'analyticsEventName',
+  'analyticsPayload',
   'experimentKey',
   'experimentAnalytics',
   'experimentId',
@@ -321,6 +325,10 @@ function operations(value: unknown): WorkflowOperation[] {
 
 function workflowShape(value: unknown): Workflow {
   const input = record(value, 'Workflow');
+  if (input.analytics !== undefined && !isAnalyticsSettings(input.analytics))
+    throw Object.assign(new Error('Choose a supported analytics platform.'), {
+      messageKey: 'experiment.invalidPlatform',
+    });
   if (input.includeSubpages !== undefined && typeof input.includeSubpages !== 'boolean')
     throw new Error('Include subpages must be a boolean.');
   if (input.version !== 1) throw new Error('This workflow version is not supported.');
@@ -338,6 +346,7 @@ function workflowShape(value: unknown): Workflow {
     name: text(input.name, 'Workflow name', 500, true),
     websiteUrl: text(input.websiteUrl, 'Website URL', 4000, true),
     includeSubpages: input.includeSubpages ?? false,
+    ...(input.analytics === undefined ? {} : { analytics: { ...input.analytics } }),
     nodes: input.nodes.map(node),
     edges: input.edges.map(edge),
   };
