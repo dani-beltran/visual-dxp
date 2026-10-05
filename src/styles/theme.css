@@ -20,6 +20,7 @@
   --dxp-text: color-mix(in srgb, var(--dxp-primary-color) 18%, #292d32);
   --dxp-text-secondary: color-mix(in srgb, var(--dxp-text) 80%, white);
   --dxp-muted: color-mix(in srgb, var(--dxp-text) 65%, white);
+  --dxp-node-output-icon: var(--dxp-muted);
   --dxp-subtle: color-mix(in srgb, var(--dxp-text) 52%, white);
   --dxp-line: color-mix(in srgb, var(--dxp-primary-color) 12%, #f4f4f4);
   --dxp-line-strong: color-mix(in srgb, var(--dxp-primary-color) 23%, #eeeeee);
@@ -66,6 +67,12 @@
   --dxp-text: #e5eee8;
   --dxp-text-secondary: #c0d0c6;
   --dxp-muted: #a3b8aa;
+  /* Canvas output icons sit on white badges in both themes. */
+  --dxp-node-output-icon: color-mix(
+    in srgb,
+    color-mix(in srgb, var(--dxp-primary, #247252) 18%, #292d32) 65%,
+    white
+  );
   --dxp-subtle: #8ca494;
   --dxp-line: #304238;
   --dxp-line-strong: #486052;
@@ -112,7 +119,7 @@
   :is(
     .dxp-node-kind,
     .dxp-node-more,
-    .dxp-node > p,
+    .dxp-node-body > p,
     .dxp-node-footer,
     .dxp-node-footer > span:first-child
   ) {

@@ -1,4 +1,4 @@
-import { Handle, type NodeProps, Position, useStore } from '@xyflow/react';
+import { Handle, type NodeProps, Position, useStore, useUpdateNodeInternals } from '@xyflow/react';
 import {
   ArrowDown,
   ArrowRight,
@@ -8,7 +8,7 @@ import {
   LoaderCircle,
   Repeat2,
 } from 'lucide-react';
-import { useContext } from 'react';
+import { useContext, useLayoutEffect, useRef } from 'react';
 import { getCatalog, stepSummary } from '../lib/catalog';
 import { useBuilderI18n } from '../lib/i18nContext';
 import { getNodeDataFlow, getNodeDataPorts } from '../lib/nodeData';
@@ -26,6 +26,16 @@ export function WorkflowCard({ id, data, selected }: NodeProps<WorkflowNode>) {
   const { t } = useBuilderI18n();
   const catalog = getCatalog(t);
   const editNote = useContext(NoteEditingContext);
+  const bodyRef = useRef<HTMLDivElement>(null);
+  const updateNodeInternals = useUpdateNodeInternals();
+  useLayoutEffect(() => {
+    const body = bodyRef.current;
+    if (!body) return;
+    const refresh = () => updateNodeInternals(id);
+    const observer = new ResizeObserver(refresh);
+    observer.observe(body);
+    return () => observer.disconnect();
+  }, [id, updateNodeInternals]);
   const firstOutput =
     data.kind === 'experiment'
       ? 'a'
@@ -86,19 +96,84 @@ export function WorkflowCard({ id, data, selected }: NodeProps<WorkflowNode>) {
           aria-label={receivesData ? t('workflowCard.incomingData') : undefined}
         />
       )}
-      <div className="dxp-node-top">
-        <span className={`dxp-node-icon dxp-color-${entry.color}`}>
-          <Icon size={19} />
-        </span>
-        <span className="dxp-node-kind">{entry.label}</span>
-        <Ellipsis size={17} className="dxp-node-more" />
-      </div>
-      <strong>{data.label}</strong>
-      <p>{stepSummary(data.kind, data.config, t)}</p>
-      {dataFlow && (
-        <div className="dxp-node-incoming-value" title={dataFlowLabel}>
-          <ArrowRight size={12} aria-hidden="true" /> {dataFlowLabel}
+      <div ref={bodyRef} className={`dxp-node-body${split ? ' dxp-node-body-split' : ''}`}>
+        <div className="dxp-node-top">
+          <span className={`dxp-node-icon dxp-color-${entry.color}`}>
+            <Icon size={19} />
+          </span>
+          <span className="dxp-node-kind">{entry.label}</span>
+          <Ellipsis size={17} className="dxp-node-more" />
         </div>
+        <div className="dxp-node-title">
+          <strong>{data.label}</strong>
+          {split && (
+            <>
+              <span className="dxp-branch-port dxp-branch-port-first" aria-hidden="true">
+                {data.kind === 'loop' ? (
+                  <Repeat2 size={13} />
+                ) : data.kind === 'experiment' ? (
+                  'A'
+                ) : (
+                  'T'
+                )}
+              </span>
+              <Handle
+                type="source"
+                id={firstOutput ?? undefined}
+                className={`dxp-output-first ${socketClassName(firstOutputConnected, sendsData) ?? ''}`}
+                title={
+                  data.kind === 'experiment'
+                    ? t('experiment.variantA')
+                    : data.kind === 'fork'
+                      ? t('workflowCard.truePassesIncomingDataUnchanged')
+                      : t('workflowCard.body')
+                }
+                position={Position.Right}
+              />
+            </>
+          )}
+        </div>
+        <p>{stepSummary(data.kind, data.config, t)}</p>
+        {dataFlow && (
+          <div className="dxp-node-incoming-value" title={dataFlowLabel}>
+            <ArrowRight size={12} aria-hidden="true" /> {dataFlowLabel}
+          </div>
+        )}
+        {split && (
+          <>
+            <span className="dxp-branch-port dxp-branch-port-second" aria-hidden="true">
+              {data.kind === 'loop' ? (
+                <ArrowDown size={13} />
+              ) : data.kind === 'experiment' ? (
+                'B'
+              ) : (
+                'F'
+              )}
+            </span>
+            <Handle
+              type="source"
+              id={secondOutput}
+              className={`dxp-output-second ${socketClassName(secondOutputConnected, sendsData) ?? ''}`}
+              title={
+                data.kind === 'experiment'
+                  ? t('experiment.variantB')
+                  : data.kind === 'fork'
+                    ? t('workflowCard.falsePassesIncomingDataUnchanged')
+                    : t('workflowCard.done')
+              }
+              position={Position.Right}
+            />
+          </>
+        )}
+      </div>
+      {!split && (
+        <Handle
+          type="source"
+          position={Position.Right}
+          className={socketClassName(firstOutputConnected, sendsData)}
+          title={sendsData ? outputLabel : undefined}
+          aria-label={sendsData ? outputLabel : undefined}
+        />
       )}
       <div className="dxp-node-footer">
         <span>
@@ -127,62 +202,6 @@ export function WorkflowCard({ id, data, selected }: NodeProps<WorkflowNode>) {
                 : 'ACTION'}
         </span>
       </div>
-      {split && (
-        <>
-          <span className="dxp-branch-port dxp-branch-port-first" aria-hidden="true">
-            {data.kind === 'loop' ? <Repeat2 size={13} /> : data.kind === 'experiment' ? 'A' : 'T'}
-          </span>
-          <span className="dxp-branch-port dxp-branch-port-second" aria-hidden="true">
-            {data.kind === 'loop' ? (
-              <ArrowDown size={13} />
-            ) : data.kind === 'experiment' ? (
-              'B'
-            ) : (
-              'F'
-            )}
-          </span>
-        </>
-      )}
-      {split ? (
-        <>
-          <Handle
-            type="source"
-            id={firstOutput ?? undefined}
-            className={socketClassName(firstOutputConnected, sendsData)}
-            title={
-              data.kind === 'experiment'
-                ? t('experiment.variantA')
-                : data.kind === 'fork'
-                  ? t('workflowCard.truePassesIncomingDataUnchanged')
-                  : t('workflowCard.body')
-            }
-            position={Position.Right}
-            style={{ top: '37%' }}
-          />
-          <Handle
-            type="source"
-            id={secondOutput}
-            className={socketClassName(secondOutputConnected, sendsData)}
-            title={
-              data.kind === 'experiment'
-                ? t('experiment.variantB')
-                : data.kind === 'fork'
-                  ? t('workflowCard.falsePassesIncomingDataUnchanged')
-                  : t('workflowCard.done')
-            }
-            position={Position.Right}
-            style={{ top: '73%' }}
-          />
-        </>
-      ) : (
-        <Handle
-          type="source"
-          position={Position.Right}
-          className={socketClassName(firstOutputConnected, sendsData)}
-          title={sendsData ? outputLabel : undefined}
-          aria-label={sendsData ? outputLabel : undefined}
-        />
-      )}
     </div>
   );
 }
