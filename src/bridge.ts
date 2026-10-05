@@ -1,3 +1,4 @@
+import { installBrandingBridge } from './lib/brandingBridge';
 import { installPickerBridge } from './lib/pickerBridge';
 import { installPreviewBridge } from './lib/previewBridge';
 
@@ -8,6 +9,7 @@ try {
     throw new Error('Invalid parent origin');
   }
   installPickerBridge(origin);
+  installBrandingBridge(origin);
   installPreviewBridge(origin);
 } catch {
   console.warn(

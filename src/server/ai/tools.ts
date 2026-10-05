@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import { applicableAIConfigDefaults } from '../../lib/aiConfig';
 import { semanticJSON } from '../../lib/aiProgress';
+import type { BrandingProfile } from '../../lib/branding';
 import type { WorkflowOperation } from './workflow/ai';
 import { applyWorkflowOperations } from './workflow/ai';
 import { catalog } from './workflow/catalog';
@@ -278,7 +279,11 @@ const config = z.object({
 });
 
 /** Every invocation owns its draft; tools never mutate the caller's workflow. */
-export function createWorkflowTools(workflow: Workflow, selectedNodeIds: string[]) {
+export function createWorkflowTools(
+  workflow: Workflow,
+  selectedNodeIds: string[],
+  brandingProfile?: BrandingProfile,
+) {
   let draft = structuredClone(workflow);
   const operations: WorkflowOperation[] = [];
 
@@ -340,10 +345,10 @@ export function createWorkflowTools(workflow: Workflow, selectedNodeIds: string[
     return { ...fields, invoke: async (input: unknown) => handler(fields.schema.parse(input)) };
   }
   const tools = [
-    defineTool(() => JSON.stringify({ workflow: draft, selectedNodeIds }), {
+    defineTool(() => JSON.stringify({ workflow: draft, selectedNodeIds, brandingProfile }), {
       name: 'read_workflow',
       description:
-        'Read the current workflow draft, node IDs, connections and selected nodes. Read before editing.',
+        'Read the current workflow draft, node IDs, connections, selected nodes and detected website branding. Read before editing.',
       schema: z.object({}),
     }),
     defineTool(

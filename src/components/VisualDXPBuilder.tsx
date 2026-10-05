@@ -65,6 +65,7 @@ import {
   resolveAIEndpoint,
 } from '../lib/aiCredentials';
 import { AISettingsStore } from '../lib/aiSettings';
+import { readBrandingProfile } from '../lib/branding';
 import { createNode, defaultWorkflow, getCatalog } from '../lib/catalog';
 import type { ConnectionPreview } from '../lib/connections';
 import { validateWorkflow } from '../lib/export';
@@ -321,6 +322,26 @@ function Builder({
   } catch {
     // The save action reports invalid input; omit scope until it can be parsed.
   }
+  const [backgroundConnection, setBackgroundConnection] = useState<{
+    target: string;
+    url: string;
+  }>();
+  useEffect(() => {
+    try {
+      const url = normalizeWebsiteUrl(workflow.websiteUrl, window.location.href);
+      setBackgroundConnection(
+        url !== resolveWebsiteUrl('/demo-site.html').href
+          ? { target: workflow.websiteUrl, url }
+          : undefined,
+      );
+    } catch {
+      // Invalid targets are handled by the website settings dialog.
+      setBackgroundConnection(undefined);
+    }
+  }, [workflow.websiteUrl]);
+  const backgroundConnectionUrl = backgroundConnection?.target === workflow.websiteUrl
+    ? backgroundConnection.url
+    : undefined;
   const modalRef = useDialogFocus(modal === 'website');
   const changeCallback = useRef(onChange);
   changeCallback.current = onChange;
@@ -999,6 +1020,7 @@ function Builder({
       {
         messages,
         workflow: snapshot,
+        brandingProfile: readBrandingProfile(snapshot.websiteUrl),
         selectedNodeIds: selectedId ? [selectedId] : [],
       },
       AbortSignal.any([signal, controller.signal]),
@@ -1521,6 +1543,9 @@ function Builder({
           websiteUrl={workflow.websiteUrl}
           onClose={() => setModal(null)}
         />
+      )}
+      {modal !== 'website' && backgroundConnectionUrl && (
+        <WebsiteConnectionCheck key={backgroundConnectionUrl} url={backgroundConnectionUrl} silent />
       )}
       {modal === 'website' && (
         // biome-ignore lint/a11y/useKeyWithClickEvents: The close button and Escape key dismiss this dialog for keyboard users.

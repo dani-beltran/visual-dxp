@@ -10,7 +10,9 @@ import VisualDXPBuilder, {
   type Workflow,
 } from '../src';
 import { App } from '../src/app';
+import { BRANDING_PROTOCOL, readBrandingProfile } from '../src/lib/branding';
 import { createNode } from '../src/lib/catalog';
+import { brandingProfile } from './helpers/branding';
 
 let host: HTMLDivElement;
 let root: Root;
@@ -172,6 +174,28 @@ describe('builder and host boundary', () => {
     await receive(target, 'null', 'wrong-channel');
     expect(host.textContent).toContain('Connecting to your website');
     await receive(target, 'null');
+    expect(host.textContent).toContain('Reading website branding');
+    expect(host.querySelector('iframe')).toBe(frame);
+    expect(post.mock.calls.at(-1)![0]).toEqual({
+      protocol: BRANDING_PROTOCOL,
+      channel: init.channel,
+      type: 'extract',
+    });
+    await act(async () =>
+      window.dispatchEvent(
+        new MessageEvent('message', {
+          source: target,
+          origin: 'null',
+          data: {
+            protocol: BRANDING_PROTOCOL,
+            channel: init.channel,
+            type: 'profile',
+            profile: brandingProfile(frame.src),
+          },
+        }),
+      ),
+    );
+    expect(readBrandingProfile(frame.src)?.colors.primary).toBe('rgb(38, 116, 86)');
     expect(host.textContent).toContain('Website connected successfully');
     expect(host.querySelector('iframe')).toBeNull();
     expect(post.mock.calls.at(-1)![0].type).toBe('stop');

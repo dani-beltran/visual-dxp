@@ -23,6 +23,16 @@ Open **AI chat** next to Canvas Help. Each request includes the latest workflow 
 
 The library remains reusable without Next.js or a backend. Other hosts can pass their own endpoint, `credentials`, and application authentication/CSRF `headers`. These settings are browser-visible: never use provider or LangSmith credentials in ai.headers or workflow configuration. Browser provider keys use the encrypted AI Settings interface and reserved transport headers described below. The integrated API intentionally supports only same-origin hosting.
 
+## Website branding
+
+The installed `bridge.js` includes `src/lib/brandingBridge.ts`. After the picker acknowledges the connection, the editor requests branding on the separate `visual-dxp:branding` protocol. The sandboxed connection iframe stays mounted until a valid profile arrives, extraction fails, or the eight-second branding timeout expires. It uses an offscreen 1440 × 900 viewport so responsive styles can be sampled without showing the website. The existing `allow-scripts` sandbox and parent-origin/source/session checks remain in place.
+
+Extraction waits up to three seconds for page resources and fonts. It samples computed styles from body text, headings, buttons (including common button links), and links; ignores hidden elements and DXP overlays/popovers; and returns the most frequent style per role with sample counts. Colors, typography, padding, borders and shadows are captured. No page HTML, copy, form values, logo assets or cookies are included. This is a heuristic snapshot of the loaded page, not a complete brand guide.
+
+The latest profile is saved in editor localStorage under `visual-dxp:branding:v1`, together with the exact normalized target URL and capture time. Changing the target starts a new check; profiles for a different URL are never included in AI requests. Restored/imported external targets also refresh in the background, and reopening website settings retries extraction. A storage failure preserves the profile for the current session and is reported in the connection UI. An older bridge that connects but cannot return branding receives a separate status explaining how to update it. The website must allow iframe embedding; authenticated content and fonts may behave differently in the opaque sandbox.
+
+The AI receives the optional profile as data in `read_workflow`. The system prompt uses it for new HTML and requested restyling, gives explicit user instructions precedence, and preserves styling during unrelated edits. Without a profile it uses neutral styling rather than assuming the catalog's demo branding. Profiles are not added to workflow files or exported scripts. Deploy the regenerated bridge alongside the editor (`npm run build:bridge`, also run by the normal build commands).
+
 ## HTTP contract
 
 The client sends `POST` to the configured endpoint with JSON and expects a JSON response. Public TypeScript types are exported from `visual-dxp`:
@@ -36,6 +46,7 @@ The request contains:
 - `messages`: recent `{ role: 'user' | 'assistant', content: string }` messages, ending with the current user message.
 - `workflow`: the current version-1 `Workflow`, containing its name, website URL, nodes, and edges.
 - `selectedNodeIds`: IDs of currently selected nodes.
+- `brandingProfile` (optional): validated colors and element styles sampled by the target website bridge. Its `websiteUrl` must match the workflow URL.
 
 The response contains a nonempty `message` and an `operations` array. For example, when the current workflow contains a node with ID `welcome`:
 

@@ -1,4 +1,5 @@
 import { configBeforeAIPatch, validateAIConfigWrite } from '../../../lib/aiConfig';
+import { type BrandingProfile, parseBrandingProfile } from '../../../lib/branding';
 import { type DataTransformation, dataTransformTools } from '../../../lib/dataTransform';
 import { parseNoteMarks } from './notes';
 import type { NodeKind, StepConfig, Workflow, WorkflowEdge, WorkflowNode } from './types';
@@ -13,6 +14,7 @@ export interface AIChatRequest {
   messages: AIChatMessage[];
   workflow: Workflow;
   selectedNodeIds: string[];
+  brandingProfile?: BrandingProfile;
 }
 
 export type WorkflowOperation =
@@ -552,7 +554,14 @@ export function parseAIChatRequest(value: unknown): AIChatRequest {
     selectedNodeIds.some((key) => !nodeIds.has(key))
   )
     throw new Error('Selected steps must identify existing steps without duplicates.');
-  const request = { messages, workflow, selectedNodeIds };
+  const request = {
+    messages,
+    workflow,
+    selectedNodeIds,
+    ...(input.brandingProfile !== undefined
+      ? { brandingProfile: parseBrandingProfile(input.brandingProfile, workflow.websiteUrl) }
+      : {}),
+  };
   if (new TextEncoder().encode(JSON.stringify(request)).byteLength > AI_LIMITS.payloadBytes)
     throw new Error('This workflow and conversation are too large for an AI request.');
   return request;

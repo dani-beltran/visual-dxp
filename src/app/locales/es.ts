@@ -584,6 +584,11 @@ export const spanishMessages = {
     'Ejecutar también esta experiencia en las páginas bajo esta URL.',
   'builder.useTheDemoWebsite': 'Usar el sitio web de demostración',
   'website.save': 'Guardar sitio web',
+  'websiteConnectionCheck.readingBranding': 'Leyendo el estilo de tu sitio web…',
+  'websiteConnectionCheck.brandingUnavailable':
+    'Sitio web conectado, pero no se pudo leer su estilo. Actualiza bridge.js a la última versión y vuelve a abrir este diálogo para reintentarlo.',
+  'websiteConnectionCheck.brandingStorageUnavailable':
+    'El estilo está disponible para esta sesión, pero no se pudo guardar en este navegador.',
   'websiteConnectionCheck.websiteConnectionCheck': 'Comprobación de conexión al sitio web',
   'websiteConnectionCheck.connectingToYourWebsite': 'Conectando a tu sitio web…',
   'websiteConnectionCheck.websiteConnectedSuccessfully': 'Sitio web conectado correctamente',
