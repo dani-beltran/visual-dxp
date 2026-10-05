@@ -18,6 +18,7 @@ import {
   engagedReaderInvitationPreset,
   exitIntentOfferPreset,
   frustrationRecoveryPreset,
+  headlineExperimentPreset,
   inactivityAssistancePreset,
   mobileSpecificMessagingPreset,
   segmentedOnboardingPreset,
@@ -101,11 +102,7 @@ describe('common DXP preset contracts and layout', () => {
     expect(
       new Set(commonDXPPresets.flatMap((p) => p.workflow.nodes.map((n) => n.data.kind))),
     ).toEqual(
-      new Set(
-        catalog
-          .filter((entry) => !['transform', 'experiment'].includes(entry.kind))
-          .map((entry) => entry.kind),
-      ),
+      new Set(catalog.filter((entry) => entry.kind !== 'transform').map((entry) => entry.kind)),
     );
   });
 
@@ -209,6 +206,26 @@ describe('common DXP preset contracts and layout', () => {
 });
 
 describe('preset execution with a mocked browser and network', () => {
+  it.each([
+    [0.1, 'a', 'Everyday essentials, made extraordinary.'],
+    [0.9, 'b', 'Thoughtful design for the way you live.'],
+  ] as const)('assigns and remembers headline variant %s / %s', async (roll, variant, headline) => {
+    const random = vi.spyOn(Math, 'random').mockReturnValue(roll);
+    const first = runtime(headlineExperimentPreset);
+    await first.run();
+    expect(element('.hero h1').textContent).toBe(headline);
+    expect(successful()).toEqual(['experiment-load', 'headline-split', `headline-${variant}`]);
+    expect(localStorage.getItem('visual-dxp-experiment-v1:dxp_headline_experiment')).toBe(variant);
+    first.destroy();
+    logs = [];
+    element('.hero h1').textContent = 'Original headline';
+    random.mockReturnValue(1 - roll);
+    await runtime(headlineExperimentPreset).run();
+    expect(element('.hero h1').textContent).toBe(headline);
+    expect(successful()).toEqual(['experiment-load', 'headline-split', `headline-${variant}`]);
+    expect(request).not.toHaveBeenCalled();
+  });
+
   it('shows the welcome gift once and welcomes the visitor back on the next load', async () => {
     const heading = element('#newsletter h2').textContent;
     const first = runtime(welcomeJourneyPreset);

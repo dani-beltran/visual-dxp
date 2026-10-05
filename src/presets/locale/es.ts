@@ -1,6 +1,24 @@
 import type { PresetMessages } from './en';
 
 export const spanishPresetMessages = {
+  'headline-experiment.name': 'Experimento de titulares',
+  'headline-experiment.description':
+    'Reparte a los visitantes entre dos titulares principales con un experimento al 50/50.',
+  'headline-experiment.overview': 'Resumen de la plantilla',
+  'headline-experiment.load': 'Página visitada',
+  'headline-experiment.split': 'Repartir el tráfico del titular',
+  'headline-experiment.a': 'A: Esenciales cotidianos',
+  'headline-experiment.b': 'B: Diseño cuidado',
+  'headline-experiment.value-a': 'Esenciales cotidianos, hechos extraordinarios.',
+  'headline-experiment.value-b': 'Diseño cuidado para tu forma de vivir.',
+  'headline-experiment.setup': 'Configuración: Titulares y tráfico',
+  'headline-experiment.instructions':
+    'Elige el título principal en ambos nodos Actualizar elemento y personaliza cada titular. Ajusta el reparto del Experimento para controlar el porcentaje asignado a A; el resto va a B. Solo se ejecuta la rama elegida. Cada navegador conserva su variante en futuras visitas si el almacenamiento local está disponible.',
+  'headline-experiment.testing': 'Configuración: Probar ambas variantes',
+  'headline-experiment.testing-instructions':
+    'Las asignaciones usan la clave dxp_headline_experiment en el almacenamiento local. Para probar A, establece el reparto en 100%; para B, en 0%. Usa una clave nueva en cada prueba y reinicia la vista previa. Restablece el 50% y una clave compartida antes de publicar. La analítica está desactivada; configura GA4 en el nodo Experimento para medir resultados.',
+  'headline-experiment.edge-a': 'Variante A',
+  'headline-experiment.edge-b': 'Variante B',
   'complexity.beginner': 'principiante',
   'complexity.intermediate': 'intermedio',
   'complexity.advanced': 'avanzado',

@@ -1,5 +1,23 @@
 /** Original English copy for the bundled presets. */
 export const englishPresetMessages = {
+  'headline-experiment.name': 'Headline experiment',
+  'headline-experiment.description':
+    'Split visitors between two hero headlines with a 50/50 experiment.',
+  'headline-experiment.overview': 'Preset overview',
+  'headline-experiment.load': 'Page visited',
+  'headline-experiment.split': 'Split headline traffic',
+  'headline-experiment.a': 'A: Everyday essentials',
+  'headline-experiment.b': 'B: Thoughtful design',
+  'headline-experiment.value-a': 'Everyday essentials, made extraordinary.',
+  'headline-experiment.value-b': 'Thoughtful design for the way you live.',
+  'headline-experiment.setup': 'Setup: Headlines and traffic',
+  'headline-experiment.instructions':
+    'Choose your hero heading in both Update Element nodes and customize each headline. Adjust the Experiment split to control the percentage assigned to A; the rest goes to B. Only the selected branch runs. Each browser keeps its assigned variant on future visits when local storage is available.',
+  'headline-experiment.testing': 'Setup: Try both variants',
+  'headline-experiment.testing-instructions':
+    'Assignments use the key dxp_headline_experiment in local storage. To try A, set the split to 100%; for B, set it to 0%. Use a new experiment key for each test and restart the preview. Restore 50% and a shared key before publishing. Analytics is disabled; configure GA4 in the Experiment node to measure results.',
+  'headline-experiment.edge-a': 'Variant A',
+  'headline-experiment.edge-b': 'Variant B',
   'complexity.beginner': 'beginner',
   'complexity.intermediate': 'intermediate',
   'complexity.advanced': 'advanced',
