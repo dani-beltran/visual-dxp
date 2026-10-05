@@ -87,7 +87,7 @@ it('defaults to no tracking and makes PostHog visibly Premium and unselectable',
   expect(host.querySelector('img[src^="http"]')).toBeNull();
 });
 
-it('edits independent GA4 fields, reuses the picker, and explains mapping, privacy, and delivery', async () => {
+it('edits independent GA4 fields, reuses the picker, and explains mapping and delivery', async () => {
   await render(false, { experimentKey: 'assignment-only' });
   await choose('ga4');
   expect(field('Experiment ID')).toHaveProperty('required', true);
@@ -117,7 +117,6 @@ it('edits independent GA4 fields, reuses the picker, and explains mapping, priva
   expect(pick).toHaveBeenCalledOnce();
   expect(host.textContent).toContain('Variant A → a; Variant B → b');
   expect(host.textContent).toContain('not the GA measurement ID');
-  expect(host.textContent).toContain('previews simulate events');
   await change('GA4 measurement ID (optional)', 'G-TEST123');
   await change('Event delivery', 'gtm');
   expect(current.experimentDelivery).toBe('gtm');

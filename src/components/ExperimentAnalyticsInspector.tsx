@@ -154,7 +154,6 @@ export function ExperimentAnalyticsInspector({
               {error}
             </p>
           )}
-          <InfoBox>{t('experiment.privacyHint')}</InfoBox>
           <details className="dxp-analytics-guide">
             <summary>{t('experiment.reporting')}</summary>
             <ol>
