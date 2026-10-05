@@ -82,7 +82,7 @@ export const AI_LIMITS = {
   messages: 40,
   messageCharacters: 12000,
   payloadBytes: 1024 * 1024,
-  timeoutMs: 120000,
+  timeoutMs: 240000,
 } as const;
 
 const kinds = new Set<NodeKind>([

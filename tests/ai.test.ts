@@ -654,7 +654,7 @@ describe('AI HTTP client', () => {
     const pending = requestAIChat({ endpoint: '/api/ai/chat' }, request());
     deadline.abort(new DOMException('Deadline exceeded', 'TimeoutError'));
     await expect(pending).rejects.toThrow('The AI assistant took too long to respond. Try again.');
-    expect(timeout).toHaveBeenCalledWith(120000);
+    expect(timeout).toHaveBeenCalledWith(240000);
   });
 
   it('keeps the timeout active while reading the response body', async () => {

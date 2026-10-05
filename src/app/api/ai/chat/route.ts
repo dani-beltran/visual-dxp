@@ -4,7 +4,7 @@ import { flushTelemetry } from '../../../../server/observability/sdk';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-export const maxDuration = 120;
+export const maxDuration = 240;
 
 export async function POST(request: Request) {
   // after() keeps serverless invocations alive after streamed responses finish.

@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import { applicableAIConfigDefaults } from '../../lib/aiConfig';
 import { semanticJSON } from '../../lib/aiProgress';
+import { RecoverableToolError } from '../../lib/aiToolErrors';
 import type { BrandingProfile } from '../../lib/branding';
 import type { WorkflowOperation } from './workflow/ai';
 import { applyWorkflowOperations } from './workflow/ai';
@@ -317,6 +318,7 @@ export function createWorkflowTools(
       return JSON.stringify({
         ok: false,
         error: error instanceof Error ? error.message : 'Invalid change.',
+        ...(error instanceof RecoverableToolError ? { code: error.code, retryable: true } : {}),
       });
     }
   }
@@ -334,7 +336,18 @@ export function createWorkflowTools(
     handler: (input: z.output<S>) => string,
     fields: { name: Name; description: string; schema: S },
   ) {
-    privateHandlers.set(fields.name, (input) => handler(fields.schema.parse(input)));
+    const invoke = (input: unknown) => {
+      const parsed = fields.schema.safeParse(input);
+      if (!parsed.success)
+        return JSON.stringify({
+          ok: false,
+          code: 'invalid_arguments',
+          error: `Invalid tool arguments at ${parsed.error.issues.map((issue) => issue.path.join('.') || 'input').join(', ')}. Follow the tool schema and resubmit the corrected call.`,
+          retryable: true,
+        });
+      return handler(parsed.data);
+    };
+    privateHandlers.set(fields.name, invoke);
     definitions.push({
       type: 'function',
       name: fields.name,
@@ -342,7 +355,7 @@ export function createWorkflowTools(
       parameters: z.toJSONSchema(fields.schema),
       strict: false,
     });
-    return { ...fields, invoke: async (input: unknown) => handler(fields.schema.parse(input)) };
+    return { ...fields, invoke: async (input: unknown) => invoke(input) };
   }
   const tools = [
     defineTool(() => JSON.stringify({ workflow: draft, selectedNodeIds, brandingProfile }), {

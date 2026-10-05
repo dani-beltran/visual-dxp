@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
+import type { AIChatRequest } from '../../src/server/ai/workflow/ai';
 import {
   applyWorkflowOperations,
   parseAIChatRequest,
   parseAIChatResponse,
 } from '../../src/server/ai/workflow/ai';
-import type { AIChatRequest } from '../../src/server/ai/workflow/ai';
 import type {
   NodeKind,
   StepConfig,
@@ -350,7 +350,9 @@ describe('atomic AI workflow edits', () => {
         { type: 'add_edge', edge: { id: 'test', source: 'source', target: 'wait', sourceHandle } },
       ];
       expect(() => applyWorkflowOperations(original, add(valid))).not.toThrow();
-      expect(() => applyWorkflowOperations(original, add(invalid))).toThrow(/invalid output/);
+      expect(() => applyWorkflowOperations(original, add(invalid))).toThrow(
+        expect.objectContaining({ code: 'invalid_source_handle' }),
+      );
     }
     expect(() =>
       applyWorkflowOperations(workflow(), [
