@@ -4,7 +4,7 @@ The active backend is `src/server/ai/` in this Next.js project. Direct model exe
 
 ## Direct execution
 
-Copy `.env.example` to `.env.local`; use browser AI Settings for normal use. Server-side provider credentials are intended only for development and debugging. Leave `LANGGRAPH_API_URL` empty for direct server-default execution. OpenAI retains its Responses API and default model; Claude requires an Anthropic key/model; Local requires a loopback model server and a tool-capable model, and is intended for developers running the demo app locally for debugging. The 90-second route deadline includes the complete bounded tool loop and propagates cancellation. Provider redirects are rejected and automatic retries are disabled. Tools stage definitions only; they never browse, publish or execute workflows.
+Copy `.env.example` to `.env.local`. Set `AI_PROVIDER` to `openai` (default), `anthropic` (`claude` alias), or `local`, then configure that provider's server credentials and model. Leave `LANGGRAPH_API_URL` empty for direct execution. These settings work without ChatGPT sign-in. The 90-second deadline includes the bounded tool loop and propagates cancellation. Provider redirects are rejected and automatic retries are disabled. Tools stage edits only; they never publish or execute workflows.
 
 ## Tracing
 
@@ -12,7 +12,7 @@ Server-side OpenTelemetry instruments the shared AI SDK loop and LangGraph entry
 
 ## Remote Agent Server / LangSmith deployment
 
-The repository's `langgraph.json` registers `./src/server/ai/graph.ts:graph` as `workflow_editor`. It has no embedded secrets or references to local environment files. Make this repository available to your deployment platform and select that configuration file. Supply `OPENAI_API_KEY` and optionally `OPENAI_MODEL` in the **deployment's** secret environment. Its graph always runs the shared AI SDK flow with OpenAI server defaults, independent of the Next.js proxy setting. The existing remote state contract supports only OpenAI server-default requests; Claude or Local server-default selections return 409 when remote mode is configured. Save a browser configuration for direct execution or disable remote mode to use those providers.
+The repository's `langgraph.json` registers `./src/server/ai/graph.ts:graph` as `workflow_editor`. It has no embedded secrets or references to local environment files. Make this repository available to your deployment platform and select that configuration file. Supply `AI_PROVIDER` and the selected provider's credentials/model in the **deployment's** secret environment. The graph runs the same AI SDK workflow tools with its own environment configuration. When `LANGGRAPH_API_URL` is set in the Next.js proxy, remote execution takes precedence over that proxy's provider settings. No provider credentials are sent through graph input or checkpoints.
 
 The graph's internal modules are framework-independent Node code and do not import the Next-only `server-only` marker; that marker guards the HTTP entrypoint. No Next server is started by the graph runner. The dependencies and lockfile are included at this repository's root.
 

@@ -115,7 +115,6 @@ describe('LangChain workflow tools', () => {
   it.each([
     ['route', 'gpt-4.1-mini'],
     ['route', 'gpt-6-luna'],
-    ['browser', 'browser-model'],
     ['graph', 'gpt-6-luna'],
   ])(
     'completes the local %s with %s through the Responses API tool loop',
@@ -191,13 +190,7 @@ describe('LangChain workflow tools', () => {
       });
       vi.stubGlobal('fetch', provider);
       let result: AIChatResponse;
-      if (entrypoint === 'browser') {
-        result = await runLocalAgent(input, new AbortController().signal, {
-          apiKey: 'browser-test-key',
-          model,
-          origin: 'https://builder.test',
-        });
-      } else if (entrypoint === 'route') {
+      if (entrypoint === 'route') {
         const response = await POST(
           new Request('http://localhost:3000/api/ai/chat', {
             method: 'POST',

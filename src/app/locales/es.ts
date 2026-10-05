@@ -2,6 +2,25 @@ import type { BuilderMessages } from '../../lib/i18n';
 
 /** Complete Spanish builder catalog supplied by the demo app. */
 export const spanishMessages = {
+  'chatgpt.account': 'Cuenta de ChatGPT',
+  'chatgpt.environmentCompact': 'La IA usa el proveedor del servidor, incluso sin iniciar sesión.',
+  'chatgpt.title': 'Iniciar sesión con ChatGPT',
+  'chatgpt.signingIn': 'Abriendo el inicio de sesión de ChatGPT…',
+  'chatgpt.signingOut': 'Cerrando sesión…',
+  'chatgpt.loading': 'Comprobando tu conexión…',
+  'chatgpt.signedIn': 'Conectado a ChatGPT.',
+  'chatgpt.signedOut': 'Conecta tu cuenta de ChatGPT.',
+  'chatgpt.signOut': 'Cerrar sesión',
+  'chatgpt.unavailable':
+    'El inicio de sesión con ChatGPT aún no está disponible en este despliegue.',
+  'chatgpt.error': 'No se pudo actualizar la conexión con ChatGPT. Inténtalo de nuevo.',
+  'chatgpt.retry': 'Comprobar conexión',
+  'chatgpt.environment':
+    'La IA usa el proveedor configurado en el servidor, incluso sin iniciar sesión. Conectar ChatGPT identifica tu cuenta; no habilita el uso de tu plan de ChatGPT.',
+  'chatgpt.serverProvider': 'IA configurada por tu servidor',
+  'chatgpt.configurationError':
+    'Comprueba la configuración de IA del servidor e inténtalo de nuevo.',
+
   'nodes.experiment.label': 'Experimento',
   'nodes.experiment.description':
     'Distribuye los visitantes entre las variantes A y B. Prueba dos experiencias con un reparto de tráfico configurable y asignaciones estables por navegador.',
@@ -129,44 +148,8 @@ export const spanishMessages = {
     'Cierra cada variable con sus llaves correspondientes, por ejemplo {{name}}.',
   'errors.data.missingTargetVariable': ({ name }) =>
     `Falta la variable «${name}» en el selector del elemento o el nombre del atributo.`,
-
-  'aiSettings.assistantCredentials': 'Credenciales del asistente',
   'aiSettings.aiSettings': 'Configuración de IA',
   'aiSettings.yourAiConnection': 'TU CONEXIÓN DE IA',
-  'aiSettings.aiSettings2': 'Configuración de IA',
-  'aiSettings.lockedUnlockToUseAi': 'Bloqueado — desbloquea para usar la IA',
-  'aiSettings.unavailableRestoreOrRemoveBrowserSettings':
-    'No disponible — restaura o elimina la configuración del navegador',
-  'aiSettings.noSavedConfiguration': 'No hay configuración guardada',
-  'aiSettings.browserSettingsReady': 'Configuración del navegador lista',
-  'aiSettings.aiProviders': 'Proveedores de IA',
-  'aiSettings.active': 'Activo',
-  'aiSettings.invalidEndpoint': 'Endpoint no válido',
-  'aiSettings.settingsUnavailable': 'Configuración no disponible.',
-  'aiSettings.browserCredentialsRequireAnHttpsAiServer':
-    'Las credenciales del navegador requieren un servidor de IA HTTPS.',
-  'aiSettings.selfHostedSetupInformation': 'Información de configuración de Local',
-  'aiSettings.enterTheApiBaseUrlOfYourSelfHostedOpenaiCompatibleModel':
-    'Local está pensado para desarrolladores y depuración y solo funciona al ejecutar la aplicación de demostración localmente. Ejecuta un servidor de modelos compatible con OpenAI en la misma máquina que el backend de la demo e introduce una URL con localhost, 127.0.0.1 o [::1]. Las solicitudes salen del backend; la demo alojada no puede conectarse a un modelo en tu ordenador. El modelo debe admitir llamadas a herramientas para editar flujos de trabajo.',
-  'aiSettings.unlockedUseActivateSavedConfigurationToSelectThisProvider':
-    'Desbloqueado. Usa Activar configuración guardada para seleccionar este proveedor.',
-  'aiSettings.selfHostedApiBaseUrl': 'URL base de la API de Local',
-  'aiSettings.enterAKeyToReplaceSettingsUseActivateForSavedSettings':
-    'Introduce una clave para reemplazar la configuración; usa Activar para la configuración guardada',
-  'aiSettings.hideApiKey': 'Ocultar clave de API',
-  'aiSettings.showApiKey': 'Mostrar clave de API',
-  'aiSettings.enterAnAvailableModelId': 'Introduce el ID de un modelo disponible',
-  'aiSettings.passphraseToUnlock': 'Frase de contraseña para desbloquear',
-  'aiSettings.encryptionPassphraseAtLeast12Characters':
-    'Frase de contraseña de cifrado (al menos 12 caracteres)',
-  'aiSettings.unlockBrowserSettings': 'Desbloquear configuración del navegador',
-  'aiSettings.saveAndActivate': 'Guardar y activar',
-  'aiSettings.activateSavedConfiguration': 'Activar configuración guardada',
-  'aiSettings.lock': 'Bloquear',
-  'aiSettings.removeBrowserSettings': 'Eliminar configuración del navegador',
-  'aiSettings.yourBrowserNormallyKeepsOtherWebsitesFromAccessingYourSavedApiKey':
-    'Normalmente, tu navegador impide que otros sitios web accedan a tu clave de API guardada. Mientras la clave esté desbloqueada, el código malicioso de esta aplicación o las extensiones del navegador con permisos especiales podrían acceder a ella. Elige una frase de contraseña segura que no uses en otros sitios y guárdala bien: no podemos recuperarla si la olvidas.',
-  'aiSettings.confirmNewServerOrigin': 'Confirmar nuevo origen del servidor',
   'activityPanel.today': 'Hoy',
   'activityPanel.yesterday': 'Ayer',
   'activityPanel.unknownDate': 'Fecha desconocida',
@@ -654,33 +637,6 @@ export const spanishMessages = {
   'errors.targeting.chooseYourOwnWebsiteInsteadOfTheBuiltInDemo':
     'Elige tu propio sitio web en lugar de la demostración integrada.',
   'errors.targeting.includeSubpagesMustBeABoolean': 'Incluir subpáginas debe ser un booleano.',
-  'errors.aiSettings.webCryptoIsUnavailableUseASecureBrowserContext':
-    'Web Crypto no está disponible. Usa un contexto de navegador seguro.',
-  'errors.aiSettings.aiConfigurationChangedSendYourMessageAgain':
-    'La configuración de IA ha cambiado. Envía tu mensaje de nuevo.',
-  'errors.aiSettings.browserSettingsCouldNotBeSavedEnableLocalstorageAndTry':
-    'No se ha podido guardar la configuración del navegador. Habilita localStorage e inténtalo de nuevo. Se ha conservado la configuración activa anterior.',
-  'errors.aiSettings.useAnHttpsAiServerBeforeSavingBrowserSettings':
-    'Usa un servidor de IA HTTPS antes de guardar la configuración del navegador.',
-  'errors.aiSettings.enterAValidApiKeyAndModelId':
-    'Introduce una clave de API y un ID de modelo válidos.',
-  'errors.aiSettings.keepCredentialsOutOfModelIdsAndUrls':
-    'No incluyas credenciales en los ID de modelo ni en las URL.',
-  'errors.aiSettings.useAPassphraseWithAtLeast12Characters':
-    'Usa una frase de contraseña de al menos 12 caracteres.',
-  'errors.aiSettings.settingsChangedSaveAgain': 'La configuración ha cambiado. Guarda de nuevo.',
-  'errors.aiSettings.browserSettingsAreUnavailableRestoreStorageAccessOrRemoveThem':
-    'La configuración del navegador no está disponible. Restaura el acceso al almacenamiento o elimínala.',
-  'errors.aiSettings.couldNotUnlockSettingsCheckYourPassphraseOrRemoveSettings':
-    'No se ha podido desbloquear la configuración. Comprueba tu frase de contraseña o elimina la configuración y guarda una clave nueva.',
-  'errors.aiSettings.unlockThisProviderBeforeActivatingIt':
-    'Desbloquea este proveedor antes de activarlo.',
-  'errors.aiSettings.saveAConfigurationBeforeActivatingThisProvider':
-    'Guarda una configuración antes de activar este proveedor.',
-  'errors.aiSettings.browserCredentialsRequireAnHttpsAiServer':
-    'Las credenciales del navegador requieren un servidor de IA HTTPS.',
-  'errors.aiSettings.theAiServerOriginChangedConfirmTheNewDestinationIn':
-    'El origen del servidor de IA ha cambiado. Confirma el nuevo destino en la configuración de IA o en el asistente antes de enviar.',
   'errors.aiCredentials.enterAValidHttpSLocalApiBaseUrlWithout':
     'Introduce una URL base de API HTTP(S) en localhost, 127.0.0.1 o [::1], sin credenciales, consulta ni fragmento.',
   'errors.aiCredentials.configureAValidHttpOrHttpsAiEndpointWithoutEmbedded':
@@ -752,33 +708,19 @@ export const spanishMessages = {
     'El asistente de IA ha devuelto una respuesta demasiado grande.',
   'errors.ai.theAiAssistantReturnedAnInvalidResponseTryAgain':
     'El asistente de IA ha devuelto una respuesta no válida. Inténtalo de nuevo.',
-  'errors.ai.chooseASupportedAiProvider': 'Elige un proveedor de IA compatible.',
-  'errors.ai.browserCredentialsRequireHttpsAndConfirmationOfThisServerOrigin':
-    'Las credenciales del navegador requieren HTTPS y la confirmación del origen de este servidor.',
-  'errors.ai.browserAiSettingsAreIncompleteOrInvalidSaveAComplete':
-    'La configuración de IA del navegador está incompleta o no es válida. Guarda una clave y un modelo completos.',
-  'errors.ai.useBrowserAiSettingsForProviderCredentialsReserveAiHeaders':
-    'Usa la configuración de IA del navegador para las credenciales del proveedor; reserva ai.headers para la autenticación de la aplicación.',
-  'errors.ai.removeCredentialsFromYourConversationOrWorkflowBeforeSending':
-    'Elimina las credenciales de tu conversación o flujo de trabajo antes de enviar.',
   'errors.ai.couldNotReachTheAiAssistantCheckTheConnectionAnd':
     'No se ha podido contactar con el asistente de IA. Comprueba la conexión e inténtalo de nuevo.',
   'errors.ai.aiServerRedirectsAreNotAllowedConfigureTheFinalHttps':
     'No se permiten redirecciones del servidor de IA. Configura el endpoint HTTPS final.',
   'errors.ai.theAiEndpointRejectedTheRequestCheckYourEndpointConfiguration':
     'El endpoint de IA ha rechazado la solicitud. Comprueba su configuración.',
-  'errors.ai.thisProviderIsUnavailableInTheCurrentExecutionModeSave':
-    'Este proveedor no está disponible en el modo de ejecución actual. Guarda su configuración en Configuración de IA.',
   'errors.ai.theAiAssistantIsBusyTryAgainInAMoment':
     'El asistente de IA está ocupado. Inténtalo de nuevo en un momento.',
   'errors.ai.theAiAssistantIsNotConfiguredOrIsTemporarilyUnavailable':
     'El asistente de IA no está configurado o no está disponible temporalmente.',
-  'errors.ai.checkYourApiKeyAndModelInAiSettings':
-    'Comprueba tu clave de API y el modelo en Configuración de IA.',
+  'errors.ai.serverConfiguration': 'Comprueba la configuración del proveedor de IA del servidor.',
   'errors.ai.theAiRequestFailedTryAgainOrCheckAiSettings':
     'La solicitud de IA ha fallado. Inténtalo de nuevo o revisa Configuración de IA.',
-  'errors.ai.theAiServerReturnedAnUnsafeResponseNoChangesWere':
-    'El servidor de IA ha devuelto una respuesta insegura. No se ha aplicado ningún cambio.',
   'errors.ai.theAiAssistantTookTooLongToRespondTryAgain':
     'El asistente de IA ha tardado demasiado en responder. Inténtalo de nuevo.',
   'errors.picker.enterAWebsiteUrl': 'Introduce una URL de sitio web.',
@@ -1001,30 +943,7 @@ export const spanishMessages = {
   'canvasChat.unavailable': 'No se puede contactar con el asistente de IA.',
   'websiteSetup.embeddingInstructions':
     'El sitio web también debe permitir su incrustación mediante la configuración de CSP frame-ancestors y X-Frame-Options.',
-  'aiSettings.privacy':
-    'Tu clave de API se guarda cifrada en el localStorage de este navegador. Cuando usas el asistente de IA, se envía por HTTPS al servidor de IA configurado de la aplicación, que contacta con el proveedor seleccionado sin guardarla. Nunca se incluye en tu sitio publicado ni en las exportaciones de flujos de trabajo.',
-  'aiSettings.storageUnavailable':
-    'No se puede leer la configuración del navegador. Restaura el acceso al almacenamiento o elimina la configuración dañada antes de usar la IA.',
-  'aiSettings.providerDamaged':
-    'La configuración del navegador de este proveedor está dañada. Elimina o reemplaza su configuración.',
-  'aiSettings.labelBrowserSettingsAreLockedUnlockBeforeUsingOrActivatingThem': ({ label }) =>
-    `La configuración del navegador de ${label} está bloqueada. Desbloquéala antes de usarla o activarla.`,
-  'aiSettings.labelSavedConfigurationIsReadySavedModelModel': ({ label, model }) =>
-    `La configuración guardada de ${label} está lista. Modelo guardado: ${model}.`,
-  'aiSettings.configureLabelBelowThenSaveAndActivateIt': ({ label }) =>
-    `Configura ${label} abajo, guarda y activa la configuración.`,
-  'aiSettings.labelSavedAndActivated': ({ label }) => `${label} guardado y activado.`,
-  'aiSettings.labelActivatedUsingSavedSettings': ({ label }) =>
-    `${label} activado con la configuración guardada.`,
-  'aiSettings.labelConfigurationRemovedConfigureItAgainBelowWhenYouReReady': ({ label }) =>
-    `Configuración de ${label} eliminada. Puedes volver a configurarlo abajo cuando quieras.`,
   'canvasChat.valueNoChangesWereMade': ({ value }) => `${value} No se ha realizado ningún cambio.`,
-  'canvasChat.unlockActiveproviderInSettingsBelowToUseAi': ({ activeProvider }) =>
-    `Desbloquea ${activeProvider} en la configuración de abajo para usar la IA`,
-  'canvasChat.aiConfigurationIsIncorrectForActiveproviderCheckSettingsBelow': ({
-    activeProvider,
-  }) =>
-    `La configuración de IA de ${activeProvider} no es correcta. Revisa la configuración de abajo.`,
   'nodeInspector.labelConfiguration': ({ label }) => `Configuración de ${label}`,
   'nodeInspector.closeItemnameDetails': ({ itemName }) => `Cerrar detalles de ${itemName}`,
   'nodeInspector.duplicateItemname': ({ itemName }) => `Duplicar ${itemName}`,
@@ -1082,8 +1001,6 @@ export const spanishMessages = {
     `«${value1}» no es compatible con datos de tipo ${type}.`,
   'errors.data.enterAJsonTypeToCompareWithType2Data': ({ type, type2 }) =>
     `Introduce un valor JSON de tipo ${type} para compararlo con datos de tipo ${type2}.`,
-  'errors.aiSettings.unlockValue1InAiSettingsBeforeUsingAi': ({ value1 }) =>
-    `Desbloquea ${value1} en Configuración de IA antes de usar la IA.`,
   'errors.ai.labelMustBeAnObject': ({ label }) => `${label} debe ser un objeto.`,
   'errors.ai.labelMustBeValue2OfAtMostMaxCharacters': ({ label, value2, max }) =>
     `${label} debe ser ${value2 === 'text' ? 'una cadena' : value2 === 'nonempty text' ? 'una cadena no vacía' : value2} de como máximo ${max} caracteres.`,
@@ -1128,12 +1045,6 @@ export const spanishMessages = {
   'summary.loop': ({ count }) => `Repetir ${count} ${count === 1 ? 'vez' : 'veces'}`,
   'summary.popover': ({ contentType, position }) =>
     `${contentType === 'iframe' ? 'Página incrustada' : 'HTML personalizado'} · ${spanishPositions[position] ?? position}`,
-  'aiSettings.activeProvider': ({ label }) => `Proveedor activo: ${label}`,
-  'aiSettings.apiKeyLabel': ({ provider, optional }) =>
-    `Clave de API de ${provider}${optional ? ' (opcional)' : ''}`,
-  'aiSettings.modelLabel': ({ provider }) => `ID de modelo de ${provider}`,
-  'aiSettings.confirmDestination': ({ previous, next }) =>
-    `Destino guardado: ${previous}. ¿Permitir que esta configuración se envíe a ${next} durante esta sesión desbloqueada?`,
   'nodeInspector.detailsHeading': ({ kind }) => `DETALLES DE ${kind.toUpperCase()}`,
   'nodeInspector.annotationOutputs': ({ kind }) =>
     `Sin salidas. ${kind === 'note' ? 'Las notas' : 'Los marcos'} organizan el lienzo y no ejecutan pasos del flujo de trabajo.`,

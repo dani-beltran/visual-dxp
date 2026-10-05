@@ -58,14 +58,9 @@ import {
   requestAIChat,
   workflowFingerprint,
 } from '../lib/ai';
-import {
-  AI_PROVIDER_LABELS,
-  AIConfigurationError,
-  allowsBrowserCredentials,
-  resolveAIEndpoint,
-} from '../lib/aiCredentials';
-import { AISettingsStore } from '../lib/aiSettings';
+import { AIConfigurationError, resolveAIEndpoint } from '../lib/aiCredentials';
 import { createNode, defaultWorkflow, getCatalog } from '../lib/catalog';
+import { ChatGPTAuthStore } from '../lib/chatgptAuth';
 import type { ConnectionPreview } from '../lib/connections';
 import { validateWorkflow } from '../lib/export';
 import { getFlowLabels } from '../lib/flowLabels';
@@ -215,45 +210,49 @@ function Builder({
   }, [showPresets, view, viewId]);
   const aiEnabled = Boolean(ai?.endpoint?.trim());
   const showAISettings = aiEnabled && ai?.showSettings !== false;
-  const [aiSettings] = useState(() => new AISettingsStore());
-  const aiSettingsState = useSyncExternalStore(
-    aiSettings.subscribe,
-    aiSettings.getSnapshot,
-    aiSettings.getSnapshot,
+  const authStore = useMemo(
+    () => new ChatGPTAuthStore(aiEnabled ? ai?.authEndpoint : undefined),
+    [aiEnabled, ai?.authEndpoint],
   );
+  const aiRequests = useRef(new Set<AbortController>());
   const [aiRequestConfigurationError, setAIRequestConfigurationError] = useState(false);
-  // biome-ignore lint/correctness/useExhaustiveDependencies: A settings or endpoint change invalidates the previous connection failure.
+  useEffect(() => {
+    void authStore.refresh();
+    const refresh = () => {
+      void authStore.refresh();
+    };
+    window.addEventListener('focus', refresh);
+    const restore = () => {
+      void authStore.refresh(true);
+    };
+    window.addEventListener('pageshow', restore);
+    return () => {
+      window.removeEventListener('focus', refresh);
+      window.removeEventListener('pageshow', restore);
+    };
+  }, [authStore]);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: Destination changes invalidate pending responses.
   useEffect(() => {
     setAIRequestConfigurationError(false);
-  }, [aiSettingsState.effectiveRevision, ai?.endpoint]);
+    const pending = aiRequests.current;
+    const cancel = () => {
+      for (const request of pending) request.abort();
+      pending.clear();
+    };
+    window.addEventListener('pagehide', cancel);
+    return () => {
+      cancel();
+      window.removeEventListener('pagehide', cancel);
+    };
+  }, [ai?.endpoint]);
   let aiConfigurationError = aiRequestConfigurationError;
   if (aiEnabled && ai) {
     try {
-      const destination = resolveAIEndpoint(ai.endpoint);
-      aiConfigurationError ||=
-        aiSettingsState.status === 'locked' ||
-        aiSettingsState.status === 'unavailable' ||
-        (aiSettingsState.status === 'unlocked' &&
-          (!allowsBrowserCredentials(destination) || aiSettings.needsConfirmation(ai.endpoint)));
+      resolveAIEndpoint(ai.endpoint);
     } catch {
       aiConfigurationError = true;
     }
   }
-  // biome-ignore lint/correctness/useExhaustiveDependencies: Changing the application destination must cancel pending requests and revoke unlocked keys.
-  useEffect(() => {
-    if (!aiEnabled) {
-      aiSettings.lock();
-      return;
-    }
-    aiSettings.refresh();
-    window.addEventListener('storage', aiSettings.refresh);
-    window.addEventListener('pagehide', aiSettings.lock);
-    return () => {
-      aiSettings.lock();
-      window.removeEventListener('storage', aiSettings.refresh);
-      window.removeEventListener('pagehide', aiSettings.lock);
-    };
-  }, [aiEnabled, aiSettings, ai?.endpoint]);
   useEffect(() => {
     if (!showAISettings && view === 'settings') setView('canvas');
   }, [showAISettings, view]);
@@ -993,7 +992,7 @@ function Builder({
     const snapshot = copyWorkflow(current.current);
     const baseline = workflowFingerprint(snapshot);
     const controller = new AbortController();
-    const override = aiSettings.forRequest(ai.endpoint, controller);
+    aiRequests.current.add(controller);
     const response = await requestAIChat(
       ai,
       {
@@ -1002,7 +1001,6 @@ function Builder({
         selectedNodeIds: selectedId ? [selectedId] : [],
       },
       AbortSignal.any([signal, controller.signal]),
-      override,
       onText,
     )
       .then((result) => {
@@ -1014,7 +1012,7 @@ function Builder({
           setAIRequestConfigurationError(true);
         throw error;
       })
-      .finally(() => aiSettings.finishRequest(controller));
+      .finally(() => aiRequests.current.delete(controller));
     signal.throwIfAborted();
     controller.signal.throwIfAborted();
     if (baseline !== workflowFingerprint(current.current)) {
@@ -1336,8 +1334,7 @@ function Builder({
                       open={canvasAssistant === 'chat'}
                       onOpenChange={toggleChat}
                       configured={aiEnabled}
-                      activeProvider={AI_PROVIDER_LABELS[aiSettingsState.activeProvider]}
-                      locked={aiSettingsState.status === 'locked'}
+                      settings={<AISettings store={authStore} compact />}
                       configurationError={aiConfigurationError}
                       selectedLabel={selected?.data.label}
                       onSend={sendAIMessage}
@@ -1428,7 +1425,7 @@ function Builder({
           aria-labelledby={`${viewId}-settings-tab`}
           hidden={view !== 'settings'}
         >
-          {view === 'settings' && <AISettings store={aiSettings} endpoint={ai!.endpoint} />}
+          {view === 'settings' && <AISettings store={authStore} />}
         </div>
       )}
       <footer className="dxp-footer">
@@ -1437,30 +1434,28 @@ function Builder({
           {t('canvas.nodeCount', { count: workflow.nodes.length })} <i />{' '}
           {t('canvas.connectionCount', { count: workflow.edges.length })}
         </span>
-          <span>
-            <a
-              className="dxp-footer-link"
-              href="https://github.com/dani-beltran"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <span className="dxp-footer-label">
+        <span>
+          <a
+            className="dxp-footer-link"
+            href="https://github.com/dani-beltran"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <span className="dxp-footer-label">
               {t('builder.createdWithLoveByDanielJLBeltran')}
-              </span>
-            </a>
-            <a
-              className="dxp-footer-link"
-              href="https://reactflow.dev"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <span className="dxp-footer-label">
-              {t('builder.reactFlowAttribution')} 
-              </span>
-            </a>
-            <span className="dxp-footer-shortcut">
-              <Command size={11} /> {t('builder.zToUndo')}
             </span>
+          </a>
+          <a
+            className="dxp-footer-link"
+            href="https://reactflow.dev"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <span className="dxp-footer-label">{t('builder.reactFlowAttribution')}</span>
+          </a>
+          <span className="dxp-footer-shortcut">
+            <Command size={11} /> {t('builder.zToUndo')}
+          </span>
         </span>
       </footer>
       <input

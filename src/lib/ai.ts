@@ -1,21 +1,5 @@
 import { context, propagation } from '@opentelemetry/api';
-import {
-  AI_BASE_URL_HEADER,
-  AI_KEY_HEADER,
-  AI_MODEL_HEADER,
-  AI_PROVIDER_HEADER,
-  AI_RESERVED_HEADERS,
-  AIConfigurationError,
-  type AIRequestConfiguration,
-  allowsBrowserCredentials,
-  isAIProvider,
-  isBrowserConfiguration,
-  OPENAI_KEY_HEADER,
-  OPENAI_MODEL_HEADER,
-  OPENAI_OVERRIDE_HEADER,
-  resolveAIEndpoint,
-  validBrowserConfiguration,
-} from './aiCredentials';
+import { AI_RESERVED_HEADERS, AIConfigurationError, resolveAIEndpoint } from './aiCredentials';
 import { responseLines, safeTextEmitter } from './aiStream';
 import { type DataTransformation, dataTransformTools } from './dataTransform';
 import { validateWorkflow } from './export';
@@ -61,9 +45,11 @@ export interface AIChatResponse {
   operations: WorkflowOperation[];
 }
 
-/** Explicitly opt in to an AI server; encrypted settings manage browser overrides. */
+/** Explicitly opt in to an AI server; providers are configured only on the server. */
 export interface AIChatConfig {
   endpoint: string;
+  /** Optional same-origin hosted ChatGPT identity API. No implicit authentication endpoint. */
+  authEndpoint?: string;
   /** Show the AI Settings tab when an explicit nonempty endpoint is supplied. Default: true. */
   showSettings?: boolean;
   /** Application authentication/CSRF only. X-DXP-OpenAI-* headers are reserved. */
@@ -809,73 +795,16 @@ export async function requestAIChat(
   settings: AIChatConfig,
   request: AIChatRequest,
   signal?: AbortSignal,
-  configuration?: AIRequestConfiguration,
   onText?: (text: string) => void,
 ): Promise<AIChatResponse> {
-  const override =
-    configuration && isBrowserConfiguration(configuration) ? configuration : undefined;
-  const provider = configuration?.provider ?? 'openai';
-  if (!isAIProvider(provider))
-    throw Object.assign(new AIConfigurationError('Choose a supported AI provider.'), {
-      messageKey: 'errors.ai.chooseASupportedAiProvider',
-      messageParams: {},
-    });
   const endpoint = text(settings.endpoint, 'AI endpoint', 4000);
-  const url = resolveAIEndpoint(
-    endpoint,
-    typeof window === 'undefined' ? undefined : window.location.origin,
-  );
-  if (override && (!allowsBrowserCredentials(url) || override.origin !== url.origin))
-    throw Object.assign(
-      new AIConfigurationError(
-        'Browser credentials require HTTPS and confirmation of this server origin.',
-      ),
-      {
-        messageKey: 'errors.ai.browserCredentialsRequireHttpsAndConfirmationOfThisServerOrigin',
-        messageParams: {},
-      },
-    );
-  if (override && !validBrowserConfiguration(override))
-    throw Object.assign(
-      new AIConfigurationError(
-        'Browser AI settings are incomplete or invalid. Save a complete key and model pair.',
-      ),
-      {
-        messageKey: 'errors.ai.browserAiSettingsAreIncompleteOrInvalidSaveAComplete',
-        messageParams: {},
-      },
-    );
+  resolveAIEndpoint(endpoint);
   const body = JSON.stringify(parseAIChatRequest(request));
   const deadline = AbortSignal.timeout(AI_LIMITS.timeoutMs);
   const requestSignal = signal ? AbortSignal.any([signal, deadline]) : deadline;
   const headers = new Headers(settings.headers);
-  if (AI_RESERVED_HEADERS.some((header) => headers.has(header)))
-    throw Object.assign(
-      new AIConfigurationError(
-        'Use browser AI settings for provider credentials; reserve ai.headers for application authentication.',
-      ),
-      {
-        messageKey: 'errors.ai.useBrowserAiSettingsForProviderCredentialsReserveAiHeaders',
-        messageParams: {},
-      },
-    );
-  headers.set(AI_PROVIDER_HEADER, provider);
-  if (override) {
-    if (override.apiKey && (body.includes(override.apiKey) || url.href.includes(override.apiKey)))
-      throw Object.assign(
-        new Error('Remove credentials from your conversation or workflow before sending.'),
-        {
-          messageKey: 'errors.ai.removeCredentialsFromYourConversationOrWorkflowBeforeSending',
-          messageParams: {},
-        },
-      );
-    // Retain the legacy OpenAI wire protocol for existing embedding backends.
-    if (override.apiKey)
-      headers.set(provider === 'openai' ? OPENAI_KEY_HEADER : AI_KEY_HEADER, override.apiKey);
-    headers.set(provider === 'openai' ? OPENAI_MODEL_HEADER : AI_MODEL_HEADER, override.model);
-    if (override.baseURL) headers.set(AI_BASE_URL_HEADER, override.baseURL);
-    headers.set(OPENAI_OVERRIDE_HEADER, 'browser');
-  }
+  // Discard obsolete provider headers; only the server chooses credentials and models.
+  for (const header of AI_RESERVED_HEADERS) headers.delete(header);
   // Reuse a host application's active browser trace, if it has configured OTel.
   const carrier: Record<string, string> = {};
   propagation.inject(context.active(), carrier);
@@ -886,7 +815,7 @@ export async function requestAIChat(
   try {
     let response: Response;
     try {
-      response = await fetch(override ? url.href : endpoint, {
+      response = await fetch(endpoint, {
         redirect: 'error',
         cache: 'no-store',
         referrerPolicy: 'no-referrer',
@@ -927,22 +856,6 @@ export async function requestAIChat(
             messageParams: {},
           },
         );
-      if (override && (response.status === 400 || response.status === 422))
-        throw new AIConfigurationError(
-          provider === 'local'
-            ? 'Run the demo app and model server locally. Check the localhost base URL, optional key, and model. The model must support workflow tool calls. No changes were applied.'
-            : 'Check your browser API key and model in AI Settings. The override was rejected; no server fallback was used.',
-        );
-      if (response.status === 409)
-        throw Object.assign(
-          new AIConfigurationError(
-            'This provider is unavailable in the current execution mode. Save its configuration in AI Settings.',
-          ),
-          {
-            messageKey: 'errors.ai.thisProviderIsUnavailableInTheCurrentExecutionModeSave',
-            messageParams: {},
-          },
-        );
       if (response.status === 429)
         throw Object.assign(new Error('The AI assistant is busy. Try again in a moment.'), {
           messageKey: 'errors.ai.theAiAssistantIsBusyTryAgainInAMoment',
@@ -960,8 +873,8 @@ export async function requestAIChat(
         );
       if (response.status === 502)
         throw Object.assign(
-          new AIConfigurationError('Check your API key and model in AI Settings.'),
-          { messageKey: 'errors.ai.checkYourApiKeyAndModelInAiSettings', messageParams: {} },
+          new AIConfigurationError('Check the server AI provider configuration.'),
+          { messageKey: 'errors.ai.serverConfiguration', messageParams: {} },
         );
       throw Object.assign(new Error('The AI request failed. Try again or check AI Settings.'), {
         messageKey: 'errors.ai.theAiRequestFailedTryAgainOrCheckAiSettings',
@@ -971,7 +884,7 @@ export async function requestAIChat(
     let value: unknown;
     if (response.headers.get('content-type')?.includes('application/x-ndjson')) {
       let finished = false;
-      const emit = safeTextEmitter(override?.apiKey ?? '', (text) => onText?.(text));
+      const emit = safeTextEmitter('', (text) => onText?.(text));
       for await (const line of responseLines(response, AI_LIMITS.payloadBytes)) {
         requestSignal.throwIfAborted();
         if (!line) continue;
@@ -991,14 +904,6 @@ export async function requestAIChat(
       if (!finished) throw new Error('The AI response was interrupted. No changes were applied.');
     } else value = await boundedResponse(response);
     requestSignal.throwIfAborted();
-    if (override?.apiKey && JSON.stringify(value).includes(override.apiKey))
-      throw Object.assign(
-        new Error('The AI server returned an unsafe response. No changes were applied.'),
-        {
-          messageKey: 'errors.ai.theAiServerReturnedAnUnsafeResponseNoChangesWere',
-          messageParams: {},
-        },
-      );
     try {
       return parseAIChatResponse(value);
     } catch {

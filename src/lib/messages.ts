@@ -1,5 +1,22 @@
 /** English defaults and the public translation contract. Keys remain stable when copy changes. */
 export const englishMessages = {
+  'chatgpt.account': 'ChatGPT account',
+  'chatgpt.environmentCompact': 'AI uses your server provider, even while signed out.',
+  'chatgpt.title': 'Sign in with ChatGPT',
+  'chatgpt.signingIn': 'Opening ChatGPT sign-in…',
+  'chatgpt.signingOut': 'Signing out…',
+  'chatgpt.loading': 'Checking your connection…',
+  'chatgpt.signedIn': 'Connected to ChatGPT.',
+  'chatgpt.signedOut': 'Connect your ChatGPT account.',
+  'chatgpt.signOut': 'Sign out',
+  'chatgpt.unavailable': 'ChatGPT sign-in is not available on this deployment yet.',
+  'chatgpt.error': 'The ChatGPT connection could not be updated. Try again.',
+  'chatgpt.retry': 'Check connection',
+  'chatgpt.environment':
+    'AI uses the server-configured provider, including while signed out. Connecting ChatGPT identifies your account; it does not enable ChatGPT plan usage.',
+  'chatgpt.serverProvider': 'AI configured by your server',
+  'chatgpt.configurationError': 'Check the server AI configuration and try again.',
+
   'nodes.experiment.label': 'Experiment',
   'nodes.experiment.description':
     'Splits visitors between variants A and B. Use it to test two experiences with a configurable traffic split and consistent browser assignments.',
@@ -122,67 +139,8 @@ export const englishMessages = {
   'errors.data.unclosedVariable': 'Close each variable with matching braces, for example {{name}}.',
   'errors.data.missingTargetVariable': ({ name }: { name: string }) =>
     `Variable “${name}” is missing in the element selector or attribute name.`,
-
-  'aiSettings.assistantCredentials': 'Assistant credentials',
   'aiSettings.aiSettings': 'AI settings',
   'aiSettings.yourAiConnection': 'YOUR AI CONNECTION',
-  'aiSettings.aiSettings2': 'AI Settings',
-  'aiSettings.lockedUnlockToUseAi': 'Locked — unlock to use AI',
-  'aiSettings.unavailableRestoreOrRemoveBrowserSettings':
-    'Unavailable — restore or remove browser settings',
-  'aiSettings.noSavedConfiguration': 'No saved configuration',
-  'aiSettings.browserSettingsReady': 'Browser settings ready',
-  'aiSettings.aiProviders': 'AI providers',
-  'aiSettings.active': 'Active',
-  'aiSettings.invalidEndpoint': 'Invalid endpoint',
-  'aiSettings.settingsUnavailable': 'Settings unavailable.',
-  'aiSettings.browserCredentialsRequireAnHttpsAiServer':
-    'Browser credentials require an HTTPS AI server.',
-  'aiSettings.labelBrowserSettingsAreLockedUnlockBeforeUsingOrActivatingThem': ({
-    label,
-  }: {
-    label: string;
-  }) => `${label} browser settings are locked. Unlock before using or activating them.`,
-  'aiSettings.labelSavedConfigurationIsReadySavedModelModel': ({
-    label,
-    model,
-  }: {
-    label: string;
-    model: string;
-  }) => `${label} saved configuration is ready. Saved model: ${model}.`,
-  'aiSettings.configureLabelBelowThenSaveAndActivateIt': ({ label }: { label: string }) =>
-    `Configure ${label} below, then save and activate it.`,
-  'aiSettings.selfHostedSetupInformation': 'Local setup information',
-  'aiSettings.enterTheApiBaseUrlOfYourSelfHostedOpenaiCompatibleModel':
-    'Local is for developers and debugging and only works when running the demo app locally. Run an OpenAI-compatible model server on the same machine as the demo backend, and enter a URL using localhost, 127.0.0.1, or [::1]. Requests come from the backend; the hosted demo cannot connect to a model on your computer. The model must support tool calls for workflow editing.',
-  'aiSettings.unlockedUseActivateSavedConfigurationToSelectThisProvider':
-    'Unlocked. Use Activate saved configuration to select this provider.',
-  'aiSettings.labelSavedAndActivated': ({ label }: { label: string }) =>
-    `${label} saved and activated.`,
-  'aiSettings.selfHostedApiBaseUrl': 'Local API base URL',
-  'aiSettings.enterAKeyToReplaceSettingsUseActivateForSavedSettings':
-    'Enter a key to replace settings; use Activate for saved settings',
-  'aiSettings.hideApiKey': 'Hide API key',
-  'aiSettings.showApiKey': 'Show API key',
-  'aiSettings.enterAnAvailableModelId': 'Enter an available model ID',
-  'aiSettings.passphraseToUnlock': 'Passphrase to unlock',
-  'aiSettings.encryptionPassphraseAtLeast12Characters':
-    'Encryption passphrase (at least 12 characters)',
-  'aiSettings.unlockBrowserSettings': 'Unlock browser settings',
-  'aiSettings.saveAndActivate': 'Save and activate',
-  'aiSettings.labelActivatedUsingSavedSettings': ({ label }: { label: string }) =>
-    `${label} activated using saved settings.`,
-  'aiSettings.activateSavedConfiguration': 'Activate saved configuration',
-  'aiSettings.lock': 'Lock',
-  'aiSettings.labelConfigurationRemovedConfigureItAgainBelowWhenYouReReady': ({
-    label,
-  }: {
-    label: string;
-  }) => `${label} configuration removed. Configure it again below when you’re ready.`,
-  'aiSettings.removeBrowserSettings': 'Remove browser settings',
-  'aiSettings.yourBrowserNormallyKeepsOtherWebsitesFromAccessingYourSavedApiKey':
-    'Your browser normally keeps other websites from accessing your saved API key. While the key is unlocked, harmful code in this app or browser extensions with special permissions could still access it. Choose a strong passphrase you don’t use elsewhere, and keep it safe—we can’t recover it if you forget it.',
-  'aiSettings.confirmNewServerOrigin': 'Confirm new server origin',
   'activityPanel.today': 'Today',
   'activityPanel.yesterday': 'Yesterday',
   'activityPanel.unknownDate': 'Unknown date',
@@ -203,16 +161,6 @@ export const englishMessages = {
   'canvasChat.startANewConversation': 'Start a new conversation',
   'canvasChat.newConversation': 'New conversation',
   'canvasChat.closeAiChat': 'Close AI chat',
-  'canvasChat.unlockActiveproviderInSettingsBelowToUseAi': ({
-    activeProvider,
-  }: {
-    activeProvider: string;
-  }) => `Unlock ${activeProvider} in AI Settings to use AI`,
-  'canvasChat.aiConfigurationIsIncorrectForActiveproviderCheckSettingsBelow': ({
-    activeProvider,
-  }: {
-    activeProvider: string;
-  }) => `AI configuration is incorrect for ${activeProvider}. Check AI Settings.`,
   'canvasChat.workingWithYourCurrentCanvas': 'Working with your current canvas',
   'canvasChat.aiConversation': 'AI conversation',
   'canvasChat.whatWouldYouLikeToCreate': 'What would you like to create?',
@@ -766,34 +714,6 @@ export const englishMessages = {
   'errors.targeting.chooseYourOwnWebsiteInsteadOfTheBuiltInDemo':
     'Choose your own website instead of the built-in demo.',
   'errors.targeting.includeSubpagesMustBeABoolean': 'Include subpages must be a boolean.',
-  'errors.aiSettings.webCryptoIsUnavailableUseASecureBrowserContext':
-    'Web Crypto is unavailable. Use a secure browser context.',
-  'errors.aiSettings.aiConfigurationChangedSendYourMessageAgain':
-    'AI configuration changed. Send your message again.',
-  'errors.aiSettings.browserSettingsCouldNotBeSavedEnableLocalstorageAndTry':
-    'Browser settings could not be saved. Enable localStorage and try again. Previous active settings were preserved.',
-  'errors.aiSettings.useAnHttpsAiServerBeforeSavingBrowserSettings':
-    'Use an HTTPS AI server before saving browser settings.',
-  'errors.aiSettings.enterAValidApiKeyAndModelId': 'Enter a valid API key and model ID.',
-  'errors.aiSettings.keepCredentialsOutOfModelIdsAndUrls':
-    'Keep credentials out of model IDs and URLs.',
-  'errors.aiSettings.useAPassphraseWithAtLeast12Characters':
-    'Use a passphrase with at least 12 characters.',
-  'errors.aiSettings.settingsChangedSaveAgain': 'Settings changed. Save again.',
-  'errors.aiSettings.browserSettingsAreUnavailableRestoreStorageAccessOrRemoveThem':
-    'Browser settings are unavailable. Restore storage access or remove them.',
-  'errors.aiSettings.couldNotUnlockSettingsCheckYourPassphraseOrRemoveSettings':
-    'Could not unlock settings. Check your passphrase, or remove settings and save a new key.',
-  'errors.aiSettings.unlockThisProviderBeforeActivatingIt':
-    'Unlock this provider before activating it.',
-  'errors.aiSettings.saveAConfigurationBeforeActivatingThisProvider':
-    'Save a configuration before activating this provider.',
-  'errors.aiSettings.browserCredentialsRequireAnHttpsAiServer':
-    'Browser credentials require an HTTPS AI server.',
-  'errors.aiSettings.unlockValue1InAiSettingsBeforeUsingAi': ({ value1 }: { value1: string }) =>
-    `Unlock ${value1} in AI Settings before using AI.`,
-  'errors.aiSettings.theAiServerOriginChangedConfirmTheNewDestinationIn':
-    'The AI server origin changed. Confirm the new destination in AI settings or the assistant before sending.',
   'errors.aiCredentials.enterAValidHttpSLocalApiBaseUrlWithout':
     'Enter an HTTP(S) API base URL on localhost, 127.0.0.1, or [::1], without credentials, query, or fragment.',
   'errors.aiCredentials.configureAValidHttpOrHttpsAiEndpointWithoutEmbedded':
@@ -880,32 +800,19 @@ export const englishMessages = {
     'The AI assistant returned a response that is too large.',
   'errors.ai.theAiAssistantReturnedAnInvalidResponseTryAgain':
     'The AI assistant returned an invalid response. Try again.',
-  'errors.ai.chooseASupportedAiProvider': 'Choose a supported AI provider.',
-  'errors.ai.browserCredentialsRequireHttpsAndConfirmationOfThisServerOrigin':
-    'Browser credentials require HTTPS and confirmation of this server origin.',
-  'errors.ai.browserAiSettingsAreIncompleteOrInvalidSaveAComplete':
-    'Browser AI settings are incomplete or invalid. Save a complete key and model pair.',
-  'errors.ai.useBrowserAiSettingsForProviderCredentialsReserveAiHeaders':
-    'Use browser AI settings for provider credentials; reserve ai.headers for application authentication.',
-  'errors.ai.removeCredentialsFromYourConversationOrWorkflowBeforeSending':
-    'Remove credentials from your conversation or workflow before sending.',
   'errors.ai.couldNotReachTheAiAssistantCheckTheConnectionAnd':
     'Could not reach the AI assistant. Check the connection and try again.',
   'errors.ai.aiServerRedirectsAreNotAllowedConfigureTheFinalHttps':
     'AI server redirects are not allowed. Configure the final HTTPS endpoint.',
   'errors.ai.theAiEndpointRejectedTheRequestCheckYourEndpointConfiguration':
     'The AI endpoint rejected the request. Check your endpoint configuration.',
-  'errors.ai.thisProviderIsUnavailableInTheCurrentExecutionModeSave':
-    'This provider is unavailable in the current execution mode. Save its configuration in AI Settings.',
   'errors.ai.theAiAssistantIsBusyTryAgainInAMoment':
     'The AI assistant is busy. Try again in a moment.',
   'errors.ai.theAiAssistantIsNotConfiguredOrIsTemporarilyUnavailable':
     'The AI assistant is not configured or is temporarily unavailable.',
-  'errors.ai.checkYourApiKeyAndModelInAiSettings': 'Check your API key and model in AI Settings.',
+  'errors.ai.serverConfiguration': 'Check the server AI provider configuration.',
   'errors.ai.theAiRequestFailedTryAgainOrCheckAiSettings':
     'The AI request failed. Try again or check AI Settings.',
-  'errors.ai.theAiServerReturnedAnUnsafeResponseNoChangesWere':
-    'The AI server returned an unsafe response. No changes were applied.',
   'errors.ai.theAiAssistantTookTooLongToRespondTryAgain':
     'The AI assistant took too long to respond. Try again.',
   'errors.picker.enterAWebsiteUrl': 'Enter a website URL.',
@@ -1156,12 +1063,6 @@ export const englishMessages = {
 
   'website.exportTargetRequired':
     'Configure your website URL before exporting. The demo website is for preview only.',
-  'aiSettings.activeProvider': ({ label }: { label: string }) => `Active provider: ${label}`,
-  'aiSettings.apiKeyLabel': ({ provider, optional }: { provider: string; optional: boolean }) =>
-    `${provider} API key${optional ? ' (optional)' : ''}`,
-  'aiSettings.modelLabel': ({ provider }: { provider: string }) => `${provider} model ID`,
-  'aiSettings.confirmDestination': ({ previous, next }: { previous: string; next: string }) =>
-    `Saved destination: ${previous}. Allow this configuration to be sent to ${next} for this unlocked session?`,
   'nodeInspector.detailsHeading': ({ kind }: { kind: string }) => `${kind.toUpperCase()} DETAILS`,
   'nodeInspector.annotationOutputs': ({ kind }: { kind: string }) =>
     `No outputs. ${kind === 'note' ? 'Notes' : 'Frames'} organize the canvas and do not run workflow steps.`,
@@ -1176,13 +1077,6 @@ export const englishMessages = {
     `Add this ${filename} script to your website’s pages to enable element selection and live previews.`,
   'websiteSetup.embeddingInstructions':
     'The website must also allow embedding via its CSP frame-ancestors and X-Frame-Options settings.',
-  'aiSettings.privacy':
-    'Your API key is stored encrypted in this browser’s localStorage. When you use the AI assistant, it is sent to the configured application AI server over HTTPS, which contacts the selected provider without saving it. It is never included in your published site or workflow exports.',
-
-  'aiSettings.storageUnavailable':
-    'Browser settings cannot be read. Restore storage access or remove the damaged settings before using AI.',
-  'aiSettings.providerDamaged':
-    'This provider’s browser settings are damaged. Remove or replace its configuration.',
   'canvasChat.selectedStep': ({ label }: { label: string }) => `Selected: ${label}`,
   'website.exportTargetFailure': ({ reason }: { reason: string }) =>
     `Configure your website URL before exporting. The demo website is for preview only. ${reason}`,

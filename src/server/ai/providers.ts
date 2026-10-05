@@ -3,20 +3,17 @@ import { createOpenAI } from '@ai-sdk/openai';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 import {
   type AIProvider,
-  type AIRequestConfiguration,
   isAIProvider,
-  isBrowserConfiguration,
   normalizeLocalBaseURL,
   validAIKey,
   validAIModel,
-  validBrowserConfiguration,
 } from '../../lib/aiCredentials';
 import { serverEvents } from '../../lib/aiStream';
 import { AIServiceError } from './errors';
 
 export interface ProviderConfiguration {
   provider: AIProvider;
-  source: 'browser' | 'server';
+  source: 'server';
   apiKey: string;
   model: string;
   baseURL: string;
@@ -36,27 +33,20 @@ export function allowedLocalBaseURL(value: string): string {
   }
 }
 
-export function resolveProviderConfiguration(
-  input?: AIRequestConfiguration,
-): ProviderConfiguration {
-  const provider = input?.provider ?? 'openai';
-  if (!isAIProvider(provider)) throw new AIServiceError(400, 'Unsupported AI provider.');
-  if (input && isBrowserConfiguration(input)) {
-    if (!validBrowserConfiguration(input))
-      throw new AIServiceError(400, 'Supply valid settings for the selected provider.');
-    return {
-      provider,
-      source: 'browser',
-      apiKey: input.apiKey,
-      model: input.model,
-      baseURL:
-        provider === 'local'
-          ? allowedLocalBaseURL(input.baseURL!)
-          : provider === 'openai'
-            ? 'https://api.openai.com/v1'
-            : 'https://api.anthropic.com/v1',
-    };
-  }
+export function environmentProvider(): AIProvider {
+  const value = process.env.AI_PROVIDER?.trim() || 'openai';
+  const provider = value === 'anthropic' ? 'claude' : value;
+  if (!isAIProvider(provider))
+    throw new AIServiceError(
+      503,
+      'Set AI_PROVIDER to openai, anthropic, or local.',
+      'provider_unconfigured',
+    );
+  return provider;
+}
+
+export function resolveProviderConfiguration(): ProviderConfiguration {
+  const provider = environmentProvider();
   const apiKey =
     (provider === 'openai'
       ? process.env.OPENAI_API_KEY
@@ -74,7 +64,7 @@ export function resolveProviderConfiguration(
   if (!validAIModel(model) || (provider === 'local' ? !!apiKey && !validAIKey(apiKey) : !apiKey))
     throw new AIServiceError(
       503,
-      'Configure the selected provider in AI Settings before using the assistant.',
+      'Configure the selected provider in the server environment before using the assistant.',
       'provider_unconfigured',
     );
   return {

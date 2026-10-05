@@ -1,17 +1,12 @@
 // @vitest-environment node
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import type { AIProvider, BrowserAIOverride } from '../../src/lib/aiCredentials';
-import {
-  AI_BASE_URL_HEADER,
-  AI_KEY_HEADER,
-  AI_MODEL_HEADER,
-  AI_PROVIDER_HEADER,
-  OPENAI_KEY_HEADER,
-  OPENAI_OVERRIDE_HEADER,
-} from '../../src/lib/aiCredentials';
+import type { AIProvider } from '../../src/lib/aiCredentials';
 import { respondToAIChat, runLocalAgent } from '../../src/server/ai/agent';
-import { handleChat } from '../../src/server/ai/http';
-import { allowedLocalBaseURL, resolveProviderConfiguration } from '../../src/server/ai/providers';
+import {
+  allowedLocalBaseURL,
+  type ProviderConfiguration,
+  resolveProviderConfiguration,
+} from '../../src/server/ai/providers';
 
 const input = {
   messages: [{ role: 'user' as const, content: 'Add a note' }],
@@ -25,12 +20,17 @@ const input = {
   },
 };
 const baseURL = 'http://127.0.0.1:11434/v1';
-const config = (provider: AIProvider, key = `${provider}-private-key`): BrowserAIOverride => ({
+const config = (provider: AIProvider, key = `${provider}-private-key`): ProviderConfiguration => ({
+  source: 'server',
   provider,
   apiKey: key,
   model: `${provider}-model`,
-  origin: 'https://builder.test',
-  ...(provider === 'local' ? { baseURL } : {}),
+  baseURL:
+    provider === 'local'
+      ? baseURL
+      : provider === 'openai'
+        ? 'https://api.openai.com/v1'
+        : 'https://api.anthropic.com/v1',
 });
 function upstream(provider: AIProvider, tool?: string, args: unknown = {}) {
   if (provider === 'openai')
@@ -263,17 +263,15 @@ it('keeps cloud destinations fixed', async () => {
   ).rejects.toMatchObject({ status: 400 });
   expect(fetcher).not.toHaveBeenCalled();
 });
-it('preserves the OpenAI-only remote contract and routes browser overrides directly', async () => {
+it('remote execution takes precedence over direct provider selection', async () => {
   vi.stubEnv('LANGGRAPH_API_URL', 'https://deployment.test');
-  const fetcher = vi.fn().mockResolvedValue(upstream('claude'));
+  vi.stubEnv('AI_PROVIDER', 'anthropic');
+  const fetcher = vi
+    .fn()
+    .mockResolvedValue(Response.json({ response: { message: 'Remote', operations: [] } }));
   vi.stubGlobal('fetch', fetcher);
-  for (const provider of ['claude', 'local'] as const)
-    await expect(
-      respondToAIChat(input, new AbortController().signal, { provider, source: 'server' }),
-    ).rejects.toMatchObject({ status: 409 });
-  expect(fetcher).not.toHaveBeenCalled();
-  await respondToAIChat(input, new AbortController().signal, config('claude'));
-  expect(String(fetcher.mock.calls[0][0])).toBe('https://api.anthropic.com/v1/messages');
+  expect((await respondToAIChat(input, new AbortController().signal)).message).toBe('Remote');
+  expect(String(fetcher.mock.calls[0][0])).toBe('https://deployment.test/runs/wait');
 });
 it('uses same-provider server defaults, including optional local authentication', async () => {
   vi.stubEnv('ANTHROPIC_API_KEY', 'anthropic-server-key');
@@ -293,42 +291,15 @@ it('uses same-provider server defaults, including optional local authentication'
       return localStep++ === 0 ? upstream('local', 'read_workflow') : upstream('local');
     }),
   );
-  for (const provider of ['claude', 'local'] as const)
-    expect(
-      (await respondToAIChat(input, new AbortController().signal, { provider, source: 'server' }))
-        .message,
-    ).toBe('Done.');
+  for (const provider of ['claude', 'local'] as const) {
+    vi.stubEnv('AI_PROVIDER', provider);
+    expect((await respondToAIChat(input, new AbortController().signal)).message).toBe('Done.');
+  }
+  vi.stubEnv('AI_PROVIDER', 'claude');
   vi.stubEnv('ANTHROPIC_API_KEY', '');
-  await expect(
-    respondToAIChat(input, new AbortController().signal, { provider: 'claude', source: 'server' }),
-  ).rejects.toMatchObject({ status: 503 });
-});
-it('validates wire provider binding and never sends credentials into workflow input', async () => {
-  const headers = {
-    'Content-Type': 'application/json',
-    Origin: 'https://builder.test',
-    [AI_PROVIDER_HEADER]: 'local',
-    [OPENAI_OVERRIDE_HEADER]: 'browser',
-    [AI_MODEL_HEADER]: 'local-model',
-    [AI_BASE_URL_HEADER]: baseURL,
-  };
-  const req = (extra: Record<string, string> = {}) =>
-    new Request('https://builder.test/api/ai/chat', {
-      method: 'POST',
-      headers: { ...headers, ...extra },
-      body: JSON.stringify(input),
-    });
-  const handler = vi.fn().mockResolvedValue({ message: 'Ready.', operations: [] });
-  expect((await handleChat(req(), handler)).status).toBe(200);
-  expect(handler.mock.calls[0][2]).toMatchObject({ provider: 'local', apiKey: '', baseURL });
-  for (const extra of [
-    { [OPENAI_KEY_HEADER]: 'openai-private' },
-    { [AI_PROVIDER_HEADER]: 'unknown' },
-    { [AI_PROVIDER_HEADER]: 'claude', [AI_KEY_HEADER]: 'claude-private' },
-    { [AI_MODEL_HEADER]: '' },
-  ] as Record<string, string>[])
-    expect((await handleChat(req(extra), handler)).status).toBe(400);
-  expect(handler).toHaveBeenCalledOnce();
+  await expect(respondToAIChat(input, new AbortController().signal)).rejects.toMatchObject({
+    status: 503,
+  });
 });
 it('prevents reflected credentials from entering tool drafts and cancels before executing late tool calls', async () => {
   const controller = new AbortController();
@@ -431,11 +402,10 @@ it.each([
 });
 
 it('rejects remote server defaults even if the old allowlist names them', () => {
+  vi.stubEnv('AI_PROVIDER', 'local');
   vi.stubEnv('AI_LOCAL_ALLOWED_BASE_URLS', 'https://models.example.com/v1');
   vi.stubEnv('LOCAL_LLM_BASE_URL', 'https://models.example.com/v1');
   vi.stubEnv('LOCAL_LLM_MODEL', 'local-model');
-  expect(() => resolveProviderConfiguration({ provider: 'local', source: 'server' })).toThrow(
-    'Local models require',
-  );
+  expect(() => resolveProviderConfiguration()).toThrow('Local models require');
   expect(() => allowedLocalBaseURL('http://169.254.169.254/v1')).toThrow('Local models require');
 });

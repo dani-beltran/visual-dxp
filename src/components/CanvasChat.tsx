@@ -8,7 +8,7 @@ import {
   Square,
   X,
 } from 'lucide-react';
-import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
+import { type ReactNode, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import type { AIChatMessage } from '../lib/ai';
 import { formatBuilderError } from '../lib/i18n';
 import { useBuilderI18n } from '../lib/i18nContext';
@@ -19,8 +19,7 @@ export interface CanvasChatProps {
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   configured: boolean;
-  activeProvider?: string;
-  locked?: boolean;
+  settings?: ReactNode;
   configurationError?: boolean;
   selectedLabel?: string;
   onSend: (
@@ -37,8 +36,7 @@ type Message = AIChatMessage & { id: number; changeCount?: number };
 
 export function CanvasChat({
   configured,
-  activeProvider = 'OpenAI',
-  locked = false,
+  settings,
   configurationError = false,
   selectedLabel,
   onSend,
@@ -214,7 +212,7 @@ export function CanvasChat({
             </span>
             <div>
               <h2 id={`${id}-title`}>{t('canvasChat.yourWorkflowAssistant')}</h2>
-              <p>{t('aiSettings.activeProvider', { label: activeProvider })}</p>
+              <p>{t('chatgpt.serverProvider')}</p>
             </div>
             <button
               type="button"
@@ -242,21 +240,14 @@ export function CanvasChat({
               <X size={17} aria-hidden="true" />
             </button>
           </header>
+          {settings}
           <div className="dxp-ai-context" role="status">
             <span
               className={`dxp-ai-status ${invalidConfiguration ? 'error' : 'ready'}`}
               aria-hidden="true"
             />
             {invalidConfiguration ? (
-              <span>
-                {locked
-                  ? t('canvasChat.unlockActiveproviderInSettingsBelowToUseAi', {
-                      activeProvider: String(activeProvider),
-                    })
-                  : t('canvasChat.aiConfigurationIsIncorrectForActiveproviderCheckSettingsBelow', {
-                      activeProvider: String(activeProvider),
-                    })}
-              </span>
+              <span>{t('chatgpt.configurationError')}</span>
             ) : selectedLabel ? (
               <span>{t('canvasChat.selectedStep', { label: selectedLabel })}</span>
             ) : (
@@ -272,7 +263,7 @@ export function CanvasChat({
             // biome-ignore lint/a11y/noNoninteractiveTabindex: The scrollable transcript must be keyboard-focusable for scrolling.
             tabIndex={0}
           >
-            {!messages.length && configured && !locked && (
+            {!messages.length && configured && (
               <div className="dxp-ai-welcome">
                 <MessageCircle size={25} strokeWidth={1.5} aria-hidden="true" />
                 <h3>{t('canvasChat.whatWouldYouLikeToCreate')}</h3>

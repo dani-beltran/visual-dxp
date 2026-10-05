@@ -1,0 +1,2 @@
+export { signOutChatGPT as POST } from '../../../../../server/auth/chatgpt';
+export const runtime = 'nodejs';

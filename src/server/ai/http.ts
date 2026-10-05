@@ -1,23 +1,11 @@
 import 'server-only';
 
-import {
-  AI_BASE_URL_HEADER,
-  AI_KEY_HEADER,
-  AI_MODEL_HEADER,
-  AI_PROVIDER_HEADER,
-  type AIRequestConfiguration,
-  allowsBrowserCredentials,
-  isAIProvider,
-  isBrowserConfiguration,
-  OPENAI_KEY_HEADER,
-  OPENAI_MODEL_HEADER,
-  OPENAI_OVERRIDE_HEADER,
-  validBrowserConfiguration,
-} from '../../lib/aiCredentials';
 import { safeTextEmitter } from '../../lib/aiStream';
 import { identifiers, withWorkflow } from '../observability';
 import { aiRateLimitKey, allowAIRequest } from './access';
 import { AIServiceError, respondToAIChat } from './agent';
+import type { ProviderConfiguration } from './providers';
+import { resolveProviderConfiguration } from './providers';
 import {
   type AIChatRequest,
   type AIChatResponse,
@@ -33,7 +21,7 @@ const tooLarge = () =>
 type ChatHandler = (
   request: AIChatRequest,
   signal: AbortSignal,
-  override?: AIRequestConfiguration,
+  override?: ProviderConfiguration,
   onText?: (text: string) => void,
 ) => Promise<AIChatResponse>;
 
@@ -116,8 +104,17 @@ async function readJSON(request: Request, signal: AbortSignal): Promise<unknown>
 
 export function handleHealth(): Response {
   const deployment = Boolean(process.env.LANGGRAPH_API_URL?.trim());
+  let configured = deployment;
+  if (!deployment) {
+    try {
+      resolveProviderConfiguration();
+      configured = true;
+    } catch {
+      configured = false;
+    }
+  }
   return json(200, {
-    configured: deployment || Boolean(process.env.OPENAI_API_KEY?.trim()),
+    configured,
     mode: deployment ? 'deployment' : 'local',
   });
 }
@@ -136,50 +133,6 @@ export async function handleChat(
     return json(413, { error: tooLarge().message });
   }
 
-  const provider = request.headers.get(AI_PROVIDER_HEADER) ?? 'openai';
-  if (!isAIProvider(provider)) return json(400, { error: 'Unsupported AI provider.' });
-  const legacy = request.headers.has(OPENAI_KEY_HEADER) || request.headers.has(OPENAI_MODEL_HEADER);
-  const generic = request.headers.has(AI_KEY_HEADER) || request.headers.has(AI_MODEL_HEADER);
-  if (
-    (legacy && (provider !== 'openai' || generic)) ||
-    (provider !== 'local' && request.headers.has(AI_BASE_URL_HEADER))
-  )
-    return json(400, {
-      error: 'Provider credentials or destination do not match the selected provider.',
-    });
-  const hasOverride =
-    legacy ||
-    generic ||
-    request.headers.has(OPENAI_OVERRIDE_HEADER) ||
-    request.headers.has(AI_BASE_URL_HEADER);
-  let override: AIRequestConfiguration | undefined =
-    provider === 'openai' ? undefined : { provider, source: 'server' };
-  if (hasOverride) {
-    const apiKey = request.headers.get(legacy ? OPENAI_KEY_HEADER : AI_KEY_HEADER) ?? '';
-    const model = request.headers.get(legacy ? OPENAI_MODEL_HEADER : AI_MODEL_HEADER) ?? '';
-    const url = new URL(request.url);
-    const browser = {
-      provider,
-      source: 'browser' as const,
-      apiKey,
-      model,
-      origin: url.origin,
-      ...(request.headers.has(AI_BASE_URL_HEADER)
-        ? { baseURL: request.headers.get(AI_BASE_URL_HEADER)! }
-        : {}),
-    };
-    if (
-      request.headers.get(OPENAI_OVERRIDE_HEADER) !== 'browser' ||
-      !validBrowserConfiguration(browser)
-    )
-      return json(400, {
-        error: 'Supply a complete, valid configuration for the selected provider.',
-      });
-    if (!allowsBrowserCredentials(url))
-      return json(400, { error: 'Browser credentials require HTTPS.' });
-    override = browser;
-  }
-  const browserKey = override && isBrowserConfiguration(override) ? override.apiKey : '';
   const controller = new AbortController();
   const disconnected = () =>
     controller.abort(new AIServiceError(499, 'The request was cancelled.'));
@@ -207,8 +160,6 @@ export async function handleChat(
     }
     if (!allowAIRequest(aiRateLimitKey(request)))
       return json(429, { error: 'AI request limit reached. Try again in a minute.' });
-    if (browserKey && JSON.stringify(input).includes(browserKey))
-      return json(400, { error: 'Credentials must not appear in chat or workflow data.' });
     const execute = (onText?: (text: string) => void) =>
       withWorkflow(
         input.workflow,
@@ -217,12 +168,10 @@ export async function handleChat(
           telemetryHeaders['X-DXP-Run-Id'] = ids.workflow_run_id;
           telemetryHeaders['X-DXP-Trace-Id'] = ids.trace_id;
           const result = await abortable(
-            () => handler(input, controller.signal, override, onText),
+            () => handler(input, controller.signal, undefined, onText),
             controller.signal,
           );
           controller.signal.throwIfAborted();
-          if (browserKey && JSON.stringify(result).includes(browserKey))
-            throw new AIServiceError(502, 'The AI returned an unsafe response.');
           const parsed = parseAIChatResponse(result);
           applyWorkflowOperations(input.workflow, parsed.operations);
           return parsed;
@@ -242,7 +191,7 @@ export async function handleChat(
           const send = (event: unknown) => {
             if (!cancelled) stream.enqueue(encoder.encode(`${JSON.stringify(event)}\n`));
           };
-          const emit = safeTextEmitter(browserKey, (text) => send({ type: 'text', text }));
+          const emit = safeTextEmitter('', (text) => send({ type: 'text', text }));
           void (async () => {
             try {
               const result = await execute((text) => {
@@ -250,8 +199,6 @@ export async function handleChat(
                 emit(text);
               });
               controller.signal.throwIfAborted();
-              if (browserKey && JSON.stringify(result).includes(browserKey))
-                throw new Error('Unsafe response.');
               const parsed = parseAIChatResponse(result);
               applyWorkflowOperations(input.workflow, parsed.operations);
               emit('', true);
@@ -282,8 +229,6 @@ export async function handleChat(
       });
     }
     const result = await abortable(() => execute(), controller.signal);
-    if (browserKey && JSON.stringify(result).includes(browserKey))
-      return json(502, { error: 'The AI returned an unsafe response.' });
     controller.signal.throwIfAborted();
     const parsed = parseAIChatResponse(result);
     applyWorkflowOperations(input.workflow, parsed.operations);
@@ -297,10 +242,7 @@ export async function handleChat(
         failure.status,
         {
           ...(failure.code ? { code: failure.code } : {}),
-          error:
-            hasOverride && !failure.code
-              ? 'Browser AI request failed. Check the API key, model, and server configuration; no fallback was used.'
-              : failure.message,
+          error: failure.message,
         },
         telemetryHeaders,
       );

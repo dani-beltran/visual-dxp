@@ -60,7 +60,6 @@ it('delivers text through HTTP and the client before the final validated result'
     { endpoint: 'https://builder.test/api/ai/chat' },
     input,
     undefined,
-    undefined,
     (chunk) => text.push(chunk),
   );
   await vi.waitFor(() => expect(text).toEqual(['Hello ']));
@@ -79,13 +78,7 @@ it('rejects a truncated stream without returning workflow changes', async () => 
     ),
   );
   await expect(
-    requestAIChat(
-      { endpoint: 'https://builder.test/api/ai/chat' },
-      input,
-      undefined,
-      undefined,
-      () => {},
-    ),
+    requestAIChat({ endpoint: 'https://builder.test/api/ai/chat' }, input, undefined, () => {}),
   ).rejects.toThrow('interrupted');
 });
 
@@ -210,7 +203,6 @@ it('reads fragmented UTF-8 and JSON records without waiting for EOF', async () =
   const result = requestAIChat(
     { endpoint: 'https://builder.test/api/ai/chat' },
     input,
-    undefined,
     undefined,
     (text) => chunks.push(text),
   );

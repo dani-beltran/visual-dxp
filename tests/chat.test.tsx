@@ -5,7 +5,6 @@ import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { CanvasChat, type CanvasChatProps } from '../src/components/CanvasChat';
 import { VisualDXPBuilder, type VisualDXPBuilderApi } from '../src/components/VisualDXPBuilder';
-import { AISettingsStore } from '../src/lib/aiSettings';
 import type { Workflow } from '../src/lib/types';
 
 let host: HTMLDivElement;
@@ -185,7 +184,7 @@ describe('canvas AI chat', () => {
     expect(document.activeElement).toBe(button('Close AI chat'));
     expect(host.textContent).toContain('Connect your AI assistant');
     expect(host.querySelector('.dxp-ai-context')?.textContent).toContain(
-      'AI configuration is incorrect',
+      'Check the server AI configuration',
     );
     expect(host.querySelector('.dxp-ai-status.error')).not.toBeNull();
     expect(composer().disabled).toBe(true);
@@ -198,7 +197,7 @@ describe('canvas AI chat', () => {
     await renderChat({ configurationError: true, selectedLabel: 'Welcome step' });
     await click(button('AI chat'));
     expect(host.querySelector('.dxp-ai-context')?.textContent).toContain(
-      'AI configuration is incorrect',
+      'Check the server AI configuration',
     );
     expect(host.querySelector('.dxp-ai-status.error')).not.toBeNull();
     expect(host.querySelector('.dxp-ai-context')?.textContent).not.toContain('Selected:');
@@ -458,7 +457,7 @@ describe('AI workflow integration', () => {
       await typeMessage('Explain this workflow');
       await click(button('Send message'));
       expect(host.querySelector('.dxp-ai-context')?.textContent).toContain(
-        'AI configuration is incorrect',
+        'Check the server AI configuration',
       );
       expect(host.querySelector('.dxp-ai-status.error')).not.toBeNull();
       await click(button('Start a new conversation'));
@@ -588,7 +587,11 @@ describe('AI workflow integration', () => {
   });
 });
 
-it('browsing provider tabs preserves requests, but cross-tab activation cancels and rejects a late workflow edit', async () => {
+it('ignores legacy settings and storage changes while a workflow edit is pending', async () => {
+  localStorage.setItem(
+    'visual-dxp-ai-settings-v1',
+    '{"version":2,"activeProvider":"local","providers":{"local":{"encrypted":"locked"}}}',
+  );
   let resolve!: (response: Response) => void;
   const fetcher = vi.fn<typeof fetch>().mockReturnValue(
     new Promise((done) => {
@@ -596,39 +599,24 @@ it('browsing provider tabs preserves requests, but cross-tab activation cancels 
     }),
   );
   vi.stubGlobal('fetch', fetcher);
-  const { onChange, baseline } = await renderConnectedBuilder();
+  const { onChange } = await renderConnectedBuilder();
   await typeMessage('Rename the delay');
   await click(button('Send message'));
   const signal = fetcher.mock.calls[0][1]!.signal!;
-  await click(host.querySelector<HTMLButtonElement>('[role="tab"][id$="-settings-tab"]')!);
-  const providerTabs = [
-    ...host.querySelectorAll<HTMLButtonElement>('[aria-label="AI providers"] [role="tab"]'),
-  ];
-  await click(providerTabs[1]);
-  expect(signal.aborted).toBe(false);
-  expect(new Headers(fetcher.mock.calls[0][1]!.headers).get('X-DXP-AI-Provider')).toBe('openai');
-  const otherTab = new AISettingsStore();
-  otherTab.refresh();
+  expect(new Headers(fetcher.mock.calls[0][1]!.headers).has('X-DXP-AI-Provider')).toBe(false);
   await act(async () => {
-    await otherTab.saveProvider(
-      'local',
-      { apiKey: '', model: 'local-model', baseURL: 'http://127.0.0.1:11434/v1' },
-      '',
-      '/api/ai/chat',
-    );
+    localStorage.setItem('visual-dxp-ai-settings-v1', 'corrupt');
     window.dispatchEvent(new StorageEvent('storage'));
   });
-  expect(signal.aborted).toBe(true);
-  const before = onChange.mock.calls.length;
+  expect(signal.aborted).toBe(false);
   await act(async () =>
     resolve(
-      responseWithOperations([{ type: 'update_node', id: 'delay', label: 'Stale provider edit' }]),
+      responseWithOperations([{ type: 'update_node', id: 'delay', label: 'Environment edit' }]),
     ),
   );
-  expect(onChange).toHaveBeenCalledTimes(before);
-  expect(onChange.mock.lastCall![0]).toEqual(baseline);
-  expect(host.textContent).not.toContain('1 edit applied');
-  expect(host.querySelector('.dxp-ai-header')?.textContent).toContain('Active provider: Local');
+  expect(onChange.mock.lastCall![0].nodes.find((node) => node.id === 'delay')?.data.label).toBe(
+    'Environment edit',
+  );
 });
 
 it('displays streamed text before completion and replaces it with the validated reply', async () => {

@@ -13,7 +13,7 @@ Requires Node.js 22.12+ (tested with Node.js 24).
 ```sh
 npm install
 cp .env.example .env.local
-# Optional: set OPENAI_API_KEY for development, or configure a provider in AI Settings.
+# Set AI_PROVIDER and its server credentials in .env.local to enable AI requests.
 npm run dev
 ```
 
@@ -113,7 +113,7 @@ The builder owns the toolbar, canvas, inspector, activity view, footer, element 
 | `persistenceKey`     | Optional localStorage key. A valid saved workflow takes precedence over `initialWorkflow`. Omit to disable browser persistence.                                   |
 | `activityStore`      | Optional external activity store. Reads and subscribes to entries and appends new editor actions. Defaults to an empty in-memory store for this builder.         |
 | `activityUser`       | Username attached to new activity entries; defaults to `"You"`. Pass the current user's display name.                                                             |
-| `ai`                 | Optional `{ endpoint, showSettings?, headers?, credentials? }` for your chat API. A nonempty endpoint enables the assistant and AI Settings; `showSettings: false` hides only the settings tab. Omit the endpoint to hide both. |
+| `ai`                 | Optional `{ endpoint, authEndpoint?, showSettings?, headers?, credentials? }` for your chat API. A nonempty endpoint enables the assistant and AI Settings; `showSettings: false` hides only the settings tab. Omit the endpoint to hide both. |
 | `className`, `style` | Customize the outer editor container. The parent must provide a height.                                                                                           |
 
 `VisualDXPBuilder` is both the default and a named package export. Import `visual-dxp/styles.css` once in your application; it includes React Flow and all builder, inspector, dialog, picker, and activity styles. The package exposes the same stylesheet through its `style` field and marks CSS as a side effect so bundlers retain the import.
@@ -402,17 +402,11 @@ AI is enabled **only** by an explicitly supplied, nonempty `ai.endpoint`. There 
 <VisualDXPBuilder />
 ```
 
-AI Settings has accessible **OpenAI**, **Claude**, and **Local** tabs with brand/computer icons. Viewing a tab and activating a provider are independent. **Save and activate** persists valid settings before switching providers; failed saves preserve the previous configuration. An unlocked saved configuration can be activated without re-entering its key. The active badge and assistant header identify the selected provider, while readiness/lock errors are shown separately. The compact assistant settings use the same controls.
+AI Settings provides a ChatGPT connection experience. Hosted sign-in is disabled until approval and environment configuration; it currently supports identity only. See [ChatGPT sign-in setup and limitations](docs/chatgpt-auth.md). Embedding hosts explicitly opt in with `ai.authEndpoint`; the demo uses `/api/auth/chatgpt`. Provider credentials and model selection belong in the server environment, never in browser settings. Set `AI_PROVIDER=openai|anthropic|local` (`claude` is also accepted). Environment-configured AI remains available when signed out. A configured `LANGGRAPH_API_URL` takes precedence and delegates provider selection to the remote graph's environment.
 
-Each provider retains its own editable model ID and encrypted credentials. Local uses an OpenAI-compatible API base URL and optional API key; no encryption passphrase is needed without a key. Local is for developers and debugging when running the demo app locally. Model servers must run on the backend machine, use localhost, 127.0.0.1, or [::1], and support workflow tool calls. The hosted demo cannot connect to a model on your computer. See [provider and local runtime setup](docs/ai-integration.md).
+Old `visual-dxp-ai-settings-v1` records are ignored, including locked, corrupt, or unavailable storage. Legacy provider headers are discarded by the client and ignored by the integrated server. They cannot select providers, supply keys, or change destinations. Existing workflow storage is independent.
 
-Browser settings require HTTPS except on localhost, 127.0.0.1 and [::1]. Version-2 settings safely migrate existing OpenAI ciphertext under the historical `visual-dxp-ai-settings-v1` key. Active provider, viewed tab and non-secret configurations are stored separately from workflow data; API keys use AES-256-GCM/PBKDF2-SHA-256 encryption with provider/destination binding. No plaintext keys or passphrases are persisted. Reload locks credentials. Origin changes need session confirmation. Unsaved edits and tab browsing do not affect requests; effective configuration changes cancel requests and block stale edits.
-
-> Your API key is stored encrypted in this browser. The application backend uses it only for the selected provider. It is never included in published sites or workflow exports.
-
-Removing settings preserves provider selection; configure the provider again in AI Settings when needed. Direct provider execution uses Vercel AI SDK Core with request-scoped instances, fixed cloud destinations, loopback-only local destinations, no redirects, disabled telemetry and OpenAI `store: false`. Development and debugging execution modes are documented separately in [backend setup](docs/langchain.md). All providers use the same workflow tools and atomic validated edit batches. `ai.headers` remains reserved for application authentication/CSRF; provider headers come from saved settings.
-
-The integrated chat route works without app login in development and production. It accepts browser AI Settings or the server’s configured provider credentials and retains same-origin checks and rate limiting. See [AI integration and deployment requirements](docs/ai-integration.md) and [server execution modes](docs/langchain.md).
+All providers retain the same workflow tools, validated atomic edits, streaming, and cancellation. Local models must expose a tool-capable OpenAI-compatible API on the backend's loopback interface; a hosted server cannot reach a visitor's laptop. See [AI integration](docs/ai-integration.md) and [execution modes](docs/langchain.md).
 
 ## Visual element selection
 

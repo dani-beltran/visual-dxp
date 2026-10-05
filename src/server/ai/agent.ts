@@ -1,6 +1,5 @@
 import { randomUUID } from 'node:crypto';
 import { generateText, jsonSchema, type ModelMessage, streamText, type ToolSet } from 'ai';
-import { type AIRequestConfiguration, isBrowserConfiguration } from '../../lib/aiCredentials';
 import { safeTextEmitter, serverEvents } from '../../lib/aiStream';
 import {
   addSecrets,
@@ -14,7 +13,12 @@ import {
 } from '../observability';
 import { StreamCapture } from '../observability/content';
 import { AIServiceError } from './errors';
-import { createProviderModel, resolveProviderConfiguration } from './providers';
+import {
+  allowedLocalBaseURL,
+  createProviderModel,
+  type ProviderConfiguration,
+  resolveProviderConfiguration,
+} from './providers';
 import { createWorkflowTools } from './tools';
 import type { AIChatRequest, AIChatResponse } from './workflow/ai';
 import { applyWorkflowOperations, parseAIChatResponse } from './workflow/ai';
@@ -37,7 +41,7 @@ Each successful mutation tool stages a change. Invalid tool calls reject the who
 export async function runLocalAgent(
   request: AIChatRequest,
   signal: AbortSignal,
-  input?: AIRequestConfiguration,
+  input?: ProviderConfiguration,
   onText?: (text: string) => void,
 ): Promise<AIChatResponse> {
   return withWorkflow(request.workflow, () =>
@@ -48,10 +52,16 @@ export async function runLocalAgent(
 async function executeLocalAgent(
   request: AIChatRequest,
   signal: AbortSignal,
-  input?: AIRequestConfiguration,
+  input?: ProviderConfiguration,
   onText?: (text: string) => void,
 ): Promise<AIChatResponse> {
-  const config = resolveProviderConfiguration(input);
+  const config = input ?? resolveProviderConfiguration();
+  if (config.provider === 'local') config.baseURL = allowedLocalBaseURL(config.baseURL);
+  else if (
+    config.baseURL !==
+    (config.provider === 'openai' ? 'https://api.openai.com/v1' : 'https://api.anthropic.com/v1')
+  )
+    throw new AIServiceError(400, 'Invalid provider destination.');
   addSecrets(config.apiKey);
   const model = createProviderModel(config);
   const toolkit = createWorkflowTools(request.workflow, request.selectedNodeIds);
@@ -354,19 +364,10 @@ async function executeRemoteAgent(
 export async function respondToAIChat(
   request: AIChatRequest,
   signal: AbortSignal,
-  config?: AIRequestConfiguration,
+  config?: ProviderConfiguration,
   onText?: (text: string) => void,
 ): Promise<AIChatResponse> {
-  // Browser credentials never enter deployment state, checkpoints or LangSmith.
-  if (config && isBrowserConfiguration(config))
-    return runLocalAgent(request, signal, config, onText);
   if (process.env.LANGGRAPH_API_URL?.trim()) {
-    if (config && config.provider !== 'openai')
-      throw new AIServiceError(
-        409,
-        'This provider is unavailable in the current execution mode. Save its configuration in AI Settings.',
-        'unsupported_execution',
-      );
     return runRemoteAgent(request, signal, onText);
   }
   return runLocalAgent(request, signal, config, onText);

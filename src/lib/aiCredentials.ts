@@ -2,11 +2,6 @@ export class AIConfigurationError extends Error {}
 
 export const AI_PROVIDERS = ['openai', 'claude', 'local'] as const;
 export type AIProvider = (typeof AI_PROVIDERS)[number];
-export const AI_PROVIDER_LABELS: Record<AIProvider, string> = {
-  openai: 'OpenAI',
-  claude: 'Claude',
-  local: 'Local',
-};
 export const isAIProvider = (value: unknown): value is AIProvider =>
   AI_PROVIDERS.includes(value as AIProvider);
 
@@ -27,24 +22,6 @@ export const AI_RESERVED_HEADERS = [
   AI_MODEL_HEADER,
   AI_BASE_URL_HEADER,
 ];
-export interface BrowserAIOverride {
-  /** Omitted only by legacy OpenAI callers. */
-  provider?: AIProvider;
-  source?: 'browser';
-  apiKey: string;
-  model: string;
-  origin: string;
-  baseURL?: string;
-}
-export type AIRequestConfiguration = BrowserAIOverride | { provider: AIProvider; source: 'server' };
-export const isBrowserConfiguration = (value: AIRequestConfiguration): value is BrowserAIOverride =>
-  value.source !== 'server';
-export function allowsBrowserCredentials(url: URL): boolean {
-  return (
-    url.protocol === 'https:' ||
-    (url.protocol === 'http:' && ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname))
-  );
-}
 export function validAIKey(key: string): boolean {
   return typeof key === 'string' && /^[\x21-\x7e]{8,512}$/.test(key);
 }
@@ -80,23 +57,6 @@ export function normalizeLocalBaseURL(value: string): string {
         messageParams: {},
       },
     );
-  }
-}
-export function validBrowserConfiguration(value: BrowserAIOverride): boolean {
-  const provider = value.provider ?? 'openai';
-  if (
-    !isAIProvider(provider) ||
-    !validAIModel(value.model) ||
-    (provider === 'local'
-      ? value.apiKey !== '' && !validAIKey(value.apiKey)
-      : !validAIKey(value.apiKey))
-  )
-    return false;
-  if (provider !== 'local') return value.baseURL === undefined;
-  try {
-    return !!value.baseURL && normalizeLocalBaseURL(value.baseURL) === value.baseURL;
-  } catch {
-    return false;
   }
 }
 export function resolveAIEndpoint(

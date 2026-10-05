@@ -1,24 +1,13 @@
-# Multi-provider AI verification
+# AI settings verification
 
-The implementation updates the active Next.js backend in `src/server/ai/` and `/api/ai/*`. The sibling `visual-dxp-server` project and `.env.local` were not edited.
+The settings UI now shows ChatGPT identity connection states. Hosted approval/configuration is pending, so live sign-in is disabled by default. See [the integration limitations](chatgpt-auth.md).
 
-## Automated coverage
+Automated coverage:
 
-- `tests/ai-settings-ui.test.tsx`: endpoint gating, main and compact settings, provider tab semantics/keyboard navigation, active badge independent of viewed tab, unsaved fields, save-and-activate, failed-save preservation, saved activation without key re-entry, local optional authentication, masking, origin/privacy text, unlock/lock/remove.
-- `tests/ai-settings.test.ts`: real Web Crypto encryption, fresh salt/IV, reload locking, invalid passphrases, origin binding/confirmation, storage failures, cancellation, secret-free exports, reserved headers and redirect protection.
-- `tests/ai-providers-settings.test.ts`: genuine v1 ciphertext migration, separately persisted selection/navigation/configurations, three independent configurations, local keyless operation without Web Crypto, optional key encryption, provider/destination authentication, cross-tab changes, failed saves preserving pending requests, same-provider removal, and isolated damaged-record recovery.
-- `tests/server/providers.test.ts`: actual AI SDK provider serialization against mocked OpenAI Responses, Anthropic Messages and OpenAI-compatible Chat Completions APIs. Every provider reads workflow state, stages a note, receives its tool result and returns the existing contract. Covers concurrent provider credentials, server defaults, optional local authentication, malformed headers, unauthorized destinations, explicit loopback allowances, fixed cloud URLs, upstream errors/redirects, missing local tools, rejected later mutations, truncation, bounded loops, reflected credentials, cancellation, and unsupported remote combinations.
-- `tests/server/agent.test.ts` and `browser-ai.test.ts`: existing OpenAI editing/connection behavior, request isolation and privacy (`store: false`), remote graph contract, origin protection and rate limits.
-- `tests/chat.test.tsx`: atomic edit/Undo behavior, stale-canvas protection, tab browsing during a pending request, and cross-tab activation cancelling and rejecting a late response even when the mocked fetch ignores cancellation.
+- `tests/ai-settings-ui.test.tsx`: full/compact surfaces, disabled setup, sign-in and sign-out transitions, failures, safe redirects, endpoint opt-in, obsolete browser records, unavailable storage and stripped provider headers.
+- `tests/server/chatgpt-auth.test.ts`: documented PKCE/OIDC protocol, real signed JWT validation against mocked JWKS, replay/missing/mismatched/expired transactions, denied consent, secure cookies, confidential client authentication, isolated sessions and revocation.
+- `tests/server/environment-ai.test.ts`: provider selection/defaults/aliases, health readiness, invalid selection, ignored legacy transport headers.
+- `tests/server/providers.test.ts`: all provider SDK serialization, remote precedence, workflow tools, bounded loops, local destination restrictions, errors, secret reflection, cancellation and atomic edits.
+- `tests/chat.test.tsx`, `tests/server/routes.test.ts`, `tests/server/agent.test.ts` and `tests/server/streaming.test.ts`: existing editing, stale-canvas checks, cancellation, streaming and remote execution; storage changes do not affect pending AI requests.
 
-The full test suite passes: **773 tests across 36 files**. `npm run typecheck`, the Next production build and Vite library/declaration build pass. `npm run lint` passes with warnings; the focused Biome check reports no errors in changed implementation/test files. `git diff --check` passes. The production HTTP smoke test passes for the page, static assets, health, mock remote chat, missing configuration, malformed inputs, origin/method enforcement, upload limits, and disconnect cancellation.
-
-## Browser inspection
-
-The running application was inspected in the Codex browser at desktop size and 390 × 844. Provider icons, active/viewed separation, local server guidance, responsive tab wrapping, scrollable forms, and compact assistant settings were checked. An expanded-settings layout issue was fixed so the composer remains visible; the active provider remains visible in shorter assistant panels. No provider requests were sent from this inspection.
-
-## Limits of verification
-
-Provider HTTP responses and credentials in automated tests are fixtures. No live OpenAI, Anthropic, Ollama or LM Studio model/account was tested. Compatibility depends on the actual local model honoring tool choice and producing valid workflow calls; the application checks basic tool capability at request time and fails without committing partial edits. Saving settings validates format/storage, not connectivity.
-
-Local is for local demo development/debugging. Destinations must use localhost, 127.0.0.1, or [::1] on the backend; localhost is rewritten to 127.0.0.1 without DNS resolution. Remote LangGraph supports OpenAI server defaults only; other server-default provider selections fail explicitly, while all browser configurations use direct execution. Deployment HTTPS, ingress authentication if required, proxy credential redaction and network policies remain operator responsibilities. See [AI integration](ai-integration.md) and [execution modes](langchain.md).
+Run `npm test`, `npm run typecheck`, `npm run lint`, `npm run build` and `npm run build:lib`. No live model calls or approved ChatGPT client are required for automated tests. A real hosted sign-in smoke test remains necessary after approval and deployment configuration.

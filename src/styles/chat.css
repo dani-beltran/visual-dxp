@@ -1,3 +1,7 @@
+/* Keep settings and the composer above the node library on narrow canvases. */
+.dxp-builder .react-flow__panel.dxp-canvas-dock:has(.dxp-ai-panel) {
+  z-index: 7;
+}
 .dxp-canvas-assistants {
   position: relative;
   display: flex;

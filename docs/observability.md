@@ -24,7 +24,7 @@ Use Node >=22.12, `npm install`, then copy `.env.example` to `.env.local` if it 
 CAPTURE_LLM_CONTENT=true OTEL_TRACES_SAMPLER_ARG=1 npm run dev
 ```
 
-Leave all OTLP endpoints unset for console exporters. Use AI Settings or existing server provider configuration to make an AI request. Console output includes correlated spans, structured log bodies and metrics, and obeys the same capture/redaction controls. `CAPTURE_LLM_CONTENT=false` (the default) exports metadata only. `OTEL_SDK_DISABLED=true` disables export and content capture. Restart after environment changes. Never put Grafana credentials in `NEXT_PUBLIC_*`, `VITE_*`, `ai.headers` or workflow configuration.
+Leave all OTLP endpoints unset for console exporters. Configure the provider through server environment variables to make an AI request. Console output includes correlated spans, structured log bodies and metrics, and obeys the same capture/redaction controls. `CAPTURE_LLM_CONTENT=false` (the default) exports metadata only. `OTEL_SDK_DISABLED=true` disables export and content capture. Restart after environment changes. Never put Grafana credentials in `NEXT_PUBLIC_*`, `VITE_*`, `ai.headers` or workflow configuration.
 
 For credential-free checks with fixture model responses:
 

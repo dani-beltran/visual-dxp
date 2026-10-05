@@ -12,7 +12,11 @@ export default function Demo() {
       presets={commonDXPPresets}
       activityStore={activityStore}
       persistenceKey="visual-dxp-workflow-v1"
-      ai={{ endpoint: '/api/ai/chat', credentials: 'same-origin' }}
+      ai={{
+        endpoint: '/api/ai/chat',
+        authEndpoint: '/api/auth/chatgpt',
+        credentials: 'same-origin',
+      }}
     />
   );
 }
