@@ -1,5 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
+import { applicableAIConfigDefaults } from '../../lib/aiConfig';
+import { semanticJSON } from '../../lib/aiProgress';
 import type { WorkflowOperation } from './workflow/ai';
 import { applyWorkflowOperations } from './workflow/ai';
 import { catalog } from './workflow/catalog';
@@ -98,7 +100,7 @@ const config = z.object({
     .optional(),
   selector: text
     .describe(
-      'CSS selector. Update element actions, including hide/show, may interpolate {{variables}} here.',
+      'CSS selector. Triggers accept it only for click, mouseover, submit, change, zoom-in and swipe; omit it for page-wide events. Update element actions, including hide/show, may interpolate {{variables}} here.',
     )
     .optional(),
   url: text
@@ -280,11 +282,30 @@ export function createWorkflowTools(workflow: Workflow, selectedNodeIds: string[
 
   function mutate(operation: WorkflowOperation) {
     try {
-      if (operations.length >= 100) throw new Error('A request can make at most 100 changes.');
       const next = applyWorkflowOperations(draft, [operation]);
-      draft = next;
-      operations.push(operation);
-      return JSON.stringify({ ok: true, operation });
+      const changed = semanticJSON(next) !== semanticJSON(draft);
+      if (changed) {
+        if (operations.length >= 100) throw new Error('A request can make at most 100 changes.');
+        draft = next;
+        operations.push(operation);
+      }
+      const state =
+        operation.type === 'add_node' || operation.type === 'update_node'
+          ? {
+              node: draft.nodes.find(
+                (node) =>
+                  node.id === (operation.type === 'add_node' ? operation.node.id : operation.id),
+              ),
+            }
+          : operation.type === 'add_edge' || operation.type === 'update_edge'
+            ? {
+                edge: draft.edges.find(
+                  (edge) =>
+                    edge.id === (operation.type === 'add_edge' ? operation.edge.id : operation.id),
+                ),
+              }
+            : {};
+      return JSON.stringify({ ok: true, changed, operation, ...state });
     } catch (error) {
       return JSON.stringify({
         ok: false,
@@ -330,7 +351,7 @@ export function createWorkflowTools(workflow: Workflow, selectedNodeIds: string[
             kind,
             label,
             description,
-            defaults,
+            defaults: applicableAIConfigDefaults(kind, defaults),
           })),
         ),
       {
@@ -356,7 +377,7 @@ export function createWorkflowTools(workflow: Workflow, selectedNodeIds: string[
             kind,
             label: label ?? entry.label,
             ...(description === undefined ? {} : { description }),
-            config: { ...entry.config, ...patch },
+            config: { ...applicableAIConfigDefaults(kind, entry.config, patch), ...patch },
           },
         };
         return mutate({ type: 'add_node', node });
@@ -364,7 +385,7 @@ export function createWorkflowTools(workflow: Workflow, selectedNodeIds: string[
       {
         name: 'add_node',
         description:
-          'Create a configured node. Returns its generated ID; use that ID to connect executable nodes. Notes are canvas annotations and cannot be connected. Does not create connections.',
+          'Create a configured node using applicable catalog defaults. Send only configuration fields belonging to its kind and trigger event. Returns changed and the resulting node plus operation with its generated ID; use that ID to connect executable nodes. Notes cannot be connected. Does not create connections.',
         schema: z.object({
           kind: z.enum([
             'trigger',
@@ -389,7 +410,7 @@ export function createWorkflowTools(workflow: Workflow, selectedNodeIds: string[
     defineTool((patch) => mutate({ type: 'update_node', ...patch }), {
       name: 'update_node',
       description:
-        'Update label, description, position or configuration of an existing node. Configuration fields are merged. Replacing noteText without noteMarks clears existing formatting; provide noteMarks to preserve or change formatting ranges.',
+        'Patch label, description, position or configuration of an existing node. Send only configuration fields for its kind/effective trigger event. Omitted fields are preserved, except changing a trigger event removes configuration inapplicable to the new event, including selector for page-wide events. Supply a selector for element events if none remains. Example config: {"event":"scroll-thrashing","scrollDirectionChanges":4,"scrollThrashWindow":2000,"scrollMinDistance":50}. Returns changed and the resulting node. changed:false stages nothing; repeating that call will not help. Replacing noteText without noteMarks clears formatting; provide noteMarks to retain or revise it.',
       schema: z.object({
         id,
         label: shortText.optional(),

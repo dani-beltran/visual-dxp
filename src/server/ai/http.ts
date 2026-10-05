@@ -14,6 +14,7 @@ import {
   OPENAI_OVERRIDE_HEADER,
   validBrowserConfiguration,
 } from '../../lib/aiCredentials';
+import { getAIEditFailure } from '../../lib/aiErrors';
 import { safeTextEmitter } from '../../lib/aiStream';
 import { identifiers, withWorkflow } from '../observability';
 import { aiRateLimitKey, allowAIRequest } from './access';
@@ -256,8 +257,11 @@ export async function handleChat(
               applyWorkflowOperations(input.workflow, parsed.operations);
               emit('', true);
               send({ type: 'result', response: parsed });
-            } catch {
-              send({ type: 'error' });
+            } catch (error) {
+              const failure = controller.signal.aborted ? controller.signal.reason : error;
+              const edit =
+                failure instanceof AIServiceError ? getAIEditFailure(failure) : undefined;
+              send({ type: 'error', ...(edit ? { code: edit.code, error: edit.message } : {}) });
             } finally {
               cleanup();
               if (!cancelled) stream.close();
@@ -292,15 +296,17 @@ export async function handleChat(
     return response;
   } catch (error) {
     const failure = controller.signal.aborted ? controller.signal.reason : error;
+    const edit = getAIEditFailure(failure);
     if (failure instanceof AIServiceError)
       return json(
         failure.status,
         {
           ...(failure.code ? { code: failure.code } : {}),
           error:
-            hasOverride && !failure.code
+            edit?.message ??
+            (hasOverride && !failure.code
               ? 'Browser AI request failed. Check the API key, model, and server configuration; no fallback was used.'
-              : failure.message,
+              : failure.message),
         },
         telemetryHeaders,
       );

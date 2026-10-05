@@ -1,4 +1,5 @@
 import { context, propagation } from '@opentelemetry/api';
+import { configBeforeAIPatch, validateAIConfigWrite } from './aiConfig';
 import {
   AI_BASE_URL_HEADER,
   AI_KEY_HEADER,
@@ -16,6 +17,7 @@ import {
   resolveAIEndpoint,
   validBrowserConfiguration,
 } from './aiCredentials';
+import { getAIEditFailure } from './aiErrors';
 import { responseLines, safeTextEmitter } from './aiStream';
 import { type DataTransformation, dataTransformTools } from './dataTransform';
 import { validateWorkflow } from './export';
@@ -587,6 +589,7 @@ export function applyWorkflowOperations(workflow: Workflow, value: unknown): Wor
             messageKey: 'errors.ai.aStepWithThatIdAlreadyExists',
             messageParams: {},
           });
+        validateAIConfigWrite(change.node.data.kind, change.node.data.config);
         nodes.push(change.node);
         break;
       case 'update_node': {
@@ -597,6 +600,8 @@ export function applyWorkflowOperations(workflow: Workflow, value: unknown): Wor
             messageParams: {},
           });
         const current = nodes[index];
+        if (change.config)
+          validateAIConfigWrite(current.data.kind, change.config, current.data.config);
         nodes[index] = {
           ...current,
           position: change.position ?? current.position,
@@ -605,7 +610,7 @@ export function applyWorkflowOperations(workflow: Workflow, value: unknown): Wor
             ...(change.label !== undefined ? { label: change.label } : {}),
             ...(change.description !== undefined ? { description: change.description } : {}),
             config: {
-              ...current.data.config,
+              ...configBeforeAIPatch(current.data.kind, current.data.config, change.config),
               ...(current.data.kind === 'note' &&
               change.config?.noteText !== undefined &&
               change.config.noteMarks === undefined
@@ -804,6 +809,17 @@ async function boundedResponse(response: Response): Promise<unknown> {
   }
 }
 
+function workflowEditError(value: unknown): Error | undefined {
+  const failure = getAIEditFailure(value);
+  return failure
+    ? Object.assign(new Error(failure.message), {
+        code: failure.code,
+        messageKey: `errors.ai.${failure.code}`,
+        messageParams: {},
+      })
+    : undefined;
+}
+
 /** Sends only the supported graph fields and never displays raw server error bodies. */
 export async function requestAIChat(
   settings: AIChatConfig,
@@ -916,6 +932,15 @@ export async function requestAIChat(
         },
       );
     if (!response.ok) {
+      if (response.status === 422) {
+        let failure: Error | undefined;
+        try {
+          failure = workflowEditError(await boundedResponse(response));
+        } catch {
+          /* Unrecognized or malformed errors retain the existing safe fallback. */
+        }
+        if (failure) throw failure;
+      }
       void response.body?.cancel().catch(() => {});
       if (response.status === 401 || response.status === 403)
         throw Object.assign(
@@ -983,6 +1008,8 @@ export async function requestAIChat(
           value = event.response;
           finished = true;
         } else {
+          const failure = event.type === 'error' ? workflowEditError(event) : undefined;
+          if (failure) throw failure;
           throw new Error(
             'The AI request failed. No changes were applied. Try again or check AI Settings.',
           );

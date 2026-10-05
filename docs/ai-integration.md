@@ -46,7 +46,30 @@ The response contains a nonempty `message` and an `operations` array. For exampl
 }
 ```
 
-An empty operations array represents a conversational reply. Supported operations are `add_node`, `update_node`, `remove_node`, `add_edge`, `update_edge`, and `remove_edge`; see `WorkflowOperation` in `src/lib/ai.ts` for their fields. Updates merge supplied node configuration fields. Removing a node also removes its connections. The client validates the entire resulting workflow before applying any changes.
+An empty operations array represents a conversational reply. Supported operations are `add_node`, `update_node`, `remove_node`, `add_edge`, `update_edge`, and `remove_edge`; see `WorkflowOperation` in `src/lib/ai.ts` for their fields. Updates patch supplied node configuration fields. Removing a node also removes its connections. The client validates the entire resulting workflow before applying any changes.
+
+AI configuration writes accept only fields belonging to the target node kind and effective trigger event (the patch event, existing event, or `page-load`). Existing historical/inactive fields remain loadable and do not block unrelated edits. Import validation and manual inspector editing retain their existing behavior. Unknown presentation extras continue to be stripped at the operation parser; this does not authorize arbitrary configuration writes.
+
+Changing a trigger's event normalizes its configuration to fields applicable to the new event, then applies the patch. This removes obsolete rage-click settings when converting to scroll thrashing, and removes selectors for page-wide events. Existing fields applicable to the new event survive, including selectors when switching between element events. Element events still require a selector. Same-event updates preserve omitted settings and historical fields. No replacement operation or null/undefined deletion convention is added. For example:
+
+```json
+{
+  "type": "update_node",
+  "id": "selected-trigger-id",
+  "config": {
+    "event": "scroll-thrashing",
+    "scrollDirectionChanges": 4,
+    "scrollThrashWindow": 2000,
+    "scrollMinDistance": 50
+  }
+}
+```
+
+Omitting the three scroll settings still uses runtime defaults of 4 reversals, 2000 ms, and 50 px. Event normalization preserves node identity, position, metadata, other nodes and connections. Both server staging and browser replay use the same field-ownership and normalization rules.
+
+Successful mutation tool results retain `ok` and `operation`, add `changed`, and include the resulting target `node` or `edge` for creation/update. A semantically unchanged update returns `changed: false` without appending an operation or replacing the draft. Object key order does not count as progress; array order, note formatting, labels, descriptions and positions do. The agent delivers one unchanged result for each normalized mutation as a correction opportunity. If the same unchanged mutation recurs without intervening draft progress, the entire request fails with `repeated_tool_loop`; reads and new tool-call IDs do not reset detection. Actual edits reset the repetition history. Invalid tool calls still immediately reject the request, with `invalid_workflow_edit`.
+
+These failures use fixed messages and codes in JSON and streamed error events. The browser maps only these known codes to local messages, without displaying server/provider error text. No operations reach the editor until a valid final summary and complete operation batch are returned; cancellation, interruption and timeout discard staged edits. See the [TDD record](ai-editing-tdd.md) for regression evidence.
 
 Requests support up to 40 messages, 500 nodes, and 1,000 connections. Responses allow up to 100 operations. Browser request and response bodies are limited to 1 MB, and requests time out after 120 seconds. The UI handles unauthorized (`401`/`403`), busy (`429`), and unconfigured or unavailable (`503`) responses without displaying raw server error bodies.
 

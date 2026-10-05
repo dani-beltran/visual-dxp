@@ -2,6 +2,10 @@ import type { BuilderMessages } from '../../lib/i18n';
 
 /** Complete Spanish builder catalog supplied by the demo app. */
 export const spanishMessages = {
+  'errors.ai.invalid_workflow_edit':
+    'La IA propuso un cambio de flujo inválido. No se aplicó ningún cambio. Prueba con una petición más específica.',
+  'errors.ai.repeated_tool_loop':
+    'La IA repitió un cambio sin avanzar. No se aplicó ningún cambio. Prueba con una petición más específica.',
   'nodes.experiment.label': 'Experimento',
   'nodes.experiment.description':
     'Distribuye los visitantes entre las variantes A y B. Prueba dos experiencias con un reparto de tráfico configurable y asignaciones estables por navegador.',
