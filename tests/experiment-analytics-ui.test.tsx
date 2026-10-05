@@ -87,15 +87,20 @@ it('defaults to no tracking and makes PostHog visibly Premium and unselectable',
   expect(host.querySelector('img[src^="http"]')).toBeNull();
 });
 
-it('edits independent GA4 fields, reuses the picker, and explains mapping and delivery', async () => {
-  await render(false, { experimentKey: 'assignment-only' });
+it('shares the Experiment ID with GA4, edits fields, reuses the picker, and explains mapping and delivery', async () => {
+  await render();
   await choose('ga4');
   expect(field('Experiment ID')).toHaveProperty('required', true);
   expect(host.querySelector('[role="alert"]')?.textContent).toContain('Experiment ID');
   await change('Experiment ID', 'homepage-cta-v1');
   await change('CTA element', '.checkout');
-  expect(current.experimentId).toBe('homepage-cta-v1');
-  expect(current.experimentKey).toBe('assignment-only');
+  expect(current.experimentId).toBeUndefined();
+  expect(current.experimentKey).toBe('homepage-cta-v1');
+  expect(host.querySelector('.dxp-experiment-analytics input[id$="experimentKey"]')).toBeNull();
+  expect(host.querySelectorAll('input[id$="experimentKey"]')).toHaveLength(1);
+  expect(host.querySelector('.dxp-experiment-analytics')?.textContent).toContain(
+    'Google Analytics uses the Experiment ID configured above as experiment_id',
+  );
   expect(current.experimentSelector).toBe('.checkout');
   expect(current.selector).toBeUndefined();
   expect(field('CTA interaction').value).toBe('click');
@@ -116,14 +121,16 @@ it('edits independent GA4 fields, reuses the picker, and explains mapping and de
   await act(async () => picker?.click());
   expect(pick).toHaveBeenCalledOnce();
   expect(host.textContent).toContain('Variant A → a; Variant B → b');
-  expect(host.textContent).toContain('not the GA measurement ID');
+  expect(host.textContent).toContain(
+    'Change the Experiment ID to start a fresh experiment. Leaving this empty uses the node’s ID',
+  );
   await change('GA4 measurement ID (optional)', 'G-TEST123');
   await change('Event delivery', 'gtm');
   expect(current.experimentDelivery).toBe('gtm');
   expect(host.textContent).toContain('GTM custom event triggers');
   expect(host.textContent).not.toContain('GA4 measurement ID (optional)');
   await choose('none');
-  expect(current.experimentId).toBe('homepage-cta-v1');
+  expect(current.experimentId).toBeUndefined();
   await choose('ga4');
   expect(field('CTA element').value).toBe('.checkout');
   expect(current.experimentMeasurementId).toBe('G-TEST123');

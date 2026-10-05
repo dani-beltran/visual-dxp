@@ -825,6 +825,20 @@ export function NodeInspector({
         {node.data.kind === 'experiment' && (
           <>
             <Field
+              label={t('experiment.id')}
+              htmlFor={id('experimentKey')}
+              hint={t('experiment.keyHint')}
+            >
+              <input
+                id={id('experimentKey')}
+                required={config.experimentAnalytics === 'ga4'}
+                value={config.experimentKey ?? ''}
+                placeholder="homepage-cta-v1"
+                spellCheck={false}
+                onChange={(event) => update({ experimentKey: event.target.value })}
+              />
+            </Field>
+            <Field
               label={t('experiment.trafficA')}
               htmlFor={id('experimentSplit')}
               hint={t('experiment.splitHint')}

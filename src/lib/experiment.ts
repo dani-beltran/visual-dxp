@@ -9,7 +9,7 @@ export function createExperimentTools() {
     if (!Number.isInteger(split) || split < 0 || split > 100)
       throw new Error('Experiment traffic for A must be a whole percentage from 0 to 100.');
     if (config.experimentKey !== undefined && typeof config.experimentKey !== 'string')
-      throw new Error('Experiment key must be text.');
+      throw new Error('Experiment ID must be text.');
   }
 
   function assign(nodeId: string, config: StepConfig, win: Window): 'a' | 'b' {
@@ -45,7 +45,7 @@ export function createExperimentTools() {
     if (!['none', 'ga4'].includes(config.experimentAnalytics ?? 'none'))
       fail('Choose a supported analytics platform.', 'invalidPlatform');
     if (config.experimentAnalytics !== 'ga4') return;
-    if (typeof config.experimentId !== 'string' || !config.experimentId.trim())
+    if (typeof config.experimentKey !== 'string' || !config.experimentKey.trim())
       fail('Enter an Experiment ID for analytics.', 'requiredId');
     if (typeof config.experimentSelector !== 'string' || !config.experimentSelector.trim())
       fail('Choose a CTA element for analytics.', 'requiredSelector');

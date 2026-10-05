@@ -153,17 +153,12 @@ const config = z.object({
     .optional(),
   experimentKey: text
     .describe(
-      'Stable experiment assignment key; empty uses the node ID. Change it to start a new experiment.',
+      'Experiment ID shown in the UI, used for assignments and GA4 experiment_id. Required for GA4; otherwise empty uses the node ID. Change it to start a new experiment.',
     )
     .optional(),
   experimentAnalytics: z
     .enum(['none', 'ga4'])
     .describe('Analytics platform; default none. PostHog is unavailable.')
-    .optional(),
-  experimentId: text
-    .describe(
-      'Required for GA4; reporting Experiment ID, distinct from experimentKey and GA measurement ID.',
-    )
     .optional(),
   experimentSelector: text
     .describe('Required for GA4; CSS selector for visible CTA exposure and interactions.')

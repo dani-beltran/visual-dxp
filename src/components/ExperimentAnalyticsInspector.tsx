@@ -88,19 +88,6 @@ export function ExperimentAnalyticsInspector({
       </fieldset>
       {platform === 'ga4' && (
         <>
-          {field(
-            'experimentId',
-            t('experiment.id'),
-            <input
-              id={id('experimentId')}
-              required
-              value={config.experimentId ?? ''}
-              placeholder="homepage-cta-v1"
-              spellCheck={false}
-              onChange={(event) => update({ experimentId: event.target.value })}
-            />,
-            t('experiment.idHint'),
-          )}
           {targetField}
           {field(
             'experimentInteraction',

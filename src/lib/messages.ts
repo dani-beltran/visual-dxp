@@ -23,7 +23,7 @@ export const englishMessages = {
   'experiment.interactionHint':
     'Click tracks activation, including nested elements. Change tracks committed changes on inputs, selects, and checkboxes.',
   'experiment.mapping':
-    'Variants are mapped as follow to variant_id: Variant A → a; Variant B → b. This dimension will be send with experiment_view and experiment_cta events.',
+    'Google Analytics uses the Experiment ID configured above as experiment_id. Variants are mapped to variant_id: Variant A → a; Variant B → b. These dimensions are sent with experiment_view and experiment_cta events.',
   'experiment.delivery': 'Event delivery',
   'experiment.gtag': 'Google tag',
   'experiment.gtm': 'Google Tag Manager',
@@ -63,9 +63,9 @@ export const englishMessages = {
   'experiment.trafficA': 'Traffic to A (%)',
   'experiment.splitHint':
     'B receives the remaining traffic. Changes apply to new assignments; existing visitors keep their variant.',
-  'experiment.key': 'Experiment key (optional)',
+  'experiment.key': 'Experiment ID',
   'experiment.keyHint':
-    'Defaults to this node’s ID. Change the key to start a fresh experiment. Nodes with the same key on this website share assignments.',
+    'Change the Experiment ID to start a fresh experiment. Leaving this empty uses the node’s ID',
   'experiment.assignmentHint':
     'Assignments are saved in this browser on this website. If storage is unavailable, including sandboxed previews, they last only until the workflow restarts. Connect A and B to the experiences you want to compare. Conversion tracking is not collected automatically.',
   'experiment.variantA': 'Variant A',

@@ -270,7 +270,7 @@ describe('configuration dependencies across node kinds', () => {
     ],
     ['popover', { content: '<p>Offer</p>' }, { url: 'https://example.test' }],
     ['popover', { content: '<p>Offer</p>' }, { selector: '#inactive' }],
-    ['experiment', {}, { experimentId: 'Inactive' }],
+    ['experiment', {}, { experimentSelector: '.inactive' }],
     [
       'experiment',
       { ...gtmAnalytics, experimentDelivery: 'gtm' },

@@ -208,7 +208,7 @@ export function createExperimentAnalytics(
       const selector = config.experimentSelector?.trim() ?? '';
       doc.querySelector(selector); // Same browser CSS validation used for Trigger selectors.
       install();
-      const id = config.experimentId?.trim() ?? '';
+      const id = config.experimentKey?.trim() ?? '';
       active.set(nodeId, {
         nodeId,
         id,

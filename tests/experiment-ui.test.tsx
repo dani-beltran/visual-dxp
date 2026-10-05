@@ -52,6 +52,8 @@ it('edits the split, preserves saved assignments, and explains both outputs', as
     expect(host.textContent).not.toContain('Experiment key (optional)');
     expect(host.textContent).not.toContain('Assignments are saved in this browser');
     expect(config.experimentKey).toBe('checkout-v2');
+    await change('Experiment ID', 'checkout-v3');
+    expect(config.experimentKey).toBe('checkout-v3');
     await change('Traffic to A (%)', '120');
     expect(config.experimentSplit).toBe(30);
     expect(host.querySelector('.dxp-inspector-branches')?.textContent).toContain('Variant A');

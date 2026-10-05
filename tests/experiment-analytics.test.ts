@@ -25,8 +25,8 @@ const page = window as Window &
 const runtimes: ReturnType<typeof createRuntime>[] = [];
 const config: StepConfig = {
   experimentAnalytics: 'ga4',
-  experimentId: 'homepage-cta-v1',
-  experimentKey: 'assignment-only',
+  experimentId: 'legacy-ignored-id',
+  experimentKey: 'homepage-cta-v1',
   experimentSelector: '.cta',
   experimentInteraction: 'click',
   experimentDelivery: 'gtag',
@@ -436,20 +436,23 @@ it('persists analytics configuration through import/export and both workflow ass
   }
   const toolkit = createWorkflowTools(graph, ['test']);
   const update = toolkit.tools.find((tool) => tool.name === 'update_node')!;
+  const { experimentId: _legacyId, ...toolConfig } = config;
   expect(
     JSON.parse(
-      await update.invoke({ id: 'test', config: { ...config, experimentDelivery: 'gtm' } }),
+      await update.invoke({ id: 'test', config: { ...toolConfig, experimentDelivery: 'gtm' } }),
     ).ok,
   ).toBe(true);
-  await expect(
-    update.invoke({ id: 'test', config: { experimentAnalytics: 'posthog' } }),
-  ).rejects.toThrow();
+  expect(
+    JSON.parse(await update.invoke({ id: 'test', config: { experimentAnalytics: 'posthog' } })),
+  ).toMatchObject({ ok: false, code: 'invalid_arguments', retryable: true });
   expect(createNode('experiment').data.config.experimentAnalytics).toBeUndefined();
 });
 
 it.each([
   { experimentAnalytics: 'posthog' },
-  { experimentId: '' },
+  { experimentKey: '' },
+  { experimentKey: '   ' },
+  { experimentKey: undefined },
   { experimentSelector: '' },
   { experimentInteraction: 'input' },
   { experimentDelivery: 'both' },

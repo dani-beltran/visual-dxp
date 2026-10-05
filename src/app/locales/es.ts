@@ -26,7 +26,7 @@ export const spanishMessages = {
   'experiment.interactionHint':
     'Clic registra la activación, incluidos los elementos anidados. Change registra cambios confirmados en campos, selectores y casillas.',
   'experiment.mapping':
-    'Las variantes se asignan a variant_id de la siguiente forma: Variante A → a; Variante B → b. Esta dimensión se enviará con los eventos experiment_view y experiment_cta.',
+    'Google Analytics usa el ID del experimento configurado arriba como experiment_id. Las variantes se asignan a variant_id de la siguiente forma: Variante A → a; Variante B → b. Esta dimensión se enviará con los eventos experiment_view y experiment_cta.',
   'experiment.delivery': 'Envío de eventos',
   'experiment.gtag': 'Etiqueta de Google',
   'experiment.gtm': 'Google Tag Manager',
@@ -68,9 +68,9 @@ export const spanishMessages = {
   'experiment.trafficA': 'Tráfico a A (%)',
   'experiment.splitHint':
     'B recibe el tráfico restante. Los cambios se aplican a las nuevas asignaciones; los visitantes existentes conservan su variante.',
-  'experiment.key': 'Clave del experimento (opcional)',
+  'experiment.key': 'ID del experimento',
   'experiment.keyHint':
-    'Por defecto se usa el ID del nodo. Cambia la clave para iniciar un experimento nuevo. Los nodos con la misma clave en este sitio comparten asignaciones.',
+    'Obligatorio para Google Analytics. En los demás casos, si se deja vacío se usa el ID del nodo. Cambia el ID del experimento para iniciar un experimento nuevo. Los nodos con el mismo ID en este sitio comparten asignaciones. No es el ID de medición de GA.',
   'experiment.assignmentHint':
     'Las asignaciones se guardan en este navegador para este sitio. Si el almacenamiento no está disponible, como en la vista previa aislada, solo duran hasta reiniciar el flujo. Conecta A y B a las experiencias que quieras comparar. Las conversiones no se registran automáticamente.',
   'experiment.variantA': 'Variante A',
