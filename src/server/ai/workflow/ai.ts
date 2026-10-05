@@ -1,3 +1,4 @@
+import { configBeforeAIPatch, validateAIConfigWrite } from '../../../lib/aiConfig';
 import { type DataTransformation, dataTransformTools } from '../../../lib/dataTransform';
 import { parseNoteMarks } from './notes';
 import type { NodeKind, StepConfig, Workflow, WorkflowEdge, WorkflowNode } from './types';
@@ -422,12 +423,15 @@ export function applyWorkflowOperations(workflow: Workflow, value: unknown): Wor
       case 'add_node':
         if (nodes.some((entry) => entry.id === change.node.id))
           throw new Error('A step with that ID already exists.');
+        validateAIConfigWrite(change.node.data.kind, change.node.data.config);
         nodes.push(change.node);
         break;
       case 'update_node': {
         const index = nodes.findIndex((entry) => entry.id === change.id);
         if (index < 0) throw new Error('The step to update does not exist.');
         const current = nodes[index];
+        if (change.config)
+          validateAIConfigWrite(current.data.kind, change.config, current.data.config);
         nodes[index] = {
           ...current,
           position: change.position ?? current.position,
@@ -436,7 +440,7 @@ export function applyWorkflowOperations(workflow: Workflow, value: unknown): Wor
             ...(change.label !== undefined ? { label: change.label } : {}),
             ...(change.description !== undefined ? { description: change.description } : {}),
             config: {
-              ...current.data.config,
+              ...configBeforeAIPatch(current.data.kind, current.data.config, change.config),
               ...(current.data.kind === 'note' &&
               change.config?.noteText !== undefined &&
               change.config.noteMarks === undefined

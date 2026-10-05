@@ -1,5 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
+import { applicableAIConfigDefaults } from '../../lib/aiConfig';
+import { semanticJSON } from '../../lib/aiProgress';
 import type { WorkflowOperation } from './workflow/ai';
 import { applyWorkflowOperations } from './workflow/ai';
 import { catalog } from './workflow/catalog';
@@ -98,19 +100,19 @@ const config = z.object({
     .optional(),
   selector: text
     .describe(
-      'CSS selector. Update element actions, including hide/show, may interpolate {{variables}} here.',
+      'CSS selector for element triggers, Update element actions, or anchored popovers. Omit for page-wide triggers and non-anchored popovers. Update element actions, including hide/show, may interpolate {{variables}} here.',
     )
     .optional(),
   url: text
     .describe(
-      'Request URL; supports incoming data templates such as {{user.id}} or {{items[0].id}}.',
+      'HTTP request URL or iframe popover URL. HTTP requests support incoming data templates such as {{user.id}} or {{items[0].id}}. Omit for HTML popovers.',
     )
     .optional(),
   method: shortText.optional(),
   headers: text.describe('JSON object encoded as a string, with string header values.').optional(),
   body: text
     .describe(
-      'Request body; supports incoming data templates such as {{user.name}}. Ignored for GET/HEAD.',
+      'Request body; supports incoming data templates such as {{user.name}}. Omit for GET/HEAD.',
     )
     .optional(),
   conditionOperator: z
@@ -126,7 +128,7 @@ const config = z.object({
     .optional(),
   value: text
     .describe(
-      'Update element content. Mix literal text and incoming variables such as Hello {{name}}, {{user.name}}, or {{$}} for the whole incoming input.',
+      'Update element content; omit for hide/show. Mix literal text and incoming variables such as Hello {{name}}, {{user.name}}, or {{$}} for the whole incoming input.',
     )
     .optional(),
   attribute: text.describe('Attribute name for Update element; supports {{variables}}.').optional(),
@@ -167,17 +169,19 @@ const config = z.object({
   experimentInteraction: z
     .enum(['click', 'change'])
     .describe(
-      'CTA event, default click. Change means field value committed; no values are collected.',
+      'GA4 CTA event, default click; omit when analytics is disabled. Change means field value committed; no values are collected.',
     )
     .optional(),
   experimentDelivery: z
     .enum(['gtag', 'gtm'])
     .describe(
-      'Exactly one: existing window.gtag (default), or existing window.dataLayer with GTM forwarding configured by the website owner.',
+      'GA4 only: existing window.gtag (default), or existing window.dataLayer with GTM forwarding configured by the website owner. Omit when analytics is disabled.',
     )
     .optional(),
   experimentMeasurementId: text
-    .describe('Optional G-XXXXXXXXXX send_to destination for gtag.')
+    .describe(
+      'Optional G-XXXXXXXXXX send_to destination for GA4 gtag delivery. Omit for GTM or disabled analytics.',
+    )
     .optional(),
   experimentSplit: z
     .number()
@@ -209,7 +213,7 @@ const config = z.object({
     .optional(),
   conditionValue: text
     .describe(
-      'Expected value: desktop/mobile, language tag (en or en-US), exact referrer domain (example.com; subdomains are distinct), exact stored string, or Data comparison input (numbers, true/false, text, JSON arrays/objects). Empty strings are allowed for named variables.',
+      'Expected value: desktop/mobile, language tag (en or en-US), exact referrer domain (example.com; subdomains are distinct), exact stored string, or Data comparison input (numbers, true/false, text, JSON arrays/objects). Empty strings are allowed for named variables. Omit for unary Data operators and selector/date/time conditions.',
     )
     .optional(),
   conditionStartDate: text
@@ -280,11 +284,30 @@ export function createWorkflowTools(workflow: Workflow, selectedNodeIds: string[
 
   function mutate(operation: WorkflowOperation) {
     try {
-      if (operations.length >= 100) throw new Error('A request can make at most 100 changes.');
       const next = applyWorkflowOperations(draft, [operation]);
-      draft = next;
-      operations.push(operation);
-      return JSON.stringify({ ok: true, operation });
+      const changed = semanticJSON(next) !== semanticJSON(draft);
+      if (changed) {
+        if (operations.length >= 100) throw new Error('A request can make at most 100 changes.');
+        draft = next;
+        operations.push(operation);
+      }
+      const state =
+        operation.type === 'add_node' || operation.type === 'update_node'
+          ? {
+              node: draft.nodes.find(
+                (node) =>
+                  node.id === (operation.type === 'add_node' ? operation.node.id : operation.id),
+              ),
+            }
+          : operation.type === 'add_edge' || operation.type === 'update_edge'
+            ? {
+                edge: draft.edges.find(
+                  (edge) =>
+                    edge.id === (operation.type === 'add_edge' ? operation.edge.id : operation.id),
+                ),
+              }
+            : {};
+      return JSON.stringify({ ok: true, changed, operation, ...state });
     } catch (error) {
       return JSON.stringify({
         ok: false,
@@ -330,7 +353,7 @@ export function createWorkflowTools(workflow: Workflow, selectedNodeIds: string[
             kind,
             label,
             description,
-            defaults,
+            defaults: applicableAIConfigDefaults(kind, defaults),
           })),
         ),
       {
@@ -356,7 +379,7 @@ export function createWorkflowTools(workflow: Workflow, selectedNodeIds: string[
             kind,
             label: label ?? entry.label,
             ...(description === undefined ? {} : { description }),
-            config: { ...entry.config, ...patch },
+            config: { ...applicableAIConfigDefaults(kind, entry.config, patch), ...patch },
           },
         };
         return mutate({ type: 'add_node', node });
@@ -364,7 +387,7 @@ export function createWorkflowTools(workflow: Workflow, selectedNodeIds: string[
       {
         name: 'add_node',
         description:
-          'Create a configured node. Returns its generated ID; use that ID to connect executable nodes. Notes are canvas annotations and cannot be connected. Does not create connections.',
+          'Create a configured node using applicable catalog defaults. Send only fields supported by the resulting configuration. Returns changed and the resulting node plus operation with its generated ID; use that ID to connect executable nodes. Notes cannot be connected. Does not create connections.',
         schema: z.object({
           kind: z.enum([
             'trigger',
@@ -389,7 +412,7 @@ export function createWorkflowTools(workflow: Workflow, selectedNodeIds: string[
     defineTool((patch) => mutate({ type: 'update_node', ...patch }), {
       name: 'update_node',
       description:
-        'Update label, description, position or configuration of an existing node. Configuration fields are merged. Replacing noteText without noteMarks clears existing formatting; provide noteMarks to preserve or change formatting ranges.',
+        'Patch label, description, position or configuration of an existing node. Send only fields supported by the resulting configuration. Omitted fields are preserved unless a setting changes which fields apply; then inactive fields are removed. Include any fields required by the resulting configuration. Returns changed and the resulting node. changed:false stages nothing; repeating that call will not help. Replacing noteText without noteMarks clears formatting; provide noteMarks to retain or revise it.',
       schema: z.object({
         id,
         label: shortText.optional(),

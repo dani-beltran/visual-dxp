@@ -114,6 +114,32 @@ function visibility(value: boolean) {
 }
 
 describe('behavior trigger detection', () => {
+  it('retains the 4 reversal, 2000 ms, 50 px defaults after an AI trigger conversion', async () => {
+    const converted = applyWorkflowOperations(
+      workflow({
+        event: 'rage-click',
+        selector: '#target',
+        rageClickCount: 3,
+        rageClickWindow: 1000,
+        rageClickRadius: 50,
+      }),
+      [{ type: 'update_node', id: 'start', config: { event: 'scroll-thrashing' } }],
+    );
+    expect(converted.nodes[0].data.config).toEqual({ event: 'scroll-thrashing' });
+    const { fired } = start(converted.nodes[0].data.config);
+    scroll(50);
+    for (const y of [0, 50, 0]) scroll(y);
+    expect(fired).not.toHaveBeenCalled();
+    scroll(49); // Less than the default minimum distance.
+    expect(fired).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(2001); // Old reversals expire.
+    scroll(100);
+    for (const y of [50, 100, 50]) scroll(y);
+    expect(fired).not.toHaveBeenCalled();
+    scroll(100);
+    expect(fired).toHaveBeenCalledOnce();
+  });
+
   it('detects only top-edge exits, once per runtime', () => {
     const { fired } = start({ event: 'exit-intent' });
     exit({ relatedTarget: document.body });

@@ -1,0 +1,350 @@
+import { describe, expect, it } from 'vitest';
+import {
+  applyWorkflowOperations as applyClient,
+  parseAIChatResponse as parseClient,
+} from '../../src/lib/ai';
+import { createWorkflowTools } from '../../src/server/ai/tools';
+import {
+  applyWorkflowOperations as applyServer,
+  parseAIChatResponse,
+} from '../../src/server/ai/workflow/ai';
+import type { NodeKind, StepConfig, Workflow } from '../../src/server/ai/workflow/types';
+
+function workflow(kind: NodeKind, config: StepConfig): Workflow {
+  return {
+    version: 1,
+    name: 'Configuration edits',
+    websiteUrl: 'https://example.test',
+    nodes: [
+      {
+        id: 'start',
+        type: 'workflow',
+        position: { x: 0, y: 0 },
+        data: { kind: 'trigger', label: 'Start', config: {} },
+      },
+      {
+        id: 'target',
+        type: 'workflow',
+        position: { x: 300, y: 0 },
+        data: { kind, label: 'Target', description: 'Keep me', config },
+      },
+    ],
+    edges: [{ id: 'edge', type: 'smoothstep', source: 'start', target: 'target' }],
+  };
+}
+
+const analytics: StepConfig = {
+  experimentSplit: 40,
+  experimentKey: 'offer',
+  experimentAnalytics: 'ga4',
+  experimentId: 'offer',
+  experimentSelector: '#cta',
+  experimentInteraction: 'click',
+  experimentDelivery: 'gtag',
+  experimentMeasurementId: 'G-TEST123',
+};
+const { experimentMeasurementId: _measurement, ...gtmAnalytics } = analytics;
+
+const cases: {
+  name: string;
+  kind: NodeKind;
+  before: StepConfig;
+  patch: StepConfig;
+  after: StepConfig;
+}[] = [
+  {
+    name: 'selector condition to query parameter',
+    kind: 'fork',
+    before: { condition: '#cta' },
+    patch: { conditionType: 'query-param', conditionKey: 'source', conditionValue: 'email' },
+    after: { conditionType: 'query-param', conditionKey: 'source', conditionValue: 'email' },
+  },
+  {
+    name: 'binary data condition to unary',
+    kind: 'fork',
+    before: { conditionType: 'data', conditionValue: 'premium' },
+    patch: { conditionOperator: 'exists' },
+    after: { conditionType: 'data', conditionOperator: 'exists' },
+  },
+  {
+    name: 'unary data condition to binary',
+    kind: 'fork',
+    before: { conditionType: 'data', conditionOperator: 'exists' },
+    patch: { conditionOperator: 'equal', conditionValue: 'premium' },
+    after: { conditionType: 'data', conditionOperator: 'equal', conditionValue: 'premium' },
+  },
+  {
+    name: 'date condition to time range retains shared timezone',
+    kind: 'fork',
+    before: {
+      conditionType: 'date-range',
+      conditionStartDate: '2026-01-01',
+      conditionEndDate: '2026-12-31',
+      conditionTimeZone: 'utc',
+    },
+    patch: { conditionType: 'time-of-day', conditionStartTime: '09:00', conditionEndTime: '17:00' },
+    after: {
+      conditionType: 'time-of-day',
+      conditionStartTime: '09:00',
+      conditionEndTime: '17:00',
+      conditionTimeZone: 'utc',
+    },
+  },
+  {
+    name: 'query parameter to cookie retains key and value',
+    kind: 'fork',
+    before: { conditionType: 'query-param', conditionKey: 'source', conditionValue: 'email' },
+    patch: { conditionType: 'cookie' },
+    after: { conditionType: 'cookie', conditionKey: 'source', conditionValue: 'email' },
+  },
+  {
+    name: 'HTTP POST to lowercase GET',
+    kind: 'http',
+    before: { method: 'POST', url: 'https://example.test', headers: '{}', body: 'payload' },
+    patch: { method: 'get' },
+    after: { method: 'get', url: 'https://example.test', headers: '{}' },
+  },
+  {
+    name: 'HTTP POST to PATCH retains body',
+    kind: 'http',
+    before: { method: 'POST', url: 'https://example.test', body: 'payload' },
+    patch: { method: 'PATCH' },
+    after: { method: 'PATCH', url: 'https://example.test', body: 'payload' },
+  },
+  {
+    name: 'attribute action to hide',
+    kind: 'dom',
+    before: { selector: '#cta', action: 'attribute', attribute: 'title', value: 'Offer' },
+    patch: { action: 'hide' },
+    after: { selector: '#cta', action: 'hide' },
+  },
+  {
+    name: 'attribute action to text retains value',
+    kind: 'dom',
+    before: { selector: '#cta', action: 'attribute', attribute: 'title', value: 'Offer' },
+    patch: { action: 'text' },
+    after: { selector: '#cta', action: 'text', value: 'Offer' },
+  },
+  {
+    name: 'anchored HTML to centered iframe',
+    kind: 'popover',
+    before: { content: '<p>Offer</p>', position: 'anchor', selector: '#cta', width: 400 },
+    patch: { contentType: 'iframe', url: 'https://example.test/embed', position: 'center' },
+    after: {
+      contentType: 'iframe',
+      url: 'https://example.test/embed',
+      position: 'center',
+      width: 400,
+    },
+  },
+  {
+    name: 'iframe to HTML retains anchor',
+    kind: 'popover',
+    before: {
+      contentType: 'iframe',
+      url: 'https://example.test/embed',
+      position: 'anchor',
+      selector: '#cta',
+    },
+    patch: { contentType: 'html', content: '<p>Offer</p>' },
+    after: { contentType: 'html', content: '<p>Offer</p>', position: 'anchor', selector: '#cta' },
+  },
+  {
+    name: 'popover placement alone removes obsolete anchor',
+    kind: 'popover',
+    before: { content: '<p>Offer</p>', position: 'anchor', selector: '#cta' },
+    patch: { position: 'bottom-right' },
+    after: { content: '<p>Offer</p>', position: 'bottom-right' },
+  },
+  {
+    name: 'disabling analytics preserves experiment assignment',
+    kind: 'experiment',
+    before: analytics,
+    patch: { experimentAnalytics: 'none' },
+    after: { experimentSplit: 40, experimentKey: 'offer', experimentAnalytics: 'none' },
+  },
+  {
+    name: 'Google tag to GTM removes measurement ID',
+    kind: 'experiment',
+    before: analytics,
+    patch: { experimentDelivery: 'gtm' },
+    after: { ...gtmAnalytics, experimentDelivery: 'gtm' },
+  },
+];
+
+describe('configuration dependencies across node kinds', () => {
+  it.each(cases)(
+    '$name: stages once and replays identically on server and client',
+    ({ kind, before, patch, after }) => {
+      const original = workflow(kind, before);
+      const snapshot = structuredClone(original);
+      const toolkit = createWorkflowTools(original, ['target']);
+      const result = JSON.parse(
+        toolkit.invokePrivate('update_node', { id: 'target', config: patch }),
+      );
+      expect(result).toMatchObject({ ok: true, changed: true, node: { data: { config: after } } });
+      const expected = structuredClone(original);
+      expected.nodes[1].data.config = after;
+      expect(toolkit.getWorkflow()).toEqual(expected);
+      const transported = JSON.parse(
+        JSON.stringify(
+          parseAIChatResponse({ message: 'Updated.', operations: toolkit.getOperations() }),
+        ),
+      );
+      expect(applyServer(original, transported.operations)).toEqual(expected);
+      expect(applyClient(original, parseClient(transported).operations)).toEqual(expected);
+      expect(
+        JSON.parse(toolkit.invokePrivate('update_node', { id: 'target', config: patch })),
+      ).toMatchObject({ ok: true, changed: false });
+      expect(toolkit.getOperations()).toHaveLength(1);
+      expect(original).toEqual(snapshot);
+    },
+  );
+
+  it.each([
+    [
+      'http',
+      { url: 'https://example.test', body: 'Historical body' },
+      { method: 'get', headers: '{}' },
+    ],
+    [
+      'dom',
+      { selector: '#cta', attribute: 'title', value: 'Offer' },
+      { action: 'text', value: 'New' },
+    ],
+    [
+      'fork',
+      { condition: '#cta', conditionValue: 'Historical value' },
+      { conditionType: 'selector', condition: '#new' },
+    ],
+    [
+      'popover',
+      { content: '<p>Offer</p>', url: 'https://example.test/old', selector: '#old' },
+      { contentType: 'html', position: 'bottom-right', width: 400 },
+    ],
+    [
+      'experiment',
+      { experimentKey: 'offer', experimentId: 'Historical ID' },
+      { experimentAnalytics: 'none', experimentSplit: 30 },
+    ],
+  ] satisfies [NodeKind, StepConfig, StepConfig][])(
+    'preserves historical fields on same-mode %s patches',
+    (kind, before, patch) => {
+      const original = workflow(kind, before);
+      for (const apply of [applyServer, applyClient]) {
+        expect(
+          apply(original, [{ type: 'update_node', id: 'target', config: patch }]).nodes[1].data
+            .config,
+        ).toEqual({ ...before, ...patch });
+        expect(
+          apply(original, [{ type: 'update_node', id: 'target', label: 'Renamed' }]).nodes[1].data
+            .config,
+        ).toEqual(before);
+      }
+    },
+  );
+
+  it.each([
+    ['http', { url: 'https://example.test' }, { body: 'Inactive' }],
+    [
+      'http',
+      { url: 'https://example.test', method: 'POST', body: 'Old' },
+      { method: 'HEAD', body: 'Inactive' },
+    ],
+    ['dom', { selector: '#cta', action: 'hide' }, { value: 'Inactive' }],
+    ['dom', { selector: '#cta' }, { attribute: 'title' }],
+    [
+      'fork',
+      { conditionType: 'data', conditionOperator: 'exists' },
+      { conditionValue: 'Inactive' },
+    ],
+    [
+      'fork',
+      { condition: '#cta' },
+      {
+        conditionType: 'cookie',
+        conditionKey: 'key',
+        conditionValue: 'value',
+        condition: '#obsolete',
+      },
+    ],
+    ['popover', { content: '<p>Offer</p>' }, { url: 'https://example.test' }],
+    ['popover', { content: '<p>Offer</p>' }, { selector: '#inactive' }],
+    ['experiment', {}, { experimentId: 'Inactive' }],
+    [
+      'experiment',
+      { ...gtmAnalytics, experimentDelivery: 'gtm' },
+      { experimentMeasurementId: 'G-TEST123' },
+    ],
+  ] satisfies [NodeKind, StepConfig, StepConfig][])(
+    'rejects inactive fields in %s writes atomically',
+    (kind, before, patch) => {
+      const original = workflow(kind, before);
+      const snapshot = structuredClone(original);
+      const toolkit = createWorkflowTools(original, ['target']);
+      expect(
+        JSON.parse(toolkit.invokePrivate('update_node', { id: 'target', config: patch })),
+      ).toMatchObject({
+        ok: false,
+        error: expect.stringContaining('Invalid configuration fields'),
+      });
+      expect(toolkit.getOperations()).toEqual([]);
+      expect(toolkit.getWorkflow()).toEqual(original);
+      for (const apply of [applyServer, applyClient]) {
+        expect(() =>
+          apply(original, [
+            { type: 'update_node', id: 'target', label: 'Must not persist' },
+            { type: 'update_node', id: 'target', config: patch },
+          ]),
+        ).toThrow(/Invalid configuration fields/);
+      }
+      expect(original).toEqual(snapshot);
+    },
+  );
+
+  it.each([
+    ['fork', { condition: '#cta' }, { conditionType: 'time-of-day' }],
+    [
+      'fork',
+      { conditionType: 'data', conditionOperator: 'exists' },
+      { conditionOperator: 'equal' },
+    ],
+    ['dom', { selector: '#cta' }, { action: 'attribute' }],
+    ['popover', { content: '<p>Offer</p>' }, { contentType: 'iframe' }],
+    ['popover', { content: '<p>Offer</p>' }, { position: 'anchor' }],
+    ['experiment', {}, { experimentAnalytics: 'ga4' }],
+  ] satisfies [NodeKind, StepConfig, StepConfig][])(
+    'requires missing fields when changing %s mode',
+    (kind, before, patch) => {
+      const original = workflow(kind, before);
+      for (const apply of [applyServer, applyClient])
+        expect(() =>
+          apply(original, [{ type: 'update_node', id: 'target', config: patch }]),
+        ).toThrow();
+    },
+  );
+
+  it.each([
+    ['dom', { action: 'hide' }, ['value', 'attribute']],
+    [
+      'fork',
+      { conditionType: 'data', conditionOperator: 'exists' },
+      ['condition', 'conditionValue'],
+    ],
+    [
+      'popover',
+      { contentType: 'iframe', url: 'https://example.test/embed' },
+      ['content', 'selector'],
+    ],
+  ] satisfies [NodeKind, StepConfig, string[]][])(
+    'filters inactive catalog defaults when adding %s',
+    (kind, config, absent) => {
+      const original = workflow('delay', { duration: 100 });
+      const toolkit = createWorkflowTools(original, []);
+      const result = JSON.parse(toolkit.invokePrivate('add_node', { kind, config }));
+      expect(result).toMatchObject({ ok: true, changed: true, node: { data: { config } } });
+      for (const field of absent) expect(result.node.data.config).not.toHaveProperty(field);
+      expect(applyClient(original, toolkit.getOperations())).toEqual(toolkit.getWorkflow());
+    },
+  );
+});

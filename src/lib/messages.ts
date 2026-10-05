@@ -1,5 +1,9 @@
+import { aiEditFailures } from './aiErrors';
+
 /** English defaults and the public translation contract. Keys remain stable when copy changes. */
 export const englishMessages = {
+  'errors.ai.invalid_workflow_edit': aiEditFailures.invalid_workflow_edit,
+  'errors.ai.repeated_tool_loop': aiEditFailures.repeated_tool_loop,
   'nodes.experiment.label': 'Experiment',
   'nodes.experiment.description':
     'Splits visitors between variants A and B. Use it to test two experiences with a configurable traffic split and consistent browser assignments.',
