@@ -1197,3 +1197,22 @@
   direction: ltr;
   text-align: left;
 }
+
+.dxp-experiment-port {
+  position: absolute;
+  right: 9px;
+  transform: translateY(-50%);
+  font-size: 10px;
+  font-weight: 700;
+  color: #7c5ac2;
+  background: #fff;
+  padding: 1px 3px;
+  border-radius: 3px;
+  pointer-events: none;
+}
+.dxp-experiment-port-a {
+  top: 37%;
+}
+.dxp-experiment-port-b {
+  top: 73%;
+}

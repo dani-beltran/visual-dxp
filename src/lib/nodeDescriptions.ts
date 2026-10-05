@@ -11,6 +11,8 @@ export const nodeDescriptions = {
   cookie: 'Saves a cookie on this website. Use it to remember a value for later steps or visits.',
   delay: 'Pauses the workflow before continuing. Use it to space out connected steps.',
   fork: 'Chooses a path based on a condition. Use it to tailor the workflow to the visitor or page.',
+  experiment:
+    'Splits visitors between variants A and B. Use it to test two experiences with a configurable traffic split and consistent browser assignments.',
   loop: 'Repeats connected steps. Use it to run the same sequence more than once.',
   popover: 'Displays a panel over the page. Use it to show a message or an embedded website.',
   note: 'Adds text to the canvas. Use it to document ideas, context, or reminders.',

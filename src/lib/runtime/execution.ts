@@ -2,14 +2,18 @@ import type { buildCookie } from '../cookies';
 import type { createDataTools, DataSelection } from '../data';
 import type { createDataTransformTools } from '../dataTransform';
 import type { getDateRange } from '../dateRange';
+import type { createExperimentTools } from '../experiment';
 import type { getTimeRange } from '../timeRange';
 import type { Workflow } from '../types';
 import type { matchesCondition } from './conditions';
 import type { RuntimeContext } from './context';
+import type { createExperimentAnalytics } from './experiment-analytics';
 import type { showPopover } from './popovers';
 import type { WorkflowRuntime } from './types';
 
 interface ExecutionModules {
+  createExperimentTools: typeof createExperimentTools;
+  createExperimentAnalytics: typeof createExperimentAnalytics;
   createDataTransformTools: typeof createDataTransformTools;
   createDataTools: typeof createDataTools;
   buildCookie: typeof buildCookie;
@@ -23,6 +27,8 @@ export function createExecution(
   workflow: Workflow,
   context: RuntimeContext,
   {
+    createExperimentTools,
+    createExperimentAnalytics,
     buildCookie,
     matchesCondition,
     getDateRange,
@@ -34,6 +40,8 @@ export function createExecution(
 ): WorkflowRuntime['run'] {
   const { doc, win, signal, nodes, fetcher, maxSteps, aborted, log, wait, selectorElements } =
     context;
+  const experimentTools = createExperimentTools();
+  const experimentAnalytics = createExperimentAnalytics(context, experimentTools);
   const dataTools = createDataTools();
   const transformTools = createDataTransformTools(dataTools);
   type RunState = { steps: number; active: Set<string> };
@@ -227,6 +235,12 @@ export function createExecution(
             }
             break;
           }
+          case 'experiment': {
+            const variant = experimentTools.assign(nodeId, config, win);
+            selectedHandle = variant;
+            experimentAnalytics.track(nodeId, config, variant);
+            break;
+          }
           case 'fork':
             selectedHandle = matchesCondition(
               config,
@@ -253,7 +267,9 @@ export function createExecution(
           requestError !== undefined ? 'error' : 'success',
           requestError ??
             (selectedHandle
-              ? `Condition is ${selectedHandle}`
+              ? node.data.kind === 'experiment'
+                ? `Experiment assigned variant ${selectedHandle.toUpperCase()}`
+                : `Condition is ${selectedHandle}`
               : loopIterations
                 ? `Repeating ${loopIterations} times`
                 : 'Step completed'),

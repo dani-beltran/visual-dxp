@@ -49,6 +49,12 @@ export const catalog: {
     config: { iterations: 3 },
   },
   {
+    kind: 'experiment',
+    label: 'Experiment',
+    description: nodeDescriptions.experiment,
+    config: { experimentSplit: 50 },
+  },
+  {
     kind: 'popover',
     label: 'Popover',
     description: nodeDescriptions.popover,

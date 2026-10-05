@@ -1486,10 +1486,19 @@ function Builder({
       {picking && selected && (
         <ElementPicker
           url={workflow.websiteUrl}
-          initialSelector={selected.data.config.selector}
+          initialSelector={
+            selected.data.kind === 'experiment'
+              ? selected.data.config.experimentSelector
+              : selected.data.config.selector
+          }
           onClose={() => setPicking(false)}
           onSelect={(selector) => {
-            patchNode({ config: { ...selected.data.config, selector } });
+            patchNode({
+              config: {
+                ...selected.data.config,
+                [selected.data.kind === 'experiment' ? 'experimentSelector' : 'selector']: selector,
+              },
+            });
             setPicking(false);
             notify(t('builder.targetElementSelected'));
           }}

@@ -8,6 +8,8 @@ export interface RuntimeOptions {
   onLog?: (entry: RunLog) => void;
   /** Transient execution samples; never included in workflow persistence. */
   onConnectionPreview?: (edgeId: string, preview: ConnectionPreview) => void;
+  /** Editor previews simulate analytics and never call the website's analytics APIs. */
+  analyticsMode?: 'live' | 'simulate';
   signal?: AbortSignal;
   /** Maximum executed steps for one trigger invocation. Defaults to 10,000. */
   maxSteps?: number;

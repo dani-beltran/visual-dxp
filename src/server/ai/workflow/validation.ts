@@ -1,4 +1,5 @@
 import { dataTransformTools } from '../../../lib/dataTransform';
+import { createExperimentTools } from '../../../lib/experiment';
 import { validateCookie } from './cookies';
 import { dataTools } from './data';
 import { getDateRange } from './dateRange';
@@ -56,6 +57,7 @@ export function validateWorkflow(workflow: Workflow): ValidationIssue[] {
     'dom',
     'cookie',
     'delay',
+    'experiment',
     'fork',
     'loop',
     'popover',
@@ -108,6 +110,13 @@ export function validateWorkflow(workflow: Workflow): ValidationIssue[] {
       'action',
       'value',
       'attribute',
+      'experimentKey',
+      'experimentAnalytics',
+      'experimentId',
+      'experimentSelector',
+      'experimentInteraction',
+      'experimentDelivery',
+      'experimentMeasurementId',
       'cookieName',
       'cookieValue',
       'condition',
@@ -303,6 +312,14 @@ export function validateWorkflow(workflow: Workflow): ValidationIssue[] {
             add('Choose a supported condition type.', node.id);
         }
         break;
+      case 'experiment':
+        try {
+          createExperimentTools().validate(config);
+          createExperimentTools().validateAnalytics(config);
+        } catch (error) {
+          add((error as Error).message, node.id);
+        }
+        break;
       case 'loop':
         if (
           config.iterations !== undefined &&
@@ -353,6 +370,8 @@ export function validateWorkflow(workflow: Workflow): ValidationIssue[] {
       add('Triggers cannot receive incoming connections.', target.id);
     if (source.data.kind === 'fork' && !['true', 'false'].includes(edge.sourceHandle ?? ''))
       add('Connect branches using the Yes or No outputs.', source.id);
+    if (source.data.kind === 'experiment' && !['a', 'b'].includes(edge.sourceHandle ?? ''))
+      add('Connect experiments using the A or B outputs.', source.id);
     if (source.data.kind === 'loop' && !['body', 'done'].includes(edge.sourceHandle ?? ''))
       add('Connect repeats using the Repeat or Done outputs.', source.id);
   }

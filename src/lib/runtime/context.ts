@@ -77,6 +77,7 @@ export function createRuntimeContext(workflow: Workflow, options: RuntimeOptions
   }
 
   return {
+    analyticsMode: options.analyticsMode ?? 'live',
     onConnectionPreview: options.onConnectionPreview,
     data: { exists: false, value: undefined } as DataSelection,
     doc,

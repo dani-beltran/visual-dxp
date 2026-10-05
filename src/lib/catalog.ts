@@ -1,14 +1,15 @@
 import {
   Braces,
   Cookie,
+  FlaskConical,
   Frame,
   GitFork,
   Globe2,
   MousePointerClick,
   PanelTop,
   Repeat2,
-  StickyNote,
   SquareDashedMousePointer,
+  StickyNote,
   Timer,
 } from 'lucide-react';
 import { welcomeJourneyPreset } from '../presets/welcome-journey';
@@ -70,6 +71,15 @@ export const catalog: {
     icon: Repeat2,
     category: 'Logic',
     config: { iterations: 3 },
+  },
+  {
+    kind: 'experiment',
+    label: 'Experiment',
+    description: nodeDescriptions.experiment,
+    color: 'violet',
+    icon: FlaskConical,
+    category: 'Logic',
+    config: { experimentSplit: 50 },
   },
   {
     kind: 'http',
@@ -247,6 +257,11 @@ export function stepSummary(
           return t('summary.chooseCondition');
       }
     }
+    case 'experiment':
+      return t('experiment.summary', {
+        a: c.experimentSplit ?? 50,
+        b: 100 - (c.experimentSplit ?? 50),
+      });
     case 'loop':
       return t('summary.loop', { count: c.iterations ?? 3 });
     case 'popover':

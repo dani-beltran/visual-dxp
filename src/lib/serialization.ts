@@ -9,6 +9,7 @@ const kinds = new Set([
   'dom',
   'cookie',
   'delay',
+  'experiment',
   'fork',
   'loop',
   'popover',
@@ -26,6 +27,13 @@ const strings = [
   'action',
   'value',
   'attribute',
+  'experimentKey',
+  'experimentAnalytics',
+  'experimentId',
+  'experimentSelector',
+  'experimentInteraction',
+  'experimentDelivery',
+  'experimentMeasurementId',
   'cookieName',
   'cookieValue',
   'condition',
@@ -45,6 +53,7 @@ const strings = [
   'noteColor',
 ];
 const numbers = [
+  'experimentSplit',
   'cookieDays',
   'duration',
   'iterations',
@@ -90,6 +99,15 @@ export function isWorkflow(value: unknown): value is Workflow {
     )
       return false;
     const config = node.data.config;
+    if (
+      (config.experimentAnalytics !== undefined &&
+        !['none', 'ga4'].includes(config.experimentAnalytics as string)) ||
+      (config.experimentDelivery !== undefined &&
+        !['gtag', 'gtm'].includes(config.experimentDelivery as string)) ||
+      (config.experimentInteraction !== undefined &&
+        !['click', 'change'].includes(config.experimentInteraction as string))
+    )
+      return false;
     if (
       strings.some((key) => config[key] !== undefined && typeof config[key] !== 'string') ||
       numbers.some(

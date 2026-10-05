@@ -2,12 +2,14 @@ import { buildCookie } from '../cookies';
 import { createDataTools } from '../data';
 import { createDataTransformTools } from '../dataTransform';
 import { getDateRange } from '../dateRange';
+import { createExperimentTools } from '../experiment';
 import { getTimeRange } from '../timeRange';
 import type { Workflow } from '../types';
 import { startBehaviorTrigger } from './behavior-triggers';
 import { matchesCondition } from './conditions';
 import { createRuntimeContext } from './context';
 import { createExecution } from './execution';
+import { createExperimentAnalytics } from './experiment-analytics';
 import { showPopover } from './popovers';
 import { startSwipeTrigger } from './swipe-trigger';
 import { startTriggers } from './triggers';
@@ -18,6 +20,8 @@ import { startZoomTrigger } from './zoom-trigger';
 // functions free of module-scope references so their compiled source can also
 // power exported workflows, including after bundling and minification.
 const runtimeModules = {
+  createExperimentTools,
+  createExperimentAnalytics,
   createDataTransformTools,
   createDataTools,
   buildCookie,

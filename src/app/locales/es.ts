@@ -2,6 +2,79 @@ import type { BuilderMessages } from '../../lib/i18n';
 
 /** Complete Spanish builder catalog supplied by the demo app. */
 export const spanishMessages = {
+  'nodes.experiment.label': 'Experimento',
+  'nodes.experiment.description':
+    'Distribuye los visitantes entre las variantes A y B. Prueba dos experiencias con un reparto de tráfico configurable y asignaciones estables por navegador.',
+  'experiment.analytics': 'Analítica',
+  'experiment.none': 'Sin seguimiento',
+  'experiment.premium': 'Premium',
+  'experiment.id': 'ID del experimento',
+  'experiment.idHint':
+    'Obligatorio. Identifica el experimento en analítica. No es el ID de medición de GA.',
+  'experiment.cta': 'Elemento CTA',
+  'experiment.interaction': 'Interacción del CTA',
+  'experiment.click': 'Clic',
+  'experiment.change': 'Valor del campo confirmado',
+  'experiment.clickInteractionHint':
+    'Clic registra la activación, incluidos los elementos anidados.',
+  'experiment.changeInteractionHint':
+    'Registra cambios confirmados en campos, selectores y casillas.',
+  'experiment.interactionHint':
+    'Clic registra la activación, incluidos los elementos anidados. Change registra cambios confirmados en campos, selectores y casillas.',
+  'experiment.mapping':
+    'Las variantes se asignan a variant_id de la siguiente forma: Variante A → a; Variante B → b. Esta dimensión se enviará con los eventos experiment_view y experiment_cta.',
+  'experiment.delivery': 'Envío de eventos',
+  'experiment.gtag': 'Etiqueta de Google',
+  'experiment.gtm': 'Google Tag Manager',
+  'experiment.gtagHint':
+    'Usa window.gtag ya instalado en el sitio. Deja vacío el ID de medición para usar sus destinos existentes.',
+  'experiment.gtmHint':
+    'Añade experiment_view y experiment_cta con experiment_id, variant_id y cta_type (solo CTA) a window.dataLayer existente. El propietario del sitio debe configurar activadores de eventos personalizados, variables de la capa de datos para estos parámetros y etiquetas de eventos GA4 que los envíen.',
+  'experiment.measurementId': 'ID de medición de GA4 (opcional)',
+  'experiment.measurementIdHint':
+    'Si el sitio web tiene varios destinos, introduce un ID para dirigir los eventos a un flujo de GA4 específico.',
+  'experiment.privacyHint':
+    'Solo usa el método de envío seleccionado. Visual DXP no instala otra etiqueta ni cambia el consentimiento del sitio. Un evento en cola no confirma la recepción; la analítica bloqueada o ausente no detiene el flujo. La vista previa simula eventos en el registro de ejecución.',
+  'experiment.reporting': 'Configurar informes en Google Analytics',
+  'experiment.guideInstall':
+    'Instala o reutiliza la etiqueta GA4 del sitio. En Google Tag Manager, configura el envío descrito arriba.',
+  'experiment.guideId': 'Elige un ID del experimento en Visual DXP, como homepage-cta-v1.',
+  'experiment.guideDimensions':
+    'En Administrar → Definiciones personalizadas de GA4, crea dimensiones personalizadas con ámbito de evento para experiment_id, variant_id y cta_type.',
+  'experiment.guideValues':
+    'Valores como homepage-cta-v1, a y b llegan automáticamente con los eventos. No se registra cada valor manualmente.',
+  'experiment.guideExplore':
+    'En Exploraciones, filtra por experiment_id y compara el embudo experiment_view → experiment_cta por variant_id.',
+  'experiment.guideDebug':
+    'Verifica ambos eventos y sus parámetros en DebugView con el modo de depuración GA4 del sitio o la vista previa de GTM.',
+  'experiment.guideScope':
+    'Visual DXP ejecuta el experimento; GA4 informa de los resultados. No se crea un experimento nativo de Google Analytics ni se determina automáticamente la significación estadística.',
+  'experiment.guideIntegrationLink': 'Crear una integración de experimentos con Google Analytics',
+  'experiment.guideIntegrationHint':
+    'Consulta “In-house and custom experiments” (experimentos propios y personalizados).',
+  'experiment.guideFunnelLink': 'Exploración de embudos de GA4',
+  'experiment.invalidPlatform': 'Elige una plataforma de analítica compatible.',
+  'experiment.requiredId': 'Introduce un ID del experimento para analítica.',
+  'experiment.requiredSelector': 'Elige un elemento CTA para analítica.',
+  'experiment.invalidInteraction': 'Elige click o change para la interacción del CTA.',
+  'experiment.invalidDelivery':
+    'Elige el envío mediante la etiqueta de Google o Google Tag Manager.',
+  'experiment.invalidMeasurementId':
+    'Introduce un ID de medición GA4 válido, como G-XXXXXXXXXX, o déjalo vacío.',
+  'experiment.trafficA': 'Tráfico a A (%)',
+  'experiment.splitHint':
+    'B recibe el tráfico restante. Los cambios se aplican a las nuevas asignaciones; los visitantes existentes conservan su variante.',
+  'experiment.key': 'Clave del experimento (opcional)',
+  'experiment.keyHint':
+    'Por defecto se usa el ID del nodo. Cambia la clave para iniciar un experimento nuevo. Los nodos con la misma clave en este sitio comparten asignaciones.',
+  'experiment.assignmentHint':
+    'Las asignaciones se guardan en este navegador para este sitio. Si el almacenamiento no está disponible, como en la vista previa aislada, solo duran hasta reiniciar el flujo. Conecta A y B a las experiencias que quieras comparar. Las conversiones no se registran automáticamente.',
+  'experiment.variantA': 'Variante A',
+  'experiment.variantB': 'Variante B',
+  'experiment.outputA': 'Se ejecuta para A.',
+  'experiment.outputB': 'Se ejecuta para B.',
+  'experiment.invalidOutput': 'Conecta los experimentos usando las salidas A o B.',
+  'experiment.summary': ({ a, b }: { a: number; b: number }) => `A ${a}% · B ${b}%`,
   'nodes.transform.label': 'Transformación de datos',
   'nodes.transform.description':
     'Selecciona un campo de los datos entrantes y transforma su valor. El resultado se transmite a los siguientes pasos.',
@@ -107,8 +180,7 @@ export const spanishMessages = {
     'Los cambios de este flujo de trabajo aparecerán aquí.',
   'canvasChat.addAWelcomePopoverAfterA2SecondDelay':
     'Añade una ventana emergente de bienvenida tras una espera de 2 segundos',
-  'canvasChat.explainThisWorkflow':
-    'Explica qué hace este flujo de trabajo',
+  'canvasChat.explainThisWorkflow': 'Explica qué hace este flujo de trabajo',
   'canvasChat.changeTheSelectedStep': 'Cambia el paso seleccionado',
   'canvasChat.stoppedNoChangesWereMade': 'Detenido. No se ha realizado ningún cambio.',
   'canvasChat.aiChat': 'Chat de IA',
