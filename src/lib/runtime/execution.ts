@@ -8,7 +8,7 @@ import type { Workflow } from '../types';
 import type { matchesCondition } from './conditions';
 import type { RuntimeContext } from './context';
 import type { createExperimentAnalytics } from './experiment-analytics';
-import type { showPopover } from './popovers';
+import type { createPopoverElements, showPopover } from './popovers';
 import type { WorkflowRuntime } from './types';
 
 interface ExecutionModules {
@@ -20,6 +20,7 @@ interface ExecutionModules {
   matchesCondition: typeof matchesCondition;
   getDateRange: typeof getDateRange;
   getTimeRange: typeof getTimeRange;
+  createPopoverElements: typeof createPopoverElements;
   showPopover: typeof showPopover;
 }
 
@@ -33,6 +34,7 @@ export function createExecution(
     matchesCondition,
     getDateRange,
     getTimeRange,
+    createPopoverElements,
     showPopover,
     createDataTools,
     createDataTransformTools,
@@ -256,7 +258,7 @@ export function createExecution(
               throw new Error('Repeat count must be an integer from 1 to 1,000.');
             break;
           case 'popover':
-            showPopover(node, context);
+            showPopover(node, context, createPopoverElements);
             break;
           default:
             throw new Error(`Unknown step type: ${String(node.data.kind)}.`);

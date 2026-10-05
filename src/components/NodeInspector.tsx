@@ -27,6 +27,7 @@ import { ExperimentAnalyticsInspector } from './ExperimentAnalyticsInspector';
 import { InfoBox } from './InfoBox';
 import { NoteControls } from './NoteControls';
 import { NoteTextEditor } from './NoteTextEditor';
+import { PopoverContentPreview } from './PopoverContentPreview';
 import { Select } from './Select';
 import '../styles/inspector.css';
 
@@ -959,11 +960,7 @@ export function NodeInspector({
                 </button>
               </div>
               {(config.contentType ?? 'html') === 'html' && config.content ? (
-                <iframe
-                  title={t('nodeInspector.popoverHtmlPreview')}
-                  sandbox=""
-                  srcDoc={`<!doctype html><html><head><meta name="viewport" content="width=device-width, initial-scale=1"><style>body{font-family:system-ui,sans-serif;font-size:13px;color:#243c31;padding:8px;overflow-wrap:anywhere}h1,h2,h3{font-size:17px;margin:8px 0}p{line-height:1.6}img{max-width:100%}button{font:inherit}</style></head><body>${config.content}</body></html>`}
-                />
+                <PopoverContentPreview node={node} title={t('nodeInspector.popoverHtmlPreview')} />
               ) : (
                 <p className="dxp-inspector-preview-hint">
                   {t('nodeInspector.previewYourPopoverInPositionOnTheDemoWebsite')}

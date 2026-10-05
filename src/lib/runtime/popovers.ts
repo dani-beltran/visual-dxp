@@ -1,11 +1,9 @@
 import type { WorkflowNode } from '../types';
 import type { RuntimeContext } from './context';
 
-export function showPopover(node: WorkflowNode, context: RuntimeContext): void {
-  const { doc, win, popovers, selectorElements } = context;
+/** Shared DOM and styles for runtime popovers and the sandboxed inspector preview. */
+export function createPopoverElements(node: WorkflowNode, doc: Document, anchored: boolean) {
   const config = node.data.config;
-  const anchor = config.position === 'anchor' ? selectorElements(config.selector)[0] : null;
-  popovers.get(node.id)?.();
   const panel = doc.createElement('section');
   panel.dataset.visualDxpPopover = node.id;
   panel.setAttribute('role', 'dialog');
@@ -34,7 +32,7 @@ export function showPopover(node: WorkflowNode, context: RuntimeContext): void {
     boxShadow: '0 18px 70px rgba(20, 35, 45, .24)',
     padding: '28px 24px 24px',
   });
-  const arrow = anchor ? doc.createElementNS('http://www.w3.org/2000/svg', 'svg') : null;
+  const arrow = anchored ? doc.createElementNS('http://www.w3.org/2000/svg', 'svg') : null;
   if (arrow) {
     arrow.setAttribute('aria-hidden', 'true');
     arrow.setAttribute('focusable', 'false');
@@ -94,6 +92,19 @@ export function showPopover(node: WorkflowNode, context: RuntimeContext): void {
   surface.append(close, content);
   panel.appendChild(surface);
   if (arrow) panel.appendChild(arrow);
+  return { panel, surface, arrow, close };
+}
+
+export function showPopover(
+  node: WorkflowNode,
+  context: RuntimeContext,
+  createElements: typeof createPopoverElements,
+): void {
+  const { doc, win, popovers, selectorElements } = context;
+  const config = node.data.config;
+  const anchor = config.position === 'anchor' ? selectorElements(config.selector)[0] : null;
+  popovers.get(node.id)?.();
+  const { panel, arrow, close } = createElements(node, doc, Boolean(anchor));
   (doc.body ?? doc.documentElement).appendChild(panel);
 
   function place(): void {
