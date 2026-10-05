@@ -10,7 +10,7 @@ export const spanishMessages = {
   'experiment.premium': 'Premium',
   'experiment.id': 'ID del experimento',
   'experiment.idHint':
-    'Obligatorio. Identifica el experimento en analítica (p. ej. homepage-cta-v1). No es el ID de medición de GA.',
+    'Obligatorio. Identifica el experimento en analítica. No es el ID de medición de GA.',
   'experiment.cta': 'Elemento CTA',
   'experiment.interaction': 'Interacción del CTA',
   'experiment.click': 'Clic',

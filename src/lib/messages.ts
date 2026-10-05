@@ -8,7 +8,7 @@ export const englishMessages = {
   'experiment.premium': 'Premium',
   'experiment.id': 'Experiment ID',
   'experiment.idHint':
-    'Required. Identifies this experiment in analytics (e.g. homepage-cta-v1). This is not the GA measurement ID.',
+    'Required. Identifies this experiment in analytics. This is not the GA measurement ID.',
   'experiment.cta': 'CTA element',
   'experiment.interaction': 'CTA interaction',
   'experiment.click': 'Click',
