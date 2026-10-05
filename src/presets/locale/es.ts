@@ -95,7 +95,7 @@ export const spanishPresetMessages = {
   'campaign-headline.workflow.nodes.campaign-headline-setup-1.data.label':
     'Configuración: Fechas de la campaña',
   'campaign-headline.workflow.nodes.campaign-headline-setup-1.data.config.noteText':
-    'Elige el primer y último día de tu campaña. Las fechas sugeridas abarcan de lunes a domingo de la semana actual en UTC, una hora de referencia mundial. Recarga la aplicación para renovar las sugerencias. Los recorridos ya añadidos o descargados conservan sus fechas guardadas.',
+    'Elige el primer y último día de tu campaña. Las fechas sugeridas abarcan de lunes a domingo de la semana actual en UTC, una hora de referencia mundial.',
   'campaign-headline.workflow.nodes.campaign-headline-setup-2.data.label':
     'Configuración: Título de la página',
   'campaign-headline.workflow.nodes.campaign-headline-setup-2.data.config.noteText':
@@ -133,26 +133,28 @@ export const spanishPresetMessages = {
     'Coincidencia de campaña',
   'campaign-url-personalization.workflow.edges.campaign-check-to-campaign-default.label':
     'Predeterminado',
-  'click-to-open-help.name': 'Ayuda al hacer clic',
+  'click-to-open-help.name': 'Destacar el boletín',
   'click-to-open-help.description':
-    'Ofrece ayuda sobre el boletín junto al formulario cuando se hace clic en el enlace del boletín.',
-  'click-to-open-help.workflow.name': 'Ayuda al hacer clic',
-  'click-to-open-help.workflow.nodes.help-click.data.label': 'Clic en el enlace del boletín',
+    'Destaca el boletín al cargar la página mostrando un popover junto al formulario de suscripción solo si el formulario existe.',
+  'click-to-open-help.workflow.name': 'Destacar el boletín',
+  'click-to-open-help.workflow.nodes.help-load.data.label': 'Página cargada',
+  'click-to-open-help.workflow.nodes.help-check.data.label': 'Existe el formulario del boletín',
   'click-to-open-help.workflow.nodes.help-popover.data.label': 'Ayuda del boletín',
   'click-to-open-help.workflow.nodes.help-popover.data.config.content':
     '<style>[data-visual-dxp-popover="help-popover"] > div { background: #697856 !important; border-color: #697856 !important; } [data-visual-dxp-popover="help-popover"] > svg path { fill: #697856 !important; stroke: #697856 !important; } [data-visual-dxp-popover="help-popover"] button[aria-label="Close experience"] { color: #fff !important; }</style><p style="margin:-28px -24px -24px;padding:14px 40px 14px 16px;background:#697856;color:#fff;font:300 14px/1.5 Georgia,serif;letter-spacing:-0.15px;box-sizing:border-box;overflow-wrap:anywhere"><span aria-hidden="true">✉️</span> Introduce tu correo electrónico y selecciona la flecha para suscribirte.</p>',
   'click-to-open-help.workflow.nodes.click-to-open-help-setup-1.data.label':
-    'Configuración: Enlace de ayuda y formulario',
+    'Configuración: Comprobación del formulario',
   'click-to-open-help.workflow.nodes.click-to-open-help-setup-1.data.config.noteText':
-    'En la demo, el enlace al boletín de la colección lleva al formulario de suscripción y abre ayuda a su lado. Elige tu enlace y formulario. Asegúrate de que el enlace o botón de ayuda también se pueda usar con teclado.',
+    'Al cargar la página, la condición comprueba si existe #newsletter form. Si existe, la rama verdadera abre el popover; de lo contrario, el flujo termina. Configura el selector de la condición y el anclaje del popover para que apunten al mismo formulario de tu sitio.',
   'click-to-open-help.workflow.nodes.click-to-open-help-setup-2.data.label':
-    'Configuración: Mensaje de ayuda',
+    'Configuración: Mensaje del boletín',
   'click-to-open-help.workflow.nodes.click-to-open-help-setup-2.data.config.noteText':
-    'Edita el mensaje para explicar tu boletín y sus condiciones. Abrir esta ayuda no suscribe a nadie ni confirma una suscripción.',
+    'Edita el mensaje del popover para destacar tu boletín y explicar sus condiciones de suscripción. El mensaje aparece automáticamente si existe el formulario; no suscribe a nadie ni confirma una suscripción.',
   'click-to-open-help.workflow.nodes.click-to-open-help-overview.data.label':
     'Resumen del preajuste',
   'click-to-open-help.workflow.nodes.click-to-open-help-overview.data.config.noteText':
-    'Ofrece ayuda sobre el boletín junto al formulario cuando se hace clic en el enlace del boletín.',
+    'Destaca el boletín al cargar la página mostrando un popover junto al formulario de suscripción solo si el formulario existe.',
+  'click-to-open-help.workflow.edges.help-check-to-help-popover.label': 'El formulario existe',
   'delayed-welcome.name': 'Bienvenida con espera',
   'delayed-welcome.description':
     'Da a los visitantes dos segundos para acomodarse antes de mostrar un breve mensaje de bienvenida.',

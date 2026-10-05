@@ -11,10 +11,10 @@ import {
   blankPreset,
   boundedCtaAttentionPreset,
   campaignUrlPersonalizationPreset,
-  clickToOpenHelpPreset,
   commonDXPPresets,
   contextualSupportPreset,
   delayedWelcomePreset,
+  drawAttentionToNewsletterPreset,
   engagedReaderInvitationPreset,
   exitIntentOfferPreset,
   frustrationRecoveryPreset,
@@ -297,14 +297,17 @@ describe('preset execution with a mocked browser and network', () => {
       expect(JSON.parse(JSON.stringify(campaignHeadlinePreset))).toEqual(campaignHeadlinePreset);
     },
   );
-  it('opens anchored help from a real delegated click', async () => {
-    runtime(clickToOpenHelpPreset).start();
-    element('#collection .section-heading a').dispatchEvent(
-      new MouseEvent('click', { bubbles: true }),
-    );
-    await vi.advanceTimersByTimeAsync(0);
-    expect(popover('help-popover')).not.toBeNull();
-  });
+  it.each([true, false])(
+    'checks the newsletter form on page load before showing help (form exists: %s)',
+    async (formExists) => {
+      if (!formExists) element('#newsletter form').remove();
+      runtime(drawAttentionToNewsletterPreset).start();
+      await vi.advanceTimersByTimeAsync(0);
+      expect(successful()).toContain('help-check');
+      expect(popover('help-popover') !== null).toBe(formExists);
+      expect(successful().includes('help-popover')).toBe(formExists);
+    },
+  );
   it('waits two seconds before rendering the welcome', async () => {
     const running = runtime(delayedWelcomePreset).run();
     await vi.advanceTimersByTimeAsync(1999);

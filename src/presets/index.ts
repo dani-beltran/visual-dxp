@@ -9,9 +9,12 @@ import {
   campaignUrlPersonalizationPreset,
   createCampaignUrlPersonalizationPreset,
 } from './campaign-url-personalization';
-import { clickToOpenHelpPreset, createClickToOpenHelpPreset } from './click-to-open-help';
 import { contextualSupportPreset, createContextualSupportPreset } from './contextual-support';
 import { createDelayedWelcomePreset, delayedWelcomePreset } from './delayed-welcome';
+import {
+  createDrawAttentionToNewsletterPreset,
+  drawAttentionToNewsletterPreset,
+} from './draw-attention-to-newsletter';
 import {
   createEngagedReaderInvitationPreset,
   engagedReaderInvitationPreset,
@@ -40,9 +43,9 @@ export {
   boundedCtaAttentionPreset,
   campaignHeadlinePreset,
   campaignUrlPersonalizationPreset,
-  clickToOpenHelpPreset,
   contextualSupportPreset,
   delayedWelcomePreset,
+  drawAttentionToNewsletterPreset,
   engagedReaderInvitationPreset,
   exitIntentOfferPreset,
   frustrationRecoveryPreset,
@@ -56,7 +59,7 @@ export {
 /** Curated examples in ascending implementation complexity; opt in through the presets prop. */
 export const commonDXPPresets: readonly WorkflowPreset[] = [
   blankPreset,
-  clickToOpenHelpPreset,
+  drawAttentionToNewsletterPreset,
   delayedWelcomePreset,
   campaignHeadlinePreset,
   engagedReaderInvitationPreset,
@@ -81,7 +84,7 @@ const spanishPresets: readonly WorkflowPreset[] = [
   createBoundedCtaAttentionPreset(spanishPresetMessages),
   createCampaignHeadlinePreset(spanishPresetMessages),
   createCampaignUrlPersonalizationPreset(spanishPresetMessages),
-  createClickToOpenHelpPreset(spanishPresetMessages),
+  createDrawAttentionToNewsletterPreset(spanishPresetMessages),
   createContextualSupportPreset(spanishPresetMessages),
   createDelayedWelcomePreset(spanishPresetMessages),
   createEngagedReaderInvitationPreset(spanishPresetMessages),

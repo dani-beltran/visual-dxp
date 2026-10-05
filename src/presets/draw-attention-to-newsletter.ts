@@ -1,14 +1,16 @@
 import type { WorkflowPreset } from '../lib/types';
 import { englishPresetMessages, type PresetMessages } from './locale/en';
 
-export function createClickToOpenHelpPreset(messages: PresetMessages = englishPresetMessages) {
+export function createDrawAttentionToNewsletterPreset(
+  messages: PresetMessages = englishPresetMessages,
+) {
   return {
     id: 'click-to-open-help',
     name: messages['click-to-open-help.name'],
     description: messages['click-to-open-help.description'],
     complexity: 'beginner',
     order: 10,
-    tags: ['trigger', 'popover', 'note'],
+    tags: ['trigger', 'fork', 'popover', 'note'],
     workflow: {
       version: 1,
       name: messages['click-to-open-help.workflow.name'],
@@ -16,7 +18,7 @@ export function createClickToOpenHelpPreset(messages: PresetMessages = englishPr
       includeSubpages: false,
       nodes: [
         {
-          id: 'help-click',
+          id: 'help-load',
           type: 'workflow',
           position: {
             x: 60,
@@ -24,10 +26,25 @@ export function createClickToOpenHelpPreset(messages: PresetMessages = englishPr
           },
           data: {
             kind: 'trigger',
-            label: messages['click-to-open-help.workflow.nodes.help-click.data.label'],
+            label: messages['click-to-open-help.workflow.nodes.help-load.data.label'],
             config: {
-              event: 'click',
-              selector: '#collection .section-heading a',
+              event: 'page-load',
+            },
+          },
+        },
+        {
+          id: 'help-check',
+          type: 'workflow',
+          position: {
+            x: 400,
+            y: 180,
+          },
+          data: {
+            kind: 'fork',
+            label: messages['click-to-open-help.workflow.nodes.help-check.data.label'],
+            config: {
+              conditionType: 'selector',
+              condition: '#newsletter form',
             },
           },
         },
@@ -35,7 +52,7 @@ export function createClickToOpenHelpPreset(messages: PresetMessages = englishPr
           id: 'help-popover',
           type: 'workflow',
           position: {
-            x: 400,
+            x: 740,
             y: 180,
           },
           data: {
@@ -55,7 +72,7 @@ export function createClickToOpenHelpPreset(messages: PresetMessages = englishPr
           id: 'click-to-open-help-setup-1',
           type: 'workflow',
           position: {
-            x: 60,
+            x: 400,
             y: 460,
           },
           data: {
@@ -75,7 +92,7 @@ export function createClickToOpenHelpPreset(messages: PresetMessages = englishPr
           id: 'click-to-open-help-setup-2',
           type: 'workflow',
           position: {
-            x: 400,
+            x: 740,
             y: 460,
           },
           data: {
@@ -114,9 +131,17 @@ export function createClickToOpenHelpPreset(messages: PresetMessages = englishPr
       ],
       edges: [
         {
-          id: 'help-click-to-help-popover',
-          source: 'help-click',
+          id: 'help-load-to-help-check',
+          source: 'help-load',
+          target: 'help-check',
+          type: 'smoothstep',
+        },
+        {
+          id: 'help-check-to-help-popover',
+          source: 'help-check',
           target: 'help-popover',
+          sourceHandle: 'true',
+          label: messages['click-to-open-help.workflow.edges.help-check-to-help-popover.label'],
           type: 'smoothstep',
         },
       ],
@@ -124,4 +149,4 @@ export function createClickToOpenHelpPreset(messages: PresetMessages = englishPr
   } satisfies WorkflowPreset;
 }
 
-export const clickToOpenHelpPreset = createClickToOpenHelpPreset();
+export const drawAttentionToNewsletterPreset = createDrawAttentionToNewsletterPreset();

@@ -89,7 +89,7 @@ export const englishPresetMessages = {
     'A new season of everyday favorites.',
   'campaign-headline.workflow.nodes.campaign-headline-setup-1.data.label': 'Setup: Campaign dates',
   'campaign-headline.workflow.nodes.campaign-headline-setup-1.data.config.noteText':
-    'Choose the first and last day of your campaign. The suggested dates cover Monday to Sunday of the current week in UTC, a worldwide reference time. Reload the app to refresh the suggestions. Dates in a journey you already added or downloaded stay as saved.',
+    'Choose the first and last day of your campaign. The suggested dates cover Monday to Sunday of the current week in UTC, a worldwide reference time.',
   'campaign-headline.workflow.nodes.campaign-headline-setup-2.data.label': 'Setup: Page heading',
   'campaign-headline.workflow.nodes.campaign-headline-setup-2.data.config.noteText':
     'Choose the main page heading to replace and write your campaign message. Replacing it may remove special formatting within the heading. Outside the campaign dates, the page stays as it is.',
@@ -124,24 +124,27 @@ export const englishPresetMessages = {
   'campaign-url-personalization.workflow.edges.campaign-check-to-campaign-matched.label':
     'Campaign match',
   'campaign-url-personalization.workflow.edges.campaign-check-to-campaign-default.label': 'Default',
-  'click-to-open-help.name': 'Click-to-open help',
+  'click-to-open-help.name': 'Draw attention to newsletter',
   'click-to-open-help.description':
-    'Offer newsletter help next to the form when the newsletter link is clicked.',
-  'click-to-open-help.workflow.name': 'Click-to-open help',
-  'click-to-open-help.workflow.nodes.help-click.data.label': 'Click newsletter link',
+    'Draw attention to the newsletter on page load by showing a popover beside the signup form only when the form exists.',
+  'click-to-open-help.workflow.name': 'Draw attention to newsletter',
+  'click-to-open-help.workflow.nodes.help-load.data.label': 'Page loaded',
+  'click-to-open-help.workflow.nodes.help-check.data.label': 'Newsletter form exists',
   'click-to-open-help.workflow.nodes.help-popover.data.label': 'Newsletter help',
   'click-to-open-help.workflow.nodes.help-popover.data.config.content':
     '<style>[data-visual-dxp-popover="help-popover"] > div { background: #697856 !important; border-color: #697856 !important; } [data-visual-dxp-popover="help-popover"] > svg path { fill: #697856 !important; stroke: #697856 !important; } [data-visual-dxp-popover="help-popover"] button[aria-label="Close experience"] { color: #fff !important; }</style><p style="margin:-28px -24px -24px;padding:14px 40px 14px 16px;background:#697856;color:#fff;font:300 14px/1.5 Georgia,serif;letter-spacing:-0.15px;box-sizing:border-box;overflow-wrap:anywhere"><span aria-hidden="true">✉️</span> Enter your email, then select the arrow to subscribe.</p>',
   'click-to-open-help.workflow.nodes.click-to-open-help-setup-1.data.label':
-    'Setup: Help link and form',
+    'Setup: Newsletter form check',
   'click-to-open-help.workflow.nodes.click-to-open-help-setup-1.data.config.noteText':
-    'In the demo, the newsletter link in the collection section takes visitors to the signup form and opens help beside it. Choose your own link and form. Make sure people can also use the link or help button with a keyboard.',
-  'click-to-open-help.workflow.nodes.click-to-open-help-setup-2.data.label': 'Setup: Help message',
+    'On page load, the condition checks whether #newsletter form exists. If it does, the true branch opens the popover; otherwise, the flow ends. Set the condition selector and popover anchor to the same newsletter form on your site.',
+  'click-to-open-help.workflow.nodes.click-to-open-help-setup-2.data.label':
+    'Setup: Newsletter message',
   'click-to-open-help.workflow.nodes.click-to-open-help-setup-2.data.config.noteText':
-    'Edit the message to explain your newsletter and its signup terms. Opening this help does not sign anyone up or confirm a subscription.',
+    'Edit the popover message to draw attention to your newsletter and explain its signup terms. The message appears automatically when the form exists; it does not sign anyone up or confirm a subscription.',
   'click-to-open-help.workflow.nodes.click-to-open-help-overview.data.label': 'Preset overview',
   'click-to-open-help.workflow.nodes.click-to-open-help-overview.data.config.noteText':
-    'Offer newsletter help next to the form when the newsletter link is clicked.',
+    'Draw attention to the newsletter on page load by showing a popover beside the signup form only when the form exists.',
+  'click-to-open-help.workflow.edges.help-check-to-help-popover.label': 'Form exists',
   'delayed-welcome.name': 'Delayed welcome',
   'delayed-welcome.description':
     'Give visitors two seconds to settle in before a small welcome message.',
