@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
-import { act } from 'react';
+import { act, StrictMode } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { NodeInspector } from '../src/components/NodeInspector';
+import { PopoverContentPreview } from '../src/components/PopoverContentPreview';
 import { createNode } from '../src/lib/catalog';
 import { createRuntime } from '../src/lib/runtime/runtime';
 import type { WorkflowNode } from '../src/lib/types';
@@ -44,6 +45,44 @@ async function preview(node: WorkflowNode) {
   expect(frame.getAttribute('sandbox')).toBe('');
   return new DOMParser().parseFromString(frame.srcdoc, 'text/html');
 }
+
+it('mounts a populated sandboxed document and replaces it when anchored content changes', async () => {
+  const node = createNode('popover');
+  node.data.config = { position: 'anchor', content: '<p>Original</p>' };
+  const inserted: HTMLIFrameElement[] = [];
+  const observer = new MutationObserver((records) => {
+    for (const record of records) {
+      for (const element of record.addedNodes) {
+        if (element instanceof HTMLIFrameElement) inserted.push(element);
+      }
+    }
+  });
+  observer.observe(host, { childList: true, subtree: true });
+  try {
+    const render = async (value: WorkflowNode) => {
+      await act(async () =>
+        root.render(
+          <StrictMode>
+            <PopoverContentPreview node={value} title="Content" />
+          </StrictMode>,
+        ),
+      );
+    };
+    await render(node);
+    const original = host.querySelector('iframe');
+    await render({
+      ...node,
+      data: { ...node.data, config: { ...node.data.config, content: '<p>Updated</p>' } },
+    });
+    expect(inserted).toHaveLength(2);
+    expect(inserted.every((frame) => frame.srcdoc.startsWith('<!doctype html>'))).toBe(true);
+    expect(original?.isConnected).toBe(false);
+    expect(host.querySelector('iframe')?.srcdoc).toContain('<p>Updated</p>');
+    expect(host.querySelector('iframe')?.getAttribute('sandbox')).toBe('');
+  } finally {
+    observer.disconnect();
+  }
+});
 
 it('matches scoped surface, arrow, and close styles with the same markup as the runtime', async () => {
   const node = createNode('popover');

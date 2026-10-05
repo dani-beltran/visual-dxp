@@ -118,6 +118,21 @@ describe.each(['live', 'exported'] as const)('%s popover arrows', (mode) => {
     expect(Number.parseFloat(arrow.style.left) + 20).toBeLessThanOrEqual(360 - 16);
   });
 
+  it('keeps the panel visible when its anchor scrolls outside either viewport edge', async () => {
+    const { target, panel, arrow } = await show();
+    target.top = 2000;
+    window.dispatchEvent(new Event('scroll'));
+    expect(panel.style.top).toBe('552px');
+    expect(arrow.style.bottom).toBe('-9px');
+    expect(arrow.style.transform).toBe('rotate(180deg)');
+
+    target.top = -500;
+    window.dispatchEvent(new Event('scroll'));
+    expect(panel.style.top).toBe('16px');
+    expect(arrow.style.top).toBe('-9px');
+    expect(arrow.style.transform).toBe('');
+  });
+
   it('removes the arrow with the popover and detaches positioning listeners', async () => {
     const { target, panel, arrow } = await show();
     panel.querySelector('button')?.click();

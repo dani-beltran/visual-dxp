@@ -213,39 +213,59 @@ describe('fullscreen popover preview', () => {
     expect(panel(doc).style.transform).toBe('translate(-50%, -50%)');
   });
 
-  it('positions relative to the selected website element and follows scrolling', async () => {
-    await renderPreview(popover({ position: 'anchor', selector: '#shop-now' }));
-    const frame = websiteFrame();
-    const doc = frame.contentDocument;
-    if (!doc) throw new Error('Expected the preview website document.');
-    if (!doc.documentElement) doc.appendChild(doc.createElement('html'));
-    if (!doc.body) doc.documentElement.appendChild(doc.createElement('body'));
-    doc.body.innerHTML = '<button id="shop-now">Shop the collection</button>';
-    const anchor = doc.querySelector<HTMLElement>('#shop-now');
-    if (!anchor) throw new Error('Expected the demo anchor.');
-    let top = 140;
-    anchor.getBoundingClientRect = vi.fn(() => ({
-      x: 180,
-      y: top,
-      left: 180,
-      top,
-      right: 280,
-      bottom: top + 40,
-      width: 100,
-      height: 40,
-      toJSON: () => ({}),
-    }));
-    anchor.scrollIntoView = vi.fn();
+  it.each([140, 2000])(
+    'keeps the popover visible with an anchor at y=%s and follows scrolling',
+    async (initialTop) => {
+      await renderPreview(popover({ position: 'anchor', selector: '#shop-now' }));
+      const frame = websiteFrame();
+      const doc = frame.contentDocument;
+      if (!doc) throw new Error('Expected the preview website document.');
+      if (!doc.documentElement) doc.appendChild(doc.createElement('html'));
+      if (!doc.body) doc.documentElement.appendChild(doc.createElement('body'));
+      doc.body.innerHTML = '<button id="shop-now">Shop the collection</button>';
+      const anchor = doc.querySelector<HTMLElement>('#shop-now');
+      if (!anchor) throw new Error('Expected the demo anchor.');
+      let top = initialTop;
+      const win = frame.contentWindow;
+      if (!win) throw new Error('Expected the preview window.');
+      vi.spyOn(win, 'innerHeight', 'get').mockReturnValue(768);
+      vi.spyOn(
+        Object.getPrototypeOf(doc.createElement('section')),
+        'getBoundingClientRect',
+      ).mockReturnValue({
+        x: 0,
+        y: 0,
+        left: 0,
+        top: 0,
+        right: 420,
+        bottom: 200,
+        width: 420,
+        height: 200,
+        toJSON: () => ({}),
+      });
+      anchor.getBoundingClientRect = vi.fn(() => ({
+        x: 180,
+        y: top,
+        left: 180,
+        top,
+        right: 280,
+        bottom: top + 40,
+        width: 100,
+        height: 40,
+        toJSON: () => ({}),
+      }));
+      anchor.scrollIntoView = vi.fn();
 
-    connectPreview(frame);
-    await act(async () => frame.dispatchEvent(new Event('load')));
-    expect(panel(doc).style.left).toBe('180px');
-    expect(panel(doc).style.top).toBe('192px');
+      connectPreview(frame);
+      await act(async () => frame.dispatchEvent(new Event('load')));
+      expect(panel(doc).style.left).toBe('180px');
+      expect(panel(doc).style.top).toBe(initialTop === 140 ? '192px' : '552px');
 
-    top = 80;
-    await act(async () => frame.contentWindow?.dispatchEvent(new Event('scroll')));
-    expect(panel(doc).style.top).toBe('132px');
-  });
+      top = 80;
+      await act(async () => frame.contentWindow?.dispatchEvent(new Event('scroll')));
+      expect(panel(doc).style.top).toBe('132px');
+    },
+  );
 
   it('shows an error when the anchor does not exist on the demo website', async () => {
     await renderPreview(popover({ position: 'anchor', selector: '#missing-anchor' }));

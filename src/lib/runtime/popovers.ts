@@ -119,7 +119,8 @@ export function showPopover(
       const above = rect.bottom + 12 + panelRect.height > viewportHeight - 16;
       const top = above ? rect.top - panelRect.height - 12 : rect.bottom + 12;
       panel.style.left = `${left}px`;
-      panel.style.top = `${Math.max(16, top)}px`;
+      // Flipping above an offscreen anchor can still leave the panel below the viewport.
+      panel.style.top = `${Math.max(16, Math.min(top, viewportHeight - panelRect.height - 16))}px`;
       if (arrow) {
         // Leave room for the rounded corners when the panel hits a viewport edge.
         const center = Math.max(
