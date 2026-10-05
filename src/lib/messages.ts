@@ -445,6 +445,14 @@ export const englishMessages = {
   'nodeInspector.websiteUrl': 'Website URL',
   'nodeInspector.theWebsiteMustAllowEmbeddingInAnIframe':
     'The website must allow embedding in an iframe.',
+  'nodeInspector.popoverAnimation': 'Animation',
+  'nodeInspector.animationNone': 'None',
+  'nodeInspector.animationFade': 'Fade',
+  'nodeInspector.animationSlide': 'Slide',
+  'nodeInspector.animationZoom': 'Zoom',
+  'nodeInspector.animationBounce': 'Bounce',
+  'nodeInspector.animationHint':
+    'Preview the animation in full screen. Direction follows the popover position.',
   'nodeInspector.position': 'Position',
   'nodeInspector.centerOfScreen': 'Center of screen',
   'nodeInspector.topLeft': 'Top left',

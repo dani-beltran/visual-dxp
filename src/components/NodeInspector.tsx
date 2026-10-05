@@ -929,6 +929,25 @@ export function NodeInspector({
             </Field>
             {config.position === 'anchor' && targetField(t('nodeInspector.anchorElement'))}
             <Field
+              label={t('nodeInspector.popoverAnimation')}
+              htmlFor={id('popover-animation')}
+              hint={t('nodeInspector.animationHint')}
+            >
+              <Select
+                id={id('popover-animation')}
+                value={config.popoverAnimation ?? 'none'}
+                onChange={(event) =>
+                  update({ popoverAnimation: event.target.value as StepConfig['popoverAnimation'] })
+                }
+              >
+                <option value="none">{t('nodeInspector.animationNone')}</option>
+                <option value="fade">{t('nodeInspector.animationFade')}</option>
+                <option value="slide">{t('nodeInspector.animationSlide')}</option>
+                <option value="zoom">{t('nodeInspector.animationZoom')}</option>
+                <option value="bounce">{t('nodeInspector.animationBounce')}</option>
+              </Select>
+            </Field>
+            <Field
               label={t('nodeInspector.popoverWidth')}
               htmlFor={id('width')}
               hint={t('nodeInspector.chooseAWidthBetween240And960Pixels')}

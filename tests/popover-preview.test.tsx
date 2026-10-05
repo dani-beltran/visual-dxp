@@ -82,6 +82,59 @@ function panel(doc: Document) {
 }
 
 describe('fullscreen popover preview', () => {
+  it('plays the selected animation when entering fullscreen', async () => {
+    await renderPreview(popover({ popoverAnimation: 'bounce' }));
+    const frame = websiteFrame();
+    const doc = frame.contentDocument;
+    if (!doc) throw new Error('Expected the preview document.');
+    const prototype = Object.getPrototypeOf(doc.createElement('section'));
+    const animate = vi.fn((_frames: Keyframe[], _options: KeyframeAnimationOptions) => ({
+      cancel: vi.fn(),
+    }));
+    Object.defineProperty(prototype, 'animate', { configurable: true, value: animate });
+    try {
+      await loadWebsite();
+      expect(animate).toHaveBeenCalledOnce();
+      expect(animate.mock.calls[0]?.[1]).toMatchObject({ duration: 480 });
+    } finally {
+      Reflect.deleteProperty(prototype, 'animate');
+    }
+  });
+
+  it('saves the animation selected in the node inspector', async () => {
+    const onChange = vi.fn();
+    await act(async () =>
+      root.render(
+        <NodeInspector
+          node={popover()}
+          onChange={onChange}
+          onClose={vi.fn()}
+          onPickElement={vi.fn()}
+          onDelete={vi.fn()}
+          onDuplicate={vi.fn()}
+          onPreviewContent={vi.fn()}
+        />,
+      ),
+    );
+    const label = [...document.querySelectorAll('label')].find(
+      (item) => item.textContent === 'Animation',
+    );
+    const select = document.getElementById(label?.htmlFor ?? '');
+    if (!(select instanceof HTMLSelectElement)) throw new Error('Expected the animation selector.');
+    expect(select.value).toBe('none');
+    for (const effect of ['fade', 'slide', 'zoom', 'bounce', 'none']) {
+      await act(async () => {
+        select.value = effect;
+        select.dispatchEvent(new Event('change', { bubbles: true }));
+      });
+      expect(onChange).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          config: expect.objectContaining({ popoverAnimation: effect }),
+        }),
+      );
+    }
+  });
+
   it('loads the configured external website and runs its popover through the bridge', async () => {
     const websiteUrl = 'https://shop.example/products?preview=1';
     await renderPreview(popover(), vi.fn(), websiteUrl);
