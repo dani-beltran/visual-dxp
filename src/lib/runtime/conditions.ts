@@ -97,7 +97,11 @@ export function matchesCondition(
       if (!key?.trim()) throw new Error('Enter a name for the condition variable.');
       if (type === 'query-param') {
         try {
-          return new URL(win.location.href).searchParams.getAll(key).includes(expected);
+          const params =
+            context.searchParams === undefined
+              ? new URL(win.location.href).searchParams
+              : new URLSearchParams(context.searchParams);
+          return params.getAll(key).includes(expected);
         } catch {
           return false;
         }

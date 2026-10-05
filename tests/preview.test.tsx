@@ -115,6 +115,53 @@ function successIds(onLog: ReturnType<typeof vi.fn<(log: RunLog) => void>>) {
 }
 
 describe('workflow website preview', () => {
+  it('tests query conditions with editable parameters without changing the saved workflow', async () => {
+    const graph = workflow(
+      [
+        node('start', 'trigger', { event: 'page-load' }),
+        node('check', 'fork', {
+          conditionType: 'query-param',
+          conditionKey: 'campaign',
+          conditionValue: 'summer sale',
+        }),
+        node('match', 'dom', { selector: '#result', value: 'Matched' }),
+        node('fallback', 'dom', { selector: '#result', value: 'Default' }),
+      ],
+      [
+        ['start', 'check'],
+        ['check', 'match', 'true'],
+        ['check', 'fallback', 'false'],
+      ],
+    );
+    graph.websiteUrl = '/demo-site.html?campaign=summer+sale#newsletter';
+    const saved = JSON.stringify(graph);
+    await renderPreview(graph);
+    const { doc, frame } = await loadWebsite();
+    const input = host.querySelector<HTMLInputElement>('.dxp-preview-search input');
+    if (!input) throw new Error('Expected search parameters input');
+    expect(input.value).toBe('campaign=summer+sale');
+    expect(frame.getAttribute('src')).toBeNull();
+    await clickButton('Run workflow');
+    expect(doc.querySelector('#result')?.textContent).toBe('Matched');
+    for (const [value, expected] of [
+      ['campaign=winter', 'Default'],
+      ['?campaign=winter&campaign=summer%20sale', 'Matched'],
+      ['', 'Default'],
+    ]) {
+      await act(async () => {
+        const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
+        setter?.call(input, value);
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+      });
+      expect(button('Run workflow').disabled).toBe(false);
+      expect(host.querySelectorAll('.dxp-log-item')).toHaveLength(0);
+      await clickButton('Run workflow');
+      expect(doc.querySelector('#result')?.textContent).toBe(expected);
+    }
+    expect(JSON.stringify(graph)).toBe(saved);
+    expect(websiteFrame()).toBe(frame);
+  });
+
   it.each([false, true])(
     'keeps demo preview executable with includeSubpages=%s',
     async (includeSubpages) => {

@@ -7,6 +7,7 @@ import type { RunLog, Workflow } from '../lib/types';
 /** An opaque sandbox origin cannot access the builder's DOM, cookies or localStorage. */
 export function IsolatedPreview({
   url,
+  searchParams,
   workflow,
   running,
   revision,
@@ -18,6 +19,7 @@ export function IsolatedPreview({
   onClose,
 }: {
   url: string;
+  searchParams?: string;
   workflow: Workflow;
   running: boolean;
   revision: number;
@@ -39,7 +41,7 @@ export function IsolatedPreview({
   callbacks.current = { onReady, onLog, onConnectionPreview, onError, onClose };
   const current = useRef(workflow);
   current.current = workflow;
-  const demo = url === '/demo-site.html';
+  const demo = url.split(/[?#]/, 1)[0] === '/demo-site.html';
   const send = useCallback((type: string, extra: Record<string, unknown> = {}) => {
     // Opaque origins require '*'; only credential-free workflow commands go here.
     frame.current?.contentWindow?.postMessage(
@@ -172,12 +174,12 @@ export function IsolatedPreview({
   useEffect(() => {
     if (!ready) return;
     runId.current = running ? crypto.randomUUID() : '';
-    send(running ? 'run' : 'stop', running ? { workflow, runId: runId.current } : {});
+    send(running ? 'run' : 'stop', running ? { workflow, runId: runId.current, searchParams } : {});
     return () => {
       runId.current = '';
       send('stop');
     };
-  }, [ready, running, workflow, revision, send]);
+  }, [ready, running, workflow, revision, searchParams, send]);
   return (
     <iframe
       ref={frame}
