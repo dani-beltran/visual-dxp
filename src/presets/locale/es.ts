@@ -33,37 +33,38 @@ export const spanishPresetMessages = {
   'contextual-support.workflow.edges.support-hours-to-support-offline.label': 'Cerrado',
   'welcome-journey.name': 'Recorrido de bienvenida',
   'welcome-journey.description':
-    'Espera un momento al abrir la página y muestra una oferta de bienvenida si está el botón de compra. Si no, cambia el título del boletín.',
+    'Al abrir la página, comprueba si la persona ya ha recibido el regalo de bienvenida. Espera un momento antes de mostrar el regalo o da la bienvenida de nuevo en el título del boletín.',
   'welcome-journey.welcome': 'Página visitada',
   'welcome-journey.pause': 'Espera un momento',
-  'welcome-journey.check': 'Encuentra el momento adecuado',
+  'welcome-journey.check': '¿Ya ha recibido el regalo?',
   'welcome-journey.offer': 'Un pequeño regalo de bienvenida',
-  'welcome-journey.update': 'Dale un toque personal',
-  'welcome-journey.value': 'Un poco de inspiración, solo para ti.',
-  'welcome-journey.true': 'Elemento encontrado',
-  'welcome-journey.false': 'En caso contrario',
+  'welcome-journey.cookie': 'Recordar el regalo de bienvenida',
+  'welcome-journey.update': 'Dar la bienvenida de nuevo',
+  'welcome-journey.value': '¡Te damos la bienvenida de nuevo! Nos alegra volver a verte.',
+  'welcome-journey.true': 'Regalo ya mostrado',
+  'welcome-journey.false': 'Primer regalo de bienvenida',
   'welcome-journey.overview': 'Resumen de la plantilla',
   'welcome-journey.setup': 'Configuración: Bienvenida y contenido de la página',
   'welcome-journey.instructions':
-    'Elige el botón de compra y el título del boletín de tu web. Actualiza la oferta de bienvenida, el código de descuento y el enlace a la colección antes de publicar. El recorrido empieza 1,5 segundos después de cada apertura o recarga de la página.',
+    'Elige el título del boletín de tu web y personaliza el mensaje para quienes vuelven. Actualiza la oferta de bienvenida, el código de descuento y el enlace a la colección antes de publicar. El recorrido comprueba la cookie en cada apertura o recarga de la página y espera 1,5 segundos solo antes de mostrar el regalo. Tras mostrar el regalo, establece dxp_welcome_gift=shown durante 30 días. Mantén sincronizados los nombres y valores de la condición y del nodo de cookie.',
   'welcome-journey.content':
     '<div style="padding:28px;font-family:system-ui;color:#203a30"><span style="font-size:11px;letter-spacing:2px;color:#277457">UN PEQUEÑO DETALLE PARA TI</span><h2 style="font-size:29px;line-height:1.15;font-weight:500;margin:14px 0">Lo bueno empieza aquí.</h2><p style="color:#6b7770;line-height:1.6">Te damos la bienvenida a Atelier. Disfruta de un 15% de descuento en tu primer pedido con el código <strong>HELLO15</strong>.</p><a href="#collection" style="display:inline-block;background:#267456;color:white;padding:12px 20px;text-decoration:none;border-radius:6px;margin-top:8px">Encuentra tu favorito para cada día ↗</a></div>',
   'blank.name': 'En blanco',
   'blank.description': 'Empieza con un lienzo vacío y crea tu propio flujo de trabajo.',
   'bounded-cta-attention.name': 'Secuencia limitada para destacar la llamada a la acción',
   'bounded-cta-attention.description':
-    'Cuando alguien hace clic en el botón principal de compra, resalta dos veces el título de la colección y muestra un consejo final.',
+    'Cuando alguien hace clic en el botón principal de compra, resalta tres veces el título de la colección y muestra un consejo final.',
   'bounded-cta-attention.workflow.name': 'Secuencia limitada para destacar la llamada a la acción',
   'bounded-cta-attention.workflow.nodes.attention-click.data.label':
     'Clic en la llamada a la acción de la colección',
-  'bounded-cta-attention.workflow.nodes.attention-loop.data.label': 'Repetir dos veces',
+  'bounded-cta-attention.workflow.nodes.attention-loop.data.label': 'Repetir tres veces',
   'bounded-cta-attention.workflow.nodes.attention-add.data.label': 'Destacar el destino',
   'bounded-cta-attention.workflow.nodes.attention-on.data.label': 'Mantener durante 600 ms',
   'bounded-cta-attention.workflow.nodes.attention-remove.data.label': 'Quitar el resaltado',
   'bounded-cta-attention.workflow.nodes.attention-off.data.label': 'Pausar durante 600 ms',
   'bounded-cta-attention.workflow.nodes.attention-done.data.label': 'La colección está lista',
   'bounded-cta-attention.workflow.nodes.attention-done.data.config.content':
-    '<div style="margin:-28px -24px -24px;padding:36px 24px 28px;background:#f8f6f1;color:#353b32;font-family:Arial,Helvetica,sans-serif;box-sizing:border-box;overflow-wrap:anywhere">\n  <div style="padding:0 0 16px;border-bottom:1px solid #dedfd4"><span style="font-family:Georgia,serif;font-size:25px;font-weight:400;letter-spacing:-1px;line-height:1">atelier<span aria-hidden="true" style="font-family:Arial,Helvetica,sans-serif;font-size:9px;vertical-align:top;margin-left:3px;letter-spacing:0">®</span></span></div>\n  <p style="margin:22px 0 12px;font-size:10px;font-weight:400;line-height:1.5;letter-spacing:1.7px;text-transform:uppercase;color:#697856">La colección cotidiana</p>\n  <h2 style="margin:0 0 14px;font-family:Georgia,serif;font-size:29px;font-weight:400;line-height:1.15;letter-spacing:-0.7px;color:#353b32">Explora a tu ritmo</h2>\n  <p style="margin:0;font-size:13px;line-height:1.75;color:#626b59">El encabezado de la colección se ha destacado dos veces. Descubre de cerca cualquier objeto que te llame la atención.</p>\n</div>',
+    '<div style="margin:-28px -24px -24px;padding:36px 24px 28px;background:#f8f6f1;color:#353b32;font-family:Arial,Helvetica,sans-serif;box-sizing:border-box;overflow-wrap:anywhere">\n  <div style="padding:0 0 16px;border-bottom:1px solid #dedfd4"><span style="font-family:Georgia,serif;font-size:25px;font-weight:400;letter-spacing:-1px;line-height:1">atelier<span aria-hidden="true" style="font-family:Arial,Helvetica,sans-serif;font-size:9px;vertical-align:top;margin-left:3px;letter-spacing:0">®</span></span></div>\n  <p style="margin:22px 0 12px;font-size:10px;font-weight:400;line-height:1.5;letter-spacing:1.7px;text-transform:uppercase;color:#697856">La colección cotidiana</p>\n  <h2 style="margin:0 0 14px;font-family:Georgia,serif;font-size:29px;font-weight:400;line-height:1.15;letter-spacing:-0.7px;color:#353b32">Explora a tu ritmo</h2>\n  <p style="margin:0;font-size:13px;line-height:1.75;color:#626b59">El encabezado de la colección se ha destacado tres veces. Descubre de cerca cualquier objeto que te llame la atención.</p>\n</div>',
   'bounded-cta-attention.workflow.nodes.bounded-cta-attention-setup-1.data.label':
     'Configuración: Aspecto del resaltado',
   'bounded-cta-attention.workflow.nodes.bounded-cta-attention-setup-1.data.config.noteText':
@@ -71,7 +72,7 @@ export const spanishPresetMessages = {
   'bounded-cta-attention.workflow.nodes.bounded-cta-attention-setup-2.data.label':
     'Configuración: Repetir el resaltado',
   'bounded-cta-attention.workflow.nodes.bounded-cta-attention-setup-2.data.config.noteText':
-    'El resaltado se repite dos veces, dura 2,4 segundos en total y después muestra el consejo final. Deja el último paso de espera de la secuencia sin una conexión de salida. El paso de repetición ya controla cuándo repetir y cuándo terminar.',
+    'El resaltado se repite tres veces, dura 3,6 segundos en total y después muestra el consejo final. Deja el último paso de espera de la secuencia sin una conexión de salida. El paso de repetición ya controla cuándo repetir y cuándo terminar.',
   'bounded-cta-attention.workflow.nodes.bounded-cta-attention-setup-3.data.label':
     'Configuración: Cuándo termina el resaltado',
   'bounded-cta-attention.workflow.nodes.bounded-cta-attention-setup-3.data.config.noteText':
@@ -79,7 +80,7 @@ export const spanishPresetMessages = {
   'bounded-cta-attention.workflow.nodes.bounded-cta-attention-overview.data.label':
     'Resumen del preajuste',
   'bounded-cta-attention.workflow.nodes.bounded-cta-attention-overview.data.config.noteText':
-    'Cuando alguien hace clic en el botón principal de compra, resalta dos veces el título de la colección y muestra un consejo final.',
+    'Cuando alguien hace clic en el botón principal de compra, resalta tres veces el título de la colección y muestra un consejo final.',
   'bounded-cta-attention.workflow.edges.attention-loop-to-attention-add.label': 'Repetir el cuerpo',
   'bounded-cta-attention.workflow.edges.attention-loop-to-attention-done.label':
     'Tras ambas repeticiones',
@@ -198,10 +199,10 @@ export const spanishPresetMessages = {
     'Resumen del preajuste',
   'engaged-reader-invitation.workflow.nodes.engaged-reader-invitation-overview.data.config.noteText':
     'Invita a los visitantes que se desplazan hasta el 70 % de la página a descubrir el boletín.',
-  'exit-intent-offer.name': 'Oferta al intentar salir con control de frecuencia',
+  'exit-intent-offer.name': 'Oferta al intentar salir',
   'exit-intent-offer.description':
     'Muestra un recordatorio de envío cuando el cursor sale por la parte superior de la página, salvo que ya se haya mostrado durante esta sesión.',
-  'exit-intent-offer.workflow.name': 'Oferta al intentar salir con control de frecuencia',
+  'exit-intent-offer.workflow.name': 'Oferta al intentar salir',
   'exit-intent-offer.workflow.nodes.exit-trigger.data.label': 'El puntero sale por arriba',
   'exit-intent-offer.workflow.nodes.exit-check.data.label': '¿Oferta ya mostrada?',
   'exit-intent-offer.workflow.nodes.exit-popover.data.label': 'Antes de irte',
@@ -309,39 +310,6 @@ export const spanishPresetMessages = {
     'Muestra una introducción más breve en teléfonos y otra más detallada en ordenadores.',
   'mobile-specific-messaging.workflow.edges.device-check-to-device-mobile.label': 'Móvil',
   'mobile-specific-messaging.workflow.edges.device-check-to-device-desktop.label': 'Ordenador',
-  'returning-visitor-experience.name': 'Experiencia para visitantes recurrentes',
-  'returning-visitor-experience.description':
-    'Saluda a quienes regresan o da la bienvenida a los nuevos visitantes y recuerda que se mostró la bienvenida.',
-  'returning-visitor-experience.workflow.name': 'Experiencia para visitantes recurrentes',
-  'returning-visitor-experience.workflow.nodes.visitor-load.data.label': 'Página cargada',
-  'returning-visitor-experience.workflow.nodes.visitor-check.data.label':
-    '¿Bienvenida mostrada antes?',
-  'returning-visitor-experience.workflow.nodes.visitor-returning.data.label':
-    'Mensaje de bienvenida al regresar',
-  'returning-visitor-experience.workflow.nodes.visitor-returning.data.config.value':
-    'Te damos la bienvenida de nuevo. Descubre algo especial para tu día a día.',
-  'returning-visitor-experience.workflow.nodes.visitor-welcome.data.label':
-    'Bienvenida en la primera visita',
-  'returning-visitor-experience.workflow.nodes.visitor-welcome.data.config.content':
-    '<div style="margin:-28px -24px -24px;padding:36px 24px 28px;background:#f8f6f1;color:#353b32;font-family:Arial,Helvetica,sans-serif;box-sizing:border-box;overflow-wrap:anywhere">\n  <div style="padding:0 0 16px;border-bottom:1px solid #dedfd4"><span style="font-family:Georgia,serif;font-size:25px;font-weight:400;letter-spacing:-1px;line-height:1">atelier<span aria-hidden="true" style="font-family:Arial,Helvetica,sans-serif;font-size:9px;vertical-align:top;margin-left:3px;letter-spacing:0">®</span></span></div>\n  <p style="margin:22px 0 12px;font-size:10px;font-weight:400;line-height:1.5;letter-spacing:1.7px;text-transform:uppercase;color:#697856">Hecho con cuidado</p>\n  <h2 style="margin:0 0 14px;font-family:Georgia,serif;font-size:29px;font-weight:400;line-height:1.15;letter-spacing:-0.7px;color:#353b32">Te damos la bienvenida a Atelier</h2>\n  <p style="margin:0;font-size:13px;line-height:1.75;color:#626b59">Empieza por la colección cotidiana y descubre objetos hechos para durar.</p>\n  <a href="#collection" style="display:flex;align-items:center;justify-content:space-between;gap:16px;box-sizing:border-box;min-height:44px;margin-top:22px;padding:13px 16px;border-radius:2px;background:#697856;color:#fff;font-family:Arial,Helvetica,sans-serif;font-size:12px;font-weight:400;line-height:1.5;text-decoration:none"><span>Descubre la colección</span><span aria-hidden="true">↗</span></a>\n</div>',
-  'returning-visitor-experience.workflow.nodes.visitor-cookie.data.label':
-    'Recordar bienvenida mostrada',
-  'returning-visitor-experience.workflow.nodes.returning-visitor-experience-setup-1.data.label':
-    'Configuración: Recordar una bienvenida',
-  'returning-visitor-experience.workflow.nodes.returning-visitor-experience-setup-1.data.config.noteText':
-    'Elige la introducción de la página y el destino del enlace de bienvenida. El navegador recuerda durante 30 días que se mostró la bienvenida. Esto no identifica a la persona ni indica qué compró.',
-  'returning-visitor-experience.workflow.nodes.returning-visitor-experience-setup-2.data.label':
-    'Configuración: Probar una primera visita',
-  'returning-visitor-experience.workflow.nodes.returning-visitor-experience-setup-2.data.config.noteText':
-    'Para volver a ver la bienvenida de la primera visita, borra los datos guardados de esta web en los ajustes del navegador. Así eliminas el recordatorio de que ya se mostró la bienvenida.',
-  'returning-visitor-experience.workflow.nodes.returning-visitor-experience-overview.data.label':
-    'Resumen del preajuste',
-  'returning-visitor-experience.workflow.nodes.returning-visitor-experience-overview.data.config.noteText':
-    'Saluda a quienes regresan o da la bienvenida a los nuevos visitantes y recuerda que se mostró la bienvenida.',
-  'returning-visitor-experience.workflow.edges.visitor-check-to-visitor-returning.label':
-    'Visitante recurrente',
-  'returning-visitor-experience.workflow.edges.visitor-check-to-visitor-welcome.label':
-    'Primera bienvenida',
   'segmented-onboarding.name': 'Recorrido de bienvenida segmentado',
   'segmented-onboarding.description':
     'Da la bienvenida a los nuevos visitantes con ayuda según su enlace de campaña y recuerda que se mostró para no repetirla en visitas posteriores.',

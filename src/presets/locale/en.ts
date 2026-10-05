@@ -29,36 +29,37 @@ export const englishPresetMessages = {
   'contextual-support.workflow.edges.support-hours-to-support-offline.label': 'Closed',
   'welcome-journey.name': 'Welcome journey',
   'welcome-journey.description':
-    'Wait a moment after the page opens, then show a welcome offer if the shop button is on the page. Otherwise, change the newsletter heading.',
+    'When the page opens, check whether the visitor has received the welcome gift. Wait a moment before showing the gift, or welcome returning visitors back in the newsletter heading.',
   'welcome-journey.welcome': 'Page visited',
   'welcome-journey.pause': 'Give it a moment',
-  'welcome-journey.check': 'Find the right moment',
+  'welcome-journey.check': 'Already received the gift?',
   'welcome-journey.offer': 'A little welcome gift',
-  'welcome-journey.update': 'Make it personal',
-  'welcome-journey.value': 'A little inspiration, just for you.',
-  'welcome-journey.true': 'Element found',
-  'welcome-journey.false': 'Otherwise',
+  'welcome-journey.cookie': 'Remember the welcome gift',
+  'welcome-journey.update': 'Welcome back',
+  'welcome-journey.value': 'Welcome back! It’s lovely to see you again.',
+  'welcome-journey.true': 'Gift already shown',
+  'welcome-journey.false': 'First welcome gift',
   'welcome-journey.overview': 'Preset overview',
   'welcome-journey.setup': 'Setup: Welcome message and page content',
   'welcome-journey.instructions':
-    'Choose the shop button and newsletter heading on your website. Update the welcome offer, discount code, and collection link before publishing. The journey starts 1.5 seconds after every page opening or reload.',
+    'Choose the newsletter heading on your website and customize the welcome-back message. Update the welcome offer, discount code, and collection link before publishing. The journey checks the cookie on every page opening or reload and waits 1.5 seconds only before showing the gift. After showing the gift, it sets dxp_welcome_gift=shown for 30 days. Keep the condition and cookie node names and values in sync.',
   'welcome-journey.content':
     '<div style="padding:28px;font-family:system-ui;color:#203a30"><span style="font-size:11px;letter-spacing:2px;color:#277457">A LITTLE SOMETHING FOR YOU</span><h2 style="font-size:29px;line-height:1.15;font-weight:500;margin:14px 0">Good things start here.</h2><p style="color:#6b7770;line-height:1.6">Welcome to Atelier. Enjoy 15% off your first order with code <strong>HELLO15</strong>.</p><a href="#collection" style="display:inline-block;background:#267456;color:white;padding:12px 20px;text-decoration:none;border-radius:6px;margin-top:8px">Find your everyday favorite ↗</a></div>',
   'blank.name': 'Blank',
   'blank.description': 'Start from an empty canvas and build your own workflow.',
   'bounded-cta-attention.name': 'Bounded CTA attention sequence',
   'bounded-cta-attention.description':
-    'After someone clicks the main shop button, highlight the collection heading twice and show a final tip.',
+    'After someone clicks the main shop button, highlight the collection heading three times and show a final tip.',
   'bounded-cta-attention.workflow.name': 'Bounded CTA attention sequence',
   'bounded-cta-attention.workflow.nodes.attention-click.data.label': 'Click collection CTA',
-  'bounded-cta-attention.workflow.nodes.attention-loop.data.label': 'Repeat twice',
+  'bounded-cta-attention.workflow.nodes.attention-loop.data.label': 'Repeat three times',
   'bounded-cta-attention.workflow.nodes.attention-add.data.label': 'Highlight destination',
   'bounded-cta-attention.workflow.nodes.attention-on.data.label': 'Hold for 600 ms',
   'bounded-cta-attention.workflow.nodes.attention-remove.data.label': 'Remove highlight',
   'bounded-cta-attention.workflow.nodes.attention-off.data.label': 'Rest for 600 ms',
   'bounded-cta-attention.workflow.nodes.attention-done.data.label': 'Collection is ready',
   'bounded-cta-attention.workflow.nodes.attention-done.data.config.content':
-    '<div style="margin:-28px -24px -24px;padding:36px 24px 28px;background:#f8f6f1;color:#353b32;font-family:Arial,Helvetica,sans-serif;box-sizing:border-box;overflow-wrap:anywhere">\n  <div style="padding:0 0 16px;border-bottom:1px solid #dedfd4"><span style="font-family:Georgia,serif;font-size:25px;font-weight:400;letter-spacing:-1px;line-height:1">atelier<span aria-hidden="true" style="font-family:Arial,Helvetica,sans-serif;font-size:9px;vertical-align:top;margin-left:3px;letter-spacing:0">®</span></span></div>\n  <p style="margin:22px 0 12px;font-size:10px;font-weight:400;line-height:1.5;letter-spacing:1.7px;text-transform:uppercase;color:#697856">The everyday collection</p>\n  <h2 style="margin:0 0 14px;font-family:Georgia,serif;font-size:29px;font-weight:400;line-height:1.15;letter-spacing:-0.7px;color:#353b32">Explore at your own pace</h2>\n  <p style="margin:0;font-size:13px;line-height:1.75;color:#626b59">The collection heading has been highlighted twice. Take a closer look at any object that catches your eye.</p>\n</div>',
+    '<div style="margin:-28px -24px -24px;padding:36px 24px 28px;background:#f8f6f1;color:#353b32;font-family:Arial,Helvetica,sans-serif;box-sizing:border-box;overflow-wrap:anywhere">\n  <div style="padding:0 0 16px;border-bottom:1px solid #dedfd4"><span style="font-family:Georgia,serif;font-size:25px;font-weight:400;letter-spacing:-1px;line-height:1">atelier<span aria-hidden="true" style="font-family:Arial,Helvetica,sans-serif;font-size:9px;vertical-align:top;margin-left:3px;letter-spacing:0">®</span></span></div>\n  <p style="margin:22px 0 12px;font-size:10px;font-weight:400;line-height:1.5;letter-spacing:1.7px;text-transform:uppercase;color:#697856">The everyday collection</p>\n  <h2 style="margin:0 0 14px;font-family:Georgia,serif;font-size:29px;font-weight:400;line-height:1.15;letter-spacing:-0.7px;color:#353b32">Explore at your own pace</h2>\n  <p style="margin:0;font-size:13px;line-height:1.75;color:#626b59">The collection heading has been highlighted three times. Take a closer look at any object that catches your eye.</p>\n</div>',
   'bounded-cta-attention.workflow.nodes.bounded-cta-attention-setup-1.data.label':
     'Setup: Highlight appearance',
   'bounded-cta-attention.workflow.nodes.bounded-cta-attention-setup-1.data.config.noteText':
@@ -66,7 +67,7 @@ export const englishPresetMessages = {
   'bounded-cta-attention.workflow.nodes.bounded-cta-attention-setup-2.data.label':
     'Setup: Repeat the highlight',
   'bounded-cta-attention.workflow.nodes.bounded-cta-attention-setup-2.data.config.noteText':
-    'The highlight sequence repeats twice, taking 2.4 seconds in total, then shows the final tip. Keep the last wait step inside the sequence without an outgoing connection. The repeat step already controls when to repeat and when to finish.',
+    'The highlight sequence repeats three times, taking 3.6 seconds in total, then shows the final tip. Keep the last wait step inside the sequence without an outgoing connection. The repeat step already controls when to repeat and when to finish.',
   'bounded-cta-attention.workflow.nodes.bounded-cta-attention-setup-3.data.label':
     'Setup: When the highlight ends',
   'bounded-cta-attention.workflow.nodes.bounded-cta-attention-setup-3.data.config.noteText':
@@ -74,7 +75,7 @@ export const englishPresetMessages = {
   'bounded-cta-attention.workflow.nodes.bounded-cta-attention-overview.data.label':
     'Preset overview',
   'bounded-cta-attention.workflow.nodes.bounded-cta-attention-overview.data.config.noteText':
-    'After someone clicks the main shop button, highlight the collection heading twice and show a final tip.',
+    'After someone clicks the main shop button, highlight the collection heading three times and show a final tip.',
   'bounded-cta-attention.workflow.edges.attention-loop-to-attention-add.label': 'Repeat body',
   'bounded-cta-attention.workflow.edges.attention-loop-to-attention-done.label':
     'After both repetitions',
@@ -185,10 +186,10 @@ export const englishPresetMessages = {
     'Preset overview',
   'engaged-reader-invitation.workflow.nodes.engaged-reader-invitation-overview.data.config.noteText':
     'Invite visitors who scroll through 70% of the page to explore the newsletter.',
-  'exit-intent-offer.name': 'Exit-intent offer with frequency control',
+  'exit-intent-offer.name': 'Exit-intent offer',
   'exit-intent-offer.description':
     'Show a shipping reminder when the mouse leaves the top of the page, unless it has already appeared during this browsing session.',
-  'exit-intent-offer.workflow.name': 'Exit-intent offer with frequency control',
+  'exit-intent-offer.workflow.name': 'Exit-intent offer',
   'exit-intent-offer.workflow.nodes.exit-trigger.data.label': 'Pointer leaves at top',
   'exit-intent-offer.workflow.nodes.exit-check.data.label': 'Offer already shown?',
   'exit-intent-offer.workflow.nodes.exit-popover.data.label': 'Before you go',
@@ -291,36 +292,6 @@ export const englishPresetMessages = {
     'Show a shorter introduction on phones and a more detailed one on computers.',
   'mobile-specific-messaging.workflow.edges.device-check-to-device-mobile.label': 'Mobile',
   'mobile-specific-messaging.workflow.edges.device-check-to-device-desktop.label': 'Desktop',
-  'returning-visitor-experience.name': 'Returning-visitor experience',
-  'returning-visitor-experience.description':
-    'Greet repeat visitors, or welcome new visitors and remember that the welcome was displayed.',
-  'returning-visitor-experience.workflow.name': 'Returning-visitor experience',
-  'returning-visitor-experience.workflow.nodes.visitor-load.data.label': 'Page loaded',
-  'returning-visitor-experience.workflow.nodes.visitor-check.data.label': 'Welcomed before?',
-  'returning-visitor-experience.workflow.nodes.visitor-returning.data.label':
-    'Welcome back message',
-  'returning-visitor-experience.workflow.nodes.visitor-returning.data.config.value':
-    'Welcome back. Discover something thoughtful for your everyday.',
-  'returning-visitor-experience.workflow.nodes.visitor-welcome.data.label': 'First-visit welcome',
-  'returning-visitor-experience.workflow.nodes.visitor-welcome.data.config.content':
-    '<div style="margin:-28px -24px -24px;padding:36px 24px 28px;background:#f8f6f1;color:#353b32;font-family:Arial,Helvetica,sans-serif;box-sizing:border-box;overflow-wrap:anywhere">\n  <div style="padding:0 0 16px;border-bottom:1px solid #dedfd4"><span style="font-family:Georgia,serif;font-size:25px;font-weight:400;letter-spacing:-1px;line-height:1">atelier<span aria-hidden="true" style="font-family:Arial,Helvetica,sans-serif;font-size:9px;vertical-align:top;margin-left:3px;letter-spacing:0">®</span></span></div>\n  <p style="margin:22px 0 12px;font-size:10px;font-weight:400;line-height:1.5;letter-spacing:1.7px;text-transform:uppercase;color:#697856">Thoughtfully made</p>\n  <h2 style="margin:0 0 14px;font-family:Georgia,serif;font-size:29px;font-weight:400;line-height:1.15;letter-spacing:-0.7px;color:#353b32">Welcome to Atelier</h2>\n  <p style="margin:0;font-size:13px;line-height:1.75;color:#626b59">Start with the everyday collection and discover objects made to be kept.</p>\n  <a href="#collection" style="display:flex;align-items:center;justify-content:space-between;gap:16px;box-sizing:border-box;min-height:44px;margin-top:22px;padding:13px 16px;border-radius:2px;background:#697856;color:#fff;font-family:Arial,Helvetica,sans-serif;font-size:12px;font-weight:400;line-height:1.5;text-decoration:none"><span>Explore the collection</span><span aria-hidden="true">↗</span></a>\n</div>',
-  'returning-visitor-experience.workflow.nodes.visitor-cookie.data.label': 'Remember welcome shown',
-  'returning-visitor-experience.workflow.nodes.returning-visitor-experience-setup-1.data.label':
-    'Setup: Remembering a welcome',
-  'returning-visitor-experience.workflow.nodes.returning-visitor-experience-setup-1.data.config.noteText':
-    'Choose the page introduction and the destination of the welcome link. The browser remembers for 30 days that the welcome appeared. This does not identify the person or tell you what they bought.',
-  'returning-visitor-experience.workflow.nodes.returning-visitor-experience-setup-2.data.label':
-    'Setup: Testing a first visit',
-  'returning-visitor-experience.workflow.nodes.returning-visitor-experience-setup-2.data.config.noteText':
-    'To see the first-visit welcome again, clear the saved data for this website in your browser settings. This removes the browser’s reminder that the welcome was already shown.',
-  'returning-visitor-experience.workflow.nodes.returning-visitor-experience-overview.data.label':
-    'Preset overview',
-  'returning-visitor-experience.workflow.nodes.returning-visitor-experience-overview.data.config.noteText':
-    'Greet repeat visitors, or welcome new visitors and remember that the welcome was displayed.',
-  'returning-visitor-experience.workflow.edges.visitor-check-to-visitor-returning.label':
-    'Returning',
-  'returning-visitor-experience.workflow.edges.visitor-check-to-visitor-welcome.label':
-    'First welcome',
   'segmented-onboarding.name': 'Segmented onboarding journey',
   'segmented-onboarding.description':
     'Welcome new visitors with guidance based on their campaign link, and remember that the guidance was shown so it is not repeated on later visits.',

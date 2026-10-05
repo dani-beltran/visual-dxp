@@ -31,10 +31,6 @@ import {
   createMobileSpecificMessagingPreset,
   mobileSpecificMessagingPreset,
 } from './mobile-specific-messaging';
-import {
-  createReturningVisitorExperiencePreset,
-  returningVisitorExperiencePreset,
-} from './returning-visitor-experience';
 import { createSegmentedOnboardingPreset, segmentedOnboardingPreset } from './segmented-onboarding';
 import { createWelcomeJourneyPreset, welcomeJourneyPreset } from './welcome-journey';
 
@@ -51,7 +47,6 @@ export {
   frustrationRecoveryPreset,
   inactivityAssistancePreset,
   mobileSpecificMessagingPreset,
-  returningVisitorExperiencePreset,
   segmentedOnboardingPreset,
   welcomeJourneyPreset,
 };
@@ -67,7 +62,6 @@ export const commonDXPPresets: readonly WorkflowPreset[] = [
   campaignUrlPersonalizationPreset,
   welcomeJourneyPreset,
   exitIntentOfferPreset,
-  returningVisitorExperiencePreset,
   inactivityAssistancePreset,
   contextualSupportPreset,
   frustrationRecoveryPreset,
@@ -92,7 +86,6 @@ const spanishPresets: readonly WorkflowPreset[] = [
   createFrustrationRecoveryPreset(spanishPresetMessages),
   createInactivityAssistancePreset(spanishPresetMessages),
   createMobileSpecificMessagingPreset(spanishPresetMessages),
-  createReturningVisitorExperiencePreset(spanishPresetMessages),
   createSegmentedOnboardingPreset(spanishPresetMessages),
 ].sort((a, b) => a.order - b.order);
 

@@ -8,7 +8,7 @@ export function createWelcomeJourneyPreset(messages: PresetMessages = englishPre
     description: messages['welcome-journey.description'],
     complexity: 'intermediate',
     order: 65,
-    tags: ['trigger', 'delay', 'fork', 'popover', 'dom', 'note'],
+    tags: ['trigger', 'delay', 'fork', 'popover', 'cookie', 'dom', 'note'],
     workflow: {
       version: 1,
       name: messages['welcome-journey.name'],
@@ -54,7 +54,7 @@ export function createWelcomeJourneyPreset(messages: PresetMessages = englishPre
         {
           id: 'pause',
           type: 'workflow',
-          position: { x: 350, y: 220 },
+          position: { x: 820, y: 85 },
           data: {
             kind: 'delay',
             label: messages['welcome-journey.pause'],
@@ -64,17 +64,21 @@ export function createWelcomeJourneyPreset(messages: PresetMessages = englishPre
         {
           id: 'check',
           type: 'workflow',
-          position: { x: 640, y: 220 },
+          position: { x: 350, y: 220 },
           data: {
             kind: 'fork',
             label: messages['welcome-journey.check'],
-            config: { conditionType: 'selector', condition: '#shop-now' },
+            config: {
+              conditionType: 'cookie',
+              conditionKey: 'dxp_welcome_gift',
+              conditionValue: 'shown',
+            },
           },
         },
         {
           id: 'offer',
           type: 'workflow',
-          position: { x: 950, y: 85 },
+          position: { x: 1130, y: 85 },
           data: {
             kind: 'popover',
             label: messages['welcome-journey.offer'],
@@ -87,9 +91,23 @@ export function createWelcomeJourneyPreset(messages: PresetMessages = englishPre
           },
         },
         {
+          id: 'gift-cookie',
+          type: 'workflow',
+          position: { x: 1420, y: 85 },
+          data: {
+            kind: 'cookie',
+            label: messages['welcome-journey.cookie'],
+            config: {
+              cookieName: 'dxp_welcome_gift',
+              cookieValue: 'shown',
+              cookieDays: 30,
+            },
+          },
+        },
+        {
           id: 'update',
           type: 'workflow',
-          position: { x: 950, y: 370 },
+          position: { x: 760, y: 370 },
           data: {
             kind: 'dom',
             label: messages['welcome-journey.update'],
@@ -102,22 +120,23 @@ export function createWelcomeJourneyPreset(messages: PresetMessages = englishPre
         },
       ],
       edges: [
-        { id: 'welcome-pause', source: 'welcome', target: 'pause', type: 'smoothstep' },
-        { id: 'pause-check', source: 'pause', target: 'check', type: 'smoothstep' },
+        { id: 'welcome-check', source: 'welcome', target: 'check', type: 'smoothstep' },
+        { id: 'offer-gift-cookie', source: 'offer', target: 'gift-cookie', type: 'smoothstep' },
+        { id: 'pause-offer', source: 'pause', target: 'offer', type: 'smoothstep' },
         {
-          id: 'check-offer',
+          id: 'check-pause',
           source: 'check',
-          target: 'offer',
-          sourceHandle: 'true',
-          label: messages['welcome-journey.true'],
+          target: 'pause',
+          sourceHandle: 'false',
+          label: messages['welcome-journey.false'],
           type: 'smoothstep',
         },
         {
           id: 'check-update',
           source: 'check',
           target: 'update',
-          sourceHandle: 'false',
-          label: messages['welcome-journey.false'],
+          sourceHandle: 'true',
+          label: messages['welcome-journey.true'],
           type: 'smoothstep',
         },
       ],

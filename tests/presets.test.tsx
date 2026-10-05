@@ -10,12 +10,12 @@ import VisualDXPBuilder, {
   drawAttentionToNewsletterPreset,
   frustrationRecoveryPreset,
   isWorkflow,
-  returningVisitorExperiencePreset,
   type VisualDXPBuilderApi,
   type VisualDXPBuilderProps,
   validateWorkflow,
   type Workflow,
   type WorkflowPreset,
+  welcomeJourneyPreset,
 } from '../src';
 
 const { fitView } = vi.hoisted(() => ({ fitView: vi.fn().mockResolvedValue(true) }));
@@ -225,21 +225,17 @@ describe('optional builder presets', () => {
       ...drawAttentionToNewsletterPreset,
       setupInstructions: ['Customize the help message before publishing.'],
     };
-    const presets = freeze([
-      frustrationRecoveryPreset,
-      helpPreset,
-      returningVisitorExperiencePreset,
-    ]);
+    const presets = freeze([frustrationRecoveryPreset, helpPreset, welcomeJourneyPreset]);
     await render({ presets });
     await click(tab('Presets'));
     expect(
       [...host.querySelectorAll('.dxp-preset-card h3')].map((node) => node.textContent),
     ).toEqual([
       drawAttentionToNewsletterPreset.name,
-      returningVisitorExperiencePreset.name,
+      welcomeJourneyPreset.name,
       frustrationRecoveryPreset.name,
     ]);
-    expect(presets.map((preset) => preset.order)).toEqual([100, 10, 80]);
+    expect(presets.map((preset) => preset.order)).toEqual([100, 10, 65]);
     const card = element('.dxp-preset-card');
     expect(card.textContent).toContain(drawAttentionToNewsletterPreset.description);
     expect(card.textContent).toContain('beginner');
@@ -430,8 +426,8 @@ describe('optional builder presets', () => {
     [
       'graph',
       {
-        ...returningVisitorExperiencePreset.workflow,
-        edges: [{ id: 'bad-handle', source: 'visitor-check', target: 'visitor-welcome' }],
+        ...welcomeJourneyPreset.workflow,
+        edges: [{ id: 'bad-handle', source: 'check', target: 'offer' }],
       },
       /Yes or No/,
     ],
@@ -476,13 +472,12 @@ describe('optional builder presets', () => {
     },
   );
 
-  it.each([
-    drawAttentionToNewsletterPreset,
-    returningVisitorExperiencePreset,
-    frustrationRecoveryPreset,
-  ])('ships a serializable, structurally and graph-valid $name example', (preset) => {
-    expect(JSON.parse(JSON.stringify(preset))).toEqual(preset);
-    expect(isWorkflow(preset.workflow)).toBe(true);
-    expect(validateWorkflow(preset.workflow)).toEqual([]);
-  });
+  it.each([drawAttentionToNewsletterPreset, welcomeJourneyPreset, frustrationRecoveryPreset])(
+    'ships a serializable, structurally and graph-valid $name example',
+    (preset) => {
+      expect(JSON.parse(JSON.stringify(preset))).toEqual(preset);
+      expect(isWorkflow(preset.workflow)).toBe(true);
+      expect(validateWorkflow(preset.workflow)).toEqual([]);
+    },
+  );
 });

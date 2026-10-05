@@ -20,8 +20,8 @@ import {
   frustrationRecoveryPreset,
   inactivityAssistancePreset,
   mobileSpecificMessagingPreset,
-  returningVisitorExperiencePreset,
   segmentedOnboardingPreset,
+  welcomeJourneyPreset,
 } from '../src/presets';
 
 const demoHtml = readFileSync('public/demo-site.html', 'utf8');
@@ -209,6 +209,29 @@ describe('common DXP preset contracts and layout', () => {
 });
 
 describe('preset execution with a mocked browser and network', () => {
+  it('shows the welcome gift once and welcomes the visitor back on the next load', async () => {
+    const heading = element('#newsletter h2').textContent;
+    const first = runtime(welcomeJourneyPreset);
+    first.start();
+    await vi.advanceTimersByTimeAsync(1499);
+    expect(popover('offer')).toBeNull();
+    expect(document.cookie).not.toContain('dxp_welcome_gift');
+    await vi.advanceTimersByTimeAsync(1);
+    expect(popover('offer')).not.toBeNull();
+    expect(document.cookie).toContain('dxp_welcome_gift=shown');
+    expect(element('#newsletter h2').textContent).toBe(heading);
+    expect(successful()).toEqual(['welcome', 'check', 'pause', 'offer', 'gift-cookie']);
+    first.destroy();
+    logs = [];
+    runtime(welcomeJourneyPreset).start();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(popover('offer')).toBeNull();
+    expect(element('#newsletter h2').textContent).toBe(
+      'Welcome back! It’s lovely to see you again.',
+    );
+    expect(successful()).toEqual(['welcome', 'check', 'update']);
+  });
+
   it.each([
     ['2026-10-01T08:59:59Z', false],
     ['2026-10-01T09:00:00Z', true],
@@ -353,17 +376,6 @@ describe('preset execution with a mocked browser and network', () => {
       );
     },
   );
-  it('welcomes a new visitor and takes the returning branch on the next load', async () => {
-    const first = runtime(returningVisitorExperiencePreset);
-    await first.run();
-    expect(popover('visitor-welcome')).not.toBeNull();
-    expect(document.cookie).toContain('dxp_visitor_welcome=shown');
-    first.destroy();
-    logs = [];
-    await runtime(returningVisitorExperiencePreset).run();
-    expect(popover('visitor-welcome')).toBeNull();
-    expect(successful()).toContain('visitor-returning');
-  });
   it('suppresses an exit offer across runtime installations after writing a session cookie', async () => {
     const writes = vi.spyOn(document, 'cookie', 'set');
     const first = runtime(exitIntentOfferPreset);
@@ -454,7 +466,7 @@ describe('preset execution with a mocked browser and network', () => {
       );
     },
   );
-  it('runs the complete loop body twice and done once, without a cyclic connection', async () => {
+  it('runs the complete loop body three times and done once, without a cyclic connection', async () => {
     runtime(boundedCtaAttentionPreset).start();
     element<HTMLButtonElement>('#shop-now').click();
     await vi.advanceTimersByTimeAsync(0);
@@ -467,12 +479,21 @@ describe('preset execution with a mocked browser and network', () => {
     expect(target.classList.contains('dxp-cta-attention')).toBe(true);
     await vi.advanceTimersByTimeAsync(600);
     expect(target.classList.contains('dxp-cta-attention')).toBe(false);
+    await vi.advanceTimersByTimeAsync(600);
+    expect(target.classList.contains('dxp-cta-attention')).toBe(true);
+    expect(popover('attention-done')).toBeNull();
+    await vi.advanceTimersByTimeAsync(600);
+    expect(target.classList.contains('dxp-cta-attention')).toBe(false);
     await vi.advanceTimersByTimeAsync(599);
     expect(popover('attention-done')).toBeNull();
     await vi.advanceTimersByTimeAsync(1);
     expect(successful()).toEqual([
       'attention-click',
       'attention-loop',
+      'attention-add',
+      'attention-on',
+      'attention-remove',
+      'attention-off',
       'attention-add',
       'attention-on',
       'attention-remove',
