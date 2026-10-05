@@ -420,6 +420,14 @@ export const spanishMessages = {
   'nodeInspector.websiteUrl': 'URL del sitio web',
   'nodeInspector.theWebsiteMustAllowEmbeddingInAnIframe':
     'El sitio web debe permitir su incrustación en un iframe.',
+  'nodeInspector.popoverAnimation': 'Animación',
+  'nodeInspector.animationNone': 'Ninguna',
+  'nodeInspector.animationFade': 'Desvanecer',
+  'nodeInspector.animationSlide': 'Deslizar',
+  'nodeInspector.animationZoom': 'Ampliar',
+  'nodeInspector.animationBounce': 'Rebotar',
+  'nodeInspector.animationHint':
+    'Previsualiza la animación en pantalla completa. La dirección sigue la posición del popover.',
   'nodeInspector.position': 'Posición',
   'nodeInspector.centerOfScreen': 'Centro de la pantalla',
   'nodeInspector.topLeft': 'Arriba a la izquierda',

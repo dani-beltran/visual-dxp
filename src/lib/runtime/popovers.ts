@@ -107,6 +107,9 @@ export function showPopover(
   const { panel, arrow, close } = createElements(node, doc, Boolean(anchor));
   (doc.body ?? doc.documentElement).appendChild(panel);
 
+  let directionX = 0;
+  let directionY = 1;
+  let animation: Animation | undefined;
   function place(): void {
     const viewportWidth = win.innerWidth || doc.documentElement.clientWidth;
     const viewportHeight = win.innerHeight || doc.documentElement.clientHeight;
@@ -114,9 +117,17 @@ export function showPopover(
     panel.style.inset = 'auto';
     if (anchor) {
       const rect = anchor.getBoundingClientRect();
-      const panelRect = panel.getBoundingClientRect();
+      // Layout dimensions remain stable while entrance scale/translation is active.
+      const bounds = panel.getBoundingClientRect();
+      const panelRect = {
+        width: panel.offsetWidth || bounds.width,
+        height: panel.offsetHeight || bounds.height,
+      };
       const left = Math.max(16, Math.min(rect.left, viewportWidth - panelRect.width - 16));
       const above = rect.bottom + 12 + panelRect.height > viewportHeight - 16;
+      directionX = 0;
+      directionY = above ? 1 : -1;
+      panel.style.transformOrigin = above ? 'center bottom' : 'center top';
       const top = above ? rect.top - panelRect.height - 12 : rect.bottom + 12;
       panel.style.left = `${left}px`;
       // Flipping above an offscreen anchor can still leave the panel below the viewport.
@@ -134,6 +145,12 @@ export function showPopover(
       }
     } else {
       const position = config.position ?? 'bottom-right';
+      directionX = position === 'center' ? 0 : position.endsWith('left') ? -1 : 1;
+      directionY = position.startsWith('top') ? -1 : 1;
+      panel.style.transformOrigin =
+        position === 'center'
+          ? 'center'
+          : `${directionX < 0 ? 'left' : 'right'} ${directionY < 0 ? 'top' : 'bottom'}`;
       if (position === 'center') {
         panel.style.left = '50%';
         panel.style.top = '50%';
@@ -145,15 +162,81 @@ export function showPopover(
     }
   }
   place();
+  const effect = config.popoverAnimation ?? 'none';
+  function canAnimate(): boolean {
+    return (
+      effect !== 'none' &&
+      typeof panel.animate === 'function' &&
+      !win.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    );
+  }
+  function playAnimation(reverse = false): Animation {
+    // Individual transform properties preserve the centering transform and move the arrow too.
+    const from = `${directionX * 28}px ${directionY * 28}px`;
+    const frames: Keyframe[] =
+      effect === 'fade'
+        ? [{ opacity: 0 }, { opacity: 1 }]
+        : effect === 'zoom'
+          ? [
+              { opacity: 0, scale: '0.88' },
+              { opacity: 1, scale: '1' },
+            ]
+          : effect === 'bounce'
+            ? [
+                { opacity: 0, translate: from, scale: '0.94' },
+                {
+                  opacity: 1,
+                  translate: `${directionX * -5}px ${directionY * -5}px`,
+                  scale: '1.02',
+                  offset: 0.7,
+                },
+                { opacity: 1, translate: '0px 0px', scale: '1' },
+              ]
+            : [
+                { opacity: 0, translate: from },
+                { opacity: 1, translate: '0px 0px' },
+              ];
+    return panel.animate(frames, {
+      duration: effect === 'bounce' ? 480 : 280,
+      easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+      ...(reverse ? { direction: 'reverse' as const, fill: 'forwards' as const } : {}),
+    });
+  }
+  if (canAnimate()) animation = playAnimation();
   win.addEventListener('resize', place);
   win.addEventListener('scroll', place, true);
   const dispose = () => {
-    close.removeEventListener('click', dispose);
+    if (animation) {
+      animation.onfinish = null;
+      animation.oncancel = null;
+      animation.cancel();
+    }
+    close.removeEventListener('click', dismiss);
     win.removeEventListener('resize', place);
     win.removeEventListener('scroll', place, true);
     panel.remove();
     if (popovers.get(node.id) === dispose) popovers.delete(node.id);
   };
-  close.addEventListener('click', dispose);
+  let closing = false;
+  function dismiss(): void {
+    if (closing) return;
+    closing = true;
+    close.disabled = true;
+    if (!canAnimate()) {
+      dispose();
+      return;
+    }
+    if (animation?.playState === 'running') {
+      // Reverse from the current progress when dismissed during the entrance.
+      animation.reverse();
+    } else {
+      animation?.cancel();
+      // Rebuild the effect using the current placement if the anchor has flipped.
+      animation = playAnimation(true);
+    }
+    animation.onfinish = dispose;
+    animation.oncancel = dispose;
+  }
+  close.addEventListener('click', dismiss);
   popovers.set(node.id, dispose);
 }

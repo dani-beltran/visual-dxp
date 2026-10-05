@@ -117,6 +117,7 @@ export interface StepConfig extends DataTransformConfig {
   iterations?: number;
   contentType?: 'html' | 'iframe';
   content?: string;
+  popoverAnimation?: 'none' | 'fade' | 'slide' | 'zoom' | 'bounce';
   position?: 'center' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'anchor';
   width?: number;
   /** Canvas annotation text; never executed or included in the exported script. */
