@@ -8,8 +8,8 @@ import {
   MousePointerClick,
   PanelTop,
   Repeat2,
-  StickyNote,
   SquareDashedMousePointer,
+  StickyNote,
   Timer,
 } from 'lucide-react';
 import { welcomeJourneyPreset } from '../presets/welcome-journey';
