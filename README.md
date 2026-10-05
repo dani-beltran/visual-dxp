@@ -135,16 +135,16 @@ interface WorkflowPreset {
 }
 ```
 
-Bundled examples of increasing complexity live in [`src/presets`](src/presets). Start with [click-to-open help](src/presets/click-to-open-help.ts), which connects a click trigger to an anchored popover and includes setup notes. See the [common DXP presets reference](docs/common-dxp-presets.md) for all fifteen presets and their required setup.
+Bundled examples of increasing complexity live in [`src/presets`](src/presets). Start with [Draw attention to newsletter](src/presets/draw-attention-to-newsletter.ts), which connects a page-load trigger to a form-exists condition and an anchored popover, and includes setup notes. See the [common DXP presets reference](docs/common-dxp-presets.md) for all fifteen presets and their required setup.
 
 Pass a bundled preset explicitly from your host:
 
 ```tsx
-import VisualDXPBuilder, { clickToOpenHelpPreset } from 'visual-dxp';
+import VisualDXPBuilder, { drawAttentionToNewsletterPreset } from 'visual-dxp';
 import 'visual-dxp/styles.css';
 
 export function ExperienceEditor() {
-  return <VisualDXPBuilder presets={[clickToOpenHelpPreset]} style={{ height: 600 }} />;
+  return <VisualDXPBuilder presets={[drawAttentionToNewsletterPreset]} style={{ height: 600 }} />;
 }
 ```
 

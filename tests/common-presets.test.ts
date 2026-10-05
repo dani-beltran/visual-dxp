@@ -11,17 +11,18 @@ import {
   blankPreset,
   boundedCtaAttentionPreset,
   campaignUrlPersonalizationPreset,
-  clickToOpenHelpPreset,
   commonDXPPresets,
   contextualSupportPreset,
   delayedWelcomePreset,
+  drawAttentionToNewsletterPreset,
   engagedReaderInvitationPreset,
   exitIntentOfferPreset,
   frustrationRecoveryPreset,
+  headlineExperimentPreset,
   inactivityAssistancePreset,
   mobileSpecificMessagingPreset,
-  returningVisitorExperiencePreset,
   segmentedOnboardingPreset,
+  welcomeJourneyPreset,
 } from '../src/presets';
 
 const demoHtml = readFileSync('public/demo-site.html', 'utf8');
@@ -101,11 +102,7 @@ describe('common DXP preset contracts and layout', () => {
     expect(
       new Set(commonDXPPresets.flatMap((p) => p.workflow.nodes.map((n) => n.data.kind))),
     ).toEqual(
-      new Set(
-        catalog
-          .filter((entry) => !['transform', 'experiment'].includes(entry.kind))
-          .map((entry) => entry.kind),
-      ),
+      new Set(catalog.filter((entry) => entry.kind !== 'transform').map((entry) => entry.kind)),
     );
   });
 
@@ -210,6 +207,49 @@ describe('common DXP preset contracts and layout', () => {
 
 describe('preset execution with a mocked browser and network', () => {
   it.each([
+    [0.1, 'a', 'Everyday essentials, made extraordinary.'],
+    [0.9, 'b', 'Thoughtful design for the way you live.'],
+  ] as const)('assigns and remembers headline variant %s / %s', async (roll, variant, headline) => {
+    const random = vi.spyOn(Math, 'random').mockReturnValue(roll);
+    const first = runtime(headlineExperimentPreset);
+    await first.run();
+    expect(element('.hero h1').textContent).toBe(headline);
+    expect(successful()).toEqual(['experiment-load', 'headline-split', `headline-${variant}`]);
+    expect(localStorage.getItem('visual-dxp-experiment-v1:dxp_headline_experiment')).toBe(variant);
+    first.destroy();
+    logs = [];
+    element('.hero h1').textContent = 'Original headline';
+    random.mockReturnValue(1 - roll);
+    await runtime(headlineExperimentPreset).run();
+    expect(element('.hero h1').textContent).toBe(headline);
+    expect(successful()).toEqual(['experiment-load', 'headline-split', `headline-${variant}`]);
+    expect(request).not.toHaveBeenCalled();
+  });
+
+  it('shows the welcome gift once and welcomes the visitor back on the next load', async () => {
+    const heading = element('#newsletter h2').textContent;
+    const first = runtime(welcomeJourneyPreset);
+    first.start();
+    await vi.advanceTimersByTimeAsync(1499);
+    expect(popover('offer')).toBeNull();
+    expect(document.cookie).not.toContain('dxp_welcome_gift');
+    await vi.advanceTimersByTimeAsync(1);
+    expect(popover('offer')).not.toBeNull();
+    expect(document.cookie).toContain('dxp_welcome_gift=shown');
+    expect(element('#newsletter h2').textContent).toBe(heading);
+    expect(successful()).toEqual(['welcome', 'check', 'pause', 'offer', 'gift-cookie']);
+    first.destroy();
+    logs = [];
+    runtime(welcomeJourneyPreset).start();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(popover('offer')).toBeNull();
+    expect(element('#newsletter h2').textContent).toBe(
+      'Welcome back! It’s lovely to see you again.',
+    );
+    expect(successful()).toEqual(['welcome', 'check', 'update']);
+  });
+
+  it.each([
     ['2026-10-01T08:59:59Z', false],
     ['2026-10-01T09:00:00Z', true],
     ['2026-10-01T16:59:59Z', true],
@@ -297,14 +337,17 @@ describe('preset execution with a mocked browser and network', () => {
       expect(JSON.parse(JSON.stringify(campaignHeadlinePreset))).toEqual(campaignHeadlinePreset);
     },
   );
-  it('opens anchored help from a real delegated click', async () => {
-    runtime(clickToOpenHelpPreset).start();
-    element('#collection .section-heading a').dispatchEvent(
-      new MouseEvent('click', { bubbles: true }),
-    );
-    await vi.advanceTimersByTimeAsync(0);
-    expect(popover('help-popover')).not.toBeNull();
-  });
+  it.each([true, false])(
+    'checks the newsletter form on page load before showing help (form exists: %s)',
+    async (formExists) => {
+      if (!formExists) element('#newsletter form').remove();
+      runtime(drawAttentionToNewsletterPreset).start();
+      await vi.advanceTimersByTimeAsync(0);
+      expect(successful()).toContain('help-check');
+      expect(popover('help-popover') !== null).toBe(formExists);
+      expect(successful().includes('help-popover')).toBe(formExists);
+    },
+  );
   it('waits two seconds before rendering the welcome', async () => {
     const running = runtime(delayedWelcomePreset).run();
     await vi.advanceTimersByTimeAsync(1999);
@@ -350,17 +393,6 @@ describe('preset execution with a mocked browser and network', () => {
       );
     },
   );
-  it('welcomes a new visitor and takes the returning branch on the next load', async () => {
-    const first = runtime(returningVisitorExperiencePreset);
-    await first.run();
-    expect(popover('visitor-welcome')).not.toBeNull();
-    expect(document.cookie).toContain('dxp_visitor_welcome=shown');
-    first.destroy();
-    logs = [];
-    await runtime(returningVisitorExperiencePreset).run();
-    expect(popover('visitor-welcome')).toBeNull();
-    expect(successful()).toContain('visitor-returning');
-  });
   it('suppresses an exit offer across runtime installations after writing a session cookie', async () => {
     const writes = vi.spyOn(document, 'cookie', 'set');
     const first = runtime(exitIntentOfferPreset);
@@ -451,7 +483,7 @@ describe('preset execution with a mocked browser and network', () => {
       );
     },
   );
-  it('runs the complete loop body twice and done once, without a cyclic connection', async () => {
+  it('runs the complete loop body three times and done once, without a cyclic connection', async () => {
     runtime(boundedCtaAttentionPreset).start();
     element<HTMLButtonElement>('#shop-now').click();
     await vi.advanceTimersByTimeAsync(0);
@@ -464,12 +496,21 @@ describe('preset execution with a mocked browser and network', () => {
     expect(target.classList.contains('dxp-cta-attention')).toBe(true);
     await vi.advanceTimersByTimeAsync(600);
     expect(target.classList.contains('dxp-cta-attention')).toBe(false);
+    await vi.advanceTimersByTimeAsync(600);
+    expect(target.classList.contains('dxp-cta-attention')).toBe(true);
+    expect(popover('attention-done')).toBeNull();
+    await vi.advanceTimersByTimeAsync(600);
+    expect(target.classList.contains('dxp-cta-attention')).toBe(false);
     await vi.advanceTimersByTimeAsync(599);
     expect(popover('attention-done')).toBeNull();
     await vi.advanceTimersByTimeAsync(1);
     expect(successful()).toEqual([
       'attention-click',
       'attention-loop',
+      'attention-add',
+      'attention-on',
+      'attention-remove',
+      'attention-off',
       'attention-add',
       'attention-on',
       'attention-remove',

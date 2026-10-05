@@ -5,17 +5,17 @@ import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import VisualDXPBuilder, {
   blankPreset,
-  clickToOpenHelpPreset,
   commonDXPPresets,
   createActivityStore,
+  drawAttentionToNewsletterPreset,
   frustrationRecoveryPreset,
   isWorkflow,
-  returningVisitorExperiencePreset,
   type VisualDXPBuilderApi,
   type VisualDXPBuilderProps,
   validateWorkflow,
   type Workflow,
   type WorkflowPreset,
+  welcomeJourneyPreset,
 } from '../src';
 
 const { fitView } = vi.hoisted(() => ({ fitView: vi.fn().mockResolvedValue(true) }));
@@ -108,7 +108,7 @@ async function key(target: HTMLElement, key: string) {
   await act(async () => target.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true })));
 }
 
-async function apply(name = clickToOpenHelpPreset.name) {
+async function apply(name = drawAttentionToNewsletterPreset.name) {
   await click(tab('Presets'));
   await click(element(`button[aria-label="Apply preset: ${name}"]`));
 }
@@ -206,7 +206,7 @@ describe('optional builder presets', () => {
     expect(host.querySelector('[id$="-presets-panel"]')).toBeNull();
     const changes = onChange.mock.calls.length;
     for (const removed of [[], undefined]) {
-      await render({ presets: [clickToOpenHelpPreset], onChange });
+      await render({ presets: [drawAttentionToNewsletterPreset], onChange });
       expect(element('[id$="-presets-panel"]').hidden).toBe(true);
       await click(tab('Presets'));
       expect(element('[id$="-presets-panel"]').hidden).toBe(false);
@@ -222,28 +222,24 @@ describe('optional builder presets', () => {
 
   it('sorts by explicit order without mutating a frozen array and updates cards on prop changes', async () => {
     const helpPreset = {
-      ...clickToOpenHelpPreset,
+      ...drawAttentionToNewsletterPreset,
       setupInstructions: ['Customize the help message before publishing.'],
     };
-    const presets = freeze([
-      frustrationRecoveryPreset,
-      helpPreset,
-      returningVisitorExperiencePreset,
-    ]);
+    const presets = freeze([frustrationRecoveryPreset, helpPreset, welcomeJourneyPreset]);
     await render({ presets });
     await click(tab('Presets'));
     expect(
       [...host.querySelectorAll('.dxp-preset-card h3')].map((node) => node.textContent),
     ).toEqual([
-      clickToOpenHelpPreset.name,
-      returningVisitorExperiencePreset.name,
+      drawAttentionToNewsletterPreset.name,
+      welcomeJourneyPreset.name,
       frustrationRecoveryPreset.name,
     ]);
-    expect(presets.map((preset) => preset.order)).toEqual([100, 10, 80]);
+    expect(presets.map((preset) => preset.order)).toEqual([100, 10, 65]);
     const card = element('.dxp-preset-card');
-    expect(card.textContent).toContain(clickToOpenHelpPreset.description);
+    expect(card.textContent).toContain(drawAttentionToNewsletterPreset.description);
     expect(card.textContent).toContain('beginner');
-    expect(card.textContent).toContain('5 nodes');
+    expect(card.textContent).toContain('6 nodes');
     expect(card.textContent).toContain(helpPreset.setupInstructions[0]);
     expect(element('.dxp-presets-header').textContent).toMatch(
       /replaces all current nodes and connections/,
@@ -253,7 +249,7 @@ describe('optional builder presets', () => {
     await render({
       presets: [
         { ...frustrationRecoveryPreset, order: 0, setupInstructions: undefined },
-        clickToOpenHelpPreset,
+        drawAttentionToNewsletterPreset,
       ],
     });
     expect(element('.dxp-preset-card h3').textContent).toBe(frustrationRecoveryPreset.name);
@@ -264,7 +260,7 @@ describe('optional builder presets', () => {
     'includes Presets in roving tab navigation (AI settings: %s)',
     async (settings) => {
       await render({
-        presets: [clickToOpenHelpPreset],
+        presets: [drawAttentionToNewsletterPreset],
         ai: settings ? { endpoint: '/api/ai/chat' } : undefined,
       });
       await key(tab('Canvas'), 'ArrowRight');
@@ -293,7 +289,7 @@ describe('optional builder presets', () => {
       const onChange = vi.fn<(workflow: Workflow) => void>();
       let api: VisualDXPBuilderApi | null = null;
       await render({
-        presets: [clickToOpenHelpPreset],
+        presets: [drawAttentionToNewsletterPreset],
         onChange,
         initialWorkflow: { ...initialWorkflow(), includeSubpages },
         onReady: (next) => {
@@ -303,8 +299,8 @@ describe('optional builder presets', () => {
       await act(async () => api?.renameWorkflow('Updated host name'));
       await apply();
       expect(onChange.mock.lastCall?.[0]).toEqual({
-        ...clickToOpenHelpPreset.workflow,
-        name: clickToOpenHelpPreset.workflow.name,
+        ...drawAttentionToNewsletterPreset.workflow,
+        name: drawAttentionToNewsletterPreset.workflow.name,
         websiteUrl: initialWorkflow().websiteUrl,
         includeSubpages: includeSubpages ?? false,
       });
@@ -362,7 +358,7 @@ describe('optional builder presets', () => {
   });
 
   it('deep-clones frozen presets, clears saved and current selection state, and leaves them unchanged after edits', async () => {
-    const preset: WorkflowPreset = structuredClone(clickToOpenHelpPreset);
+    const preset: WorkflowPreset = structuredClone(drawAttentionToNewsletterPreset);
     preset.workflow.nodes[0].selected = true;
     preset.workflow.nodes[0].dragging = true;
     preset.workflow.nodes[0].data.status = 'success';
@@ -392,32 +388,34 @@ describe('optional builder presets', () => {
       setter.call(input, 'Edited message');
       input.dispatchEvent(new Event('input', { bubbles: true }));
     });
-    expect(onChange.mock.lastCall?.[0].nodes[1].data.label).toBe('Edited message');
+    expect(
+      onChange.mock.lastCall?.[0].nodes.find((node) => node.id === 'help-popover')?.data.label,
+    ).toBe('Edited message');
     expect(JSON.stringify(preset)).toBe(before);
     // Mutating nested editor output cannot leak into the supplied preset either.
-    applied.nodes[1].data.config.content = 'Changed outside';
-    applied.nodes[1].position.x = 999;
+    applied.nodes[2].data.config.content = 'Changed outside';
+    applied.nodes[2].position.x = 999;
     applied.edges[0].label = 'Changed connection';
     expect(JSON.stringify(preset)).toBe(before);
   });
 
   it.each([
-    ['structure', { ...clickToOpenHelpPreset.workflow, nodes: null }, /structure/],
+    ['structure', { ...drawAttentionToNewsletterPreset.workflow, nodes: null }, /structure/],
     [
       'dangling edge',
       {
-        ...clickToOpenHelpPreset.workflow,
-        edges: [{ id: 'bad', source: 'missing', target: 'help-click' }],
+        ...drawAttentionToNewsletterPreset.workflow,
+        edges: [{ id: 'bad', source: 'missing', target: 'help-load' }],
       },
       /structure/,
     ],
     [
       'configuration',
       {
-        ...clickToOpenHelpPreset.workflow,
+        ...drawAttentionToNewsletterPreset.workflow,
         nodes: [
           {
-            ...clickToOpenHelpPreset.workflow.nodes[0],
+            ...drawAttentionToNewsletterPreset.workflow.nodes[0],
             data: { kind: 'trigger', label: 'Click', config: { event: 'click' } },
           },
         ],
@@ -428,18 +426,18 @@ describe('optional builder presets', () => {
     [
       'graph',
       {
-        ...returningVisitorExperiencePreset.workflow,
-        edges: [{ id: 'bad-handle', source: 'visitor-check', target: 'visitor-welcome' }],
+        ...welcomeJourneyPreset.workflow,
+        edges: [{ id: 'bad-handle', source: 'check', target: 'offer' }],
       },
       /Yes or No/,
     ],
     [
       'cycle',
       {
-        ...clickToOpenHelpPreset.workflow,
+        ...drawAttentionToNewsletterPreset.workflow,
         edges: [
-          ...clickToOpenHelpPreset.workflow.edges,
-          { id: 'cycle', source: 'help-popover', target: 'help-click' },
+          ...drawAttentionToNewsletterPreset.workflow.edges,
+          { id: 'cycle', source: 'help-popover', target: 'help-load' },
         ],
       },
       /Circular/,
@@ -450,7 +448,7 @@ describe('optional builder presets', () => {
       const store = createActivityStore();
       const onChange = vi.fn<(workflow: Workflow) => void>();
       await render({
-        presets: [{ ...clickToOpenHelpPreset, workflow } as WorkflowPreset],
+        presets: [{ ...drawAttentionToNewsletterPreset, workflow } as WorkflowPreset],
         activityStore: store,
         onChange,
         persistenceKey,
@@ -474,7 +472,7 @@ describe('optional builder presets', () => {
     },
   );
 
-  it.each([clickToOpenHelpPreset, returningVisitorExperiencePreset, frustrationRecoveryPreset])(
+  it.each([drawAttentionToNewsletterPreset, welcomeJourneyPreset, frustrationRecoveryPreset])(
     'ships a serializable, structurally and graph-valid $name example',
     (preset) => {
       expect(JSON.parse(JSON.stringify(preset))).toEqual(preset);

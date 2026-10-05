@@ -10,6 +10,8 @@ export interface RuntimeOptions {
   onConnectionPreview?: (edgeId: string, preview: ConnectionPreview) => void;
   /** Editor previews simulate analytics and never call the website's analytics APIs. */
   analyticsMode?: 'live' | 'simulate';
+  /** Optional query string for testing conditions without changing the page location. */
+  searchParams?: string;
   signal?: AbortSignal;
   /** Maximum executed steps for one trigger invocation. Defaults to 10,000. */
   maxSteps?: number;

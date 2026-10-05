@@ -9,15 +9,19 @@ import {
   campaignUrlPersonalizationPreset,
   createCampaignUrlPersonalizationPreset,
 } from './campaign-url-personalization';
-import { clickToOpenHelpPreset, createClickToOpenHelpPreset } from './click-to-open-help';
 import { contextualSupportPreset, createContextualSupportPreset } from './contextual-support';
 import { createDelayedWelcomePreset, delayedWelcomePreset } from './delayed-welcome';
+import {
+  createDrawAttentionToNewsletterPreset,
+  drawAttentionToNewsletterPreset,
+} from './draw-attention-to-newsletter';
 import {
   createEngagedReaderInvitationPreset,
   engagedReaderInvitationPreset,
 } from './engaged-reader-invitation';
 import { createExitIntentOfferPreset, exitIntentOfferPreset } from './exit-intent-offer';
 import { createFrustrationRecoveryPreset, frustrationRecoveryPreset } from './frustration-recovery';
+import { createHeadlineExperimentPreset, headlineExperimentPreset } from './headline-experiment';
 import {
   createInactivityAssistancePreset,
   inactivityAssistancePreset,
@@ -28,10 +32,6 @@ import {
   createMobileSpecificMessagingPreset,
   mobileSpecificMessagingPreset,
 } from './mobile-specific-messaging';
-import {
-  createReturningVisitorExperiencePreset,
-  returningVisitorExperiencePreset,
-} from './returning-visitor-experience';
 import { createSegmentedOnboardingPreset, segmentedOnboardingPreset } from './segmented-onboarding';
 import { createWelcomeJourneyPreset, welcomeJourneyPreset } from './welcome-journey';
 
@@ -40,15 +40,15 @@ export {
   boundedCtaAttentionPreset,
   campaignHeadlinePreset,
   campaignUrlPersonalizationPreset,
-  clickToOpenHelpPreset,
   contextualSupportPreset,
   delayedWelcomePreset,
+  drawAttentionToNewsletterPreset,
   engagedReaderInvitationPreset,
   exitIntentOfferPreset,
   frustrationRecoveryPreset,
+  headlineExperimentPreset,
   inactivityAssistancePreset,
   mobileSpecificMessagingPreset,
-  returningVisitorExperiencePreset,
   segmentedOnboardingPreset,
   welcomeJourneyPreset,
 };
@@ -56,7 +56,7 @@ export {
 /** Curated examples in ascending implementation complexity; opt in through the presets prop. */
 export const commonDXPPresets: readonly WorkflowPreset[] = [
   blankPreset,
-  clickToOpenHelpPreset,
+  drawAttentionToNewsletterPreset,
   delayedWelcomePreset,
   campaignHeadlinePreset,
   engagedReaderInvitationPreset,
@@ -64,7 +64,7 @@ export const commonDXPPresets: readonly WorkflowPreset[] = [
   campaignUrlPersonalizationPreset,
   welcomeJourneyPreset,
   exitIntentOfferPreset,
-  returningVisitorExperiencePreset,
+  headlineExperimentPreset,
   inactivityAssistancePreset,
   contextualSupportPreset,
   frustrationRecoveryPreset,
@@ -81,15 +81,15 @@ const spanishPresets: readonly WorkflowPreset[] = [
   createBoundedCtaAttentionPreset(spanishPresetMessages),
   createCampaignHeadlinePreset(spanishPresetMessages),
   createCampaignUrlPersonalizationPreset(spanishPresetMessages),
-  createClickToOpenHelpPreset(spanishPresetMessages),
+  createDrawAttentionToNewsletterPreset(spanishPresetMessages),
   createContextualSupportPreset(spanishPresetMessages),
   createDelayedWelcomePreset(spanishPresetMessages),
   createEngagedReaderInvitationPreset(spanishPresetMessages),
   createExitIntentOfferPreset(spanishPresetMessages),
+  createHeadlineExperimentPreset(spanishPresetMessages),
   createFrustrationRecoveryPreset(spanishPresetMessages),
   createInactivityAssistancePreset(spanishPresetMessages),
   createMobileSpecificMessagingPreset(spanishPresetMessages),
-  createReturningVisitorExperiencePreset(spanishPresetMessages),
   createSegmentedOnboardingPreset(spanishPresetMessages),
 ].sort((a, b) => a.order - b.order);
 

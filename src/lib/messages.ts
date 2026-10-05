@@ -532,6 +532,7 @@ export const englishMessages = {
   'preview.testYourExperience': 'TEST YOUR EXPERIENCE',
   'preview.seeYourJourneyInAction': 'See your journey in action',
   'preview.closePreview': 'Close preview',
+  'preview.searchParams': 'Search parameters',
   'preview.reloadWebsite': 'Reload website',
   'preview.stopWorkflow': 'Stop workflow',
   'preview.restartWorkflow': 'Restart workflow',

@@ -502,6 +502,7 @@ export const spanishMessages = {
   'preview.testYourExperience': 'PRUEBA TU EXPERIENCIA',
   'preview.seeYourJourneyInAction': 'Ve tu recorrido en acción',
   'preview.closePreview': 'Cerrar vista previa',
+  'preview.searchParams': 'Parámetros de búsqueda',
   'preview.reloadWebsite': 'Recargar sitio web',
   'preview.stopWorkflow': 'Detener flujo de trabajo',
   'preview.restartWorkflow': 'Reiniciar flujo de trabajo',

@@ -32,5 +32,7 @@ export function PopoverContentPreview({ node, title }: { node: WorkflowNode; tit
     setSrcDoc(`<!doctype html>${doc.documentElement.outerHTML}`);
   }, [node]);
 
-  return <iframe title={title} sandbox="" srcDoc={srcDoc} />;
+  // Mount with the finished document and replace the browsing context on edits.
+  // Updating an initially empty srcdoc can leave the sandboxed frame blank in Chrome.
+  return srcDoc ? <iframe key={srcDoc} title={title} sandbox="" srcDoc={srcDoc} /> : null;
 }

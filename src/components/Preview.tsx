@@ -10,13 +10,22 @@ import {
   Square,
   X,
 } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useId, useState } from 'react';
 import type { ConnectionPreview } from '../lib/connections';
 import { validateWorkflow } from '../lib/export';
 import { useBuilderI18n } from '../lib/i18nContext';
 import type { RunLog, Workflow } from '../lib/types';
 import { useDialogFocus } from '../lib/useDialogFocus';
 import { IsolatedPreview } from './IsolatedPreview';
+
+function websiteSearch(url: string) {
+  try {
+    return new URL(url, 'https://preview.example').search.slice(1);
+  } catch {
+    return '';
+  }
+}
+
 export function Preview({
   workflow,
   onClose,
@@ -31,6 +40,11 @@ export function Preview({
   onLog: (log: RunLog) => void;
 }) {
   const { t } = useBuilderI18n();
+  const searchParamsId = useId();
+  const [searchParams, setSearchParams] = useState(() => websiteSearch(workflow.websiteUrl));
+  useEffect(() => {
+    setSearchParams(websiteSearch(workflow.websiteUrl));
+  }, [workflow.websiteUrl]);
   const modalRef = useDialogFocus(true);
   const [ready, setReady] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -104,6 +118,23 @@ export function Preview({
             <span className="dxp-status-dot" />
             {workflow.websiteUrl}
           </span>
+          <div className="dxp-preview-search">
+            <label htmlFor={searchParamsId}>{t('preview.searchParams')}</label>
+            <input
+              id={searchParamsId}
+              type="text"
+              value={searchParams}
+              placeholder="utm_campaign=summer-sale"
+              autoComplete="off"
+              spellCheck={false}
+              onChange={(event) => {
+                stop();
+                setLogs([]);
+                setError('');
+                setSearchParams(event.target.value);
+              }}
+            />
+          </div>
           <button
             type="button"
             className="dxp-button"
@@ -138,6 +169,7 @@ export function Preview({
           <IsolatedPreview
             key={`${workflow.websiteUrl}-${key}`}
             url={workflow.websiteUrl}
+            searchParams={searchParams.trim()}
             workflow={workflow}
             running={running}
             revision={revision}

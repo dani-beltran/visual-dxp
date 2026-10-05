@@ -45,6 +45,7 @@ export function installPreviewBridge(
         document,
         window,
         analyticsMode: 'simulate',
+        searchParams: typeof data.searchParams === 'string' ? data.searchParams : undefined,
         onLog: (log) => send('log', { log }),
         onConnectionPreview: (edgeId, preview) => {
           // Bound transport and keep samples out of saved workflow/log objects.

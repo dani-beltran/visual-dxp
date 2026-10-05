@@ -873,6 +873,7 @@
 }
 .dxp-preview-bar {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 9px;
   padding: 12px 20px;
@@ -881,6 +882,7 @@
   background: var(--dxp-canvas);
 }
 .dxp-preview-url {
+  min-width: 140px;
   flex: 1;
   display: flex;
   align-items: center;
@@ -890,6 +892,29 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.dxp-preview-search {
+  flex: 1 1 250px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  color: var(--dxp-muted);
+  font-size: 11px;
+}
+.dxp-preview-search label {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.dxp-preview-search input {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--dxp-line);
+  border-radius: 6px;
+  background: var(--dxp-surface);
+  color: var(--dxp-text);
+  padding: 8px 10px;
+  font: inherit;
 }
 .dxp-preview-body {
   display: flex;

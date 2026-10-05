@@ -42,7 +42,7 @@ export function createBoundedCtaAttentionPreset(messages: PresetMessages = engli
             kind: 'loop',
             label: messages['bounded-cta-attention.workflow.nodes.attention-loop.data.label'],
             config: {
-              iterations: 2,
+              iterations: 3,
             },
           },
         },
