@@ -121,7 +121,6 @@ export function ExperimentAnalyticsInspector({
                 : 'experiment.clickInteractionHint',
             ),
           )}
-          <InfoBox>{t('experiment.mapping')}</InfoBox>
           {field(
             'experimentDelivery',
             t('experiment.delivery'),
@@ -188,6 +187,7 @@ export function ExperimentAnalyticsInspector({
               {t('experiment.guideFunnelLink')}
             </a>
           </details>
+          <InfoBox>{t('experiment.mapping')}</InfoBox>
         </>
       )}
     </section>

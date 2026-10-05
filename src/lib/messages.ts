@@ -19,7 +19,7 @@ export const englishMessages = {
   'experiment.interactionHint':
     'Click tracks activation, including nested elements. Change tracks committed changes on inputs, selects, and checkboxes.',
   'experiment.mapping':
-    'Fixed analytics mapping: Variant A → a; Variant B → b. Tracking uses the assigned branch. experiment_view is recorded when the CTA becomes visible; experiment_cta is recorded only after exposure.',
+    'Variants are mapped as follow to variant_id: Variant A → a; Variant B → b. This dimension will be send with experiment_view and experiment_cta events.',
   'experiment.delivery': 'Event delivery',
   'experiment.gtag': 'Google tag',
   'experiment.gtm': 'Google Tag Manager',

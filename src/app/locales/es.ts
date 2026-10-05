@@ -22,7 +22,7 @@ export const spanishMessages = {
   'experiment.interactionHint':
     'Clic registra la activación, incluidos los elementos anidados. Change registra cambios confirmados en campos, selectores y casillas.',
   'experiment.mapping':
-    'Correspondencia fija en analítica: Variante A → a; Variante B → b. Se usa la rama asignada. experiment_view se registra cuando el CTA es visible; experiment_cta solo después de la exposición.',
+    'Las variantes se asignan a variant_id de la siguiente forma: Variante A → a; Variante B → b. Esta dimensión se enviará con los eventos experiment_view y experiment_cta.',
   'experiment.delivery': 'Envío de eventos',
   'experiment.gtag': 'Etiqueta de Google',
   'experiment.gtm': 'Google Tag Manager',
