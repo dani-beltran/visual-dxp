@@ -31,6 +31,8 @@ export const spanishMessages = {
   'experiment.gtmHint':
     'Añade experiment_view y experiment_cta con experiment_id, variant_id y cta_type (solo CTA) a window.dataLayer existente. El propietario del sitio debe configurar activadores de eventos personalizados, variables de la capa de datos para estos parámetros y etiquetas de eventos GA4 que los envíen.',
   'experiment.measurementId': 'ID de medición de GA4 (opcional)',
+  'experiment.measurementIdHint':
+    'Si el sitio web tiene varios destinos, introduce un ID para dirigir los eventos a un flujo de GA4 específico.',
   'experiment.privacyHint':
     'Solo usa el método de envío seleccionado. Visual DXP no instala otra etiqueta ni cambia el consentimiento del sitio. Un evento en cola no confirma la recepción; la analítica bloqueada o ausente no detiene el flujo. La vista previa simula eventos en el registro de ejecución.',
   'experiment.reporting': 'Configurar informes en Google Analytics',

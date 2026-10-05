@@ -28,6 +28,8 @@ export const englishMessages = {
   'experiment.gtmHint':
     'Pushes experiment_view and experiment_cta with experiment_id, variant_id, and cta_type (CTA only) to the existing window.dataLayer. The website owner must configure GTM custom event triggers, data layer variables for these parameters, and GA4 event tags to forward them.',
   'experiment.measurementId': 'GA4 measurement ID (optional)',
+  'experiment.measurementIdHint':
+    'When the website has multiple destinations, enter an ID to target a particular GA4 stream.',
   'experiment.privacyHint':
     'Uses only the selected delivery method. Visual DXP does not install another tag or change website consent. Queued events are not confirmed delivery; blocked or missing analytics will not stop the workflow. Editor previews simulate events in the execution log.',
   'experiment.reporting': 'Set up reporting in Google Analytics',

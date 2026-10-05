@@ -148,6 +148,7 @@ export function ExperimentAnalyticsInspector({
                 spellCheck={false}
                 onChange={(event) => update({ experimentMeasurementId: event.target.value })}
               />,
+              t('experiment.measurementIdHint'),
             )}
           {error && (
             <p className="dxp-field-error" role="alert">
