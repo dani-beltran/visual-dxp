@@ -306,6 +306,26 @@
   color: var(--dxp-muted);
   font-size: 11px;
 }
+.dxp-ai-reasoning {
+  margin: 8px 0 12px;
+  padding: 8px 10px;
+  border: 1px solid var(--dxp-line);
+  border-radius: 8px;
+  background: var(--dxp-surface-muted);
+  color: var(--dxp-muted);
+}
+.dxp-ai-reasoning summary {
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 600;
+}
+.dxp-ai-reasoning summary:focus-visible {
+  outline: 2px solid var(--dxp-primary-color);
+  outline-offset: 3px;
+}
+.dxp-ai-reasoning[open] summary {
+  margin-bottom: 8px;
+}
 .dxp-ai-error {
   padding: 10px 12px;
   border: 1px solid var(--dxp-danger-border);

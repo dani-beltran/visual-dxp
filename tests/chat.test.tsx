@@ -236,6 +236,7 @@ describe('canvas AI chat', () => {
       [{ role: 'user', content: 'Add a welcome step' }],
       expect.any(AbortSignal),
       expect.any(Function),
+      expect.any(Function),
     );
     expect(composer().value).toBe('');
     expect(document.activeElement).toBe(composer());
@@ -662,4 +663,117 @@ it('displays streamed text before completion and replaces it with the validated 
   expect(host.querySelector('.dxp-ai-message-assistant h2')?.textContent).toBe('Final reply');
   expect(host.querySelector('.dxp-ai-message-assistant pre')).toBeNull();
   expect(host.querySelector('.dxp-ai-applied')).not.toBeNull();
+});
+
+it('keeps streaming reasoning separate from the answer and subsequent chat history', async () => {
+  const pending = pendingResponse();
+  let emitReasoning!: (text: string) => void;
+  let emitText!: (text: string) => void;
+  const onSend = vi.fn<CanvasChatProps['onSend']>((_messages, _signal, onText, onReasoning) => {
+    emitText = onText!;
+    emitReasoning = onReasoning!;
+    return pending.promise;
+  });
+  await renderChat({ open: true, onSend });
+  await typeMessage('Explain this');
+  await pressKey('Enter');
+  await act(async () => emitReasoning('Checking **connections**.'));
+  const details = host.querySelector<HTMLDetailsElement>('.dxp-ai-reasoning')!;
+  expect(details.querySelector('summary')?.textContent).toBe('Reasoning summary');
+  expect(details.open).toBe(false);
+  await click(details.querySelector('summary')!);
+  expect(details.open).toBe(true);
+  expect(details.querySelector('strong')?.textContent).toBe('connections');
+  await act(async () => {
+    emitText('Draft answer');
+    emitReasoning('\n\nNo disconnected nodes.');
+  });
+  expect(details.open).toBe(true);
+  expect(details.textContent).not.toContain('Draft answer');
+  expect(host.querySelectorAll('.dxp-ai-message-assistant')).toHaveLength(1);
+  await act(async () => pending.resolve({ message: 'Final answer', changeCount: 0 }));
+  expect(details.textContent).toContain('No disconnected nodes.');
+  expect(host.textContent).not.toContain('Draft answer');
+  await typeMessage('Thanks');
+  await pressKey('Enter');
+  expect(onSend.mock.calls[1][0]).toEqual([
+    { role: 'user', content: 'Explain this' },
+    { role: 'assistant', content: 'Final answer' },
+    { role: 'user', content: 'Thanks' },
+  ]);
+  await click(button('Start a new conversation'));
+  expect(host.querySelector('.dxp-ai-reasoning')).toBeNull();
+});
+
+it.each(['cancel', 'error'])(
+  'removes partial reasoning on %s and ignores late deltas',
+  async (mode) => {
+    let emitReasoning!: (text: string) => void;
+    let reject!: (reason: Error) => void;
+    await renderChat({
+      open: true,
+      onSend: (_messages, signal, _onText, onReasoning) => {
+        emitReasoning = onReasoning!;
+        return new Promise((_resolve, fail) => {
+          reject = fail;
+          signal.addEventListener('abort', () => fail(new Error('Stopped')));
+        });
+      },
+    });
+    await typeMessage('Explain this');
+    await pressKey('Enter');
+    await act(async () => emitReasoning('Partial summary'));
+    expect(host.querySelector('.dxp-ai-reasoning')).not.toBeNull();
+    if (mode === 'cancel') await click(button('Stop generating'));
+    else await act(async () => reject(new Error('Interrupted')));
+    await act(async () => emitReasoning('Late summary'));
+    expect(host.querySelector('.dxp-ai-message-assistant')).toBeNull();
+    expect(host.querySelector('[role="alert"]')?.textContent).toContain('No changes were made');
+  },
+);
+
+it('connects streamed reasoning through the builder while applying only the final edit batch', async () => {
+  let stream!: ReadableStreamDefaultController<Uint8Array>;
+  const encoder = new TextEncoder();
+  vi.stubGlobal(
+    'fetch',
+    vi.fn().mockResolvedValue(
+      new Response(
+        new ReadableStream({
+          start(controller) {
+            stream = controller;
+          },
+        }),
+        { headers: { 'Content-Type': 'application/x-ndjson' } },
+      ),
+    ),
+  );
+  const { onChange, baseline } = await renderConnectedBuilder();
+  await typeMessage('Rename the delay');
+  await click(button('Send message'));
+  await act(async () =>
+    stream.enqueue(encoder.encode('{"type":"reasoning","text":"Checking the delay."}\n')),
+  );
+  expect(host.querySelector('.dxp-ai-reasoning')?.textContent).toContain('Checking the delay.');
+  expect(onChange.mock.lastCall![0]).toEqual(baseline);
+  expect(undoButton().disabled).toBe(true);
+  await act(async () => {
+    stream.enqueue(
+      encoder.encode(
+        `${JSON.stringify({
+          type: 'result',
+          response: {
+            message: 'Renamed.',
+            operations: [{ type: 'update_node', id: 'delay', label: 'Pause' }],
+          },
+        })}\n`,
+      ),
+    );
+    stream.close();
+  });
+  expect(onChange.mock.lastCall![0].nodes.find((node) => node.id === 'delay')?.data.label).toBe(
+    'Pause',
+  );
+  expect(host.querySelector('.dxp-ai-reasoning')?.textContent).toContain('Checking the delay.');
+  expect(host.querySelector('.dxp-ai-applied')?.textContent).toContain('1 edit applied');
 });
