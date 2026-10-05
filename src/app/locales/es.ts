@@ -15,6 +15,10 @@ export const spanishMessages = {
   'experiment.interaction': 'Interacción del CTA',
   'experiment.click': 'Clic',
   'experiment.change': 'Valor del campo confirmado',
+  'experiment.clickInteractionHint':
+    'Clic registra la activación, incluidos los elementos anidados. Nunca se recopilan textos ni valores de los campos.',
+  'experiment.changeInteractionHint':
+    'Registra cambios confirmados en campos, selectores y casillas. Nunca se recopilan textos ni valores de los campos.',
   'experiment.interactionHint':
     'Clic registra la activación, incluidos los elementos anidados. Change registra cambios confirmados en campos, selectores y casillas. Nunca se recopilan textos ni valores de los campos.',
   'experiment.mapping':

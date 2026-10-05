@@ -115,7 +115,11 @@ export function ExperimentAnalyticsInspector({
               <option value="click">{t('experiment.click')} (click)</option>
               <option value="change">{t('experiment.change')} (change)</option>
             </Select>,
-            t('experiment.interactionHint'),
+            t(
+              config.experimentInteraction === 'change'
+                ? 'experiment.changeInteractionHint'
+                : 'experiment.clickInteractionHint',
+            ),
           )}
           <InfoBox>{t('experiment.mapping')}</InfoBox>
           {field(
