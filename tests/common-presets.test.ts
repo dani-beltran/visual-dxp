@@ -388,37 +388,52 @@ describe('preset execution with a mocked browser and network', () => {
       expect(successful()).not.toContain(present ? 'idle-fallback' : 'idle-delay');
     },
   );
-  it('detects rage clicks and suppresses later prompts after the generic request succeeds', async () => {
-    runtime(frustrationRecoveryPreset).start();
-    const rage = () => {
-      for (let i = 0; i < 3; i++)
-        document.body.dispatchEvent(
-          new MouseEvent('click', {
-            bubbles: true,
-            detail: 1,
-            clientX: 100,
-            clientY: 100,
-          }),
-        );
-    };
-    rage();
-    await vi.advanceTimersByTimeAsync(0);
-    expect(popover('recovery-help')).not.toBeNull();
-    expect(request).toHaveBeenCalledExactlyOnceWith(
-      'https://events.example.invalid/dxp-events',
-      expect.objectContaining({
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: '{"event":"assistance_shown"}',
-      }),
-    );
-    expect(document.cookie).toContain('dxp_assistance_shown=shown');
-    element<HTMLButtonElement>('[data-visual-dxp-popover="recovery-help"] button').click();
-    rage();
-    await vi.advanceTimersByTimeAsync(0);
-    expect(popover('recovery-help')).toBeNull();
-    expect(request).toHaveBeenCalledTimes(1);
-  });
+  it.each(['rage-click', 'scroll-thrashing'] as const)(
+    'starts recovery from %s and suppresses later prompts from either trigger',
+    async (event) => {
+      vi.stubGlobal('scrollY', 0);
+      vi.stubGlobal('innerHeight', 500);
+      vi.spyOn(document.documentElement, 'scrollHeight', 'get').mockReturnValue(2000);
+      runtime(frustrationRecoveryPreset).start();
+      const rage = () => {
+        for (let i = 0; i < 3; i++)
+          document.body.dispatchEvent(
+            new MouseEvent('click', {
+              bubbles: true,
+              detail: 1,
+              clientX: 100,
+              clientY: 100,
+            }),
+          );
+      };
+      const thrash = () => {
+        for (const y of [100, 0, 100, 0, 100]) {
+          vi.stubGlobal('scrollY', y);
+          document.dispatchEvent(new Event('scroll'));
+        }
+      };
+      expect(popover('recovery-help')).toBeNull();
+      if (event === 'rage-click') rage();
+      else thrash();
+      await vi.advanceTimersByTimeAsync(0);
+      expect(popover('recovery-help')).not.toBeNull();
+      expect(request).toHaveBeenCalledExactlyOnceWith(
+        'https://events.example.invalid/dxp-events',
+        expect.objectContaining({
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: '{"event":"assistance_shown"}',
+        }),
+      );
+      expect(document.cookie).toContain('dxp_assistance_shown=shown');
+      element<HTMLButtonElement>('[data-visual-dxp-popover="recovery-help"] button').click();
+      rage();
+      thrash();
+      await vi.advanceTimersByTimeAsync(0);
+      expect(popover('recovery-help')).toBeNull();
+      expect(request).toHaveBeenCalledTimes(1);
+    },
+  );
   it.each([frustrationRecoveryPreset, segmentedOnboardingPreset])(
     '$name continues after failed HTTP and records that guidance was displayed',
     async (preset) => {
