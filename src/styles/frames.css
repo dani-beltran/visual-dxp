@@ -46,3 +46,19 @@
   color: #7895a7;
   pointer-events: none;
 }
+
+[data-dxp-theme='dark'] .dxp-frame-card {
+  background: #182a35;
+  border-color: #506f83;
+  color: #d2e5f1;
+}
+[data-dxp-theme='dark'] .dxp-frame-header {
+  background: #223e50;
+  border-bottom-color: #506f83;
+}
+[data-dxp-theme='dark'] .dxp-frame-card.is-selected {
+  border-color: #789bb1;
+}
+[data-dxp-theme='dark'] .dxp-frame-hint {
+  color: #a8c2d2;
+}
