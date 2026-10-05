@@ -427,8 +427,9 @@ it('persists analytics configuration through import/export and both workflow ass
         config: { experimentDelivery: 'gtm', experimentInteraction: 'change' },
       },
     ]);
+    const { experimentMeasurementId: _measurementId, ...supported } = graph.nodes[1].data.config;
     expect(result.nodes[1].data.config).toEqual({
-      ...graph.nodes[1].data.config,
+      ...supported,
       experimentDelivery: 'gtm',
       experimentInteraction: 'change',
     });

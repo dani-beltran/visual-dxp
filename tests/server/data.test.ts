@@ -46,14 +46,6 @@ const cases: ['http' | 'fork' | 'dom' | 'transform', StepConfig][] = [
       value: '{{$}}',
     },
   ],
-  [
-    'dom',
-    {
-      selector: '#result',
-      action: 'hide',
-      value: '{{ignored[}}',
-    },
-  ],
   ['transform', { dataPath: 'items[0].price' }],
   ['transform', { dataPath: '' }],
   [
@@ -93,6 +85,37 @@ it.each(cases)('retains %s config through tools and transport', async (kind, con
   expect(
     applyWorkflowOperations(base, response.operations).nodes.at(-1)!.data.config,
   ).toMatchObject(config);
+});
+
+it('preserves historical inactive DOM values but rejects new AI writes to them', () => {
+  const config: StepConfig = { selector: '#result', action: 'hide', value: '{{ignored[}}' };
+  const workflow: Workflow = {
+    ...base,
+    nodes: [
+      ...base.nodes,
+      {
+        id: 'hidden',
+        type: 'workflow',
+        position: { x: 300, y: 0 },
+        data: { kind: 'dom', label: 'Hidden', config },
+      },
+    ],
+  };
+  expect(validateWorkflow(workflow)).toEqual([]);
+  const parsed = parseAIChatRequest({
+    workflow,
+    messages: [{ role: 'user', content: 'Rename' }],
+    selectedNodeIds: [],
+  });
+  const toolkit = createWorkflowTools(parsed.workflow, []);
+  expect(
+    JSON.parse(toolkit.invokePrivate('update_node', { id: 'hidden', label: 'Renamed' })).ok,
+  ).toBe(true);
+  expect(toolkit.getWorkflow().nodes[1].data.config).toEqual(config);
+  expect(
+    JSON.parse(toolkit.invokePrivate('update_node', { id: 'hidden', config: { value: 'New' } })),
+  ).toMatchObject({ ok: false });
+  expect(toolkit.getOperations()).toHaveLength(1);
 });
 
 it.each([

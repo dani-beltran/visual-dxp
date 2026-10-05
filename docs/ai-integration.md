@@ -48,24 +48,32 @@ The response contains a nonempty `message` and an `operations` array. For exampl
 
 An empty operations array represents a conversational reply. Supported operations are `add_node`, `update_node`, `remove_node`, `add_edge`, `update_edge`, and `remove_edge`; see `WorkflowOperation` in `src/lib/ai.ts` for their fields. Updates patch supplied node configuration fields. Removing a node also removes its connections. The client validates the entire resulting workflow before applying any changes.
 
-AI configuration writes accept only fields belonging to the target node kind and effective trigger event (the patch event, existing event, or `page-load`). Existing historical/inactive fields remain loadable and do not block unrelated edits. Import validation and manual inspector editing retain their existing behavior. Unknown presentation extras continue to be stripped at the operation parser; this does not authorize arbitrary configuration writes.
+AI configuration writes accept only fields supported by the resulting node configuration. Shared policies define field ownership and dependencies for validation, catalog defaults, server staging and browser replay. Import validation and manual inspector editing retain their existing behavior; historical/inactive fields remain loadable and do not block unrelated edits. Unknown presentation extras continue to be stripped at the operation parser.
 
-Changing a trigger's event normalizes its configuration to fields applicable to the new event, then applies the patch. This removes obsolete rage-click settings when converting to scroll thrashing, and removes selectors for page-wide events. Existing fields applicable to the new event survive, including selectors when switching between element events. Element events still require a selector. Same-event updates preserve omitted settings and historical fields. No replacement operation or null/undefined deletion convention is added. For example:
+Updates remain partial patches. When a setting changes which configuration mode is active, existing fields unsupported by the new mode are removed before applying the patch. Supported fields survive, and omitted settings keep their runtime defaults. Explicitly selecting an already-active mode (including an implicit default) preserves historical fields. No replacement operation or null/undefined deletion convention is added. Required fields must be present in the resulting configuration.
+
+The policies cover these dependencies:
+
+| Node | Mode settings | Dependent fields |
+| --- | --- | --- |
+| Trigger | Event | Element selector and event settings |
+| HTTP request | Method | Body, except for GET/HEAD |
+| Update element | Action | Value, except for hide/show; attribute name for attribute actions |
+| Condition | Condition type and data operator | Selector, comparison value/key, date/time range and time zone as applicable |
+| Popover | Content type and placement | HTML content or iframe URL; selector for anchored placement |
+| Experiment | Analytics platform and delivery method | Analytics configuration for GA4; measurement ID for Google tag delivery |
+
+For example, changing an Incoming data condition from a comparison to an existence check removes its obsolete comparison value:
 
 ```json
 {
   "type": "update_node",
-  "id": "selected-trigger-id",
-  "config": {
-    "event": "scroll-thrashing",
-    "scrollDirectionChanges": 4,
-    "scrollThrashWindow": 2000,
-    "scrollMinDistance": 50
-  }
+  "id": "selected-condition-id",
+  "config": { "conditionOperator": "exists" }
 }
 ```
 
-Omitting the three scroll settings still uses runtime defaults of 4 reversals, 2000 ms, and 50 px. Event normalization preserves node identity, position, metadata, other nodes and connections. Both server staging and browser replay use the same field-ownership and normalization rules.
+Cleanup preserves node identity, position, metadata, unrelated nodes and connections. Ordinary field edits preserve omitted settings, and kinds without dependent settings retain normal patch behavior.
 
 Successful mutation tool results retain `ok` and `operation`, add `changed`, and include the resulting target `node` or `edge` for creation/update. A semantically unchanged update returns `changed: false` without appending an operation or replacing the draft. Object key order does not count as progress; array order, note formatting, labels, descriptions and positions do. The agent delivers one unchanged result for each normalized mutation as a correction opportunity. If the same unchanged mutation recurs without intervening draft progress, the entire request fails with `repeated_tool_loop`; reads and new tool-call IDs do not reset detection. Actual edits reset the repetition history. Invalid tool calls still immediately reject the request, with `invalid_workflow_edit`.
 
