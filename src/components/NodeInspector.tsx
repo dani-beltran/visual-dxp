@@ -843,19 +843,6 @@ export function NodeInspector({
                 b: 100 - (config.experimentSplit ?? 50),
               })}
             </p>
-            <Field
-              label={t('experiment.key')}
-              htmlFor={id('experimentKey')}
-              hint={t('experiment.keyHint')}
-            >
-              <input
-                id={id('experimentKey')}
-                value={config.experimentKey ?? ''}
-                placeholder={node.id}
-                onChange={(event) => update({ experimentKey: event.target.value })}
-              />
-            </Field>
-            <InfoBox>{t('experiment.assignmentHint')}</InfoBox>
             <ExperimentAnalyticsInspector
               config={config}
               update={update}

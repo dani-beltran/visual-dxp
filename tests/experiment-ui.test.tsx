@@ -6,14 +6,18 @@ import { NodeInspector } from '../src/components/NodeInspector';
 import { createNode, stepSummary } from '../src/lib/catalog';
 import type { StepConfig } from '../src/lib/types';
 
-it('edits the split and assignment key and explains both outputs', async () => {
+it('edits the split, preserves saved assignments, and explains both outputs', async () => {
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
   const host = document.createElement('div');
   document.body.appendChild(host);
   const root = createRoot(host);
   let config: StepConfig = {};
   function Inspector() {
-    const [node, setNode] = useState(() => createNode('experiment'));
+    const [node, setNode] = useState(() => {
+      const initial = createNode('experiment');
+      initial.data.config.experimentKey = 'checkout-v2';
+      return initial;
+    });
     config = node.data.config;
     return (
       <NodeInspector
@@ -45,13 +49,19 @@ it('edits the split and assignment key and explains both outputs', async () => {
     expect(config.experimentSplit).toBe(30);
     expect(host.textContent).toContain('A 30% · B 70%');
     expect(stepSummary('experiment', config)).toBe('A 30% · B 70%');
-    await change('Experiment key (optional)', 'checkout-v2');
+    expect(host.textContent).not.toContain('Experiment key (optional)');
+    expect(host.textContent).not.toContain('Assignments are saved in this browser');
     expect(config.experimentKey).toBe('checkout-v2');
     await change('Traffic to A (%)', '120');
     expect(config.experimentSplit).toBe(30);
     expect(host.querySelector('.dxp-inspector-branches')?.textContent).toContain('Variant A');
     expect(host.querySelector('.dxp-inspector-branches')?.textContent).toContain('Variant B');
     expect(host.textContent).toContain('existing visitors keep their variant');
+    expect(host.querySelector('.dxp-inspector-branches')?.textContent).toContain('Runs for A.');
+    expect(host.querySelector('.dxp-inspector-branches')?.textContent).toContain('Runs for B.');
+    expect(host.querySelector('.dxp-inspector-branches')?.textContent).not.toContain(
+      'passes incoming data unchanged',
+    );
   } finally {
     await act(async () => root.unmount());
     host.remove();

@@ -24,9 +24,13 @@ afterEach(async () => {
   host.remove();
   vi.unstubAllGlobals();
 });
-async function render(spanish = false) {
+async function render(spanish = false, savedConfig: StepConfig = {}) {
   function Inspector() {
-    const [node, setNode] = useState(() => createNode('experiment'));
+    const [node, setNode] = useState(() => {
+      const initial = createNode('experiment');
+      initial.data.config = { ...initial.data.config, ...savedConfig };
+      return initial;
+    });
     current = node.data.config;
     return (
       <BuilderI18nProvider i18n={spanish ? { locale: 'es', messages: spanishMessages } : undefined}>
@@ -84,12 +88,11 @@ it('defaults to no tracking and makes PostHog visibly Premium and unselectable',
 });
 
 it('edits independent GA4 fields, reuses the picker, and explains mapping, privacy, and delivery', async () => {
-  await render();
+  await render(false, { experimentKey: 'assignment-only' });
   await choose('ga4');
   expect(field('Experiment ID')).toHaveProperty('required', true);
   expect(host.querySelector('[role="alert"]')?.textContent).toContain('Experiment ID');
   await change('Experiment ID', 'homepage-cta-v1');
-  await change('Experiment key (optional)', 'assignment-only');
   await change('CTA element', '.checkout');
   expect(current.experimentId).toBe('homepage-cta-v1');
   expect(current.experimentKey).toBe('assignment-only');
@@ -104,7 +107,7 @@ it('edits independent GA4 fields, reuses the picker, and explains mapping, priva
   await act(async () => picker?.click());
   expect(pick).toHaveBeenCalledOnce();
   expect(host.textContent).toContain('Variant A → a; Variant B → b');
-  expect(host.textContent).toContain('not the GA measurement ID or the assignment key');
+  expect(host.textContent).toContain('not the GA measurement ID');
   expect(host.textContent).toContain('previews simulate events');
   await change('GA4 measurement ID (optional)', 'G-TEST123');
   await change('Event delivery', 'gtm');
@@ -143,6 +146,14 @@ it('translates all analytics controls, guide, and validation into Spanish', asyn
   expect(host.textContent).toContain('Sin seguimiento');
   await choose('ga4');
   expect(field('ID del experimento')).toHaveProperty('required', true);
+  expect(host.textContent).not.toContain('Clave del experimento (opcional)');
+  expect(host.textContent).not.toContain('Las asignaciones se guardan en este navegador');
+  expect(host.querySelector('.dxp-inspector-branches')?.textContent).toContain(
+    'Se ejecuta para A.',
+  );
+  expect(host.querySelector('.dxp-inspector-branches')?.textContent).not.toContain(
+    'transmite los datos entrantes sin cambios',
+  );
   expect(host.querySelector('[role="alert"]')?.textContent).toBe(
     'Introduce un ID del experimento para analítica.',
   );
