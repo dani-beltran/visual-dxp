@@ -101,7 +101,7 @@ function privateFetch(destination: string, apiKey: string): typeof fetch {
     }
     if (!response.ok) {
       void response.body?.cancel().catch(() => {});
-      throw new Error('Provider rejected request.');
+      throw Object.assign(new Error('Provider rejected request.'), { statusCode: response.status });
     }
     const limit = 2 * 1024 * 1024;
     if (Number(response.headers.get('content-length')) > limit) {

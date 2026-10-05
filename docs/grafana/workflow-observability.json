@@ -1,0 +1,451 @@
+{
+  "uid": "visual-dxp-workflows",
+  "title": "Visual DXP \u2014 AI workflows and conversations",
+  "description": "OpenTelemetry demo. Grafana Free telemetry retention is 14 days. Content is opt-in and best-effort; sampled-out traces may not exist. See docs/observability.md.",
+  "schemaVersion": 39,
+  "version": 1,
+  "tags": ["visual-dxp", "opentelemetry", "llm"],
+  "timezone": "browser",
+  "editable": true,
+  "refresh": "1m",
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "metrics",
+        "label": "Cloud Metrics",
+        "type": "datasource",
+        "query": "prometheus",
+        "refresh": 1
+      },
+      {
+        "name": "logs",
+        "label": "Cloud Logs",
+        "type": "datasource",
+        "query": "loki",
+        "refresh": 1
+      },
+      {
+        "name": "traces",
+        "label": "Cloud Traces",
+        "type": "datasource",
+        "query": "tempo",
+        "refresh": 1
+      },
+      {
+        "name": "service",
+        "label": "Service regex",
+        "type": "textbox",
+        "query": "visual-dxp(-agent)?",
+        "current": {
+          "value": "visual-dxp(-agent)?",
+          "text": "visual-dxp(-agent)?"
+        }
+      },
+      {
+        "name": "run_id",
+        "label": "Run UUID (blank = all)",
+        "type": "textbox",
+        "query": "",
+        "current": {
+          "value": "",
+          "text": ""
+        }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Successful workflows \u2014 since process start",
+      "type": "stat",
+      "description": "",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$metrics"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(dxp_workflow_calls_total{job=~\"(.*/)?($service)\",status=\"success\"}) or on() vector(0)",
+          "legendFormat": "{{provider}} {{status}}",
+          "range": false,
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        }
+      }
+    },
+    {
+      "id": 2,
+      "title": "Failed workflows \u2014 since process start",
+      "type": "stat",
+      "description": "",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$metrics"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(dxp_workflow_calls_total{job=~\"(.*/)?($service)\",status=\"error\"}) or on() vector(0)",
+          "legendFormat": "{{provider}} {{status}}",
+          "range": false,
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        }
+      }
+    },
+    {
+      "id": 3,
+      "title": "Workflow p50 / p95 latency",
+      "type": "timeseries",
+      "description": "",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$metrics"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(dxp_workflow_duration_seconds_bucket{job=~\"(.*/)?($service)\"}[$__rate_interval])))",
+          "legendFormat": "p95",
+          "range": true,
+          "instant": false
+        },
+        {
+          "refId": "B",
+          "expr": "histogram_quantile(0.50, sum by (le) (rate(dxp_workflow_duration_seconds_bucket{job=~\"(.*/)?($service)\"}[$__rate_interval])))",
+          "legendFormat": "p50",
+          "range": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 4,
+      "title": "Workflow completion rate",
+      "type": "timeseries",
+      "description": "",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$metrics"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (status) (rate(dxp_workflow_calls_total{job=~\"(.*/)?($service)\"}[$__rate_interval]))",
+          "legendFormat": "{{provider}} {{status}}",
+          "range": true,
+          "instant": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 5,
+      "title": "LLM errors \u2014 since process start",
+      "type": "stat",
+      "description": "",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$metrics"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 16,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (provider) (dxp_llm_failures_total{job=~\"(.*/)?($service)\"}) or on() vector(0)",
+          "legendFormat": "{{provider}} {{status}}",
+          "range": false,
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        }
+      }
+    },
+    {
+      "id": 6,
+      "title": "LLM calls \u2014 since process start",
+      "type": "stat",
+      "description": "",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$metrics"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 16,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (provider) (dxp_llm_calls_total{job=~\"(.*/)?($service)\"}) or on() vector(0)",
+          "legendFormat": "{{provider}} {{status}}",
+          "range": false,
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        }
+      }
+    },
+    {
+      "id": 7,
+      "title": "LLM p95 latency",
+      "type": "timeseries",
+      "description": "",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$metrics"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 24,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.95, sum by (le, gen_ai_provider_name) (rate(gen_ai_client_operation_duration_seconds_bucket{job=~\"(.*/)?($service)\"}[$__rate_interval])))",
+          "legendFormat": "{{gen_ai_provider_name}}",
+          "range": true,
+          "instant": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 8,
+      "title": "Token usage \u2014 since process start",
+      "type": "stat",
+      "description": "",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$metrics"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 24,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (provider, token_type) (dxp_llm_tokens_total{job=~\"(.*/)?($service)\"})",
+          "legendFormat": "{{provider}} {{token_type}}",
+          "range": false,
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        }
+      }
+    },
+    {
+      "id": 9,
+      "title": "Runs \u2014 inspect workflow_run_id and trace_id",
+      "type": "logs",
+      "datasource": {
+        "type": "loki",
+        "uid": "$logs"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 32,
+        "w": 24,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "{service_name=~\"$service\"} | json | event_type=\"workflow.completed\"",
+          "queryType": "range"
+        }
+      ],
+      "options": {
+        "sortOrder": "Descending",
+        "showTime": true,
+        "enableLogDetails": true
+      }
+    },
+    {
+      "id": 10,
+      "title": "Conversation \u2014 filter by run UUID; expand JSON bodies",
+      "type": "logs",
+      "description": "Sort records by sequence and chunks by chunk_index; content_json fragments reconstruct a record. partial/truncated flags indicate incomplete content. Logs can remain when a trace is sampled out. Configure the Loki TraceID derived field for clickable Tempo links (docs/observability.md).",
+      "datasource": {
+        "type": "loki",
+        "uid": "$logs"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 40,
+        "w": 24,
+        "h": 12
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "{service_name=~\"$service\"} | json | workflow_run_id=~\"${run_id}.*\" | event_type=~\"llm.input|llm.output|tool.input|tool.result\"",
+          "queryType": "range"
+        }
+      ],
+      "options": {
+        "sortOrder": "Ascending",
+        "showTime": true,
+        "enableLogDetails": true,
+        "wrapLogMessage": true
+      }
+    },
+    {
+      "id": 11,
+      "title": "Workflow traces",
+      "type": "table",
+      "datasource": {
+        "type": "tempo",
+        "uid": "$traces"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 52,
+        "w": 24,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "queryType": "traceql",
+          "query": "{ resource.service.name =~ \"$service\" && span.workflow.run.id =~ \"${run_id}.*\" }",
+          "limit": 20
+        }
+      ],
+      "options": {
+        "showHeader": true
+      }
+    }
+  ]
+}

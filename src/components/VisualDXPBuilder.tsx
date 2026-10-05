@@ -1437,20 +1437,30 @@ function Builder({
           {t('canvas.nodeCount', { count: workflow.nodes.length })} <i />{' '}
           {t('canvas.connectionCount', { count: workflow.edges.length })}
         </span>
-        <span>
-          <a
-            className="dxp-footer-link"
-            href="https://github.com/dani-beltran"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <span className="dxp-footer-label">
+          <span>
+            <a
+              className="dxp-footer-link"
+              href="https://github.com/dani-beltran"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <span className="dxp-footer-label">
               {t('builder.createdWithLoveByDanielJLBeltran')}
+              </span>
+            </a>
+            <a
+              className="dxp-footer-link"
+              href="https://reactflow.dev"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <span className="dxp-footer-label">
+              {t('builder.reactFlowAttribution')} 
+              </span>
+            </a>
+            <span className="dxp-footer-shortcut">
+              <Command size={11} /> {t('builder.zToUndo')}
             </span>
-          </a>
-          <span className="dxp-footer-shortcut">
-            <Command size={11} /> {t('builder.zToUndo')}
-          </span>
         </span>
       </footer>
       <input

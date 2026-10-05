@@ -524,6 +524,7 @@ export const englishMessages = {
   'builder.addYourFirstTrigger': 'Add your first trigger',
   'builder.step': 'Step',
   'builder.createdWithLoveByDanielJLBeltran': 'CREATED WITH LOVE BY DANIEL J.L. BELTRAN',
+  'builder.reactFlowAttribution': 'BASED ON REACT FLOW',
   'builder.zToUndo': 'Z to undo',
   'builder.dismissNotification': 'Dismiss notification',
   'builder.targetElementSelected': 'Target element selected',

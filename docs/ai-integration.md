@@ -1,6 +1,6 @@
 # Same-origin AI integration
 
-The Next.js App Router serves the demo and `/api/ai/*` in one process. `src/server/ai/` contains the Vercel AI SDK Core provider factory, shared tool loop, workflow validation, and optional remote LangGraph deployment graph. The original `visual-dxp-server` directory is untouched and is not needed to build, test, or run this application.
+The Next.js App Router serves the demo and `/api/ai/*` in one process. `src/server/ai/` contains the Vercel AI SDK Core provider factory, shared tool loop, workflow validation, and optional remote LangGraph deployment graph. The former separate backend was deleted and is not needed to build, test, or run this application.
 
 ## Local setup
 
@@ -136,7 +136,7 @@ Browser overrides replace the complete configuration for their selected provider
 
 All direct execution uses one bounded loop (40 model calls, at most 100 calls per turn, at most 100 staged mutations, 8,192 output tokens per call, no automatic retries, 2 MiB per upstream response). It adapts the existing tool schemas and private mutation functions. Local models must honor a forced `read_workflow` call first. An endpoint/model that rejects tools or ignores that choice fails clearly. Unknown tools, malformed arguments, invalid mutations, truncation, cancellation and exhausted bounds discard the entire batch, including earlier staged edits. There is no partial commit. A capability check demonstrates basic tool calling, not comprehensive model quality.
 
-AI SDK telemetry is explicitly disabled for all direct executions. Browser credentials never enter LangGraph state/checkpoints or LangSmith. If `LANGGRAPH_API_URL` is set, OpenAI server-default requests retain the existing stateless remote contract; Claude/Local server-default requests return 409. Browser configurations for all providers still execute directly. See [remote deployment](langchain.md).
+OpenTelemetry now instruments the server-side AI workflow and tool loop; built-in SDK telemetry remains disabled to avoid duplicates. Full prompts/responses/tool data are exported only when `CAPTURE_LLM_CONTENT=true`, after redaction. See [capture controls, Grafana setup and retention](observability.md). Browser credentials never enter LangGraph state/checkpoints or LangSmith. If `LANGGRAPH_API_URL` is set, OpenAI server-default requests retain the existing stateless remote contract; Claude/Local server-default requests return 409. Browser configurations for all providers still execute directly. See [remote deployment](langchain.md).
 
 ### Local model setup
 

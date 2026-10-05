@@ -290,6 +290,15 @@ describe('LangSmith Deployment proxy', () => {
       assistant_id: 'workflow_editor',
       input: { request: input },
       on_disconnect: 'cancel',
+      config: {
+        configurable: {
+          dxpTelemetry: {
+            traceparent: expect.stringMatching(/^00-[a-f0-9]{32}-[a-f0-9]{16}-01$/),
+            'x-dxp-run-id': expect.any(String),
+            'x-dxp-workflow-id': expect.any(String),
+          },
+        },
+      },
     });
     expect(JSON.parse(init.body)).not.toHaveProperty('thread_id');
   });

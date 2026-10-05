@@ -8,7 +8,7 @@ Copy `.env.example` to `.env.local`; use browser AI Settings for normal use. Ser
 
 ## Tracing
 
-AI SDK telemetry is disabled for all direct execution, including browser credentials. `LANGSMITH_TRACING` no longer traces the direct model/tool loop. It may still trace a separately deployed LangGraph wrapper using server-only credentials; deployment traces can include workflow and conversation data. Browser keys always bypass that wrapper. Retained `@langchain/core` and `@langchain/langgraph` dependencies support the remote graph; unused `langchain`, `@langchain/openai`, and `openai` dependencies were removed.
+Server-side OpenTelemetry instruments the shared AI SDK loop and LangGraph entrypoint. SDK automatic telemetry stays disabled to avoid duplicate spans. Opt-in full conversation capture is redacted and exported as Loki log bodies, independent of trace sampling. See [Grafana setup, capture controls and inspection](observability.md). Keep `LANGSMITH_TRACING=false` for this demo. Browser keys bypass the remote wrapper and are redacted from captured content. Retained `@langchain/core` and `@langchain/langgraph` dependencies support the remote graph.
 
 ## Remote Agent Server / LangSmith deployment
 
@@ -30,7 +30,8 @@ Restart Next.js. The proxy sends `POST <LANGGRAPH_API_URL>/runs/wait`, supplies 
 {
   "assistant_id": "workflow_editor",
   "input": { "request": { "messages": [], "workflow": {}, "selectedNodeIds": [] } },
-  "on_disconnect": "cancel"
+  "on_disconnect": "cancel",
+  "config": { "configurable": { "dxpTelemetry": { "traceparent": "<W3C context>", "x-dxp-run-id": "<UUID>", "x-dxp-workflow-id": "<hash>" } } }
 }
 ```
 
