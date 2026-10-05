@@ -102,7 +102,7 @@ const config = z.object({
     .optional(),
   selector: text
     .describe(
-      'CSS selector for element triggers, Update element actions, or anchored popovers. Omit for page-wide triggers and non-anchored popovers. Update element actions, including hide/show, may interpolate {{variables}} here.',
+      'CSS selector for element triggers, Update element actions, or anchored popovers. Required and non-empty for popovers with position: anchor. Omit for page-wide triggers and non-anchored popovers. Update element actions, including hide/show, may interpolate {{variables}} here.',
     )
     .optional(),
   url: text
@@ -253,6 +253,9 @@ const config = z.object({
     .optional(),
   position: z
     .enum(['center', 'top-left', 'top-right', 'bottom-left', 'bottom-right', 'anchor'])
+    .describe(
+      'Popover placement. Position anchor requires a non-empty config.selector identifying the anchor element. Without an anchor selector, use a non-anchored position such as bottom-right (the default). If anchoring is requested but the selector is unknown, ask the user; never invent it. A page-load trigger does not supply an anchor.',
+    )
     .optional(),
   width: z.number().min(240).max(960).optional(),
   noteText: text.describe('Plain text for a non-executable canvas note.').optional(),
