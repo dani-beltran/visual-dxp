@@ -154,6 +154,7 @@ export function ExperimentAnalyticsInspector({
               {error}
             </p>
           )}
+          <InfoBox>{t('experiment.mapping')}</InfoBox>
           <details className="dxp-analytics-guide">
             <summary>{t('experiment.reporting')}</summary>
             <ol>
@@ -187,7 +188,6 @@ export function ExperimentAnalyticsInspector({
               {t('experiment.guideFunnelLink')}
             </a>
           </details>
-          <InfoBox>{t('experiment.mapping')}</InfoBox>
         </>
       )}
     </section>
