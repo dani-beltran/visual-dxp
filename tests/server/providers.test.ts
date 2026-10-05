@@ -439,3 +439,34 @@ it('rejects remote server defaults even if the old allowlist names them', () => 
   );
   expect(() => allowedLocalBaseURL('http://169.254.169.254/v1')).toThrow('Local models require');
 });
+
+it.each([
+  ['openai', 'gpt-6-luna', { summary: 'auto' }],
+  ['openai', 'gpt-4.1', undefined],
+  ['local', 'local-model', { summary: 'auto' }],
+  ['claude', 'claude-sonnet-4-6', { type: 'adaptive', display: 'summarized' }],
+  ['claude', 'claude-opus-4-7', { type: 'adaptive', display: 'summarized' }],
+  ['claude', 'claude-sonnet-5', { type: 'adaptive', display: 'summarized' }],
+  ['claude', 'claude-sonnet-4-5-20250929', { type: 'enabled', budget_tokens: 2048 }],
+  ['claude', 'claude-haiku-4-5', { type: 'enabled', budget_tokens: 2048 }],
+  ['claude', 'claude-3-7-sonnet-latest', { type: 'enabled', budget_tokens: 2048 }],
+  ['claude', 'claude-3-5-haiku-latest', undefined],
+  ['claude', 'custom-model', undefined],
+] as const)('serializes reasoning controls for %s / %s', async (provider, model, expected) => {
+  let step = 0;
+  const fetcher = vi.fn(async (_url: unknown, init: RequestInit) => {
+    const body = JSON.parse(String(init.body));
+    expect(body[provider === 'claude' ? 'thinking' : 'reasoning']).toEqual(expected);
+    if (provider === 'openai') {
+      expect(body.store).toBe(false);
+      if (expected) expect(body.include).toContain('reasoning.encrypted_content');
+    }
+    if (provider === 'claude') expect(body.max_tokens).toBe(8192);
+    return upstream(provider, provider === 'local' && step++ === 0 ? 'read_workflow' : undefined);
+  });
+  vi.stubGlobal('fetch', fetcher);
+  await expect(
+    runLocalAgent(input, new AbortController().signal, { ...config(provider), model }),
+  ).resolves.toMatchObject({ message: 'Done.', operations: [] });
+  expect(fetcher).toHaveBeenCalledTimes(provider === 'local' ? 2 : 1);
+});

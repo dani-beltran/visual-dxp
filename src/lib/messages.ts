@@ -228,6 +228,7 @@ export const englishMessages = {
   'canvasChat.you': 'You',
   'canvasChat.visualDxpAi': 'Visual DXP AI',
   'canvasChat.workingOnYourWorkflow': 'Working on your workflow…',
+  'canvasChat.reasoningSummary': 'Reasoning summary',
   'canvasChat.messageTheWorkflowAssistant': 'Message the workflow assistant',
   'canvasChat.describeAChangeToYourWorkflow': 'Describe a change to your workflow…',
   'canvasChat.connectTheAssistantToStartChatting': 'Connect the assistant to start chatting',

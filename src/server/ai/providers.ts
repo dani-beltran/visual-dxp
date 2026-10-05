@@ -1,6 +1,7 @@
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { createOpenAI } from '@ai-sdk/openai';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
+import type { streamText } from 'ai';
 import {
   type AIProvider,
   type AIRequestConfiguration,
@@ -20,6 +21,53 @@ export interface ProviderConfiguration {
   apiKey: string;
   model: string;
   baseURL: string;
+}
+
+/** Request visible summaries while preserving the total output-token limit. */
+export function providerGenerationOptions(
+  config: ProviderConfiguration,
+): Pick<Parameters<typeof streamText>[0], 'providerOptions' | 'maxOutputTokens'> {
+  const maxOutputTokens = 8192;
+  if (config.provider === 'openai')
+    return {
+      maxOutputTokens,
+      providerOptions: {
+        openai: {
+          store: false,
+          strictJsonSchema: false,
+          include: ['reasoning.encrypted_content'],
+          reasoningSummary: 'auto',
+        },
+      },
+    };
+  // Chat Completions has no standard summary option. Compatible servers can
+  // accept this extension and expose reasoning_content/reasoning deltas.
+  if (config.provider === 'local')
+    return { maxOutputTokens, providerOptions: { local: { reasoning: { summary: 'auto' } } } };
+
+  const adaptive =
+    /^claude-(?:(?:opus|sonnet)-4-[678]|(?:opus|sonnet|fable|mythos)-5(?:-[15])?|mythos-preview)(?:-\d{8}|-latest)?$/.test(
+      config.model,
+    );
+  if (adaptive)
+    return {
+      maxOutputTokens,
+      providerOptions: { anthropic: { thinking: { type: 'adaptive', display: 'summarized' } } },
+    };
+  const extended =
+    /^claude-(?:(?:opus|sonnet)-4(?:-[015])?|haiku-4-5|3-7-sonnet)(?:-\d{8}|-latest)?$/.test(
+      config.model,
+    );
+  if (extended) {
+    const budgetTokens = 2048;
+    return {
+      // The Anthropic SDK adds the thinking budget to maxOutputTokens.
+      maxOutputTokens: maxOutputTokens - budgetTokens,
+      providerOptions: { anthropic: { thinking: { type: 'enabled', budgetTokens } } },
+    };
+  }
+  // Unknown/older model IDs retain their existing behavior.
+  return { maxOutputTokens };
 }
 export function allowedLocalBaseURL(value: string): string {
   try {

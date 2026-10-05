@@ -203,6 +203,7 @@ export const spanishMessages = {
   'canvasChat.you': 'Tú',
   'canvasChat.visualDxpAi': 'IA de Visual DXP',
   'canvasChat.workingOnYourWorkflow': 'Trabajando en tu flujo de trabajo…',
+  'canvasChat.reasoningSummary': 'Resumen del razonamiento',
   'canvasChat.messageTheWorkflowAssistant': 'Escribe al asistente de flujos de trabajo',
   'canvasChat.describeAChangeToYourWorkflow': 'Describe un cambio en tu flujo de trabajo…',
   'canvasChat.connectTheAssistantToStartChatting': 'Conecta el asistente para empezar a chatear',

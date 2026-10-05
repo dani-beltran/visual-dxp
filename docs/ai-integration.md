@@ -227,10 +227,19 @@ Update element content accepts `{{name}}`, nested paths, and `{{$}}` for the ent
 The chat requests `Accept: application/x-ndjson, application/json`. The integrated route streams newline-delimited JSON records as text becomes available:
 
 ```json
+{"type":"reasoning","text":"I’ll check the current workflow first."}
 {"type":"text","text":"Hello"}
 {"type":"result","response":{"message":"Hello","operations":[]}}
 ```
 
-The final `result` contains the validated reply and complete operation batch. A `{"type":"error"}` record or a stream ending without a result fails the request without applying edits. Partial text is removed on failure or cancellation. Existing custom endpoints that return `application/json` remain supported; they display the complete reply when it arrives. Requests without the streaming Accept header retain the JSON response contract.
+The final `result` contains the validated reply and complete operation batch. A `{"type":"error"}` record or a stream ending without a result fails the request without applying edits. Partial answers and reasoning summaries are removed on failure or cancellation. Existing custom endpoints that return `application/json` remain supported; they display the complete reply when it arrives. Requests without the streaming Accept header retain the JSON response contract.
 
-Direct providers use the AI SDK streaming API. LangGraph uses `/runs/stream` with custom text events and final state values; redeploy the graph from this revision to enable incremental text on existing deployments. Reverse proxies should forward chunks without buffering; the route sends `Cache-Control: no-store, no-transform` and `X-Accel-Buffering: no`.
+Reasoning events appear in a collapsible **Reasoning summary** section on the assistant message. They stay in memory with the displayed conversation and are excluded from later chat history requests. `requestAIChat` accepts an optional sixth argument, `onReasoning(text)`, alongside its existing fifth-argument text callback. No summary section appears if the provider returns none.
+
+- OpenAI Responses uses `reasoning: { summary: "auto" }` through the SDK's `reasoningSummary` option. The SDK omits this setting for models it identifies as non-reasoning models. Encrypted reasoning items remain in the internal tool loop for continuity and are never sent to the chat UI.
+- Local OpenAI-compatible Chat Completions requests include `reasoning: { summary: "auto" }` as an extension. The SDK reads streamed `reasoning_content` or `reasoning` fields. This is not a standard Chat Completions option: support, summary availability, and the content returned depend on the server/model. Servers that reject this option fail the request without applying staged edits; there is no automatic retry.
+- Claude Opus/Sonnet 4.6–4.8 and the supported 5-series, Fable, and Mythos models use `thinking: { type: "adaptive", display: "summarized" }`. Earlier thinking-capable Claude models (3.7 Sonnet, Opus/Sonnet 4/4.1/4.5, Haiku 4.5) use extended thinking with a 2,048-token budget within the existing 8,192-token output limit; those models return visible thinking by default. Other Claude IDs keep their existing behavior. Adaptive thinking may return no summary for simple requests. Enabling thinking can increase latency and output-token usage.
+
+Provider references: [OpenAI reasoning summaries](https://developers.openai.com/api/docs/guides/reasoning#reasoning-summaries) and [Claude thinking](https://platform.claude.com/docs/en/build-with-claude/thinking).
+
+Direct providers use the AI SDK streaming API. LangGraph uses `/runs/stream` with custom text/reasoning events and final state values; redeploy the graph from this revision to enable reasoning summaries on existing deployments. Reverse proxies should forward chunks without buffering; the route sends `Cache-Control: no-store, no-transform` and `X-Accel-Buffering: no`.

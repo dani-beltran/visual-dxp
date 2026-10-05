@@ -27,13 +27,14 @@ export interface CanvasChatProps {
     messages: AIChatMessage[],
     signal: AbortSignal,
     onText?: (text: string) => void,
+    onReasoning?: (text: string) => void,
   ) => Promise<{
     message: string;
     changeCount: number;
   }>;
 }
 
-type Message = AIChatMessage & { id: number; changeCount?: number };
+type Message = AIChatMessage & { id: number; changeCount?: number; reasoning?: string };
 
 export function CanvasChat({
   configured,
@@ -130,16 +131,26 @@ export function CanvasChat({
     setBusy(true);
     const assistantId = sequence.current++;
     let partial = '';
+    let reasoning = '';
+    const updatePartial = () => {
+      const message: Message = { role: 'assistant', content: partial, reasoning, id: assistantId };
+      setMessages((previous) => [...previous.filter((entry) => entry.id !== assistantId), message]);
+    };
     try {
-      const result = await onSend(conversation, controller.signal, (text) => {
-        if (controller.signal.aborted || request.current !== controller) return;
-        partial += text;
-        const content = partial;
-        setMessages((previous) => [
-          ...previous.filter((message) => message.id !== assistantId),
-          { role: 'assistant', content, id: assistantId },
-        ]);
-      });
+      const result = await onSend(
+        conversation,
+        controller.signal,
+        (text) => {
+          if (controller.signal.aborted || request.current !== controller) return;
+          partial += text;
+          updatePartial();
+        },
+        (text) => {
+          if (controller.signal.aborted || request.current !== controller) return;
+          reasoning += text;
+          updatePartial();
+        },
+      );
       if (controller.signal.aborted || request.current !== controller) return;
       history.current = [...conversation, { role: 'assistant', content: result.message }];
       setMessages((previous) => [
@@ -147,6 +158,7 @@ export function CanvasChat({
         {
           role: 'assistant',
           content: result.message,
+          reasoning,
           changeCount: result.changeCount,
           id: assistantId,
         },
@@ -308,7 +320,13 @@ export function CanvasChat({
                 <span className="dxp-ai-message-author">
                   {message.role === 'user' ? t('canvasChat.you') : t('canvasChat.visualDxpAi')}
                 </span>
-                <ChatMarkdown content={message.content} />
+                {message.reasoning && (
+                  <details className="dxp-ai-reasoning">
+                    <summary>{t('canvasChat.reasoningSummary')}</summary>
+                    <ChatMarkdown content={message.reasoning} />
+                  </details>
+                )}
+                {message.content && <ChatMarkdown content={message.content} />}
                 {!!message.changeCount && (
                   <span className="dxp-ai-applied">
                     <Check size={12} aria-hidden="true" />

@@ -16,7 +16,11 @@ import {
 } from '../observability';
 import { StreamCapture } from '../observability/content';
 import { AIServiceError } from './errors';
-import { createProviderModel, resolveProviderConfiguration } from './providers';
+import {
+  createProviderModel,
+  providerGenerationOptions,
+  resolveProviderConfiguration,
+} from './providers';
 import { createWorkflowTools } from './tools';
 import type { AIChatRequest, AIChatResponse } from './workflow/ai';
 import { applyWorkflowOperations, parseAIChatResponse } from './workflow/ai';
@@ -71,9 +75,10 @@ export async function runLocalAgent(
   signal: AbortSignal,
   input?: AIRequestConfiguration,
   onText?: (text: string) => void,
+  onReasoning?: (text: string) => void,
 ): Promise<AIChatResponse> {
   return withWorkflow(request.workflow, () =>
-    withStep('edit_workflow', () => executeLocalAgent(request, signal, input, onText)),
+    withStep('edit_workflow', () => executeLocalAgent(request, signal, input, onText, onReasoning)),
   );
 }
 
@@ -82,6 +87,7 @@ async function executeLocalAgent(
   signal: AbortSignal,
   input?: AIRequestConfiguration,
   onText?: (text: string) => void,
+  onReasoning?: (text: string) => void,
 ): Promise<AIChatResponse> {
   const config = resolveProviderConfiguration(input);
   addSecrets(config.apiKey);
@@ -105,6 +111,7 @@ async function executeLocalAgent(
   const unchangedMutations = new Set<string>();
   let correctionOpportunities = 0;
   let unresolvedCalls: { name: string; input: unknown; existingIds: Set<string> }[] = [];
+  let hasReasoning = false;
   let editFailure: AIEditFailureCode | undefined;
   try {
     if (config.apiKey && JSON.stringify(request).includes(config.apiKey))
@@ -120,22 +127,11 @@ async function executeLocalAgent(
           tools: requireWorkflowRead ? { read_workflow: tools.read_workflow } : tools,
           abortSignal: signal,
           maxRetries: 0,
-          maxOutputTokens: 8192,
           telemetry: { isEnabled: false, recordInputs: false, recordOutputs: false },
           // Some local servers reject named tool choices. Offering only the read tool
           // with required selection preserves the mandatory first workflow read.
           toolChoice: requireWorkflowRead ? ('required' as const) : ('auto' as const),
-          ...(config.provider === 'openai'
-            ? {
-                providerOptions: {
-                  openai: {
-                    store: false,
-                    strictJsonSchema: false,
-                    include: ['reasoning.encrypted_content'],
-                  },
-                },
-              }
-            : {}),
+          ...providerGenerationOptions(config),
         };
         const callId = randomUUID();
         const result = await withGeneration(
@@ -147,7 +143,7 @@ async function executeLocalAgent(
             messages,
           },
           async (firstToken) =>
-            onText
+            onText || onReasoning
               ? await (async () => {
                   const stream = streamText({
                     ...options,
@@ -155,7 +151,11 @@ async function executeLocalAgent(
                     // Handle failures below without the SDK logging provider payloads.
                     onError: () => {},
                   });
-                  const emit = safeTextEmitter(config.apiKey, onText);
+                  const emit = safeTextEmitter(config.apiKey, (text) => onText?.(text));
+                  const emitReasoning = safeTextEmitter(config.apiKey, (text) =>
+                    onReasoning?.(text),
+                  );
+                  let reasoningBlockStart = true;
                   const partial = new StreamCapture(capturing());
                   let finished = false;
                   try {
@@ -177,10 +177,19 @@ async function executeLocalAgent(
                         firstToken();
                         partial.append(`tool:${part.id}`, part.delta);
                       }
+                      if (part.type === 'reasoning-start') reasoningBlockStart = true;
+                      if (part.type === 'reasoning-delta' && part.text) {
+                        emitReasoning(
+                          `${reasoningBlockStart && hasReasoning ? '\n\n' : ''}${part.text}`,
+                        );
+                        reasoningBlockStart = false;
+                        hasReasoning = true;
+                      }
                       if (part.type === 'text-delta') emit(part.text);
                     }
                     if (!finished) throw new Error('Provider stream interrupted.');
                     emit('', true);
+                    emitReasoning('', true);
                     return {
                       content: await stream.content,
                       finishReason: await stream.finishReason,
@@ -365,9 +374,12 @@ export async function runRemoteAgent(
   request: AIChatRequest,
   signal: AbortSignal,
   onText?: (text: string) => void,
+  onReasoning?: (text: string) => void,
 ): Promise<AIChatResponse> {
   return withWorkflow(request.workflow, () =>
-    withSpan('workflow.deployment', {}, () => executeRemoteAgent(request, signal, onText)),
+    withSpan('workflow.deployment', {}, () =>
+      executeRemoteAgent(request, signal, onText, onReasoning),
+    ),
   );
 }
 
@@ -375,6 +387,7 @@ async function executeRemoteAgent(
   request: AIChatRequest,
   signal: AbortSignal,
   onText?: (text: string) => void,
+  onReasoning?: (text: string) => void,
 ): Promise<AIChatResponse> {
   let base: URL;
   try {
@@ -390,7 +403,7 @@ async function executeRemoteAgent(
   } catch {
     throw new AIServiceError(503, 'LANGGRAPH_API_URL must be a valid Agent Server HTTP(S) URL.');
   }
-  base.pathname = `${base.pathname.replace(/\/$/, '')}/runs/${onText ? 'stream' : 'wait'}`;
+  base.pathname = `${base.pathname.replace(/\/$/, '')}/runs/${onText || onReasoning ? 'stream' : 'wait'}`;
   const key = process.env.LANGSMITH_API_KEY?.trim();
   const carrier = outboundContext();
   const upstream = await fetch(base, {
@@ -405,9 +418,12 @@ async function executeRemoteAgent(
       input: { request },
       on_disconnect: 'cancel',
       config: {
-        configurable: { dxpTelemetry: carrier, ...(onText ? { streamAIText: true } : {}) },
+        configurable: {
+          dxpTelemetry: carrier,
+          ...(onText || onReasoning ? { streamAIText: true } : {}),
+        },
       },
-      ...(onText ? { stream_mode: ['custom', 'values'] } : {}),
+      ...(onText || onReasoning ? { stream_mode: ['custom', 'values'] } : {}),
     }),
     signal,
     redirect: 'error',
@@ -421,13 +437,14 @@ async function executeRemoteAgent(
     );
   }
   let payload: unknown;
-  if (onText) {
+  if (onText || onReasoning) {
     for await (const event of serverEvents(upstream, 2 * 1024 * 1024)) {
       signal.throwIfAborted();
       if (event.event === 'error') throw new AIServiceError(502, 'The AI deployment failed.');
       if (event.event === 'custom') {
         const data = JSON.parse(event.data);
-        if (data.type === 'text' && typeof data.text === 'string') onText(data.text);
+        if (data.type === 'text' && typeof data.text === 'string') onText?.(data.text);
+        if (data.type === 'reasoning' && typeof data.text === 'string') onReasoning?.(data.text);
       }
       if (event.event === 'values') payload = JSON.parse(event.data);
     }
@@ -448,10 +465,11 @@ export async function respondToAIChat(
   signal: AbortSignal,
   config?: AIRequestConfiguration,
   onText?: (text: string) => void,
+  onReasoning?: (text: string) => void,
 ): Promise<AIChatResponse> {
   // Browser credentials never enter deployment state, checkpoints or LangSmith.
   if (config && isBrowserConfiguration(config))
-    return runLocalAgent(request, signal, config, onText);
+    return runLocalAgent(request, signal, config, onText, onReasoning);
   if (process.env.LANGGRAPH_API_URL?.trim()) {
     if (config && config.provider !== 'openai')
       throw new AIServiceError(
@@ -459,7 +477,7 @@ export async function respondToAIChat(
         'This provider is unavailable in the current execution mode. Save its configuration in AI Settings.',
         'unsupported_execution',
       );
-    return runRemoteAgent(request, signal, onText);
+    return runRemoteAgent(request, signal, onText, onReasoning);
   }
-  return runLocalAgent(request, signal, config, onText);
+  return runLocalAgent(request, signal, config, onText, onReasoning);
 }

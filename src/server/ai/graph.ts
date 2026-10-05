@@ -29,6 +29,7 @@ export const graph = new StateGraph(State)
               signal,
               undefined,
               writer ? (text) => writer({ type: 'text', text }) : undefined,
+              writer ? (text) => writer({ type: 'reasoning', text }) : undefined,
             ),
           config.configurable?.dxpTelemetry as Carrier | undefined,
         ),

@@ -1009,6 +1009,7 @@ function Builder({
     messages: AIChatMessage[],
     signal: AbortSignal,
     onText?: (text: string) => void,
+    onReasoning?: (text: string) => void,
   ) {
     if (!aiEnabled || !ai) throw new Error(t('builder.connectTheAssistantServiceToStartChatting'));
     const snapshot = copyWorkflow(current.current);
@@ -1026,6 +1027,7 @@ function Builder({
       AbortSignal.any([signal, controller.signal]),
       override,
       onText,
+      onReasoning,
     )
       .then((result) => {
         setAIRequestConfigurationError(false);
