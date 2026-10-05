@@ -1,5 +1,13 @@
 import { Handle, type NodeProps, Position, useStore } from '@xyflow/react';
-import { ArrowRight, Check, Circle, Ellipsis, LoaderCircle } from 'lucide-react';
+import {
+  ArrowDown,
+  ArrowRight,
+  Check,
+  Circle,
+  Ellipsis,
+  LoaderCircle,
+  Repeat2,
+} from 'lucide-react';
 import { useContext } from 'react';
 import { getCatalog, stepSummary } from '../lib/catalog';
 import { useBuilderI18n } from '../lib/i18nContext';
@@ -9,10 +17,31 @@ import type { WorkflowNode } from '../lib/types';
 import { FrameCard } from './FrameCard';
 import { NoteCard } from './NoteCard';
 
+function socketClassName(connected: boolean, carriesData: boolean) {
+  if (!connected) return undefined;
+  return carriesData ? 'dxp-handle-connected dxp-handle-data' : 'dxp-handle-connected';
+}
+
 export function WorkflowCard({ id, data, selected }: NodeProps<WorkflowNode>) {
   const { t } = useBuilderI18n();
   const catalog = getCatalog(t);
   const editNote = useContext(NoteEditingContext);
+  const firstOutput =
+    data.kind === 'experiment'
+      ? 'a'
+      : data.kind === 'fork'
+        ? 'true'
+        : data.kind === 'loop'
+          ? 'body'
+          : null;
+  const secondOutput = data.kind === 'experiment' ? 'b' : data.kind === 'fork' ? 'false' : 'done';
+  const inputConnected = useStore((state) => state.edges.some((edge) => edge.target === id));
+  const firstOutputConnected = useStore((state) =>
+    state.edges.some((edge) => edge.source === id && (edge.sourceHandle ?? null) === firstOutput),
+  );
+  const secondOutputConnected = useStore((state) =>
+    state.edges.some((edge) => edge.source === id && edge.sourceHandle === secondOutput),
+  );
   const dataFlow = useStore((state) =>
     getNodeDataFlow(id, state.nodes as WorkflowNode[], state.edges),
   );
@@ -52,7 +81,7 @@ export function WorkflowCard({ id, data, selected }: NodeProps<WorkflowNode>) {
         <Handle
           type="target"
           position={Position.Left}
-          className={receivesData ? 'dxp-handle-data' : undefined}
+          className={socketClassName(inputConnected, receivesData)}
           title={receivesData ? t('workflowCard.incomingData') : undefined}
           aria-label={receivesData ? t('workflowCard.incomingData') : undefined}
         />
@@ -98,13 +127,19 @@ export function WorkflowCard({ id, data, selected }: NodeProps<WorkflowNode>) {
                 : 'ACTION'}
         </span>
       </div>
-      {data.kind === 'experiment' && (
+      {split && (
         <>
-          <span className="dxp-experiment-port dxp-experiment-port-a" aria-hidden="true">
-            A
+          <span className="dxp-branch-port dxp-branch-port-first" aria-hidden="true">
+            {data.kind === 'loop' ? <Repeat2 size={13} /> : data.kind === 'experiment' ? 'A' : 'T'}
           </span>
-          <span className="dxp-experiment-port dxp-experiment-port-b" aria-hidden="true">
-            B
+          <span className="dxp-branch-port dxp-branch-port-second" aria-hidden="true">
+            {data.kind === 'loop' ? (
+              <ArrowDown size={13} />
+            ) : data.kind === 'experiment' ? (
+              'B'
+            ) : (
+              'F'
+            )}
           </span>
         </>
       )}
@@ -112,8 +147,8 @@ export function WorkflowCard({ id, data, selected }: NodeProps<WorkflowNode>) {
         <>
           <Handle
             type="source"
-            id={data.kind === 'experiment' ? 'a' : data.kind === 'fork' ? 'true' : 'body'}
-            className={sendsData ? 'dxp-handle-data' : undefined}
+            id={firstOutput ?? undefined}
+            className={socketClassName(firstOutputConnected, sendsData)}
             title={
               data.kind === 'experiment'
                 ? t('experiment.variantA')
@@ -126,8 +161,8 @@ export function WorkflowCard({ id, data, selected }: NodeProps<WorkflowNode>) {
           />
           <Handle
             type="source"
-            id={data.kind === 'experiment' ? 'b' : data.kind === 'fork' ? 'false' : 'done'}
-            className={sendsData ? 'dxp-handle-data' : undefined}
+            id={secondOutput}
+            className={socketClassName(secondOutputConnected, sendsData)}
             title={
               data.kind === 'experiment'
                 ? t('experiment.variantB')
@@ -143,7 +178,7 @@ export function WorkflowCard({ id, data, selected }: NodeProps<WorkflowNode>) {
         <Handle
           type="source"
           position={Position.Right}
-          className={sendsData ? 'dxp-handle-data' : undefined}
+          className={socketClassName(firstOutputConnected, sendsData)}
           title={sendsData ? outputLabel : undefined}
           aria-label={sendsData ? outputLabel : undefined}
         />

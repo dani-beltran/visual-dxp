@@ -371,17 +371,15 @@
 .dxp-inspector-branches svg {
   color: var(--dxp-muted);
 }
-.dxp-inspector-dot-true {
-  background: #76a367;
-}
-.dxp-inspector-dot-false {
-  background: #d4a778;
+.dxp-inspector-branch-letter {
+  width: 13px;
+  flex-shrink: 0;
+  text-align: center;
+  font-size: 10px;
+  color: var(--dxp-text-secondary);
 }
 .dxp-inspector-dot-data {
   background: var(--dxp-data);
-}
-.dxp-inspector-dot-data-false {
-  background: var(--dxp-data-false);
 }
 .dxp-inspector-preview {
   border: 1px solid var(--dxp-line);

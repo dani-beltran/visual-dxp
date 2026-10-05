@@ -74,7 +74,63 @@ async function click(target: HTMLElement) {
 }
 
 describe('builder and host boundary', () => {
-  it('renders blue data sockets and connections for chained HTTP nodes and updates receiving data ports', async () => {
+  it.each([
+    ['fork', 'true', 'false', false],
+    ['loop', 'body', 'done', false],
+    ['experiment', 'a', 'b', false],
+    ['fork', 'true', 'false', true],
+    ['loop', 'body', 'done', true],
+    ['experiment', 'a', 'b', true],
+  ] as const)(
+    'tracks each %s output socket connection independently',
+    async (kind, first, second, withData) => {
+      const workflow = initialWorkflow();
+      workflow.nodes = [
+        { ...createNode(kind, { x: 0, y: 0 }), id: 'split' },
+        { ...createNode('dom', { x: 300, y: 0 }), id: 'target' },
+      ];
+      workflow.edges = [{ id: 'branch', source: 'split', sourceHandle: first, target: 'target' }];
+      if (withData) {
+        workflow.nodes.push({ ...createNode('http', { x: -300, y: 0 }), id: 'data' });
+        workflow.edges.push({ id: 'incoming', source: 'data', target: 'split' });
+      }
+      await act(async () => root.render(<VisualDXPBuilder initialWorkflow={workflow} />));
+      expect(
+        element(`[data-id="split"] [data-handleid="${first}"]`).classList.contains(
+          'dxp-handle-connected',
+        ),
+      ).toBe(true);
+      expect(
+        element(`[data-id="split"] [data-handleid="${second}"]`).classList.contains(
+          'dxp-handle-connected',
+        ),
+      ).toBe(false);
+      expect(
+        element('[data-id="split"] .react-flow__handle.target').classList.contains(
+          'dxp-handle-connected',
+        ),
+      ).toBe(withData);
+      for (const selector of [
+        `[data-id="split"] [data-handleid="${first}"]`,
+        '[data-id="split"] .react-flow__handle.target',
+        '[data-id="target"] .react-flow__handle.target',
+      ]) {
+        expect(element(selector).classList.contains('dxp-handle-data')).toBe(withData);
+      }
+      expect(
+        element(`[data-id="split"] [data-handleid="${second}"]`).classList.contains(
+          'dxp-handle-data',
+        ),
+      ).toBe(false);
+      expect(
+        element('[data-id="target"] .react-flow__handle.target').classList.contains(
+          'dxp-handle-connected',
+        ),
+      ).toBe(true);
+    },
+  );
+
+  it('styles sockets by connection state while preserving data connections for chained HTTP nodes', async () => {
     const workflow = initialWorkflow();
     workflow.nodes = [
       createNode('trigger', { x: 0, y: 0 }),
@@ -101,15 +157,37 @@ describe('builder and host boundary', () => {
     for (const id of ['node-1', 'node-2']) {
       expect(
         element(`[data-id="${id}"] .react-flow__handle.target`).classList.contains(
-          'dxp-handle-data',
+          'dxp-handle-connected',
         ),
-      ).toBe(id === 'node-2');
+      ).toBe(true);
+      expect(
+        element(`[data-id="${id}"] .react-flow__handle.source`).classList.contains(
+          'dxp-handle-connected',
+        ),
+      ).toBe(true);
+    }
+    for (const id of ['node-1', 'node-2']) {
       expect(
         element(`[data-id="${id}"] .react-flow__handle.source`).classList.contains(
           'dxp-handle-data',
         ),
       ).toBe(true);
+      expect(
+        element(`[data-id="${id}"] .react-flow__handle.target`).classList.contains(
+          'dxp-handle-data',
+        ),
+      ).toBe(id === 'node-2');
     }
+    expect(
+      element('[data-id="node-3"] .react-flow__handle.source').classList.contains(
+        'dxp-handle-data',
+      ),
+    ).toBe(false);
+    expect(
+      element('[data-id="node-3"] .react-flow__handle.source').classList.contains(
+        'dxp-handle-connected',
+      ),
+    ).toBe(false);
     expect(element('[data-id="http-http"]').classList.contains('dxp-edge-data')).toBe(true);
     expect(element('[data-id="http-dom"]').classList.contains('dxp-edge-data')).toBe(true);
     expect(element('[data-id="trigger-http"]').classList.contains('dxp-edge-data')).toBe(false);

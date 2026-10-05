@@ -25,6 +25,9 @@
   --dxp-line-strong: color-mix(in srgb, var(--dxp-primary-color) 23%, #eeeeee);
   --dxp-grid: color-mix(in srgb, var(--dxp-primary-color) 15%, #eeeeee);
   --dxp-edge: color-mix(in srgb, var(--dxp-primary-color) 35%, #dedede);
+  --dxp-socket-background: #f9fcfa;
+  --dxp-socket-border: #b2c5b6;
+  --dxp-socket-border-connected: #8fad94;
   --dxp-focus: var(--dxp-primary-color);
   --dxp-focus-ring: color-mix(in srgb, var(--dxp-primary-color) 16%, transparent);
   --dxp-shadow: color-mix(in srgb, var(--dxp-text) 10%, transparent);

@@ -403,12 +403,14 @@
   width: 9px;
   min-height: 9px;
   min-width: 9px;
-  background: #f9fcfa;
-  border: 1.5px solid #b2c5b6;
+  background: var(--dxp-socket-background);
+  border: 1.5px solid var(--dxp-socket-border);
 }
-.dxp-builder .react-flow__handle:hover {
-  background: #8bbda0;
-  border-color: #589974;
+.dxp-builder .react-flow__handle.dxp-handle-connected {
+  border-color: var(--dxp-socket-border-connected);
+}
+.dxp-builder .react-flow__handle.dxp-handle-data {
+  border-color: var(--dxp-data);
 }
 .dxp-builder .react-flow__handle-left {
   left: -1px;
@@ -416,27 +418,10 @@
 .dxp-builder .react-flow__handle-right {
   right: -1px;
 }
-.dxp-node-green .react-flow__handle {
-  border-color: #8fad94;
-}
-.dxp-node-violet .react-flow__handle-right {
-  border-color: #b09bc8;
-}
-.dxp-builder .react-flow__handle.source[data-handleid='true']:not(.dxp-handle-data) {
-  background: #76a367;
-  border-color: #76a367;
-}
-.dxp-builder .react-flow__handle.source[data-handleid='false']:not(.dxp-handle-data) {
-  background: #d4a778;
-  border-color: #d4a778;
-}
-.dxp-builder .react-flow__handle.dxp-handle-data {
-  background: var(--dxp-data);
-  border-color: var(--dxp-data);
-}
-.dxp-builder .react-flow__handle.source.dxp-handle-data[data-handleid='false'] {
-  background: var(--dxp-data-false);
-  border-color: var(--dxp-data-false);
+.dxp-node-pink .dxp-branch-port svg,
+.dxp-inspector-loop-outputs .dxp-loop-body-icon,
+.dxp-inspector-loop-outputs .dxp-loop-done-icon {
+  color: var(--dxp-muted);
 }
 .dxp-node-data-output {
   color: var(--dxp-data);
@@ -1198,7 +1183,7 @@
   text-align: left;
 }
 
-.dxp-experiment-port {
+.dxp-branch-port {
   position: absolute;
   right: 9px;
   transform: translateY(-50%);
@@ -1210,9 +1195,13 @@
   border-radius: 3px;
   pointer-events: none;
 }
-.dxp-experiment-port-a {
+.dxp-branch-port-first {
   top: 37%;
 }
-.dxp-experiment-port-b {
+.dxp-branch-port svg {
+  display: block;
+  color: var(--dxp-muted);
+}
+.dxp-branch-port-second {
   top: 73%;
 }

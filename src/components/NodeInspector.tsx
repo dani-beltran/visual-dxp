@@ -989,7 +989,9 @@ export function NodeInspector({
           ) : node.data.kind === 'fork' ? (
             <div className="dxp-inspector-branches">
               <div>
-                <i className={forwardsData ? 'dxp-inspector-dot-data' : 'dxp-inspector-dot-true'} />
+                <b className="dxp-inspector-branch-letter" aria-hidden="true">
+                  T
+                </b>
                 <strong>{t('nodeInspector.true')}</strong>
                 <span>
                   {forwardsData
@@ -998,13 +1000,9 @@ export function NodeInspector({
                 </span>
               </div>
               <div>
-                <i
-                  className={
-                    forwardsData
-                      ? 'dxp-inspector-dot-data dxp-inspector-dot-data-false'
-                      : 'dxp-inspector-dot-false'
-                  }
-                />
+                <b className="dxp-inspector-branch-letter" aria-hidden="true">
+                  F
+                </b>
                 <strong>{t('nodeInspector.false')}</strong>
                 <span>
                   {forwardsData
@@ -1015,14 +1013,14 @@ export function NodeInspector({
             </div>
           ) : node.data.kind === 'loop' ? (
             <>
-              <div className="dxp-inspector-branches">
+              <div className="dxp-inspector-branches dxp-inspector-loop-outputs">
                 <div>
-                  <Repeat2 size={13} />
+                  <Repeat2 size={13} className="dxp-loop-body-icon" />
                   <strong>{t('nodeInspector.body')}</strong>
                   <span>{t('nodeInspector.runsEachRepetition')}</span>
                 </div>
                 <div>
-                  <ArrowDown size={13} />
+                  <ArrowDown size={13} className="dxp-loop-done-icon" />
                   <strong>{t('nodeInspector.done')}</strong>
                   <span>{t('nodeInspector.runsAfterTheLastOne')}</span>
                 </div>
