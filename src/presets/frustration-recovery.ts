@@ -34,6 +34,25 @@ export function createFrustrationRecoveryPreset(messages: PresetMessages = engli
           },
         },
         {
+          id: 'recovery-scroll-trigger',
+          type: 'workflow',
+          position: {
+            x: 60,
+            y: 360,
+          },
+          data: {
+            kind: 'trigger',
+            label:
+              messages['frustration-recovery.workflow.nodes.recovery-scroll-trigger.data.label'],
+            config: {
+              event: 'scroll-thrashing',
+              scrollDirectionChanges: 4,
+              scrollThrashWindow: 2000,
+              scrollMinDistance: 50,
+            },
+          },
+        },
+        {
           id: 'recovery-check',
           type: 'workflow',
           position: {
@@ -219,6 +238,12 @@ export function createFrustrationRecoveryPreset(messages: PresetMessages = engli
         {
           id: 'recovery-trigger-to-recovery-check',
           source: 'recovery-trigger',
+          target: 'recovery-check',
+          type: 'smoothstep',
+        },
+        {
+          id: 'recovery-scroll-trigger-to-recovery-check',
+          source: 'recovery-scroll-trigger',
           target: 'recovery-check',
           type: 'smoothstep',
         },

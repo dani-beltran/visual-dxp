@@ -15,17 +15,16 @@ export const spanishPresetMessages = {
     '<div style="margin:-28px -24px -24px;padding:36px 24px 28px;background:#f8f6f1;color:#353b32;font-family:Arial,Helvetica,sans-serif;box-sizing:border-box;overflow-wrap:anywhere"><div style="padding:0 0 16px;border-bottom:1px solid #dedfd4"><span style="font-family:Georgia,serif;font-size:25px;letter-spacing:-1px">atelier<span aria-hidden="true" style="font-family:Arial,Helvetica,sans-serif;font-size:9px;vertical-align:top;margin-left:3px">®</span></span></div><p style="margin:22px 0 12px;font-size:10px;letter-spacing:1.7px;text-transform:uppercase;color:#697856">Estamos para ayudarte</p><h2 style="margin:0 0 14px;font-family:Georgia,serif;font-size:29px;font-weight:400;line-height:1.15">Volvemos pronto</h2><p style="margin:0;font-size:13px;line-height:1.75;color:#626b59">Nuestro horario de atención es de 09:00 a 17:00 UTC todos los días. Vuelve a visitarnos durante ese horario. Mientras tanto, descubre la colección a tu ritmo.</p><a href="#collection" style="display:inline-block;margin-top:22px;padding:12px 20px;background:#697856;color:#fff;border-radius:6px;text-decoration:none;font-size:13px">Descubrir la colección ↗</a></div>',
   'contextual-support.workflow.nodes.support-offline.data.label': 'Fuera del horario de atención',
   'contextual-support.workflow.nodes.support-trigger-note.data.config.noteText':
-    'Pasa el cursor sobre Help en el pie de página de la demo (#support-help). Sustituye el selector por tu enlace de ayuda. Cada evento mouseover comprueba la hora y muestra el chat o vuelve a abrir el mensaje fuera de horario. El enlace sigue funcionando al hacer clic.',
+    'Elige el enlace de ayuda que inicia este recorrido. En la demo, pasa el cursor sobre Ayuda al pie de la página para mostrar el chat durante el horario de atención o un mensaje fuera de horario. El enlace sigue funcionando al hacer clic.',
   'contextual-support.workflow.nodes.support-trigger-note.data.label':
     'Configuración: Enlace de ayuda',
   'contextual-support.workflow.nodes.support-hours-note.data.config.noteText':
-    'Funciona todos los días de 09:00 a 17:00 UTC. El minuto final es inclusivo: 16:59 cierra a las 17:00. Ajusta las horas, la zona horaria y el mensaje juntos. Local usa la zona del visitante. Comprueba el reloj del navegador, no los días laborables, festivos ni la disponibilidad del equipo.',
+    'La demo ofrece chat todos los días de 09:00 a 17:00 UTC, una hora de referencia mundial. El último minuto elegido está incluido: 16:59 significa que cierra a las 17:00. Cambia el horario, la zona horaria y el mensaje de ausencia a la vez. La hora local es la del visitante. No se comprueban festivos, días laborables ni disponibilidad del equipo.',
   'contextual-support.workflow.nodes.support-hours-note.data.label':
     'Configuración: Horario de atención',
   'contextual-support.workflow.nodes.support-embed-note.data.config.noteText':
-    'El nodo Centro de ayuda añade dxp-support-visible a #support-chat en demo-site.html. Haz clic en el icono para abrir una conversación de ejemplo. Es una demostración, no un servicio de atención real. Para tu sitio, usa el selector y la clase de visibilidad de tu chat. Personaliza el mensaje fuera de horario y el enlace #collection.',
-  'contextual-support.workflow.nodes.support-embed-note.data.label':
-    'Configuración: Chat de soporte',
+    'La demo muestra un icono de chat. Haz clic para abrir una conversación de ejemplo; ningún agente recibe estos mensajes. Pide al equipo de tu web que conecte tu herramienta de chat. Actualiza el mensaje de ausencia y su enlace a la colección.',
+  'contextual-support.workflow.nodes.support-embed-note.data.label': 'Configuración: Chat de ayuda',
   'contextual-support.workflow.nodes.contextual-support-overview.data.config.noteText':
     'Pasa el cursor sobre Ayuda para mostrar el chat de soporte de la demo durante el horario de atención o un mensaje fuera de horario.',
   'contextual-support.workflow.nodes.contextual-support-overview.data.label':
@@ -34,7 +33,7 @@ export const spanishPresetMessages = {
   'contextual-support.workflow.edges.support-hours-to-support-offline.label': 'Cerrado',
   'welcome-journey.name': 'Recorrido de bienvenida',
   'welcome-journey.description':
-    'Espera un momento después de cargar la página y muestra una oferta de bienvenida si existe el botón de compra; si no, personaliza el título del boletín.',
+    'Espera un momento al abrir la página y muestra una oferta de bienvenida si está el botón de compra. Si no, cambia el título del boletín.',
   'welcome-journey.welcome': 'Página visitada',
   'welcome-journey.pause': 'Espera un momento',
   'welcome-journey.check': 'Encuentra el momento adecuado',
@@ -44,16 +43,16 @@ export const spanishPresetMessages = {
   'welcome-journey.true': 'Elemento encontrado',
   'welcome-journey.false': 'En caso contrario',
   'welcome-journey.overview': 'Resumen de la plantilla',
-  'welcome-journey.setup': 'Configuración: Oferta de bienvenida y alternativa',
+  'welcome-journey.setup': 'Configuración: Bienvenida y contenido de la página',
   'welcome-journey.instructions':
-    'Comprueba #shop-now y #newsletter h2 en tu sitio web. Personaliza la oferta, el código de descuento y el enlace #collection antes de publicar. Se ejecuta en cada carga después de 1,5 segundos.',
+    'Elige el botón de compra y el título del boletín de tu web. Actualiza la oferta de bienvenida, el código de descuento y el enlace a la colección antes de publicar. El recorrido empieza 1,5 segundos después de cada apertura o recarga de la página.',
   'welcome-journey.content':
     '<div style="padding:28px;font-family:system-ui;color:#203a30"><span style="font-size:11px;letter-spacing:2px;color:#277457">UN PEQUEÑO DETALLE PARA TI</span><h2 style="font-size:29px;line-height:1.15;font-weight:500;margin:14px 0">Lo bueno empieza aquí.</h2><p style="color:#6b7770;line-height:1.6">Te damos la bienvenida a Atelier. Disfruta de un 15% de descuento en tu primer pedido con el código <strong>HELLO15</strong>.</p><a href="#collection" style="display:inline-block;background:#267456;color:white;padding:12px 20px;text-decoration:none;border-radius:6px;margin-top:8px">Encuentra tu favorito para cada día ↗</a></div>',
   'blank.name': 'En blanco',
   'blank.description': 'Empieza con un lienzo vacío y crea tu propio flujo de trabajo.',
   'bounded-cta-attention.name': 'Secuencia limitada para destacar la llamada a la acción',
   'bounded-cta-attention.description':
-    'Destaca dos veces el encabezado de la colección al hacer clic en la llamada a la acción principal y después muestra un aviso de finalización.',
+    'Cuando alguien hace clic en el botón principal de compra, resalta dos veces el título de la colección y muestra un consejo final.',
   'bounded-cta-attention.workflow.name': 'Secuencia limitada para destacar la llamada a la acción',
   'bounded-cta-attention.workflow.nodes.attention-click.data.label':
     'Clic en la llamada a la acción de la colección',
@@ -66,27 +65,27 @@ export const spanishPresetMessages = {
   'bounded-cta-attention.workflow.nodes.attention-done.data.config.content':
     '<div style="margin:-28px -24px -24px;padding:36px 24px 28px;background:#f8f6f1;color:#353b32;font-family:Arial,Helvetica,sans-serif;box-sizing:border-box;overflow-wrap:anywhere">\n  <div style="padding:0 0 16px;border-bottom:1px solid #dedfd4"><span style="font-family:Georgia,serif;font-size:25px;font-weight:400;letter-spacing:-1px;line-height:1">atelier<span aria-hidden="true" style="font-family:Arial,Helvetica,sans-serif;font-size:9px;vertical-align:top;margin-left:3px;letter-spacing:0">®</span></span></div>\n  <p style="margin:22px 0 12px;font-size:10px;font-weight:400;line-height:1.5;letter-spacing:1.7px;text-transform:uppercase;color:#697856">La colección cotidiana</p>\n  <h2 style="margin:0 0 14px;font-family:Georgia,serif;font-size:29px;font-weight:400;line-height:1.15;letter-spacing:-0.7px;color:#353b32">Explora a tu ritmo</h2>\n  <p style="margin:0;font-size:13px;line-height:1.75;color:#626b59">El encabezado de la colección se ha destacado dos veces. Descubre de cerca cualquier objeto que te llame la atención.</p>\n</div>',
   'bounded-cta-attention.workflow.nodes.bounded-cta-attention-setup-1.data.label':
-    'Configuración: CSS necesario',
+    'Configuración: Aspecto del resaltado',
   'bounded-cta-attention.workflow.nodes.bounded-cta-attention-setup-1.data.config.noteText':
-    'Usa #shop-now y #collection h2, el destino del desplazamiento de la llamada a la acción de la demo. La demo incluye .dxp-cta-attention { outline: 3px solid #697856; outline-offset: 6px; }. Añade esa clase a la hoja de estilos de tu sitio web.',
+    'La demo resalta el título de la colección al hacer clic en Comprar ahora. Elige el botón y el título para tu web. Pide a tu equipo que añada el mismo efecto de contorno; necesita un estilo llamado dxp-cta-attention.',
   'bounded-cta-attention.workflow.nodes.bounded-cta-attention-setup-2.data.label':
-    'Configuración: Conexiones del bucle',
+    'Configuración: Repetir el resaltado',
   'bounded-cta-attention.workflow.nodes.bounded-cta-attention-setup-2.data.config.noteText':
-    'El bucle espera a que el cuerpo completo se ejecute dos veces (2,4 segundos en total) y después sigue la salida done una vez. Deja la espera final del cuerpo sin conectar: nunca la conectes de nuevo al bucle ni a done.',
+    'El resaltado se repite dos veces, dura 2,4 segundos en total y después muestra el consejo final. Deja el último paso de espera de la secuencia sin una conexión de salida. El paso de repetición ya controla cuándo repetir y cuándo terminar.',
   'bounded-cta-attention.workflow.nodes.bounded-cta-attention-setup-3.data.label':
-    'Configuración: Límites de finalización',
+    'Configuración: Cuándo termina el resaltado',
   'bounded-cta-attention.workflow.nodes.bounded-cta-attention-setup-3.data.config.noteText':
-    'La finalización indica que la secuencia de clases terminó, no que el visitante interactuó. Los clics repetidos pueden iniciar ejecuciones simultáneas. Destruir el motor de ejecución a mitad del cuerpo no revierte los cambios del DOM; elimina la clase durante la limpieza de la aplicación si es necesario.',
+    'Terminar solo significa que acabó la secuencia, no que el visitante la haya visto. Otro clic puede iniciar una nueva secuencia antes de que termine la primera. Si detienes el recorrido antes de tiempo, el resaltado puede seguir visible; pide al equipo de tu web que lo quite si hace falta.',
   'bounded-cta-attention.workflow.nodes.bounded-cta-attention-overview.data.label':
     'Resumen del preajuste',
   'bounded-cta-attention.workflow.nodes.bounded-cta-attention-overview.data.config.noteText':
-    'Destaca dos veces el encabezado de la colección al hacer clic en la llamada a la acción principal y después muestra un aviso de finalización.',
+    'Cuando alguien hace clic en el botón principal de compra, resalta dos veces el título de la colección y muestra un consejo final.',
   'bounded-cta-attention.workflow.edges.attention-loop-to-attention-add.label': 'Repetir el cuerpo',
   'bounded-cta-attention.workflow.edges.attention-loop-to-attention-done.label':
     'Tras ambas repeticiones',
   'campaign-headline.name': 'Titular de campaña',
   'campaign-headline.description':
-    'Sustituye el titular principal durante la semana UTC actual, de lunes a domingo; fuera de ese periodo, lo deja sin cambios.',
+    'Muestra un título de campaña durante las fechas elegidas. Fuera de esas fechas, conserva el título habitual.',
   'campaign-headline.workflow.name': 'Titular de campaña',
   'campaign-headline.workflow.nodes.headline-load.data.label': 'Página cargada',
   'campaign-headline.workflow.nodes.headline-day.data.label': '¿Semana de campaña (UTC)?',
@@ -94,20 +93,20 @@ export const spanishPresetMessages = {
   'campaign-headline.workflow.nodes.headline-update.data.config.value':
     'Una nueva temporada de favoritos para el día a día.',
   'campaign-headline.workflow.nodes.campaign-headline-setup-1.data.label':
-    'Configuración: Semana de campaña',
+    'Configuración: Fechas de la campaña',
   'campaign-headline.workflow.nodes.campaign-headline-setup-1.data.config.noteText':
-    'Usa la semana UTC actual (de lunes a domingo), calculada al cargar este módulo de preajuste. Recarga la aplicación para actualizarla; los flujos aplicados o exportados conservan sus fechas guardadas. Puedes editar ambas fechas.',
+    'Elige el primer y último día de tu campaña. Las fechas sugeridas abarcan de lunes a domingo de la semana actual en UTC, una hora de referencia mundial. Recarga la aplicación para renovar las sugerencias. Los recorridos ya añadidos o descargados conservan sus fechas guardadas.',
   'campaign-headline.workflow.nodes.campaign-headline-setup-2.data.label':
-    'Configuración: Destino del titular',
+    'Configuración: Título de la página',
   'campaign-headline.workflow.nodes.campaign-headline-setup-2.data.config.noteText':
-    'Usa .hero h1. La sustitución del texto elimina su marcado anidado. La salida false termina intencionadamente sin modificar la página.',
+    'Elige el título principal que quieres cambiar y escribe el mensaje de campaña. Al sustituirlo se puede perder el formato especial dentro del título. Fuera de las fechas de campaña, la página queda como está.',
   'campaign-headline.workflow.nodes.campaign-headline-overview.data.label': 'Resumen del preajuste',
   'campaign-headline.workflow.nodes.campaign-headline-overview.data.config.noteText':
-    'Sustituye el titular principal durante la semana UTC actual, de lunes a domingo; fuera de ese periodo, lo deja sin cambios.',
+    'Muestra un título de campaña durante las fechas elegidas. Fuera de esas fechas, conserva el título habitual.',
   'campaign-headline.workflow.edges.headline-day-to-headline-update.label': 'Semana de campaña',
   'campaign-url-personalization.name': 'Personalización por URL de campaña',
   'campaign-url-personalization.description':
-    'Da la bienvenida a los visitantes de la campaña Summer Sale con un texto personalizado y conserva un mensaje predeterminado.',
+    'Muestra una bienvenida especial a quienes llegan por el enlace de la campaña de verano y un mensaje habitual al resto.',
   'campaign-url-personalization.workflow.name': 'Personalización por URL de campaña',
   'campaign-url-personalization.workflow.nodes.campaign-load.data.label': 'Página cargada',
   'campaign-url-personalization.workflow.nodes.campaign-check.data.label': '¿Campaña Summer Sale?',
@@ -119,17 +118,17 @@ export const spanishPresetMessages = {
   'campaign-url-personalization.workflow.nodes.campaign-default.data.config.value':
     'Descubre objetos diseñados con cuidado para el día a día.',
   'campaign-url-personalization.workflow.nodes.campaign-url-personalization-setup-1.data.label':
-    'Configuración: Parámetro de campaña',
+    'Configuración: Enlace de campaña',
   'campaign-url-personalization.workflow.nodes.campaign-url-personalization-setup-1.data.config.noteText':
-    'Visita /demo-site.html?utm_campaign=summer-sale para obtener una coincidencia. Los valores de consulta son exactos y distinguen mayúsculas y minúsculas; sustituye el parámetro y el valor por los de tu campaña.',
+    'Para probar la demo, añade ?utm_campaign=summer-sale al final de la dirección de la página. Esta parte del enlace identifica la campaña. Cambia el nombre y el valor para que coincidan con tus enlaces, respetando mayúsculas y minúsculas.',
   'campaign-url-personalization.workflow.nodes.campaign-url-personalization-setup-2.data.label':
-    'Configuración: Sitio web de vista previa',
+    'Configuración: Página de vista previa',
   'campaign-url-personalization.workflow.nodes.campaign-url-personalization-setup-2.data.config.noteText':
-    'Usa .hero .description. Configura la URL del sitio web del editor para la página que vas a probar; aplicar un preajuste conserva la URL actual del sitio web.',
+    'Este recorrido cambia la introducción bajo el título principal. Elige el texto que quieres cambiar en tu web y la dirección de la página para la vista previa. Al añadir esta plantilla se mantiene la dirección que ya habías elegido.',
   'campaign-url-personalization.workflow.nodes.campaign-url-personalization-overview.data.label':
     'Resumen del preajuste',
   'campaign-url-personalization.workflow.nodes.campaign-url-personalization-overview.data.config.noteText':
-    'Da la bienvenida a los visitantes de la campaña Summer Sale con un texto personalizado y conserva un mensaje predeterminado.',
+    'Muestra una bienvenida especial a quienes llegan por el enlace de la campaña de verano y un mensaje habitual al resto.',
   'campaign-url-personalization.workflow.edges.campaign-check-to-campaign-matched.label':
     'Coincidencia de campaña',
   'campaign-url-personalization.workflow.edges.campaign-check-to-campaign-default.label':
@@ -143,13 +142,13 @@ export const spanishPresetMessages = {
   'click-to-open-help.workflow.nodes.help-popover.data.config.content':
     '<style>[data-visual-dxp-popover="help-popover"] > div { background: #697856 !important; border-color: #697856 !important; } [data-visual-dxp-popover="help-popover"] > svg path { fill: #697856 !important; stroke: #697856 !important; } [data-visual-dxp-popover="help-popover"] button[aria-label="Close experience"] { color: #fff !important; }</style><p style="margin:-28px -24px -24px;padding:14px 40px 14px 16px;background:#697856;color:#fff;font:300 14px/1.5 Georgia,serif;letter-spacing:-0.15px;box-sizing:border-box;overflow-wrap:anywhere"><span aria-hidden="true">✉️</span> Introduce tu correo electrónico y selecciona la flecha para suscribirte.</p>',
   'click-to-open-help.workflow.nodes.click-to-open-help-setup-1.data.label':
-    'Configuración: Destino de la ayuda',
+    'Configuración: Enlace de ayuda y formulario',
   'click-to-open-help.workflow.nodes.click-to-open-help-setup-1.data.config.noteText':
-    'Usa #collection .section-heading a como destino del clic en la demo y #newsletter form como anclaje. El enlace de la demo se desplaza hasta el boletín; usa un enlace o botón de ayuda accesible mediante teclado en tu sitio.',
+    'En la demo, el enlace al boletín de la colección lleva al formulario de suscripción y abre ayuda a su lado. Elige tu enlace y formulario. Asegúrate de que el enlace o botón de ayuda también se pueda usar con teclado.',
   'click-to-open-help.workflow.nodes.click-to-open-help-setup-2.data.label':
-    'Configuración: Texto de ayuda',
+    'Configuración: Mensaje de ayuda',
   'click-to-open-help.workflow.nodes.click-to-open-help-setup-2.data.config.noteText':
-    'Edita el texto para que coincida con las condiciones de tu boletín. Abrir la ayuda no envía ni confirma una suscripción.',
+    'Edita el mensaje para explicar tu boletín y sus condiciones. Abrir esta ayuda no suscribe a nadie ni confirma una suscripción.',
   'click-to-open-help.workflow.nodes.click-to-open-help-overview.data.label':
     'Resumen del preajuste',
   'click-to-open-help.workflow.nodes.click-to-open-help-overview.data.config.noteText':
@@ -164,13 +163,13 @@ export const spanishPresetMessages = {
   'delayed-welcome.workflow.nodes.welcome-popover.data.config.content':
     '<div style="margin:-28px -24px -24px;padding:36px 24px 28px;background:#f8f6f1;color:#353b32;font-family:Arial,Helvetica,sans-serif;box-sizing:border-box;overflow-wrap:anywhere">\n  <div style="padding:0 0 16px;border-bottom:1px solid #dedfd4"><span style="font-family:Georgia,serif;font-size:25px;font-weight:400;letter-spacing:-1px;line-height:1">atelier<span aria-hidden="true" style="font-family:Arial,Helvetica,sans-serif;font-size:9px;vertical-align:top;margin-left:3px;letter-spacing:0">®</span></span></div>\n  <p style="margin:22px 0 12px;font-size:10px;font-weight:400;line-height:1.5;letter-spacing:1.7px;text-transform:uppercase;color:#697856">Te damos la bienvenida a Atelier</p>\n  <h2 style="margin:0 0 14px;font-family:Georgia,serif;font-size:29px;font-weight:400;line-height:1.15;letter-spacing:-0.7px;color:#353b32">Siéntete como en casa</h2>\n  <p style="margin:0;font-size:13px;line-height:1.75;color:#626b59">Descubre a tu ritmo objetos diseñados con cuidado para el día a día.</p>\n  <a href="#collection" style="display:flex;align-items:center;justify-content:space-between;gap:16px;box-sizing:border-box;min-height:44px;margin-top:22px;padding:13px 16px;border-radius:2px;background:#697856;color:#fff;font-family:Arial,Helvetica,sans-serif;font-size:12px;font-weight:400;line-height:1.5;text-decoration:none"><span>Explora la colección</span><span aria-hidden="true">↗</span></a>\n</div>',
   'delayed-welcome.workflow.nodes.delayed-welcome-setup-1.data.label':
-    'Configuración: Contenido de bienvenida',
+    'Configuración: Mensaje de bienvenida',
   'delayed-welcome.workflow.nodes.delayed-welcome-setup-1.data.config.noteText':
-    'La demo contiene #collection. Actualiza el enlace y el texto de bienvenida para tu sitio web.',
+    'Actualiza el mensaje de bienvenida y elige adónde lleva su enlace. En la demo, lleva a la sección de la colección.',
   'delayed-welcome.workflow.nodes.delayed-welcome-setup-2.data.label':
-    'Configuración: Frecuencia de visualización',
+    'Configuración: Cuándo se muestra',
   'delayed-welcome.workflow.nodes.delayed-welcome-setup-2.data.config.noteText':
-    'Se ejecuta una vez por carga de página; no hay control de frecuencia entre visitas.',
+    'La bienvenida aparece cada vez que alguien abre o recarga la página. También puede aparecer en visitas posteriores.',
   'delayed-welcome.workflow.nodes.delayed-welcome-overview.data.label': 'Resumen del preajuste',
   'delayed-welcome.workflow.nodes.delayed-welcome-overview.data.config.noteText':
     'Da a los visitantes dos segundos para acomodarse antes de mostrar un breve mensaje de bienvenida.',
@@ -186,20 +185,20 @@ export const spanishPresetMessages = {
   'engaged-reader-invitation.workflow.nodes.reader-cookie.data.label':
     'Registrar invitación mostrada',
   'engaged-reader-invitation.workflow.nodes.engaged-reader-invitation-setup-1.data.label':
-    'Configuración: Desplazamiento y enlace',
+    'Configuración: Desplazamiento y destino',
   'engaged-reader-invitation.workflow.nodes.engaged-reader-invitation-setup-1.data.config.noteText':
-    'Requiere una página con desplazamiento y que el visitante se desplace hacia abajo; #newsletter existe en la demo.',
+    'Prueba en una página lo bastante larga para desplazarte hacia abajo. La invitación aparece al recorrer el 70 % de la distancia disponible. Elige adónde lleva el enlace; la demo usa la sección del boletín.',
   'engaged-reader-invitation.workflow.nodes.engaged-reader-invitation-setup-2.data.label':
-    'Configuración: Marcador de invitación',
+    'Configuración: Recordar la invitación',
   'engaged-reader-invitation.workflow.nodes.engaged-reader-invitation-setup-2.data.config.noteText':
-    'Escribe dxp_reader_invitation=shown durante 7 días inmediatamente después de mostrar la invitación. Esto registra la visualización, no la suscripción, y no bloquea futuras cargas de página.',
+    'El navegador recuerda durante 7 días que se mostró la invitación. Esto no significa que el visitante se haya suscrito ni impide mostrarla al abrir de nuevo la página.',
   'engaged-reader-invitation.workflow.nodes.engaged-reader-invitation-overview.data.label':
     'Resumen del preajuste',
   'engaged-reader-invitation.workflow.nodes.engaged-reader-invitation-overview.data.config.noteText':
     'Invita a los visitantes que se desplazan hasta el 70 % de la página a descubrir el boletín.',
   'exit-intent-offer.name': 'Oferta al intentar salir con control de frecuencia',
   'exit-intent-offer.description':
-    'Muestra un recordatorio de envío al intentar salir solo si no existe su marcador de sesión.',
+    'Muestra un recordatorio de envío cuando el cursor sale por la parte superior de la página, salvo que ya se haya mostrado durante esta sesión.',
   'exit-intent-offer.workflow.name': 'Oferta al intentar salir con control de frecuencia',
   'exit-intent-offer.workflow.nodes.exit-trigger.data.label': 'El puntero sale por arriba',
   'exit-intent-offer.workflow.nodes.exit-check.data.label': '¿Oferta ya mostrada?',
@@ -208,26 +207,28 @@ export const spanishPresetMessages = {
     '<div style="margin:-28px -24px -24px;padding:36px 24px 28px;background:#f8f6f1;color:#353b32;font-family:Arial,Helvetica,sans-serif;box-sizing:border-box;overflow-wrap:anywhere">\n  <div style="padding:0 0 16px;border-bottom:1px solid #dedfd4"><span style="font-family:Georgia,serif;font-size:25px;font-weight:400;letter-spacing:-1px;line-height:1">atelier<span aria-hidden="true" style="font-family:Arial,Helvetica,sans-serif;font-size:9px;vertical-align:top;margin-left:3px;letter-spacing:0">®</span></span></div>\n  <p style="margin:22px 0 12px;font-size:10px;font-weight:400;line-height:1.5;letter-spacing:1.7px;text-transform:uppercase;color:#697856">Un envío cuidado</p>\n  <h2 style="margin:0 0 14px;font-family:Georgia,serif;font-size:29px;font-weight:400;line-height:1.15;letter-spacing:-0.7px;color:#353b32">Un envío cuidado</h2>\n  <p style="margin:0;font-size:13px;line-height:1.75;color:#626b59">Envío gratuito en pedidos superiores a 75 €. Vuelve a echar un vistazo cuando quieras.</p>\n  <a href="#collection" style="display:flex;align-items:center;justify-content:space-between;gap:16px;box-sizing:border-box;min-height:44px;margin-top:22px;padding:13px 16px;border-radius:2px;background:#697856;color:#fff;font-family:Arial,Helvetica,sans-serif;font-size:12px;font-weight:400;line-height:1.5;text-decoration:none"><span>Volver a la colección</span><span aria-hidden="true">↗</span></a>\n</div>',
   'exit-intent-offer.workflow.nodes.exit-cookie.data.label': 'Recordar durante esta sesión',
   'exit-intent-offer.workflow.nodes.exit-intent-offer-setup-1.data.label':
-    'Configuración: Condiciones de la oferta',
+    'Configuración: Detalles de la oferta',
   'exit-intent-offer.workflow.nodes.exit-intent-offer-setup-1.data.config.noteText':
-    'Usa la oferta de envío de la demo y el enlace #collection; comprueba las condiciones de tu propia oferta antes de usarlo.',
+    'Sustituye la oferta de envío de ejemplo por la tuya y revisa sus condiciones. Elige adónde lleva el enlace; en la demo, lleva a la colección.',
   'exit-intent-offer.workflow.nodes.exit-intent-offer-setup-2.data.label':
-    'Configuración: Marcador de sesión',
+    'Configuración: Mostrar la oferta una vez',
   'exit-intent-offer.workflow.nodes.exit-intent-offer-setup-2.data.config.noteText':
-    'Escribe dxp_exit_offer=shown como cookie de sesión (cookieDays: 0). Una coincidencia true termina sin mostrar nada. Borra la cookie y las claves coincidentes del almacenamiento del navegador para volver a probarlo.',
+    'El navegador recuerda que ya mostró la oferta durante la sesión de navegación actual y no la repite. Para probarla de nuevo, borra los datos guardados de esta web en los ajustes del navegador.',
   'exit-intent-offer.workflow.nodes.exit-intent-offer-setup-3.data.label':
-    'Configuración: Detección de salida',
+    'Configuración: Cuándo alguien podría salir',
   'exit-intent-offer.workflow.nodes.exit-intent-offer-setup-3.data.config.noteText':
-    'La intención de salida se detecta cuando el puntero abandona el borde superior, una vez por instalación del motor de ejecución; no detecta la navegación hacia atrás en móviles.',
+    'El recorrido empieza cuando el cursor sale por el borde superior de la página. Puede empezar una vez cada vez que se carga el recorrido. No detecta el uso del botón Atrás en un teléfono.',
   'exit-intent-offer.workflow.nodes.exit-intent-offer-overview.data.label': 'Resumen del preajuste',
   'exit-intent-offer.workflow.nodes.exit-intent-offer-overview.data.config.noteText':
-    'Muestra un recordatorio de envío al intentar salir solo si no existe su marcador de sesión.',
+    'Muestra un recordatorio de envío cuando el cursor sale por la parte superior de la página, salvo que ya se haya mostrado durante esta sesión.',
   'exit-intent-offer.workflow.edges.exit-check-to-exit-popover.label': 'Aún no se ha mostrado',
   'frustration-recovery.name': 'Ayuda ante la frustración',
   'frustration-recovery.description':
-    'Ofrece ayuda para navegar tras varios clics cercanos y registra un evento genérico de asistencia.',
+    'Ofrece ayuda cuando alguien hace clic repetidamente o se desplaza arriba y abajo con rapidez, y registra que se mostró la ayuda.',
   'frustration-recovery.workflow.name': 'Ayuda ante la frustración',
   'frustration-recovery.workflow.nodes.recovery-trigger.data.label': 'Tres clics cercanos',
+  'frustration-recovery.workflow.nodes.recovery-scroll-trigger.data.label':
+    'Desplazamiento errático',
   'frustration-recovery.workflow.nodes.recovery-check.data.label': '¿Ayuda ya mostrada?',
   'frustration-recovery.workflow.nodes.recovery-help.data.label': 'Un poco de ayuda para navegar',
   'frustration-recovery.workflow.nodes.recovery-help.data.config.content':
@@ -235,25 +236,25 @@ export const spanishPresetMessages = {
   'frustration-recovery.workflow.nodes.recovery-event.data.label': 'Registrar ayuda mostrada',
   'frustration-recovery.workflow.nodes.recovery-cookie.data.label': 'Recordar ayuda mostrada',
   'frustration-recovery.workflow.nodes.frustration-recovery-setup-1.data.label':
-    'Configuración: Endpoint de eventos',
+    'Configuración: Dónde registrar la ayuda',
   'frustration-recovery.workflow.nodes.frustration-recovery-setup-1.data.config.noteText':
-    'Sustituye https://events.example.invalid/dxp-events por tu propio endpoint de pruebas o de eventos antes de ejecutar. Debe aceptar POST JSON con Content-Type: application/json y devolver 2xx; configura CORS si el origen es distinto. El dominio reservado .invalid no tiene ningún servicio.',
+    'Este recorrido envía un mensaje para registrar que se mostró la ayuda. La dirección de ejemplo no funciona. Antes de usarlo, pide al equipo de tu web que la sustituya por una dirección válida y compruebe que la web puede enviarle mensajes.',
   'frustration-recovery.workflow.nodes.frustration-recovery-setup-2.data.label':
-    'Configuración: Solo evento genérico',
+    'Configuración: Qué se registra',
   'frustration-recovery.workflow.nodes.frustration-recovery-setup-2.data.config.noteText':
-    'El cuerpo contiene solo {"event":"assistance_shown"}. No añadas datos personales, URL de páginas, valores de formularios, credenciales ni identificadores. Esto no es una integración de analítica ni un ticket de soporte.',
+    'El mensaje solo indica que se mostró la ayuda. No incluyas datos personales, direcciones de páginas, respuestas de formularios, contraseñas ni identificadores de visitantes. No contacta con un agente ni crea una solicitud de soporte.',
   'frustration-recovery.workflow.nodes.frustration-recovery-setup-3.data.label':
-    'Configuración: Alcance de los clics de frustración',
+    'Configuración: Cuándo aparece la ayuda',
   'frustration-recovery.workflow.nodes.frustration-recovery-setup-3.data.config.noteText':
-    'Los clics de frustración se detectan en todo el documento, sin limitarse a un selector. Usa #collection en el texto de ayuda.',
+    'La ayuda puede empezar de dos formas: tres clics cercanos en 1 segundo o cuatro cambios de dirección al desplazarse en 2 segundos. Cada cambio necesita al menos 50 píxeles de movimiento; los movimientos muy pequeños no cuentan. Ambos observan toda la página. Adapta el mensaje y su enlace a la colección para tu web.',
   'frustration-recovery.workflow.nodes.frustration-recovery-setup-4.data.label':
-    'Configuración: Límites de frecuencia',
+    'Configuración: Evitar repetir la ayuda',
   'frustration-recovery.workflow.nodes.frustration-recovery-setup-4.data.config.noteText':
-    'dxp_assistance_shown es una cookie de sesión escrita después del intento HTTP, incluso si falla. Registra que se mostró la ayuda, no la entrega del evento; los disparadores simultáneos antes de la respuesta pueden repetir las solicitudes. Es un control de frecuencia aproximado, no un límite atómico de solicitudes.',
+    'Después de intentar enviar el registro, el navegador recuerda que mostró la ayuda durante esta sesión, aunque el envío falle. Hasta que termine ese intento, más clics o desplazamientos pueden volver a mostrar la ayuda y enviar otro registro.',
   'frustration-recovery.workflow.nodes.frustration-recovery-overview.data.label':
     'Resumen del preajuste',
   'frustration-recovery.workflow.nodes.frustration-recovery-overview.data.config.noteText':
-    'Ofrece ayuda para navegar tras varios clics cercanos y registra un evento genérico de asistencia.',
+    'Ofrece ayuda cuando alguien hace clic repetidamente o se desplaza arriba y abajo con rapidez, y registra que se mostró la ayuda.',
   'frustration-recovery.workflow.edges.recovery-check-to-recovery-help.label':
     'Aún no se ha mostrado',
   'inactivity-assistance.name': 'Ayuda por inactividad',
@@ -271,13 +272,13 @@ export const spanishPresetMessages = {
   'inactivity-assistance.workflow.nodes.idle-fallback.data.config.content':
     '<div style="margin:-28px -24px -24px;padding:36px 24px 28px;background:#f8f6f1;color:#353b32;font-family:Arial,Helvetica,sans-serif;box-sizing:border-box;overflow-wrap:anywhere">\n  <div style="padding:0 0 16px;border-bottom:1px solid #dedfd4"><span style="font-family:Georgia,serif;font-size:25px;font-weight:400;letter-spacing:-1px;line-height:1">atelier<span aria-hidden="true" style="font-family:Arial,Helvetica,sans-serif;font-size:9px;vertical-align:top;margin-left:3px;letter-spacing:0">®</span></span></div>\n  <p style="margin:22px 0 12px;font-size:10px;font-weight:400;line-height:1.5;letter-spacing:1.7px;text-transform:uppercase;color:#697856">A tu ritmo</p>\n  <h2 style="margin:0 0 14px;font-family:Georgia,serif;font-size:29px;font-weight:400;line-height:1.15;letter-spacing:-0.7px;color:#353b32">Tómate tu tiempo</h2>\n  <p style="margin:0;font-size:13px;line-height:1.75;color:#626b59">Usa la navegación de la página para seguir explorando. Puedes cerrar este consejo cuando quieras.</p>\n</div>',
   'inactivity-assistance.workflow.nodes.inactivity-assistance-setup-1.data.label':
-    'Configuración: Anclaje y alternativa',
+    'Configuración: Dónde aparece la ayuda',
   'inactivity-assistance.workflow.nodes.inactivity-assistance-setup-1.data.config.noteText':
-    'Usa #newsletter form; elimínalo para probar la alternativa. La condición comprueba su existencia, no su visibilidad, validez ni interacción.',
+    'Elige el formulario del boletín junto al que aparecerá la ayuda. Si no está, se muestra un mensaje general. Solo se comprueba si el formulario está en la página, no si es visible, está bien rellenado o se está usando.',
   'inactivity-assistance.workflow.nodes.inactivity-assistance-setup-2.data.label':
-    'Configuración: Comportamiento de los tiempos',
+    'Configuración: Cuándo aparece la ayuda',
   'inactivity-assistance.workflow.nodes.inactivity-assistance-setup-2.data.config.noteText':
-    'La actividad reinicia el temporizador de inactividad y puede provocar ayuda posterior. La actividad durante la espera adicional de 1 segundo no la cancela. El anclaje debe seguir existiendo después de esa espera.',
+    'La actividad del visitante reinicia la espera de 30 segundos, así que la ayuda puede repetirse tras otro periodo sin actividad. Si se encuentra el formulario, se espera un segundo más. La actividad durante ese segundo no cancela el mensaje y el formulario debe seguir en la página.',
   'inactivity-assistance.workflow.nodes.inactivity-assistance-overview.data.label':
     'Resumen del preajuste',
   'inactivity-assistance.workflow.nodes.inactivity-assistance-overview.data.config.noteText':
@@ -286,7 +287,7 @@ export const spanishPresetMessages = {
   'inactivity-assistance.workflow.edges.idle-check-to-idle-fallback.label': 'Sin formulario',
   'mobile-specific-messaging.name': 'Mensajes específicos para móviles',
   'mobile-specific-messaging.description':
-    'Elige un texto breve para móviles o uno más completo para ordenadores en la descripción principal.',
+    'Muestra una introducción más breve en teléfonos y otra más detallada en ordenadores.',
   'mobile-specific-messaging.workflow.name': 'Mensajes específicos para móviles',
   'mobile-specific-messaging.workflow.nodes.device-load.data.label': 'Página cargada',
   'mobile-specific-messaging.workflow.nodes.device-check.data.label': '¿Dispositivo móvil?',
@@ -297,13 +298,13 @@ export const spanishPresetMessages = {
   'mobile-specific-messaging.workflow.nodes.device-desktop.data.config.value':
     'Descubre de cerca los materiales naturales y los detalles cuidados de nuestra colección cotidiana.',
   'mobile-specific-messaging.workflow.nodes.mobile-specific-messaging-setup-1.data.label':
-    'Configuración: Detección de dispositivo',
+    'Configuración: Teléfono u ordenador',
   'mobile-specific-messaging.workflow.nodes.mobile-specific-messaging-setup-1.data.config.noteText':
-    'Usa .hero .description. La detección utiliza indicaciones del navegador sobre el dispositivo o el agente de usuario, no el ancho de la ventana; cambiar el tamaño de la vista previa no emula un móvil.',
+    'Elige la introducción bajo el título principal y escribe una versión para teléfonos y otra para ordenadores. El recorrido usa la información del dispositivo que facilita el navegador. Estrechar la vista previa no la convierte en un teléfono; prueba también en uno.',
   'mobile-specific-messaging.workflow.nodes.mobile-specific-messaging-overview.data.label':
     'Resumen del preajuste',
   'mobile-specific-messaging.workflow.nodes.mobile-specific-messaging-overview.data.config.noteText':
-    'Elige un texto breve para móviles o uno más completo para ordenadores en la descripción principal.',
+    'Muestra una introducción más breve en teléfonos y otra más detallada en ordenadores.',
   'mobile-specific-messaging.workflow.edges.device-check-to-device-mobile.label': 'Móvil',
   'mobile-specific-messaging.workflow.edges.device-check-to-device-desktop.label': 'Ordenador',
   'returning-visitor-experience.name': 'Experiencia para visitantes recurrentes',
@@ -324,13 +325,13 @@ export const spanishPresetMessages = {
   'returning-visitor-experience.workflow.nodes.visitor-cookie.data.label':
     'Recordar bienvenida mostrada',
   'returning-visitor-experience.workflow.nodes.returning-visitor-experience-setup-1.data.label':
-    'Configuración: Bienvenida y marcador',
+    'Configuración: Recordar una bienvenida',
   'returning-visitor-experience.workflow.nodes.returning-visitor-experience-setup-1.data.config.noteText':
-    'Usa .hero .description y #collection. dxp_visitor_welcome=shown dura 30 días y registra una bienvenida mostrada, no la identidad ni el historial de compras.',
+    'Elige la introducción de la página y el destino del enlace de bienvenida. El navegador recuerda durante 30 días que se mostró la bienvenida. Esto no identifica a la persona ni indica qué compró.',
   'returning-visitor-experience.workflow.nodes.returning-visitor-experience-setup-2.data.label':
-    'Configuración: Repetir la primera visita',
+    'Configuración: Probar una primera visita',
   'returning-visitor-experience.workflow.nodes.returning-visitor-experience-setup-2.data.config.noteText':
-    'Borra la cookie y la clave coincidente del almacenamiento local o de sesión para volver a probar la rama de primera visita.',
+    'Para volver a ver la bienvenida de la primera visita, borra los datos guardados de esta web en los ajustes del navegador. Así eliminas el recordatorio de que ya se mostró la bienvenida.',
   'returning-visitor-experience.workflow.nodes.returning-visitor-experience-overview.data.label':
     'Resumen del preajuste',
   'returning-visitor-experience.workflow.nodes.returning-visitor-experience-overview.data.config.noteText':
@@ -341,7 +342,7 @@ export const spanishPresetMessages = {
     'Primera bienvenida',
   'segmented-onboarding.name': 'Recorrido de bienvenida segmentado',
   'segmented-onboarding.description':
-    'Reconoce las visitas anteriores; para los nuevos visitantes, adapta la orientación según la campaña y registra la entrega de la orientación.',
+    'Da la bienvenida a los nuevos visitantes con ayuda según su enlace de campaña y recuerda que se mostró para no repetirla en visitas posteriores.',
   'segmented-onboarding.workflow.name': 'Recorrido de bienvenida segmentado',
   'segmented-onboarding.workflow.nodes.onboarding-entry.data.label': '1 · Reconocer la visita',
   'segmented-onboarding.workflow.nodes.onboarding-guidance.data.label':
@@ -354,9 +355,9 @@ export const spanishPresetMessages = {
   'segmented-onboarding.workflow.nodes.onboarding-return.data.config.value':
     'Te damos la bienvenida de nuevo. Tu colección está lista para descubrirla.',
   'segmented-onboarding.workflow.nodes.onboarding-entry-note.data.label':
-    'Configuración: Marcos y nuevas pruebas',
+    'Configuración: Entender el recorrido',
   'segmented-onboarding.workflow.nodes.onboarding-entry-note.data.config.noteText':
-    'Los marcos agrupan las etapas de reconocimiento, orientación y entrega. Las notas son anotaciones desconectadas. Las coincidencias de cookies o almacenamiento pueden clasificar al visitante como recurrente; borra todas las claves coincidentes para volver a probarlo.',
+    'Los recuadros agrupan las etapas: reconocer al visitante, mostrar la ayuda y registrarla. Estas notas explican los pasos y no realizan acciones. Para probar de nuevo como visitante nuevo, borra los datos guardados de esta web en los ajustes del navegador.',
   'segmented-onboarding.workflow.nodes.onboarding-campaign.data.label': '¿Campaña de bienvenida?',
   'segmented-onboarding.workflow.nodes.onboarding-campaign-copy.data.label':
     'Mensaje de bienvenida inicial',
@@ -378,28 +379,28 @@ export const spanishPresetMessages = {
   'segmented-onboarding.workflow.nodes.onboarding-default-help.data.config.content':
     '<style>[data-visual-dxp-popover="onboarding-default-help"] > div { background: #697856 !important; border-color: #697856 !important; } [data-visual-dxp-popover="onboarding-default-help"] > svg path { fill: #697856 !important; stroke: #697856 !important; } [data-visual-dxp-popover="onboarding-default-help"] button[aria-label="Close experience"] { color: #fff !important; }</style><p style="margin:-28px -24px -24px;padding:14px 40px 14px 16px;background:#697856;color:#fff;font:300 14px/1.5 Georgia,serif;letter-spacing:-0.15px;box-sizing:border-box;overflow-wrap:anywhere"><span aria-hidden="true">🌿</span> Explora todos los objetos de la colección.</p>',
   'segmented-onboarding.workflow.nodes.onboarding-guidance-note.data.label':
-    'Configuración: Destinos de la orientación',
+    'Configuración: Elegir el contenido de la página',
   'segmented-onboarding.workflow.nodes.onboarding-guidance-note.data.config.noteText':
-    'Usa .hero .description, #shop-now y #collection. Prueba con y sin ?utm_campaign=onboarding. Los anclajes de la orientación deben existir al terminar las esperas.',
+    'Elige la introducción, el botón de compra y la sección de la colección de tu web. Prueba la página con y sin ?utm_campaign=onboarding al final de su dirección para ver ambas bienvenidas. El botón y la sección deben seguir en la página cuando termine cada espera.',
   'segmented-onboarding.workflow.nodes.onboarding-event.data.label':
     'Registrar orientación mostrada',
   'segmented-onboarding.workflow.nodes.onboarding-cookie.data.label': 'Marcar entrega completada',
   'segmented-onboarding.workflow.nodes.onboarding-record-note.data.label':
-    'Configuración: Endpoint de eventos',
+    'Configuración: Dónde registrar la ayuda',
   'segmented-onboarding.workflow.nodes.onboarding-record-note.data.config.noteText':
-    'Sustituye https://events.example.invalid/dxp-events por tu propio endpoint de pruebas o de eventos antes de ejecutar. Debe aceptar POST JSON con Content-Type: application/json y devolver 2xx; configura CORS si el origen es distinto. El dominio reservado .invalid no tiene ningún servicio.',
+    'Este recorrido envía un mensaje para registrar que se mostró la ayuda. La dirección de ejemplo no funciona. Antes de usarlo, pide al equipo de tu web que la sustituya por una dirección válida y compruebe que la web puede enviarle mensajes.',
   'segmented-onboarding.workflow.nodes.onboarding-marker-note.data.label':
-    'Configuración: Marcador de entrega',
+    'Configuración: Recordar la ayuda mostrada',
   'segmented-onboarding.workflow.nodes.onboarding-marker-note.data.config.noteText':
-    'dxp_onboarding_delivered=yes dura 30 días. True omite la orientación y HTTP; false elige una rama de campaña. El cuerpo genérico del POST es {"event":"onboarding_guidance_displayed"}.',
+    'El navegador recuerda durante 30 días que se mostró la ayuda. Durante ese tiempo, el recorrido omite la ayuda y no envía otro registro. Si no hay recordatorio, elige una bienvenida según el enlace de campaña y envía un mensaje indicando que se mostró la ayuda.',
   'segmented-onboarding.workflow.nodes.onboarding-completion-note.data.label':
-    'Configuración: Significado de finalización',
+    'Configuración: Qué significa terminado',
   'segmented-onboarding.workflow.nodes.onboarding-completion-note.data.config.noteText':
-    'La finalización indica que se actualizó el texto del DOM, se mostró la orientación y se intentó la solicitud HTTP. No detecta lecturas, cierres, clics en enlaces, suscripciones, compras ni persistencia en el servidor. Un fallo HTTP también escribe la cookie de finalización; no confirma la entrega del evento.',
+    'Terminado significa que cambió el texto, apareció la ayuda y se intentó enviar un registro. No significa que el visitante lo leyera, hiciera clic, se suscribiera o comprara. El navegador recuerda que terminó aunque el servicio no haya recibido o guardado el registro.',
   'segmented-onboarding.workflow.nodes.segmented-onboarding-overview.data.label':
     'Resumen del preajuste',
   'segmented-onboarding.workflow.nodes.segmented-onboarding-overview.data.config.noteText':
-    'Reconoce las visitas anteriores; para los nuevos visitantes, adapta la orientación según la campaña y registra la entrega de la orientación.',
+    'Da la bienvenida a los nuevos visitantes con ayuda según su enlace de campaña y recuerda que se mostró para no repetirla en visitas posteriores.',
   'segmented-onboarding.workflow.edges.onboarding-seen-to-onboarding-return.label':
     'Visitante recurrente',
   'segmented-onboarding.workflow.edges.onboarding-seen-to-onboarding-campaign.label':
