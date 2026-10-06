@@ -3,8 +3,11 @@
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { CanvasChat, type CanvasChatProps } from '../src/components/CanvasChat';
-import { VisualDXPBuilder, type VisualDXPBuilderApi } from '../src/components/VisualDXPBuilder';
+import { CanvasChat, type CanvasChatProps } from '../src/components/CanvasChat/CanvasChat';
+import {
+  VisualDXPBuilder,
+  type VisualDXPBuilderApi,
+} from '../src/components/VisualDXPBuilder/VisualDXPBuilder';
 import { AISettingsStore } from '../src/lib/aiSettings';
 import type { Workflow } from '../src/lib/types';
 
@@ -629,7 +632,9 @@ it('browsing provider tabs preserves requests, but cross-tab activation cancels 
   expect(onChange).toHaveBeenCalledTimes(before);
   expect(onChange.mock.lastCall![0]).toEqual(baseline);
   expect(host.textContent).not.toContain('1 edit applied');
-  expect(host.querySelector('.dxp-ai-header')?.textContent).toContain('Active provider: Self-Hosted');
+  expect(host.querySelector('.dxp-ai-header')?.textContent).toContain(
+    'Active provider: Self-Hosted',
+  );
 });
 
 it('displays streamed text before completion and replaces it with the validated reply', async () => {

@@ -4,7 +4,7 @@ import { act, StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createLocalStorageActivityStore } from '../src/demo/activityStore';
-import Demo from '../src/demo/Demo';
+import Demo from '../src/demo/Demo/Demo';
 import type { ActivityEntry } from '../src/lib/activity';
 import { commonDXPPresets } from '../src/presets';
 

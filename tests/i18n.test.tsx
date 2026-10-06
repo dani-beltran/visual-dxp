@@ -13,9 +13,9 @@ import {
   type VisualDXPBuilderApi,
   type Workflow,
 } from '../src';
-import { App } from '../src/app';
+import { App } from '../src/components/App/App';
 import { spanishMessages } from '../src/app/locales/es';
-import { ActivityPanel } from '../src/components/ActivityPanel';
+import { ActivityPanel } from '../src/components/ActivityPanel/ActivityPanel';
 import { activityAction } from '../src/lib/activity';
 import { catalog, getCatalog, stepSummary } from '../src/lib/catalog';
 import { dataTools } from '../src/lib/data';

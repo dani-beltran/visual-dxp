@@ -1,0 +1,108 @@
+.dxp-note-control-group {
+  padding: 0;
+  border: 0;
+  margin: 0 0 21px;
+  min-width: 0;
+}
+.dxp-note-control-group > legend {
+  margin-bottom: 9px;
+  padding: 0;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--dxp-text-secondary);
+}
+.dxp-note-format-buttons {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  margin-bottom: 8px;
+  border: 1px solid var(--dxp-line);
+  border-radius: 7px;
+  background: var(--dxp-canvas);
+}
+.dxp-note-format-buttons button {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 30px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: var(--dxp-muted);
+  background: transparent;
+}
+.dxp-note-format-buttons button:hover {
+  color: var(--dxp-primary-color);
+  background: var(--dxp-primary-soft);
+}
+.dxp-note-format-buttons button[aria-pressed='true'] {
+  border-color: var(--dxp-line-strong);
+  background: var(--dxp-primary-soft);
+  color: var(--dxp-primary-color);
+  box-shadow: 0 1px 2px var(--dxp-shadow-soft);
+}
+.dxp-note-color-palette {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.dxp-note-color-swatch {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--dxp-primary-border);
+  border-radius: 50%;
+  color: var(--dxp-text-secondary);
+}
+.dxp-note-color-swatch:hover {
+  box-shadow: 0 0 0 3px var(--dxp-shadow);
+}
+.dxp-note-color-swatch[aria-pressed='true'] {
+  border-color: var(--dxp-primary-border);
+  box-shadow:
+    0 0 0 2px var(--dxp-surface),
+    0 0 0 3px var(--dxp-shadow-strong);
+}
+.dxp-note-color-swatch.is-transparent {
+  background-image: conic-gradient(
+    var(--dxp-line) 25%,
+    var(--dxp-surface) 0 50%,
+    var(--dxp-line) 0 75%,
+    var(--dxp-surface) 0
+  );
+  background-size: 8px 8px;
+}
+.dxp-note-custom-color {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--dxp-muted);
+  font-size: 10.5px;
+  cursor: pointer;
+}
+.dxp-inspector .dxp-note-custom-color input {
+  flex-shrink: 0;
+  height: 26px;
+  width: 28px;
+  padding: 3px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+.dxp-note-custom-color input::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+.dxp-note-custom-color input::-webkit-color-swatch {
+  border: 0;
+  border-radius: 2px;
+}
+.dxp-note-custom-color input::-moz-color-swatch {
+  border: 0;
+  border-radius: 2px;
+}
+.dxp-note-color-value {
+  margin-inline-start: auto;
+  color: var(--dxp-muted);
+  font-size: 9px;
+}

@@ -115,7 +115,7 @@ export function ExperienceEditor() {
 }
 ```
 
-The builder owns the toolbar, canvas, inspector, activity view, footer, element picker, and test preview, including its own `ReactFlowProvider`. The hosting page owns its project header, test button, and export dialog. `src/app.tsx` demonstrates this split. It accepts `className` and `style`, uses scoped component styles, and does not require a router or backend. Render it on the client in SSR frameworks (for Next.js, use a client component; disable SSR for the editor if your environment requires it).
+The builder owns the toolbar, canvas, inspector, activity view, footer, element picker, and test preview, including its own `ReactFlowProvider`. The hosting page owns its project header, test button, and export dialog. `src/components/App/App.tsx` demonstrates this split. It accepts `className` and `style`, uses scoped component styles, and does not require a router or backend. Render it on the client in SSR frameworks (for Next.js, use a client component; disable SSR for the editor if your environment requires it).
 
 | Prop                 | Behavior                                                                                                                                                          |
 | -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -490,10 +490,11 @@ HTML and DOM actions are author-controlled content. Import workflows from truste
 ## Source layout
 
 - `src/app/` — Next.js layout, client-only editor entry, and Node API Route Handlers.
-- `src/demo/Demo.tsx` — demo activity, persistence, and same-origin AI configuration.
-- `src/app.tsx` — reusable demo host UI, project header, test trigger, and export dialog.
-- `src/components/VisualDXPBuilder.tsx` — independent editor, state/history, import, persistence, and test preview.
-- `src/components/` — workflow cards, node inspector, picker, and live preview.
+- `src/demo/Demo/Demo.tsx` — demo activity, persistence, and same-origin AI configuration.
+- `src/components/App/App.tsx` — reusable demo host UI, project header, test trigger, and export dialog.
+- `src/components/VisualDXPBuilder/VisualDXPBuilder.tsx` — independent editor, state/history, import, persistence, and test preview.
+- `src/components/` — workflow cards, node inspector, picker, and live preview. Each component has a `ComponentName/` folder containing `ComponentName.tsx` and its imported `ComponentName.css`.
+- `src/styles/` — shared theme tokens, base styles, UI controls, and inspector primitives. Keep component-specific rules in the component's own stylesheet.
 - `src/lib/runtime/` — workflow execution, conditions, popovers, and trigger modules; `index.ts` exposes the runtime API.
 - `src/lib/export.ts` — graph/configuration validation and JavaScript generation.
 - `src/lib/picker.ts` — selector generation and iframe highlighting.

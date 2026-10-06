@@ -3,8 +3,8 @@
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { NodeInspector } from '../src/components/NodeInspector';
-import { PopoverPreview } from '../src/components/PopoverPreview';
+import { NodeInspector } from '../src/components/NodeInspector/NodeInspector';
+import { PopoverPreview } from '../src/components/PopoverPreview/PopoverPreview';
 import type { StepConfig, WorkflowNode } from '../src/lib/types';
 import { connectPreview, mockDemoFetch } from './helpers/preview';
 

@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { WebsiteConnectionCheck } from '../src/components/WebsiteConnectionCheck';
+import { WebsiteConnectionCheck } from '../src/components/WebsiteConnectionCheck/WebsiteConnectionCheck';
 import { BRANDING_PROTOCOL, readBrandingProfile } from '../src/lib/branding';
 import { brandingProfile } from './helpers/branding';
 

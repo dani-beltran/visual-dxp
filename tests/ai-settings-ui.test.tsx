@@ -3,8 +3,11 @@ import { webcrypto } from 'node:crypto';
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { AISettings } from '../src/components/AISettings';
-import { VisualDXPBuilder, type VisualDXPBuilderProps } from '../src/components/VisualDXPBuilder';
+import { AISettings } from '../src/components/AISettings/AISettings';
+import {
+  VisualDXPBuilder,
+  type VisualDXPBuilderProps,
+} from '../src/components/VisualDXPBuilder/VisualDXPBuilder';
 import { AI_SETTINGS_STORAGE_KEY, AISettingsStore } from '../src/lib/aiSettings';
 
 let root: Root;

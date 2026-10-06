@@ -2,7 +2,7 @@
 import { act, useState } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { NodeInspector } from '../src/components/NodeInspector';
+import { NodeInspector } from '../src/components/NodeInspector/NodeInspector';
 import { stepSummary } from '../src/lib/catalog';
 import { triggerOptions } from '../src/lib/triggers';
 import type { StepConfig, TriggerEvent, WorkflowNode } from '../src/lib/types';

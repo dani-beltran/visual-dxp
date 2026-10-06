@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { ElementPicker } from '../src/components/ElementPicker';
+import { ElementPicker } from '../src/components/ElementPicker/ElementPicker';
 import {
   attachElementPicker,
   escapeCss,

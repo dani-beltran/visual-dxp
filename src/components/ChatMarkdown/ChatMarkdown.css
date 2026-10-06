@@ -1,0 +1,119 @@
+.dxp-ai-markdown {
+  min-width: 0;
+  font-size: 12px;
+  line-height: 1.7;
+}
+.dxp-ai-markdown > :first-child {
+  margin-top: 0;
+}
+.dxp-ai-markdown > :last-child {
+  margin-bottom: 0;
+}
+.dxp-ai-markdown p,
+.dxp-ai-markdown ul,
+.dxp-ai-markdown ol,
+.dxp-ai-markdown blockquote,
+.dxp-ai-markdown pre,
+.dxp-ai-markdown table {
+  margin: 8px 0;
+}
+.dxp-ai-markdown p {
+  white-space: pre-wrap;
+}
+.dxp-ai-markdown :is(h1, h2, h3, h4, h5, h6) {
+  margin: 14px 0 6px;
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.4;
+}
+.dxp-ai-markdown h1 {
+  font-size: 17px;
+}
+.dxp-ai-markdown h2 {
+  font-size: 15px;
+}
+.dxp-ai-markdown ul,
+.dxp-ai-markdown ol {
+  padding-inline-start: 22px;
+}
+.dxp-ai-markdown ul {
+  list-style-type: disc;
+}
+.dxp-ai-markdown ol {
+  list-style-type: decimal;
+}
+.dxp-ai-markdown li + li {
+  margin-top: 4px;
+}
+.dxp-ai-markdown li > :is(ul, ol) {
+  margin-block: 4px;
+}
+.dxp-ai-markdown a {
+  color: var(--dxp-primary-color);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.dxp-ai-markdown a:focus-visible {
+  outline: 2px solid var(--dxp-focus);
+  outline-offset: 2px;
+}
+.dxp-ai-markdown blockquote {
+  padding-inline-start: 12px;
+  border-inline-start: 3px solid var(--dxp-line-strong);
+  color: var(--dxp-muted);
+}
+.dxp-ai-markdown code {
+  padding: 2px 4px;
+  border-radius: 4px;
+  background: var(--dxp-canvas);
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 0.92em;
+}
+.dxp-ai-markdown pre {
+  max-width: 100%;
+  overflow-x: auto;
+  padding: 10px 12px;
+  border: 1px solid var(--dxp-line);
+  border-radius: 8px;
+  background: var(--dxp-canvas);
+  white-space: pre;
+  overflow-wrap: normal;
+}
+.dxp-ai-markdown pre code {
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+}
+.dxp-ai-markdown table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+}
+.dxp-ai-markdown th,
+.dxp-ai-markdown td {
+  padding: 6px 9px;
+  border: 1px solid var(--dxp-line);
+}
+.dxp-ai-markdown th {
+  background: var(--dxp-canvas);
+  font-weight: 650;
+}
+.dxp-ai-markdown .task-list-item {
+  list-style: none;
+}
+.dxp-ai-markdown .task-list-item input {
+  width: auto;
+  margin-inline: -18px 5px;
+  accent-color: var(--dxp-primary-color);
+}
+.dxp-ai-markdown hr {
+  margin: 12px 0;
+  border: 0;
+  border-top: 1px solid var(--dxp-line);
+}
+.dxp-ai-markdown img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 6px;
+}

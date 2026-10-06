@@ -3,7 +3,7 @@
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { Preview } from '../src/components/Preview';
+import { Preview } from '../src/components/Preview/Preview';
 import type { NodeKind, RunLog, StepConfig, Workflow, WorkflowNode } from '../src/lib/types';
 import { connectPreview, mockDemoFetch } from './helpers/preview';
 

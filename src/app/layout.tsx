@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
-import '../styles/demo.css';
+import '../demo/Demo/Demo.css';
 
 export const metadata: Metadata = {
   title: 'Visual DXP — Experience Builder',
