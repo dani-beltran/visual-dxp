@@ -1,5 +1,6 @@
 import {
   Braces,
+  ChartNoAxesColumn,
   Cookie,
   FlaskConical,
   Frame,
@@ -96,6 +97,15 @@ export const catalog: {
     icon: Globe2,
     category: 'Action',
     config: { method: 'GET', url: 'https://jsonplaceholder.typicode.com/todos/1', headers: '{}' },
+  },
+  {
+    kind: 'track-event',
+    label: 'Track event',
+    description: nodeDescriptions['track-event'],
+    config: { analyticsEventName: 'milestone_reached' },
+    color: 'analytics',
+    icon: ChartNoAxesColumn,
+    category: 'Action',
   },
   {
     kind: 'experiment',
@@ -258,6 +268,8 @@ export function stepSummary(
           return t('summary.chooseCondition');
       }
     }
+    case 'track-event':
+      return c.analyticsEventName || t('analytics.chooseEventName');
     case 'experiment':
       return t('experiment.summary', {
         a: c.experimentSplit ?? 50,

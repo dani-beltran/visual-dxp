@@ -2,6 +2,140 @@ import type { BuilderMessages } from '../../lib/i18n';
 
 /** Complete Spanish builder catalog supplied by the demo app. */
 export const spanishMessages = {
+  'analytics.payload': 'Carga útil (JSON)',
+  'analytics.payloadHint':
+    'Objeto JSON opcional de parámetros del evento. No incluyas información personal.',
+  'analytics.invalidPayload': 'Introduce un objeto JSON válido para la carga útil del evento.',
+  'analytics.invalidPayloadKey':
+    'Los nombres de parámetros deben empezar por una letra, tener hasta 40 letras, números o guiones bajos y no sobrescribir campos reservados de analítica.',
+  'analytics.setupSuggestion':
+    'Configura una integración de analítica para conocer cómo avanzan los visitantes por tus flujos, comparar experimentos y registrar hitos. Selecciona Google Analytics arriba para configurar la integración y consultar la guía.',
+  'analytics.guide.title': 'Guía',
+  'analytics.guide.intro':
+    'Conecta Visual DXP con Google Analytics 4 (GA4) y convierte los eventos del flujo en informes útiles.',
+  'analytics.guide.conceptsTitle': '1. Comprende qué se mide',
+  'analytics.guide.concepts':
+    'Visual DXP ejecuta el flujo y emite eventos. La etiqueta de Google o Google Tag Manager (GTM) del sitio los envía a GA4. Un evento registra algo que ocurrió; sus parámetros lo describen. Una dimensión personalizada permite usar un parámetro de texto en los informes. Enviar un evento y configurar un informe son pasos distintos.',
+  'analytics.guide.identifiers':
+    'El ID de medición G- identifica un flujo web de GA4. El ID del flujo identifica el recorrido; la versión para informes distingue sus revisiones. El ID del experimento identifica una asignación A/B y es distinto del ID de medición. Define ID estables antes de publicar. Si se omiten, se usan el nombre del flujo, la versión 1 y el ID del nodo para el experimento.',
+  'analytics.guide.setupTitle': '2. Conecta el sitio y elige un método de envío',
+  'analytics.guide.prerequisites':
+    'Usa una propiedad GA4 con un flujo de datos web y una etiqueta de Google funcionando en el sitio de destino. Necesitas acceso al sitio o a su contenedor GTM y permisos de Editor en GA4 para configurar definiciones personalizadas. Visual DXP no instala etiquetas ni crea propiedades GA4.',
+  'analytics.guide.configure':
+    'Selecciona Google Analytics arriba, define el ID del flujo y la versión para informes, y elige Etiqueta de Google o Google Tag Manager. Usa una sola ruta para estos eventos para evitar duplicados. Sin seguimiento desactiva la integración compartida.',
+  'analytics.guide.milestones':
+    'Coloca nodos Registrar evento después de acciones o condiciones que confirmen hitos relevantes. Elige un nombre fijo como offer_accepted: entre 1 y 40 letras ASCII, números o guiones bajos, empezando por una letra. Se distinguen mayúsculas y minúsculas; se rechazan nombres y prefijos reservados como dxp_. Las asignaciones de experimentos se registran automáticamente.',
+  'analytics.guide.deploy':
+    'Exporta el flujo y carga su script en el sitio de destino configurado. La URL debe coincidir con el destino del script. Prueba un activador real en esa página; la vista previa del editor solo simula la analítica.',
+  'analytics.guide.tagSetup':
+    'Elige Etiqueta de Google si la página expone window.gtag. Visual DXP llama a su API de eventos. Deja vacío el ID de medición opcional para usar los destinos existentes o introduce el ID G- deseado para definir send_to. Este campo dirige los eventos; no instala ni inicializa Google Analytics. Carga la etiqueta existente antes de que pueda activarse el flujo.',
+  'analytics.guide.gtmVariables':
+    'En GTM, crea variables de capa de datos para los parámetros que enviarás, con los nombres exactos indicados abajo. Por ejemplo, llama a una variable DLV - workflow_id y establece su nombre de variable de capa de datos como workflow_id.',
+  'analytics.guide.gtmTrigger':
+    'Crea un activador de Evento personalizado independiente para cada uno de los tres nombres dxp_workflow_* y cada hito. Usa el nombre exacto, respetando mayúsculas. Por ejemplo, el activador del evento inicial coincide con dxp_workflow_started.',
+  'analytics.guide.gtmTag':
+    'Crea una etiqueta Google Analytics: evento de GA4 para cada evento, selecciona el ID de medición deseado y usa el nombre exacto del evento. Asocia los parámetros con las variables de capa de datos y añade el activador de Evento personalizado correspondiente. Un envío a dataLayer por sí solo no envía datos a GA4.',
+  'analytics.guide.gtmOptional':
+    'Asocia solo los parámetros que pertenecen a ese evento. Para los campos exclusivos del experimento en dxp_workflow_step, usa otra etiqueta y activador limitados a step_type = experiment y excluye esos pasos de la etiqueta general. Así evitas duplicados y valores opcionales antiguos retenidos en la capa de datos.',
+  'analytics.guide.gtmPublish':
+    'Usa Vista previa de GTM / Tag Assistant para verificar el evento y la activación de la etiqueta; después envía y publica los cambios del contenedor. Configura el destino GA4 en GTM; el ID de medición opcional de Visual DXP solo se usa con Etiqueta de Google.',
+  'analytics.guide.gtmExample':
+    'Ejemplo de nombre exacto para un activador de Evento personalizado. Crea los activadores correspondientes para los demás eventos de ejecución e hitos.',
+  'analytics.guide.eventsTitle': '3. Conoce los eventos y sus parámetros',
+  'analytics.guide.eventsCaption': 'Eventos emitidos por la integración compartida',
+  'analytics.guide.event': 'Evento',
+  'analytics.guide.meaning': 'Cuándo se envía y qué significa',
+  'analytics.guide.started': 'Una vez por cada activación, antes de ejecutar su ruta.',
+  'analytics.guide.step':
+    'Tras una acción o condición correcta. Incluye step_id, step_type y step_index. Las condiciones y experimentos añaden branch; los experimentos también añaden experiment_id y variant_id (a o b).',
+  'analytics.guide.completed':
+    'Cuando la ejecución termina sin errores ni cancelación. Añade step_count. Significa que el flujo se ejecutó correctamente, no que el visitante convirtió. Las peticiones HTTP fallidas impiden este evento aunque continúe una ruta de error.',
+  'analytics.guide.custom':
+    'Nombre de ejemplo de un nodo Registrar evento. Se envía cada vez que se ejecuta ese nodo, con step_id y step_type. Define tus propios nombres; solo incluye los valores entrantes asignados explícitamente en Carga útil.',
+  'analytics.guide.commonParameters':
+    'Todos los eventos anteriores incluyen workflow_id, workflow_version, trigger_id y run_id. El ID de ejecución conecta los eventos de una activación, incluso si hay ejecuciones simultáneas. Los ID de nodo identifican los pasos; no son sus etiquetas editables. Consulta los ID emitidos en el registro de vista previa o en DebugView.',
+  'analytics.guide.repetition':
+    'Los activadores, notas y marcos no emiten eventos de paso. Los cuerpos de bucle y los hitos registran cada ejecución; el paso Bucle se registra tras sus iteraciones. Un nodo Registrar evento emite tanto su evento personalizado como el evento normal de paso.',
+  'analytics.guide.verifyTitle': '4. Verifica la recogida antes de crear informes',
+  'analytics.guide.preview':
+    'Ejecuta la vista previa del editor y comprueba los nombres y parámetros simulados en el registro. La vista previa no envía eventos reales.',
+  'analytics.guide.liveTest':
+    'Prueba el script exportado en el sitio de destino con Vista previa de GTM / Tag Assistant o el modo de depuración GA4 activado mediante la etiqueta existente. Visual DXP no activa debug_mode automáticamente. Abre Administración → DebugView en GA4 y selecciona tu dispositivo de prueba.',
+  'analytics.guide.inspect':
+    'Activa el disparador, sigue la ruta prevista y revisa el orden, el ID del flujo, los ID de paso y la variante asignada. Verifica los hitos por separado. “En cola” en un registro de Visual DXP significa que la API del navegador aceptó el evento, no que GA4 lo recibiera.',
+  'analytics.guide.troubleshoot':
+    'Si faltan eventos, comprueba la URL de destino, el método de envío, la disponibilidad de la etiqueta, el ID de destino y los activadores y parámetros publicados en GTM. El consentimiento, los bloqueadores y los fallos de red pueden impedir la recogida. La falta de analítica no detiene las acciones; no desactives el consentimiento para probar.',
+  'analytics.guide.dimensionsTitle': '5. Habilita los parámetros en los informes de GA4',
+  'analytics.guide.dimensionsSetup':
+    'En Administración → Definiciones personalizadas → Crear dimensión personalizada de GA4, indica un nombre legible, elige el ámbito Evento e introduce el nombre exacto del parámetro. Empieza por los campos que necesites; crear una dimensión no hace que Visual DXP envíe nuevos datos.',
+  'analytics.guide.workflowDimensions': 'Filtra los resultados por flujo y revisión.',
+  'analytics.guide.stepDimensions':
+    'Identifica la acción, su tipo de nodo y el activador que inició la ejecución.',
+  'analytics.guide.experimentDimensions':
+    'Compara las asignaciones y rutas elegidas. Estos campos solo aparecen en los eventos de paso a los que corresponden.',
+  'analytics.guide.numericParameters':
+    'Orden numérico y recuento de pasos correctos. Si necesitas informes agregados, configura métricas personalizadas de evento adecuadas en lugar de dimensiones de texto.',
+  'analytics.guide.runParameter':
+    'Único por activación. Evita registrarlo como dimensión personalizada por su alta cardinalidad; úsalo para analizar eventos sin procesar.',
+  'analytics.guide.dimensionValues':
+    'Registra nombres de parámetros, no cada valor posible: los ID y a/b llegan automáticamente. Las nuevas dimensiones pueden tardar entre 24 y 48 horas en estar disponibles en informes. Usa DebugView para comprobar la recogida de inmediato.',
+  'analytics.guide.reportingTitle': '6. Crea un embudo y compara experimentos',
+  'analytics.guide.funnel':
+    'En Explorar → Exploración de embudos de GA4, define los pasos por nombre de evento. Filtra por workflow_id y workflow_version. Usa nombres de hitos o dxp_workflow_step con una condición step_id. El ejemplo requiere añadir ambos hitos a las rutas correspondientes.',
+  'analytics.guide.funnelRules':
+    'Usa un embudo cerrado si los usuarios deben empezar por el primer paso, o abierto si pueden entrar por pasos posteriores. Prefiere pasos seguidos indirectamente cuando haya otros eventos intermedios. Define un intervalo adecuado. Los embudos de GA4 cuentan usuarios, no ejecuciones exactas; para analizarlas usa exportaciones agrupadas por run_id.',
+  'analytics.guide.experiments':
+    'El paso Experimento envía experiment_id y variant_id automáticamente. Crea segmentos a partir de la asignación y compara los hitos posteriores de A y B. Los eventos de hito no heredan variant_id; no asumas que basta con desglosarlos por variante. Mantén estable el ID durante la prueba; cambiarlo reinicia las asignaciones del navegador.',
+  'analytics.guide.scope':
+    'Visual DXP ejecuta el experimento y GA4 muestra las observaciones. No crea un experimento nativo de GA ni determina automáticamente la significación estadística. La guía de integración de Google incluye “In-house and custom experiments”. Un hito debe confirmar un resultado real; completar un flujo no equivale a convertir.',
+  'analytics.guide.privacyTitle': '7. Datos y privacidad',
+  'analytics.guide.privacy':
+    'Visual DXP envía los metadatos integrados y los valores asignados explícitamente en Carga útil. No incluyas información personal ni secretos. Reutiliza la analítica y el consentimiento del sitio. Usa ID y nombres descriptivos sin información personal.',
+  'analytics.guide.tagLink': 'Guía de Google: enviar eventos GA4',
+  'analytics.guide.gtmLink': 'Guía de Google: configurar etiquetas de evento GA4',
+  'analytics.guide.dimensionsLink': 'Guía de Google: dimensiones personalizadas de evento',
+  'analytics.guide.debugLink': 'Guía de Google: DebugView',
+  'analytics.guide.funnelLink': 'Guía de Google: exploración de embudos',
+  'analytics.guide.experimentLink': 'Guía de Google: integración de experimentos',
+  'analytics.gtmHint':
+    'Envía eventos de flujo, hitos y experimentos a la capa de datos existente. Configura activadores de evento personalizado, variables de capa de datos y etiquetas de evento GA4 para cada nombre que quieras registrar.',
+  'nodes.track-event.label': 'Registrar evento',
+  'nodes.track-event.description':
+    'Envía un evento personalizado mediante la integración de analítica del flujo. Úsalo para marcar un hito en una ruta.',
+  'analytics.chooseEventName': 'Elige un nombre de evento',
+  'analytics.eventName': 'Nombre del evento',
+  'analytics.eventNameHint':
+    'Usa de 1 a 40 letras, números o guiones bajos y empieza por una letra. Por ejemplo: oferta_aceptada. Se distinguen mayúsculas y minúsculas.',
+  'analytics.invalidEventName':
+    'Usa un nombre de 1 a 40 letras, números o guiones bajos que empiece por una letra.',
+  'analytics.reservedEventName':
+    'Elige un nombre de evento personalizado que no esté reservado por Google Analytics o Visual DXP.',
+  'analytics.invalidIdentity':
+    'El ID del flujo y la versión para informes deben contener de 1 a 100 caracteres.',
+  'analytics.outputHint':
+    'Continúa al siguiente paso, aunque la analítica no esté disponible.',
+  'analytics.milestoneHint':
+    'Este nodo necesita una integración de analítica para enviar eventos. Configura una integración en la pestaña Analítica.',
+  'analytics.customDisabledHint':
+    'Activa Google Analytics en la pestaña Analítica para enviar eventos personalizados.',
+  'analytics.workflowId': 'ID del flujo',
+  'analytics.workflowIdHint':
+    'ID estable enviado como workflow_id. Si no se configura, se usa el nombre del flujo. Mantén este ID al renombrar el flujo.',
+  'analytics.workflowVersion': 'Versión para informes',
+  'analytics.workflowVersionHint':
+    'Se envía como workflow_version. Cámbiala al revisar el embudo para comparar los resultados por versión.',
+  'analytics.lifecycleHint':
+    'Envía automáticamente dxp_workflow_started al activarse un disparador, dxp_workflow_step tras cada acción o condición correcta y dxp_workflow_completed cuando la ejecución termina sin errores ni cancelación. Los bucles registran cada iteración; completar la ejecución no implica una conversión.',
+  'analytics.funnelGuide': 'Configurar informes del embudo del flujo',
+  'analytics.funnelGuideBody':
+    'Registra dimensiones personalizadas de evento para workflow_id, workflow_version, step_id, step_type, trigger_id y branch según lo necesites. En Exploraciones de GA4, crea un embudo desde dxp_workflow_started, pasando por dxp_workflow_step filtrado por step_id o por tus eventos personalizados, hasta dxp_workflow_completed. En GTM, reenvía los tres eventos de ejecución y los nombres personalizados con activadores de evento, variables de capa de datos y etiquetas de evento GA4. Verifica los resultados en DebugView.',
+  'analytics.runIdHint':
+    'run_id agrupa los eventos de una activación, incluidas las ejecuciones simultáneas. Evita registrarlo como dimensión personalizada porque cada ejecución tiene un valor único. Los embudos de GA4 cuentan usuarios; usa exportaciones de eventos para analizar cada ejecución.',
+  'builder.analytics': 'Analítica',
+  'analytics.description':
+    'Configura aquí el progreso del flujo, las asignaciones de experimentos y los hitos personalizados.',
+  'analytics.openSettings': 'Abrir ajustes de analítica',
+  'activity.analyticsUpdated': 'Ajustes de analítica actualizados',
   'errors.ai.invalid_workflow_edit':
     'La IA propuso un cambio de flujo inválido. No se aplicó ningún cambio. Prueba con una petición más específica.',
   'errors.ai.repeated_tool_loop':
@@ -9,54 +143,22 @@ export const spanishMessages = {
   'nodes.experiment.label': 'Experimento',
   'nodes.experiment.description':
     'Distribuye los visitantes entre las variantes A y B. Prueba dos experiencias con un reparto de tráfico configurable y asignaciones estables por navegador.',
+  'experiment.sharedAnalyticsHint':
+    'Este experimento se registra automáticamente mediante la plataforma configurada en la pestaña Analítica. El seguimiento está desactivado si no hay ninguna plataforma habilitada.',
   'experiment.analytics': 'Analítica',
   'experiment.none': 'Sin seguimiento',
   'experiment.premium': 'Premium',
   'experiment.id': 'ID del experimento',
-  'experiment.idHint':
-    'Obligatorio. Identifica el experimento en analítica. No es el ID de medición de GA.',
-  'experiment.cta': 'Elemento CTA',
-  'experiment.interaction': 'Interacción del CTA',
-  'experiment.click': 'Clic',
-  'experiment.change': 'Valor del campo confirmado',
-  'experiment.clickInteractionHint':
-    'Clic registra la activación, incluidos los elementos anidados.',
-  'experiment.changeInteractionHint':
-    'Registra cambios confirmados en campos, selectores y casillas.',
-  'experiment.interactionHint':
-    'Clic registra la activación, incluidos los elementos anidados. Change registra cambios confirmados en campos, selectores y casillas.',
-  'experiment.mapping':
-    'Google Analytics usa el ID del experimento configurado arriba como experiment_id. Las variantes se asignan a variant_id de la siguiente forma: Variante A → a; Variante B → b. Esta dimensión se enviará con los eventos experiment_view y experiment_cta.',
   'experiment.delivery': 'Envío de eventos',
   'experiment.gtag': 'Etiqueta de Google',
   'experiment.gtm': 'Google Tag Manager',
   'experiment.gtagHint':
     'Usa window.gtag ya instalado en el sitio. Deja vacío el ID de medición para usar sus destinos existentes.',
-  'experiment.gtmHint':
-    'Añade experiment_view y experiment_cta con experiment_id, variant_id y cta_type (solo CTA) a window.dataLayer existente. El propietario del sitio debe configurar activadores de eventos personalizados, variables de la capa de datos para estos parámetros y etiquetas de eventos GA4 que los envíen.',
   'experiment.measurementId': 'ID de medición de GA4 (opcional)',
   'experiment.measurementIdHint':
     'Si el sitio web tiene varios destinos, introduce un ID para dirigir los eventos a un flujo de GA4 específico.',
   'experiment.privacyHint':
     'Solo usa el método de envío seleccionado. Visual DXP no instala otra etiqueta ni cambia el consentimiento del sitio. Un evento en cola no confirma la recepción; la analítica bloqueada o ausente no detiene el flujo. La vista previa simula eventos en el registro de ejecución.',
-  'experiment.reporting': 'Configurar informes en Google Analytics',
-  'experiment.guideInstall':
-    'Instala o reutiliza la etiqueta GA4 del sitio. En Google Tag Manager, configura el envío descrito arriba.',
-  'experiment.guideId': 'Elige un ID del experimento en Visual DXP, como homepage-cta-v1.',
-  'experiment.guideDimensions':
-    'En Administrar → Definiciones personalizadas de GA4, crea dimensiones personalizadas con ámbito de evento para experiment_id, variant_id y cta_type.',
-  'experiment.guideValues':
-    'Valores como homepage-cta-v1, a y b llegan automáticamente con los eventos. No se registra cada valor manualmente.',
-  'experiment.guideExplore':
-    'En Exploraciones, filtra por experiment_id y compara el embudo experiment_view → experiment_cta por variant_id.',
-  'experiment.guideDebug':
-    'Verifica ambos eventos y sus parámetros en DebugView con el modo de depuración GA4 del sitio o la vista previa de GTM.',
-  'experiment.guideScope':
-    'Visual DXP ejecuta el experimento; GA4 informa de los resultados. No se crea un experimento nativo de Google Analytics ni se determina automáticamente la significación estadística.',
-  'experiment.guideIntegrationLink': 'Crear una integración de experimentos con Google Analytics',
-  'experiment.guideIntegrationHint':
-    'Consulta “In-house and custom experiments” (experimentos propios y personalizados).',
-  'experiment.guideFunnelLink': 'Exploración de embudos de GA4',
   'experiment.invalidPlatform': 'Elige una plataforma de analítica compatible.',
   'experiment.requiredId': 'Introduce un ID del experimento para analítica.',
   'experiment.requiredSelector': 'Elige un elemento CTA para analítica.',

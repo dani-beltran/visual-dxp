@@ -1,11 +1,14 @@
 import { CircleOff } from 'lucide-react';
-import type { ReactNode } from 'react';
+import { type ReactNode, useId } from 'react';
+import { createAnalyticsTools } from '../lib/analytics';
 import { createExperimentTools } from '../lib/experiment';
 import { formatBuilderError } from '../lib/i18n';
 import { useBuilderI18n } from '../lib/i18nContext';
-import type { StepConfig } from '../lib/types';
+import type { AnalyticsSettings as Settings, Workflow } from '../lib/types';
+import { AnalyticsGuide } from './AnalyticsGuide';
 import { InfoBox } from './InfoBox';
 import { Select } from './Select';
+import '../styles/analytics.css';
 
 // Locally bundled vector marks. PostHog path: Simple Icons (CC0).
 function PlatformIcon({ platform }: { platform: 'ga4' | 'posthog' }) {
@@ -22,22 +25,30 @@ function PlatformIcon({ platform }: { platform: 'ga4' | 'posthog' }) {
   );
 }
 
-export function ExperimentAnalyticsInspector({
-  config,
-  update,
-  id,
-  targetField,
+export function AnalyticsSettings({
+  workflow,
+  onChange,
 }: {
-  config: StepConfig;
-  update: (patch: Partial<StepConfig>) => void;
-  id: (name: string) => string;
-  targetField: ReactNode;
+  workflow: Workflow;
+  onChange: (settings: Settings) => void;
 }) {
   const { t } = useBuilderI18n();
-  const platform = config.experimentAnalytics ?? 'none';
+  const prefix = useId();
+  const id = (name: string) => `${prefix}-${name}`;
+  const legacy = workflow.nodes.find(
+    (node) => node.data.kind === 'experiment' && node.data.config.experimentAnalytics === 'ga4',
+  )?.data.config;
+  const config: Settings = workflow.analytics ?? {
+    provider: legacy ? 'ga4' : 'none',
+    delivery: legacy?.experimentDelivery ?? 'gtag',
+    measurementId: legacy?.experimentMeasurementId ?? '',
+  };
+  const platform = config.provider;
+  const update = (patch: Partial<Settings>) => onChange({ ...config, ...patch });
   let error: string | undefined;
   try {
-    createExperimentTools().validateAnalytics(config);
+    createExperimentTools().validateSettings(config);
+    createAnalyticsTools().validateIdentity(config);
   } catch (issue) {
     error = formatBuilderError(issue, t);
   }
@@ -49,8 +60,9 @@ export function ExperimentAnalyticsInspector({
     </div>
   );
   return (
-    <section className="dxp-experiment-analytics" aria-labelledby={id('analytics-heading')}>
-      <h3 id={id('analytics-heading')}>{t('experiment.analytics')}</h3>
+    <section className="dxp-analytics-settings dxp-inspector" aria-labelledby={id('heading')}>
+      <h2 id={id('heading')}>{t('builder.analytics')}</h2>
+      <p className="dxp-inspector-hint">{t('analytics.description')}</p>
       <fieldset className="dxp-analytics-platforms">
         <legend className="dxp-sr-only">{t('experiment.analytics')}</legend>
         {(['none', 'ga4', 'posthog'] as const).map((value) => (
@@ -65,7 +77,7 @@ export function ExperimentAnalyticsInspector({
               checked={platform === value}
               disabled={value === 'posthog'}
               onChange={() => {
-                if (value !== 'posthog') update({ experimentAnalytics: value });
+                if (value !== 'posthog') update({ provider: value });
               }}
             />
             {value === 'none' ? (
@@ -86,97 +98,69 @@ export function ExperimentAnalyticsInspector({
           </label>
         ))}
       </fieldset>
+      {platform === 'none' && <InfoBox>{t('analytics.setupSuggestion')}</InfoBox>}
       {platform === 'ga4' && (
         <>
-          {targetField}
           {field(
-            'experimentInteraction',
-            t('experiment.interaction'),
-            <Select
-              id={id('experimentInteraction')}
-              value={config.experimentInteraction ?? 'click'}
-              onChange={(event) =>
-                update({ experimentInteraction: event.target.value as 'click' | 'change' })
-              }
-            >
-              <option value="click">{t('experiment.click')} (click)</option>
-              <option value="change">{t('experiment.change')} (change)</option>
-            </Select>,
-            t(
-              config.experimentInteraction === 'change'
-                ? 'experiment.changeInteractionHint'
-                : 'experiment.clickInteractionHint',
-            ),
+            'workflowId',
+            t('analytics.workflowId'),
+            <input
+              id={id('workflowId')}
+              value={config.workflowId ?? workflow.name}
+              maxLength={100}
+              spellCheck={false}
+              onChange={(event) => update({ workflowId: event.target.value })}
+            />,
+            t('analytics.workflowIdHint'),
           )}
           {field(
-            'experimentDelivery',
+            'workflowVersion',
+            t('analytics.workflowVersion'),
+            <input
+              id={id('workflowVersion')}
+              value={config.workflowVersion ?? '1'}
+              maxLength={100}
+              spellCheck={false}
+              onChange={(event) => update({ workflowVersion: event.target.value })}
+            />,
+            t('analytics.workflowVersionHint'),
+          )}
+          <InfoBox>{t('analytics.lifecycleHint')}</InfoBox>
+          {field(
+            'delivery',
             t('experiment.delivery'),
             <Select
-              id={id('experimentDelivery')}
-              value={config.experimentDelivery ?? 'gtag'}
-              onChange={(event) =>
-                update({ experimentDelivery: event.target.value as 'gtag' | 'gtm' })
-              }
+              id={id('delivery')}
+              value={config.delivery ?? 'gtag'}
+              onChange={(event) => update({ delivery: event.target.value as 'gtag' | 'gtm' })}
             >
               <option value="gtag">{t('experiment.gtag')}</option>
               <option value="gtm">{t('experiment.gtm')}</option>
             </Select>,
-            t(config.experimentDelivery === 'gtm' ? 'experiment.gtmHint' : 'experiment.gtagHint'),
+            t(config.delivery === 'gtm' ? 'analytics.gtmHint' : 'experiment.gtagHint'),
           )}
-          {config.experimentDelivery !== 'gtm' &&
+          {config.delivery !== 'gtm' &&
             field(
-              'experimentMeasurementId',
+              'measurementId',
               t('experiment.measurementId'),
               <input
-                id={id('experimentMeasurementId')}
-                value={config.experimentMeasurementId ?? ''}
+                id={id('measurementId')}
+                value={config.measurementId ?? ''}
                 placeholder="G-XXXXXXXXXX"
                 spellCheck={false}
-                onChange={(event) => update({ experimentMeasurementId: event.target.value })}
+                onChange={(event) => update({ measurementId: event.target.value })}
               />,
               t('experiment.measurementIdHint'),
             )}
-          {error && (
-            <p className="dxp-field-error" role="alert">
-              {error}
-            </p>
-          )}
-          <InfoBox>{t('experiment.mapping')}</InfoBox>
-          <details className="dxp-analytics-guide">
-            <summary>{t('experiment.reporting')}</summary>
-            <ol>
-              {(
-                [
-                  'guideInstall',
-                  'guideId',
-                  'guideDimensions',
-                  'guideValues',
-                  'guideExplore',
-                  'guideDebug',
-                ] as const
-              ).map((key) => (
-                <li key={key}>{t(`experiment.${key}`)}</li>
-              ))}
-            </ol>
-            <p>{t('experiment.guideScope')}</p>
-            <a
-              href="https://developers.google.com/analytics/devguides/collection/ga4/integration"
-              target="_blank"
-              rel="noreferrer"
-            >
-              {t('experiment.guideIntegrationLink')}
-            </a>
-            <p>{t('experiment.guideIntegrationHint')}</p>
-            <a
-              href="https://support.google.com/analytics/answer/9327974?hl=en"
-              target="_blank"
-              rel="noreferrer"
-            >
-              {t('experiment.guideFunnelLink')}
-            </a>
-          </details>
+          <InfoBox>{t('experiment.privacyHint')}</InfoBox>
         </>
       )}
+      {error && (
+        <p className="dxp-field-error" role="alert">
+          {error}
+        </p>
+      )}
+      {platform === 'ga4' && <AnalyticsGuide />}
     </section>
   );
 }

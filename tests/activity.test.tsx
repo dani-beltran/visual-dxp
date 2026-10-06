@@ -165,7 +165,7 @@ describe('builder activity', () => {
     expect(tab('Canvas').getAttribute('aria-selected')).toBe('true');
     expect(
       [...host.querySelectorAll('[role="tab"]')].map((element) => element.textContent?.trim()),
-    ).toEqual(['Canvas', 'Activity']);
+    ).toEqual(['Canvas', 'Activity', 'Analytics']);
 
     await click(tab('Activity'));
     expect(tab('Activity').getAttribute('aria-selected')).toBe('true');
@@ -593,4 +593,47 @@ describe('connection names', () => {
     expect(host.querySelector('.dxp-inspector')).toBeNull();
     expect(onChange.mock.lastCall?.[0].edges.map((edge) => edge.id)).toEqual(['otherwise']);
   });
+});
+
+it('opens Analytics after Activity with keyboard navigation and records undoable shared settings', async () => {
+  const store = createActivityStore();
+  await renderBuilder({ activityStore: store });
+  await click(tab('Activity'));
+  await act(async () =>
+    tab('Activity').dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }),
+    ),
+  );
+  expect(tab('Analytics').getAttribute('aria-selected')).toBe('true');
+  expect(document.activeElement).toBe(tab('Analytics'));
+  await click(element<HTMLInputElement>('input[type="radio"][value="ga4"]'));
+  expect(builderApi!.getWorkflow().analytics).toEqual({
+    provider: 'ga4',
+    delivery: 'gtag',
+    measurementId: '',
+  });
+  await click(tab('Activity'));
+  expect(store.getSnapshot().some((entry) => entry.action === 'Updated analytics settings')).toBe(
+    true,
+  );
+  await click(historyButton('Undo'));
+  expect(builderApi!.getWorkflow().analytics).toBeUndefined();
+  await click(historyButton('Redo'));
+  expect(builderApi!.getWorkflow().analytics?.provider).toBe('ga4');
+});
+
+it('opens and focuses Analytics from the Experiment parameters info box', async () => {
+  const workflow = initialWorkflow();
+  workflow.nodes[0].data = {
+    kind: 'experiment',
+    label: 'Experiment',
+    config: { experimentSplit: 50 },
+  };
+  await renderBuilder({ initialWorkflow: workflow });
+  await click(element<HTMLElement>('[data-id="delay"]'));
+  const link = element<HTMLAnchorElement>('.dxp-inspector-note a');
+  expect(link.hash).toBe(`#${tab('Analytics').id}`);
+  await click(link);
+  expect(tab('Analytics').getAttribute('aria-selected')).toBe('true');
+  expect(document.activeElement).toBe(tab('Analytics'));
 });

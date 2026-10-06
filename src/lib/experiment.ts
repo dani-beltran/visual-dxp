@@ -1,4 +1,4 @@
-import type { StepConfig } from './types';
+import type { AnalyticsSettings, StepConfig } from './types';
 
 /** Self-contained so the same implementation can be embedded in exported scripts. */
 export function createExperimentTools() {
@@ -66,5 +66,35 @@ export function createExperimentTools() {
       );
   }
 
-  return { validate, validateAnalytics, assign };
+  function resolveAnalytics(config: StepConfig, settings?: AnalyticsSettings): StepConfig {
+    if (settings === undefined) return config;
+    return {
+      ...config,
+      experimentAnalytics:
+        settings?.provider === 'ga4' && config.experimentAnalytics === 'ga4' ? 'ga4' : 'none',
+      experimentDelivery: settings?.delivery ?? 'gtag',
+      experimentMeasurementId: settings?.measurementId,
+    };
+  }
+
+  function validateSettings(settings: AnalyticsSettings): void {
+    if (
+      !settings ||
+      typeof settings !== 'object' ||
+      Array.isArray(settings) ||
+      !['none', 'ga4'].includes(settings.provider)
+    )
+      throw Object.assign(new Error('Choose a supported analytics platform.'), {
+        messageKey: 'experiment.invalidPlatform',
+      });
+    validateAnalytics({
+      experimentAnalytics: settings.provider,
+      experimentKey: 'settings',
+      experimentSelector: 'body',
+      experimentDelivery: settings.delivery,
+      experimentMeasurementId: settings?.measurementId,
+    });
+  }
+
+  return { validate, validateAnalytics, assign, resolveAnalytics, validateSettings };
 }

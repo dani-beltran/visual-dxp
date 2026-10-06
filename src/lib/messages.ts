@@ -2,57 +2,161 @@ import { aiEditFailures } from './aiErrors';
 
 /** English defaults and the public translation contract. Keys remain stable when copy changes. */
 export const englishMessages = {
+  'analytics.payload': 'Payload (JSON)',
+  'analytics.payloadHint':
+    'Optional JSON object of event parameters. Do not include personal information.',
+  'analytics.invalidPayload': 'Enter a valid JSON object for the event payload.',
+  'analytics.invalidPayloadKey':
+    'Payload parameter names must start with a letter, use up to 40 letters, numbers or underscores, and must not override reserved analytics fields.',
+  'analytics.setupSuggestion':
+    'Set up an analytics integration to understand how visitors progress through your workflows, compare experiments, and track milestones. Select Google Analytics above to configure the integration and view the setup guide.',
+  'analytics.guide.title': 'Guide',
+  'analytics.guide.intro':
+    'Connect Visual DXP to Google Analytics 4 (GA4), then turn workflow events into useful reports.',
+  'analytics.guide.conceptsTitle': '1. Understand what is being measured',
+  'analytics.guide.concepts':
+    'Visual DXP runs your workflow and emits events. The website’s Google tag or Google Tag Manager (GTM) delivers them to GA4. An event records something that happened; parameters describe it. A custom dimension makes a text parameter available in reports. Sending an event and configuring a report are separate steps.',
+  'analytics.guide.identifiers':
+    'The G- measurement ID identifies a GA4 web stream. Workflow ID identifies your journey; reporting version distinguishes revisions. Experiment ID identifies an A/B assignment and is separate from the measurement ID. Set stable IDs before publishing. If unset, workflow ID uses the workflow name, reporting version uses 1, and Experiment ID uses the node ID.',
+  'analytics.guide.setupTitle': '2. Connect the website and choose one delivery method',
+  'analytics.guide.prerequisites':
+    'Use a GA4 property with a web data stream and a working Google tag on the target website. You need access to the website or its GTM container, and GA4 Editor access to configure custom definitions. Visual DXP does not install a tag or create a GA4 property.',
+  'analytics.guide.configure':
+    'Select Google Analytics above, set Workflow ID and Reporting version, and choose Google tag or Google Tag Manager. Use one route for these events to avoid duplicate collection. No tracking disables the shared integration.',
+  'analytics.guide.milestones':
+    'Place Track event nodes after actions or conditions that confirm meaningful milestones. Choose a static name such as offer_accepted: 1–40 ASCII letters, numbers, or underscores, starting with a letter. Names are case sensitive; reserved names and prefixes such as dxp_ are rejected. Experiment assignments are tracked automatically.',
+  'analytics.guide.deploy':
+    'Export the workflow and load its script on the configured target website. The script must match its target URL. Test a real trigger on that page; the editor preview only simulates analytics.',
+  'analytics.guide.tagSetup':
+    'Choose Google tag when the page exposes window.gtag. Visual DXP calls the existing event API. Leave the optional measurement ID empty to use existing destinations, or enter the intended G- stream ID to set send_to. This field routes events; it does not install or initialize Google Analytics. Load the existing tag before the workflow can fire.',
+  'analytics.guide.gtmVariables':
+    'In GTM, create Data Layer Variables for the parameters you will forward, using their exact names below. For example, name a variable DLV - workflow_id and set its Data Layer Variable Name to workflow_id.',
+  'analytics.guide.gtmTrigger':
+    'Create a separate Custom Event trigger for each of the three dxp_workflow_* event names and each milestone name. Use the exact name, including capitalization. For example, the start-event trigger matches dxp_workflow_started.',
+  'analytics.guide.gtmTag':
+    'Create a Google Analytics: GA4 Event tag for each event, select the intended measurement ID, and use the exact event name. Map its event parameters to your Data Layer Variables, then attach the matching Custom Event trigger. A dataLayer push alone does not send anything to GA4.',
+  'analytics.guide.gtmOptional':
+    'Only map parameters that belong to that event. For experiment-only fields on dxp_workflow_step, use a separate tag/trigger restricted to step_type = experiment and exclude those steps from the general step tag. This avoids duplicate events and stale optional values retained in the data layer.',
+  'analytics.guide.gtmPublish':
+    'Use GTM Preview / Tag Assistant to verify the event and tag firing, then submit and publish the container changes. Configure the GA4 destination in GTM; Visual DXP’s optional measurement ID is only used by Google tag delivery.',
+  'analytics.guide.gtmExample':
+    'Example exact event name for a Custom Event trigger. Create matching triggers for the other lifecycle and milestone events.',
+  'analytics.guide.eventsTitle': '3. Know the events and their parameters',
+  'analytics.guide.eventsCaption': 'Events emitted by the shared integration',
+  'analytics.guide.event': 'Event',
+  'analytics.guide.meaning': 'When it fires and what it means',
+  'analytics.guide.started': 'Once for each trigger invocation, before executing its path.',
+  'analytics.guide.step':
+    'After a successful action or condition. Includes step_id, step_type and step_index. Conditions and experiments add branch; experiments also add experiment_id and variant_id (a or b).',
+  'analytics.guide.completed':
+    'After the run finishes without execution errors or cancellation. Adds step_count. This means the workflow ran successfully, not that a visitor converted. Failed HTTP requests suppress completion even if an error path continues.',
+  'analytics.guide.custom':
+    'Example name from a Track event node. Fires each time that node executes, with step_id and step_type. Define your own milestone names; only incoming values explicitly mapped in Payload are included.',
+  'analytics.guide.commonParameters':
+    'Every event above includes workflow_id, workflow_version, trigger_id and run_id. The run ID connects events from one trigger invocation, including overlapping runs. Node IDs are stable step identifiers, not their editable display labels. Find the emitted IDs in preview logs or DebugView.',
+  'analytics.guide.repetition':
+    'Triggers, notes and frames do not emit step events. Loop bodies and milestone nodes report every execution; the Loop step is reported after its body iterations. A Track event node emits both its custom event and the normal workflow step event.',
+  'analytics.guide.verifyTitle': '4. Verify collection before building reports',
+  'analytics.guide.preview':
+    'Run the editor preview and check the simulated event names and parameters in its execution log. Preview sends no live analytics events.',
+  'analytics.guide.liveTest':
+    'Test the exported script on the target website with GTM Preview / Tag Assistant or GA4 debug mode enabled through your existing tag. Visual DXP does not enable debug_mode automatically. Open GA4 Admin → DebugView and select your test device.',
+  'analytics.guide.inspect':
+    'Fire the trigger, follow the intended path, and inspect the event order, workflow ID, step IDs and assigned variant. Verify custom milestones separately. “Queued” in a Visual DXP log means the browser API accepted the event, not that GA4 received it.',
+  'analytics.guide.troubleshoot':
+    'If events are missing, check the target URL, selected delivery method, tag availability, destination ID, published GTM triggers and parameter mappings. Consent settings, blockers and network failures can prevent collection. Missing analytics never stops workflow actions; do not disable the website’s consent controls to test.',
+  'analytics.guide.dimensionsTitle': '5. Make parameters available in GA4 reports',
+  'analytics.guide.dimensionsSetup':
+    'In GA4 Admin → Custom definitions → Create custom dimension, give the dimension a readable name, choose Event scope, and enter the exact event parameter name. Start with the fields needed for your report; creating a dimension does not make Visual DXP send new data.',
+  'analytics.guide.workflowDimensions':
+    'Filter results to one workflow and one reporting revision.',
+  'analytics.guide.stepDimensions':
+    'Identify the action, its node type, and the trigger that started the run.',
+  'analytics.guide.experimentDimensions':
+    'Compare experiment assignments and selected paths. These fields are only present on the applicable workflow step events.',
+  'analytics.guide.numericParameters':
+    'Numeric order and successful-step count. If you need aggregated reporting, configure appropriate event-scoped custom metrics instead of text dimensions.',
+  'analytics.guide.runParameter':
+    'Unique per invocation. Avoid registering it as a custom dimension because of its high cardinality; keep it for raw event analysis.',
+  'analytics.guide.dimensionValues':
+    'Register parameter names, not every possible value: IDs and a/b arrive automatically. Allow 24–48 hours for newly configured custom dimensions to become available in reporting. Use DebugView for immediate collection checks.',
+  'analytics.guide.reportingTitle': '6. Build a funnel and compare experiments',
+  'analytics.guide.funnel':
+    'In GA4 Explore → Funnel exploration, define steps by event name. Filter to workflow_id and workflow_version. Use custom milestone names, or dxp_workflow_step with a step_id condition. The example below requires you to add both milestone nodes to the appropriate paths.',
+  'analytics.guide.funnelRules':
+    'Use a closed funnel when users must start at the first step; use an open funnel when entry at later steps is meaningful. Prefer indirectly followed steps when other workflow events occur in between. Set a suitable time window. GA4 funnels count users, not exact runtime executions; use raw exports grouped by run_id for per-run analysis.',
+  'analytics.guide.experiments':
+    'An Experiment step sends experiment_id and variant_id automatically. Build comparison segments from its assignment event, then compare downstream milestones for A and B. Custom milestone events do not inherit variant_id; do not assume a simple variant breakdown on those events will work. Keep the Experiment ID stable during a test; changing it starts fresh browser assignments.',
+  'analytics.guide.scope':
+    'Visual DXP executes the experiment and GA4 reports the observations. This does not create a native GA experiment or automatically determine statistical significance. Google’s experiment integration guide covers “In-house and custom experiments”. A milestone should confirm a real outcome; workflow completion alone is not a conversion.',
+  'analytics.guide.privacyTitle': '7. Data and privacy',
+  'analytics.guide.privacy':
+    'Visual DXP sends built-in metadata and custom values explicitly mapped in Payload. Never map personal information or secrets. It reuses the website’s analytics and consent configuration. Use descriptive reporting IDs and milestone names, without personal information.',
+  'analytics.guide.tagLink': 'Google guide: send GA4 events',
+  'analytics.guide.gtmLink': 'Google guide: configure GA4 event tags',
+  'analytics.guide.dimensionsLink': 'Google guide: event-scoped custom dimensions',
+  'analytics.guide.debugLink': 'Google guide: DebugView',
+  'analytics.guide.funnelLink': 'Google guide: funnel exploration',
+  'analytics.guide.experimentLink': 'Google guide: experiment integrations',
+  'analytics.gtmHint':
+    'Pushes workflow, milestone, and experiment events to the existing dataLayer. Configure GTM custom event triggers, data layer variables, and GA4 event tags for each event name you want to collect.',
+  'nodes.track-event.label': 'Track event',
+  'nodes.track-event.description':
+    'Sends a custom event through the workflow’s analytics integration. Use it to mark a milestone on a chosen path.',
+  'analytics.chooseEventName': 'Choose an event name',
+  'analytics.eventName': 'Event name',
+  'analytics.eventNameHint':
+    'Use 1–40 letters, numbers, or underscores, starting with a letter. For example: offer_accepted. Names are case sensitive.',
+  'analytics.invalidEventName':
+    'Use an event name of 1–40 letters, numbers, or underscores, starting with a letter.',
+  'analytics.reservedEventName':
+    'Choose a custom event name that is not reserved by Google Analytics or Visual DXP.',
+  'analytics.invalidIdentity': 'Workflow ID and reporting version must contain 1–100 characters.',
+  'analytics.outputHint':
+    'Continues to the next step, even if analytics is unavailable.',
+  'analytics.milestoneHint':
+    'This node requires an analytics integration to send events. Configure an integration in the Analytics tab.',
+  'analytics.customDisabledHint':
+    'Enable Google Analytics in the Analytics tab to send custom events.',
+  'analytics.workflowId': 'Workflow ID',
+  'analytics.workflowIdHint':
+    'Stable reporting ID sent as workflow_id. If not configured, the workflow name is used. Keep this ID unchanged when renaming the workflow.',
+  'analytics.workflowVersion': 'Reporting version',
+  'analytics.workflowVersionHint':
+    'Sent as workflow_version. Change it when revising your funnel so results can be compared by version.',
+  'analytics.lifecycleHint':
+    'Automatically sends dxp_workflow_started when a trigger fires, dxp_workflow_step after each successful action or condition, and dxp_workflow_completed when the run finishes without execution errors or cancellation. Loops report each executed iteration; completion does not mean a visitor converted.',
+  'analytics.funnelGuide': 'Set up workflow funnel reporting',
+  'analytics.funnelGuideBody':
+    'Register event-scoped custom dimensions for workflow_id, workflow_version, step_id, step_type, trigger_id, and branch as needed. In GA4 Explorations, build a funnel from dxp_workflow_started through dxp_workflow_step filtered by step_id, or use your custom milestone events, to dxp_workflow_completed. In GTM, forward all three lifecycle events and your custom event names using custom event triggers, data layer variables, and GA4 event tags. Verify with DebugView.',
+  'analytics.runIdHint':
+    'run_id groups events from one trigger invocation, including overlapping runs. Avoid registering it as a custom dimension because each run has a unique value. GA4 funnels count users; use raw event exports for exact per-run analysis.',
+  'builder.analytics': 'Analytics',
+  'analytics.description':
+    'Configure workflow progress, experiment assignments, and custom milestone events here.',
+  'analytics.openSettings': 'Open Analytics settings',
+  'activity.analyticsUpdated': 'Updated analytics settings',
   'errors.ai.invalid_workflow_edit': aiEditFailures.invalid_workflow_edit,
   'errors.ai.repeated_tool_loop': aiEditFailures.repeated_tool_loop,
   'nodes.experiment.label': 'Experiment',
   'nodes.experiment.description':
     'Splits visitors between variants A and B. Use it to test two experiences with a configurable traffic split and consistent browser assignments.',
+  'experiment.sharedAnalyticsHint':
+    'This experiment is tracked automatically by the analytics platform configured in the Analytics tab. Tracking is off when no platform is enabled.',
   'experiment.analytics': 'Analytics',
   'experiment.none': 'No tracking',
   'experiment.premium': 'Premium',
   'experiment.id': 'Experiment ID',
-  'experiment.idHint':
-    'Required. Identifies this experiment in analytics. This is not the GA measurement ID.',
-  'experiment.cta': 'CTA element',
-  'experiment.interaction': 'CTA interaction',
-  'experiment.click': 'Click',
-  'experiment.change': 'Field value committed',
-  'experiment.clickInteractionHint': 'Click tracks activation, including nested elements.',
-  'experiment.changeInteractionHint':
-    'Change tracks committed changes on inputs, selects, and checkboxes.',
-  'experiment.interactionHint':
-    'Click tracks activation, including nested elements. Change tracks committed changes on inputs, selects, and checkboxes.',
-  'experiment.mapping':
-    'Google Analytics uses the Experiment ID configured above as experiment_id. Variants are mapped to variant_id: Variant A → a; Variant B → b. These dimensions are sent with experiment_view and experiment_cta events.',
   'experiment.delivery': 'Event delivery',
   'experiment.gtag': 'Google tag',
   'experiment.gtm': 'Google Tag Manager',
   'experiment.gtagHint':
     'Calls the website’s existing window.gtag. Leave the measurement ID empty to use its existing destinations.',
-  'experiment.gtmHint':
-    'Pushes experiment_view and experiment_cta with experiment_id, variant_id, and cta_type (CTA only) to the existing window.dataLayer. The website owner must configure GTM custom event triggers, data layer variables for these parameters, and GA4 event tags to forward them.',
   'experiment.measurementId': 'GA4 measurement ID (optional)',
   'experiment.measurementIdHint':
     'When the website has multiple destinations, enter an ID to target a particular GA4 stream.',
   'experiment.privacyHint':
     'Uses only the selected delivery method. Visual DXP does not install another tag or change website consent. Queued events are not confirmed delivery; blocked or missing analytics will not stop the workflow. Editor previews simulate events in the execution log.',
-  'experiment.reporting': 'Set up reporting in Google Analytics',
-  'experiment.guideInstall':
-    'Install or reuse the website’s GA4 tag. For Google Tag Manager, configure forwarding as described above.',
-  'experiment.guideId': 'Choose an Experiment ID in Visual DXP, such as homepage-cta-v1.',
-  'experiment.guideDimensions':
-    'In GA4 Admin → Custom definitions, create event-scoped custom dimensions for experiment_id, variant_id, and cta_type.',
-  'experiment.guideValues':
-    'Values such as homepage-cta-v1, a, and b arrive automatically with events. You do not manually register each value.',
-  'experiment.guideExplore':
-    'In Explorations, filter by experiment_id and compare the experiment_view → experiment_cta funnel by variant_id.',
-  'experiment.guideDebug':
-    'Verify both events and their parameters in DebugView using your website’s GA4 debug mode or GTM Preview.',
-  'experiment.guideScope':
-    'Visual DXP runs the experiment; GA4 reports its results. This does not create a native Google Analytics experiment or automatically determine statistical significance.',
-  'experiment.guideIntegrationLink': 'Create an experiment integration with Google Analytics',
-  'experiment.guideIntegrationHint': 'Read “In-house and custom experiments”.',
-  'experiment.guideFunnelLink': 'GA4 funnel exploration',
   'experiment.invalidPlatform': 'Choose a supported analytics platform.',
   'experiment.requiredId': 'Enter an Experiment ID for analytics.',
   'experiment.requiredSelector': 'Choose a CTA element for analytics.',

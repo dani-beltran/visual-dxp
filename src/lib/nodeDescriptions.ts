@@ -8,6 +8,8 @@ export const nodeDescriptions = {
     'Selects a field from incoming data and transforms its value. The result is passed to downstream steps.',
   http: 'Sends an HTTP request to an API. Use it to call an external service.',
   dom: 'Updates matching elements on the page. Use it to change content, appearance, or visibility.',
+  'track-event':
+    'Sends a custom event through the workflow’s analytics integration. Use it to mark a milestone on a chosen path.',
   cookie: 'Saves a cookie on this website. Use it to remember a value for later steps or visits.',
   delay: 'Pauses the workflow before continuing. Use it to space out connected steps.',
   fork: 'Chooses a path based on a condition. Use it to tailor the workflow to the visitor or page.',

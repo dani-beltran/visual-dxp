@@ -14,6 +14,7 @@ import {
   X,
 } from 'lucide-react';
 import { type ReactNode, useEffect, useId, useState } from 'react';
+import { createAnalyticsTools } from '../lib/analytics';
 import { getCatalog } from '../lib/catalog';
 import { validateCookie } from '../lib/cookies';
 import { dataTools } from '../lib/data';
@@ -23,7 +24,6 @@ import { useBuilderI18n } from '../lib/i18nContext';
 import { elementTriggerEvents, getTriggerOptions } from '../lib/triggers';
 import type { ConditionType, NodeKind, StepConfig, StepData, WorkflowNode } from '../lib/types';
 import { DataTransformInspector } from './DataTransformInspector';
-import { ExperimentAnalyticsInspector } from './ExperimentAnalyticsInspector';
 import { InfoBox } from './InfoBox';
 import { NoteControls } from './NoteControls';
 import { NoteTextEditor } from './NoteTextEditor';
@@ -34,6 +34,9 @@ import '../styles/inspector.css';
 interface NodeInspectorProps {
   node: WorkflowNode;
   forwardsData?: boolean;
+  analytics?: import('../lib/types').AnalyticsSettings;
+  onOpenAnalytics?: () => void;
+  analyticsTabId?: string;
   onChange: (patch: Partial<StepData>) => void;
   onClose: () => void;
   onPickElement: () => void;
@@ -109,6 +112,9 @@ function NumberInput({
 export function NodeInspector({
   node,
   forwardsData = false,
+  analytics,
+  onOpenAnalytics,
+  analyticsTabId,
   onChange,
   onClose,
   onPickElement,
@@ -119,6 +125,7 @@ export function NodeInspector({
   const { t } = useBuilderI18n();
   const catalog = getCatalog(t);
   const nextOutputDescriptions = {
+    'track-event': t('analytics.outputHint'),
     trigger: t('nodeInspector.runsWhenTheSelectedEventOccurs'),
     transform: t('transform.outputHint'),
     http: t('nodeInspector.passesResponseDataOrAnErrorObjectToTheNextNode'),
@@ -147,6 +154,10 @@ export function NodeInspector({
   try {
     if (node.data.kind === 'dom') dataTools.validateElementValue(config);
     if (node.data.kind === 'cookie') validateCookie(config);
+    if (node.data.kind === 'track-event') {
+      createAnalyticsTools().validateEventName(config.analyticsEventName);
+      createAnalyticsTools().validatePayload(config.analyticsPayload, dataTools);
+    }
     if (node.data.kind === 'fork' && conditionType === 'data') dataTools.validateCondition(config);
   } catch (error) {
     dataError = formatBuilderError(error, t);
@@ -822,6 +833,63 @@ export function NodeInspector({
           </>
         )}
 
+        {node.data.kind === 'track-event' && (
+          <>
+            <Field
+              label={t('analytics.eventName')}
+              htmlFor={id('analyticsEventName')}
+              hint={t('analytics.eventNameHint')}
+            >
+              <input
+                id={id('analyticsEventName')}
+                value={config.analyticsEventName ?? ''}
+                placeholder="offer_accepted"
+                spellCheck={false}
+                maxLength={40}
+                onChange={(event) => update({ analyticsEventName: event.target.value })}
+              />
+            </Field>
+            <Field
+              label={t('analytics.payload')}
+              htmlFor={id('analyticsPayload')}
+              hint={t('analytics.payloadHint')}
+            >
+              <textarea
+                id={id('analyticsPayload')}
+                className="dxp-inspector-code"
+                rows={5}
+                value={config.analyticsPayload ?? ''}
+                placeholder={'{ "plan": "{{plan}}", "value": {{price}} }'}
+                onChange={(event) => update({ analyticsPayload: event.target.value })}
+                spellCheck={false}
+              />
+            </Field>
+            {dataError && (
+              <p className="dxp-field-error" role="alert">
+                {dataError}
+              </p>
+            )}
+            <InfoBox>
+              {t('analytics.milestoneHint')}{' '}
+              {onOpenAnalytics && (
+                <a
+                  className="dxp-inspector-settings-link"
+                  href={`#${analyticsTabId ?? 'analytics'}`}
+                  onClick={(event) => {
+                    event.preventDefault();
+                    onOpenAnalytics();
+                  }}
+                >
+                  {t('analytics.openSettings')}
+                </a>
+              )}
+            </InfoBox>
+            {analytics?.provider !== 'ga4' && (
+              <p className="dxp-inspector-hint">{t('analytics.customDisabledHint')}</p>
+            )}
+          </>
+        )}
+
         {node.data.kind === 'experiment' && (
           <>
             <Field
@@ -831,7 +899,6 @@ export function NodeInspector({
             >
               <input
                 id={id('experimentKey')}
-                required={config.experimentAnalytics === 'ga4'}
                 value={config.experimentKey ?? ''}
                 placeholder="homepage-cta-v1"
                 spellCheck={false}
@@ -858,12 +925,21 @@ export function NodeInspector({
                 b: 100 - (config.experimentSplit ?? 50),
               })}
             </p>
-            <ExperimentAnalyticsInspector
-              config={config}
-              update={update}
-              id={id}
-              targetField={targetField(t('experiment.cta'), false, 'experimentSelector')}
-            />
+            <InfoBox>
+              {t('experiment.sharedAnalyticsHint')}{' '}
+              {onOpenAnalytics && (
+                <a
+                  className="dxp-inspector-settings-link"
+                  href={`#${analyticsTabId ?? 'analytics'}`}
+                  onClick={(event) => {
+                    event.preventDefault();
+                    onOpenAnalytics();
+                  }}
+                >
+                  {t('analytics.openSettings')}
+                </a>
+              )}
+            </InfoBox>
           </>
         )}
         {node.data.kind === 'loop' && (

@@ -49,6 +49,12 @@ export const catalog: {
     config: { iterations: 3 },
   },
   {
+    kind: 'track-event',
+    label: 'Track event',
+    description: nodeDescriptions['track-event'],
+    config: { analyticsEventName: 'milestone_reached' },
+  },
+  {
     kind: 'experiment',
     label: 'Experiment',
     description: nodeDescriptions.experiment,

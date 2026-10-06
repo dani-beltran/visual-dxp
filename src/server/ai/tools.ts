@@ -15,6 +15,18 @@ const text = z.string().max(20000);
 const id = z.string().min(1).max(200);
 const position = z.object({ x: z.number().finite(), y: z.number().finite() });
 const config = z.object({
+  analyticsPayload: text
+    .describe(
+      'Track event: optional JSON object of GA4 event parameters. Supports incoming-data variables, e.g. {"plan":"{{plan}}","value":{{price}}}.',
+    )
+    .optional(),
+  analyticsEventName: z
+    .string()
+    .max(40)
+    .describe(
+      'Track event: static GA4 custom event name, starting with a letter; letters, numbers, underscores only. No reserved names or dxp_ prefix.',
+    )
+    .optional(),
   dataPath: text
     .describe(
       'Data Transform: nested path such as user.name or items[0].price; empty selects the whole input.',
@@ -413,6 +425,7 @@ export function createWorkflowTools(
             'cookie',
             'delay',
             'experiment',
+            'track-event',
             'fork',
             'loop',
             'popover',

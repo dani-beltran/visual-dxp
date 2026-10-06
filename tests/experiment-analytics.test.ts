@@ -504,3 +504,63 @@ it('preserves editable incomplete GA4 configurations at import and assistant bou
       }).workflow.nodes[1].data.config,
     ).toEqual({ experimentAnalytics: 'ga4' });
 });
+
+it('uses shared delivery and measurement settings in the runtime and exported script', async () => {
+  for (const exported of [false, true]) {
+    const graph = workflow({
+      ...config,
+      experimentDelivery: 'gtm',
+      experimentMeasurementId: 'G-OLD',
+    });
+    graph.analytics = { provider: 'ga4', delivery: 'gtag', measurementId: 'G-SHARED' };
+    page.gtag = vi.fn();
+    page.dataLayer = [];
+    if (exported) new Function(exportWorkflow(graph))();
+    const runtime = exported ? page.visualDXP : createRuntime(graph);
+    if (!runtime) throw new Error('Exported runtime was not created');
+    runtimes.push(runtime);
+    await runtime.run('start');
+    await settle();
+    expect(page.gtag).toHaveBeenCalledWith('event', 'experiment_view', {
+      experiment_id: 'homepage-cta-v1',
+      variant_id: 'a',
+      send_to: 'G-SHARED',
+    });
+    expect(page.dataLayer).toEqual([]);
+    runtime.destroy();
+  }
+});
+
+it('disables legacy experiment tracking globally without stopping workflow actions', async () => {
+  const graph = workflow();
+  graph.analytics = { provider: 'none' };
+  page.gtag = vi.fn();
+  const runtime = createRuntime(graph);
+  runtimes.push(runtime);
+  await runtime.run('start');
+  await settle();
+  expect(document.querySelector('.cta')).not.toBeNull();
+  expect(page.gtag).not.toHaveBeenCalled();
+});
+
+it('preserves shared analytics in JSON and both AI parsers and validates it before export', () => {
+  const graph = workflow();
+  graph.analytics = { provider: 'ga4', delivery: 'gtag', measurementId: 'G-SHARED' };
+  expect(isWorkflow(JSON.parse(JSON.stringify(graph)))).toBe(true);
+  for (const parse of [parseAIChatRequest, serverParse]) {
+    const parsed = parse({
+      workflow: graph,
+      selectedNodeIds: [],
+      messages: [{ role: 'user', content: 'Update' }],
+    });
+    expect(parsed.workflow.analytics).toEqual(graph.analytics);
+  }
+  graph.analytics.measurementId = 'invalid';
+  expect(validateWorkflow(graph).some((issue) => issue.message.includes('measurement ID'))).toBe(
+    true,
+  );
+  expect(serverValidate(graph).some((issue) => issue.message.includes('measurement ID'))).toBe(
+    true,
+  );
+  expect(isWorkflow({ ...graph, analytics: null })).toBe(false);
+});

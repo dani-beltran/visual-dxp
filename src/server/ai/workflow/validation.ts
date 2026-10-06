@@ -1,3 +1,4 @@
+import { createAnalyticsTools } from '../../../lib/analytics';
 import { dataTransformTools } from '../../../lib/dataTransform';
 import { createExperimentTools } from '../../../lib/experiment';
 import { validateCookie } from './cookies';
@@ -58,6 +59,7 @@ export function validateWorkflow(workflow: Workflow): ValidationIssue[] {
     'cookie',
     'delay',
     'experiment',
+    'track-event',
     'fork',
     'loop',
     'popover',
@@ -68,6 +70,14 @@ export function validateWorkflow(workflow: Workflow): ValidationIssue[] {
   const nodeMap = new Map(workflow.nodes.map((node) => [node.id, node]));
   const add = (message: string, nodeId?: string) =>
     issues.push({ message, ...(nodeId ? { nodeId } : {}) });
+  if (workflow.analytics !== undefined) {
+    try {
+      createExperimentTools().validateSettings(workflow.analytics);
+      createAnalyticsTools().validateIdentity(workflow.analytics);
+    } catch (error) {
+      add((error as Error).message);
+    }
+  }
   const selector = (value: string | undefined, nodeId: string, message: string) => {
     if (!value?.trim()) {
       add(message, nodeId);
@@ -110,6 +120,8 @@ export function validateWorkflow(workflow: Workflow): ValidationIssue[] {
       'action',
       'value',
       'attribute',
+      'analyticsEventName',
+      'analyticsPayload',
       'experimentKey',
       'experimentAnalytics',
       'experimentId',
@@ -312,10 +324,20 @@ export function validateWorkflow(workflow: Workflow): ValidationIssue[] {
             add('Choose a supported condition type.', node.id);
         }
         break;
+      case 'track-event':
+        try {
+          createAnalyticsTools().validateEventName(config.analyticsEventName);
+          createAnalyticsTools().validatePayload(config.analyticsPayload, dataTools);
+        } catch (error) {
+          add((error as Error).message, node.id);
+        }
+        break;
       case 'experiment':
         try {
           createExperimentTools().validate(config);
-          createExperimentTools().validateAnalytics(config);
+          createExperimentTools().validateAnalytics(
+            createExperimentTools().resolveAnalytics(config, workflow.analytics),
+          );
         } catch (error) {
           add((error as Error).message, node.id);
         }
