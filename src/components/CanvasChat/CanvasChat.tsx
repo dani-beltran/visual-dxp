@@ -51,9 +51,12 @@ export function CanvasChat({
 }: CanvasChatProps) {
   const { t } = useBuilderI18n();
   const suggestions = [
-    t('canvasChat.addAWelcomePopoverAfterA2SecondDelay'),
-    t('canvasChat.explainThisWorkflow'),
-    t('canvasChat.changeTheSelectedStep'),
+    { prompt: t('canvasChat.addAWelcomePopoverAfterA2SecondDelay') },
+    { prompt: t('canvasChat.explainThisWorkflow') },
+    {
+      label: `${t('canvasChat.changeTheSelectedStep')}...`,
+      prompt: `${t('canvasChat.changeTheSelectedStep')} `,
+    },
   ];
   const [internalOpen, setInternalOpen] = useState(false);
   const open = controlledOpen ?? internalOpen;
@@ -327,14 +330,14 @@ export function CanvasChat({
                     {suggestions.map((suggestion) => (
                       <button
                         type="button"
-                        key={suggestion}
+                        key={suggestion.prompt}
                         disabled={!configured}
                         onClick={() => {
-                          setDraft(suggestion);
+                          setDraft(suggestion.prompt);
                           input.current?.focus();
                         }}
                       >
-                        {suggestion}
+                        {suggestion.label ?? suggestion.prompt}
                         <ArrowUp size={13} aria-hidden="true" />
                       </button>
                     ))}
