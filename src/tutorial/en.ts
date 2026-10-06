@@ -24,9 +24,6 @@ export const tutorialEnglish = {
     'A Digital Experience Platform (DXP) helps teams create, manage, and personalize experiences across digital channels. Visual DXP focuses on website experiences: you connect triggers and actions in a visual workflow to decide what visitors see and when.',
   'tutorial.intro.exercise':
     'You’ll build a workflow that shows a popover after a short delay, test it on the demo website, and discover tools to help you create more.',
-  'tutorial.intro.orientation':
-    'Build on the canvas, add steps from the node library at its top left, and select a node to open the settings inspector on the right. Exit at any time; your work stays on the canvas.',
-  'tutorial.learnMore': 'About DXP and the editor',
   'tutorial.website.title': 'Choose the demo website',
   'tutorial.website.body':
     'Workflows add experiences to a target website. Open the website control, leave its demo input empty, and save. The included /demo-site.html needs no credentials or installation.',

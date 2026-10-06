@@ -151,10 +151,6 @@ export function TutorialPanel({
                 <>
                   <p>{t('tutorial.intro.about')}</p>
                   <p>{t('tutorial.intro.exercise')}</p>
-                  <details>
-                    <summary>{t('tutorial.learnMore')}</summary>
-                    <p>{t('tutorial.intro.orientation')}</p>
-                  </details>
                 </>
               )}
               <p>

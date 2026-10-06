@@ -25,9 +25,6 @@ export const tutorialSpanish = {
     'Una plataforma de experiencia digital (DXP) ayuda a los equipos a crear, gestionar y personalizar experiencias en canales digitales. Visual DXP se centra en sitios web: conectas disparadores y acciones en un flujo visual para decidir qué ven los visitantes y cuándo.',
   'tutorial.intro.exercise':
     'Crearás un flujo que muestra una ventana emergente tras una breve espera, lo probarás en el sitio de demostración y descubrirás herramientas para crear más.',
-  'tutorial.intro.orientation':
-    'Construye en el lienzo, añade pasos desde la biblioteca de nodos de arriba a la izquierda y selecciona un nodo para abrir sus ajustes a la derecha. Puedes salir en cualquier momento; tu trabajo se conserva.',
-  'tutorial.learnMore': 'Acerca de DXP y el editor',
   'tutorial.website.title': 'Elige el sitio de demostración',
   'tutorial.website.body':
     'Los flujos añaden experiencias a un sitio web de destino. Abre el control del sitio, deja vacío el campo para usar la demostración y guarda. /demo-site.html no necesita credenciales ni instalación.',
