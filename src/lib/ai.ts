@@ -252,6 +252,14 @@ function config(value: unknown, complete = false): StepConfig {
       });
     output[key] = input[key];
   }
+  if (input.conditionWeekdays !== undefined) {
+    if (
+      !Array.isArray(input.conditionWeekdays) ||
+      input.conditionWeekdays.some((day) => !Number.isInteger(day) || day < 0 || day > 6)
+    )
+      throw new Error('Weekdays must be an array of integers from 0 (Sunday) to 6 (Saturday).');
+    output.conditionWeekdays = [...input.conditionWeekdays];
+  }
   if (input.transformations !== undefined) {
     dataTransformTools.validate(
       { transformations: input.transformations as DataTransformation[] },

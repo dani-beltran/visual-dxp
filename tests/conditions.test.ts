@@ -71,6 +71,17 @@ afterEach(() => {
 });
 
 const cases: [string, StepConfig, boolean][] = [
+  ['selected weekday', { conditionType: 'weekdays', conditionWeekdays: [1, 2, 3] }, true],
+  ['unselected weekday', { conditionType: 'weekdays', conditionWeekdays: [1, 6] }, false],
+  [
+    'UTC weekday',
+    {
+      conditionType: 'weekdays',
+      conditionWeekdays: [new Date(2026, 8, 22, 12).getUTCDay()],
+      conditionTimeZone: 'utc',
+    },
+    true,
+  ],
   [
     'explicit local date range',
     {
@@ -578,6 +589,13 @@ describe('condition persistence and validation', () => {
   });
 
   it.each([
+    { conditionType: 'weekdays' },
+    { conditionType: 'weekdays', conditionWeekdays: [] },
+    { conditionType: 'weekdays', conditionWeekdays: [7] },
+    { conditionType: 'weekdays', conditionWeekdays: [-1] },
+    { conditionType: 'weekdays', conditionWeekdays: [1.5] },
+    { conditionType: 'weekdays', conditionWeekdays: 'Monday' },
+    { conditionType: 'weekdays', conditionWeekdays: [1], conditionTimeZone: 'invalid' },
     { conditionType: 'unknown', conditionValue: 'value' },
     { conditionType: 'selector', condition: '' },
     { conditionType: 'device', conditionValue: 'tablet' },
@@ -610,4 +628,20 @@ describe('condition persistence and validation', () => {
   ])('rejects non-string %s on import', (field) => {
     expect(isWorkflow(graph({ [field]: 42 }))).toBe(false);
   });
+});
+
+it.each([0, 1, 2, 3, 4, 5, 6])('checks weekday %s using the configured clock', async (day) => {
+  vi.spyOn(Date.prototype, 'getDay').mockReturnValue(day);
+  vi.spyOn(Date.prototype, 'getUTCDay').mockReturnValue((day + 1) % 7);
+  expect(await run({ conditionType: 'weekdays', conditionWeekdays: [day] })).toBe('yes');
+  expect(
+    await run({ conditionType: 'weekdays', conditionWeekdays: [day], conditionTimeZone: 'utc' }),
+  ).toBe('no');
+  expect(
+    await run({
+      conditionType: 'weekdays',
+      conditionWeekdays: [(day + 1) % 7],
+      conditionTimeZone: 'utc',
+    }),
+  ).toBe('yes');
 });

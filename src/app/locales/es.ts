@@ -471,6 +471,18 @@ export const spanishMessages = {
   'nodeInspector.userLanguage': 'Idioma del usuario',
   'nodeInspector.referrerDomain': 'Dominio de referencia',
   'nodeInspector.withinDateRange': 'Dentro del intervalo de fechas',
+  'nodeInspector.weekdays': 'Días de la semana',
+  'nodeInspector.weekdaysHelp':
+    'Coincide con cualquiera de los días seleccionados al evaluar la condición. Selecciona al menos un día.',
+  'weekday.monday': 'Lunes',
+  'weekday.tuesday': 'Martes',
+  'weekday.wednesday': 'Miércoles',
+  'weekday.thursday': 'Jueves',
+  'weekday.friday': 'Viernes',
+  'weekday.saturday': 'Sábado',
+  'weekday.sunday': 'Domingo',
+  'summary.weekdays': ({ days, zone }: { days: string; zone: string }) =>
+    `${days} · ${zone === 'utc' ? 'UTC' : 'Hora local del visitante'}`,
   'nodeInspector.timeOfDay': 'Hora del día',
   'nodeInspector.urlSearchParameter': 'Parámetro de búsqueda de la URL',
   'nodeInspector.cookies': 'Cookies',

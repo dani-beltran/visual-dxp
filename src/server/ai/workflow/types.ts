@@ -30,6 +30,7 @@ export type ConditionType =
   | 'referrer'
   | 'date-range'
   | 'time-of-day'
+  | 'weekdays'
   | 'query-param'
   | 'cookie';
 export type TriggerEvent =
@@ -91,6 +92,8 @@ export interface StepConfig extends DataTransformConfig {
   conditionValue?: string;
   /** Inclusive start date in YYYY-MM-DD format, using conditionTimeZone. */
   conditionStartDate?: string;
+  /** Selected days: 0 is Sunday, 1 is Monday, through 6 for Saturday. */
+  conditionWeekdays?: number[];
   /** Inclusive end date in YYYY-MM-DD format, using conditionTimeZone. */
   conditionEndDate?: string;
   /** Inclusive start minute in 24-hour HH:MM format, using conditionTimeZone. */

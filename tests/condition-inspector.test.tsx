@@ -74,7 +74,7 @@ async function change(label: string, value: string) {
 it('edits each condition type with the corresponding fields and preserves legacy selectors', async () => {
   expect(field('Condition type').value).toBe('selector');
   expect(field('Element exists').value).toBe('#legacy');
-  expect([...field('Condition type').querySelectorAll('option')]).toHaveLength(9);
+  expect([...field('Condition type').querySelectorAll('option')]).toHaveLength(10);
   await change('Condition type', 'device');
   expect(field('Device is').value).toBe('desktop');
   await change('Device is', 'mobile');
@@ -328,4 +328,29 @@ it('edits and validates templated content without a toggle or variable explanati
   await change('New text', 'Static again');
   expect(host.querySelector('[role="alert"]')).toBeNull();
   expect(host.querySelector('.dxp-inspector-incoming-data')).toBeNull();
+});
+
+it('selects multiple weekdays, removes days and preserves selections when switching types', async () => {
+  await change('Condition type', 'weekdays');
+  const checkbox = (name: string) =>
+    host.querySelector<HTMLInputElement>(`input[aria-label="${name}"]`)!;
+  expect(host.querySelectorAll('input[type="checkbox"]')).toHaveLength(7);
+  expect(
+    [...host.querySelectorAll('.dxp-inspector-weekday-options span')].map(
+      (item) => item.textContent,
+    ),
+  ).toEqual(['M', 'T', 'W', 'T', 'F', 'S', 'S']);
+  for (const name of ['Saturday', 'Monday']) await act(async () => checkbox(name).click());
+  expect(current.conditionWeekdays).toEqual([1, 6]);
+  expect(stepSummary('fork', current)).toBe('Monday, Saturday · Visitor local');
+  await change('Time based on', 'utc');
+  await change('Condition type', 'selector');
+  await change('Condition type', 'weekdays');
+  expect(checkbox('Monday').checked).toBe(true);
+  expect(checkbox('Saturday').checked).toBe(true);
+  expect(field('Time based on').value).toBe('utc');
+  await act(async () => checkbox('Saturday').click());
+  for (const name of ['Tuesday', 'Wednesday']) await act(async () => checkbox(name).click());
+  expect(current.conditionWeekdays).toEqual([1, 2, 3]);
+  expect(stepSummary('fork', current)).toBe('Monday, Tuesday, Wednesday · UTC');
 });

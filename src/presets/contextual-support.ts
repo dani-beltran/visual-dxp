@@ -32,10 +32,24 @@ export function createContextualSupportPreset(messages: PresetMessages = english
           },
         },
         {
+          id: 'support-weekdays',
+          type: 'workflow',
+          position: { x: 400, y: 230 },
+          data: {
+            kind: 'fork',
+            label: messages['contextual-support.workflow.nodes.support-weekdays.data.label'],
+            config: {
+              conditionType: 'weekdays',
+              conditionWeekdays: [1, 2, 3, 4, 5],
+              conditionTimeZone: 'utc',
+            },
+          },
+        },
+        {
           id: 'support-hours',
           type: 'workflow',
           position: {
-            x: 400,
+            x: 740,
             y: 230,
           },
           data: {
@@ -53,7 +67,7 @@ export function createContextualSupportPreset(messages: PresetMessages = english
           id: 'support-online',
           type: 'workflow',
           position: {
-            x: 740,
+            x: 1080,
             y: 60,
           },
           data: {
@@ -70,7 +84,7 @@ export function createContextualSupportPreset(messages: PresetMessages = english
           id: 'support-offline',
           type: 'workflow',
           position: {
-            x: 740,
+            x: 1080,
             y: 400,
           },
           data: {
@@ -108,7 +122,7 @@ export function createContextualSupportPreset(messages: PresetMessages = english
           id: 'support-hours-note',
           type: 'workflow',
           position: {
-            x: 400,
+            x: 740,
             y: 680,
           },
           data: {
@@ -127,7 +141,7 @@ export function createContextualSupportPreset(messages: PresetMessages = english
           id: 'support-embed-note',
           type: 'workflow',
           position: {
-            x: 740,
+            x: 1080,
             y: 680,
           },
           data: {
@@ -165,10 +179,28 @@ export function createContextualSupportPreset(messages: PresetMessages = english
       ],
       edges: [
         {
-          id: 'support-hover-to-support-hours',
+          id: 'support-hover-to-support-weekdays',
           source: 'support-hover',
+          target: 'support-weekdays',
+          type: 'smoothstep',
+        },
+        {
+          id: 'support-weekdays-to-support-hours',
+          source: 'support-weekdays',
           target: 'support-hours',
           type: 'smoothstep',
+          sourceHandle: 'true',
+          label:
+            messages['contextual-support.workflow.edges.support-weekdays-to-support-hours.label'],
+        },
+        {
+          id: 'support-weekdays-to-support-offline',
+          source: 'support-weekdays',
+          target: 'support-offline',
+          type: 'smoothstep',
+          sourceHandle: 'false',
+          label:
+            messages['contextual-support.workflow.edges.support-weekdays-to-support-offline.label'],
         },
         {
           id: 'support-hours-to-support-online',

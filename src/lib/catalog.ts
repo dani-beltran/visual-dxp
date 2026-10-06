@@ -19,6 +19,7 @@ import { FRAME_HEIGHT, FRAME_WIDTH } from './frames';
 import { type BuilderTranslator, translateEnglish } from './i18n';
 import { nodeDescriptions } from './nodeDescriptions';
 import type { NodeKind, StepConfig, Workflow, WorkflowNode } from './types';
+import { weekdays } from './weekdays';
 export const catalog: {
   kind: NodeKind;
   label: string;
@@ -239,6 +240,15 @@ export function stepSummary(
             value: dataTools.needsValue(c.conditionOperator ?? 'equal')
               ? JSON.stringify(c.conditionValue ?? '')
               : '',
+          });
+        case 'weekdays':
+          return t('summary.weekdays', {
+            days:
+              weekdays
+                .filter((day) => c.conditionWeekdays?.includes(day.value))
+                .map((day) => t(`weekday.${day.name}`))
+                .join(', ') || '…',
+            zone: c.conditionTimeZone || 'local',
           });
         case 'time-of-day':
           return t('summary.time', {

@@ -1,3 +1,4 @@
+import { weekdays } from '../../lib/weekdays';
 import '../../styles/base.css';
 import '../../styles/shared.css';
 import '../../styles/inspector.css';
@@ -587,6 +588,7 @@ export function NodeInspector({
                 <option value="language">{t('nodeInspector.userLanguage')}</option>
                 <option value="referrer">{t('nodeInspector.referrerDomain')}</option>
                 <option value="date-range">{t('nodeInspector.withinDateRange')}</option>
+                <option value="weekdays">{t('nodeInspector.weekdays')}</option>
                 <option value="time-of-day">{t('nodeInspector.timeOfDay')}</option>
                 <option value="query-param">{t('nodeInspector.urlSearchParameter')}</option>
                 <option value="cookie">{t('nodeInspector.cookies')}</option>
@@ -659,6 +661,7 @@ export function NodeInspector({
                 {t('nodeInspector.dateRangeHelp', { zone: config.conditionTimeZone || 'local' })}
               </InfoBox>
             )}
+            {conditionType === 'weekdays' && <InfoBox>{t('nodeInspector.weekdaysHelp')}</InfoBox>}
             {conditionType === 'time-of-day' && (
               <InfoBox>
                 {t('nodeInspector.timeRangeHelp', { zone: config.conditionTimeZone || 'local' })}
@@ -727,7 +730,9 @@ export function NodeInspector({
                 />
               </Field>
             )}
-            {(conditionType === 'date-range' || conditionType === 'time-of-day') && (
+            {(conditionType === 'date-range' ||
+              conditionType === 'time-of-day' ||
+              conditionType === 'weekdays') && (
               <Field
                 label={
                   conditionType === 'date-range'
@@ -777,6 +782,36 @@ export function NodeInspector({
                   />
                 </Field>
               </>
+            )}
+            {conditionType === 'weekdays' && (
+              <fieldset className="dxp-inspector-weekdays">
+                <legend>{t('nodeInspector.weekdays')}</legend>
+                <div className="dxp-inspector-weekday-options">
+                  {weekdays.map((day) => {
+                    const name = t(`weekday.${day.name}`);
+                    return (
+                      <label key={day.value} title={name}>
+                        <input
+                          type="checkbox"
+                          aria-label={name}
+                          checked={config.conditionWeekdays?.includes(day.value) ?? false}
+                          onChange={(event) => {
+                            const selected = new Set(config.conditionWeekdays ?? []);
+                            if (event.target.checked) selected.add(day.value);
+                            else selected.delete(day.value);
+                            update({
+                              conditionWeekdays: weekdays
+                                .filter((item) => selected.has(item.value))
+                                .map((item) => item.value),
+                            });
+                          }}
+                        />
+                        <span aria-hidden="true">{name.charAt(0)}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </fieldset>
             )}
             {conditionType === 'time-of-day' && (
               <>

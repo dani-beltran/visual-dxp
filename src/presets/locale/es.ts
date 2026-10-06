@@ -24,27 +24,30 @@ export const spanishPresetMessages = {
   'complexity.advanced': 'avanzado',
   'contextual-support.name': 'Ayuda contextual según el horario de atención',
   'contextual-support.description':
-    'Pasa el cursor sobre Ayuda para mostrar el chat de soporte de la demo durante el horario de atención o un mensaje fuera de horario.',
+    'Pasa el cursor sobre Ayuda para mostrar el chat de soporte de la demo durante el horario de atención de lunes a viernes o un mensaje de ausencia fuera de horario y los fines de semana.',
   'contextual-support.workflow.name': 'Ayuda contextual según el horario de atención',
   'contextual-support.workflow.nodes.support-hover.data.label': 'Pasar el cursor sobre Ayuda',
+  'contextual-support.workflow.nodes.support-weekdays.data.label': 'Días de atención (UTC)',
+  'contextual-support.workflow.edges.support-weekdays-to-support-hours.label': 'Entre semana',
+  'contextual-support.workflow.edges.support-weekdays-to-support-offline.label': 'Fin de semana',
   'contextual-support.workflow.nodes.support-hours.data.label': 'Horario de atención (UTC)',
   'contextual-support.workflow.nodes.support-online.data.label': 'Centro de ayuda',
   'contextual-support.workflow.nodes.support-offline.data.config.content':
-    '<div style="margin:-28px -24px -24px;padding:36px 24px 28px;background:#f8f6f1;color:#353b32;font-family:Arial,Helvetica,sans-serif;box-sizing:border-box;overflow-wrap:anywhere"><div style="padding:0 0 16px;border-bottom:1px solid #dedfd4"><span style="font-family:Georgia,serif;font-size:25px;letter-spacing:-1px">atelier<span aria-hidden="true" style="font-family:Arial,Helvetica,sans-serif;font-size:9px;vertical-align:top;margin-left:3px">®</span></span></div><p style="margin:22px 0 12px;font-size:10px;letter-spacing:1.7px;text-transform:uppercase;color:#697856">Estamos para ayudarte</p><h2 style="margin:0 0 14px;font-family:Georgia,serif;font-size:29px;font-weight:400;line-height:1.15">Volvemos pronto</h2><p style="margin:0;font-size:13px;line-height:1.75;color:#626b59">Nuestro horario de atención es de 09:00 a 17:00 UTC todos los días. Vuelve a visitarnos durante ese horario. Mientras tanto, descubre la colección a tu ritmo.</p><a href="#collection" style="display:inline-block;margin-top:22px;padding:12px 20px;background:#697856;color:#fff;border-radius:6px;text-decoration:none;font-size:13px">Descubrir la colección ↗</a></div>',
+    '<div style="margin:-28px -24px -24px;padding:36px 24px 28px;background:#f8f6f1;color:#353b32;font-family:Arial,Helvetica,sans-serif;box-sizing:border-box;overflow-wrap:anywhere"><div style="padding:0 0 16px;border-bottom:1px solid #dedfd4"><span style="font-family:Georgia,serif;font-size:25px;letter-spacing:-1px">atelier<span aria-hidden="true" style="font-family:Arial,Helvetica,sans-serif;font-size:9px;vertical-align:top;margin-left:3px">®</span></span></div><p style="margin:22px 0 12px;font-size:10px;letter-spacing:1.7px;text-transform:uppercase;color:#697856">Estamos para ayudarte</p><h2 style="margin:0 0 14px;font-family:Georgia,serif;font-size:29px;font-weight:400;line-height:1.15">Volvemos pronto</h2><p style="margin:0;font-size:13px;line-height:1.75;color:#626b59">Nuestro horario de atención es de 09:00 a 17:00 UTC, de lunes a viernes. Vuelve a visitarnos durante ese horario. Mientras tanto, descubre la colección a tu ritmo.</p><a href="#collection" style="display:inline-block;margin-top:22px;padding:12px 20px;background:#697856;color:#fff;border-radius:6px;text-decoration:none;font-size:13px">Descubrir la colección ↗</a></div>',
   'contextual-support.workflow.nodes.support-offline.data.label': 'Fuera del horario de atención',
   'contextual-support.workflow.nodes.support-trigger-note.data.config.noteText':
-    'Elige el enlace de ayuda que inicia este recorrido. En la demo, pasa el cursor sobre Ayuda al pie de la página para mostrar el chat durante el horario de atención o un mensaje fuera de horario. El enlace sigue funcionando al hacer clic.',
+    'Elige el enlace de ayuda que inicia este recorrido. En la demo, pasa el cursor sobre Ayuda al pie de la página para mostrar el chat durante el horario de atención de lunes a viernes o un mensaje de ausencia fuera de horario y los fines de semana. El enlace sigue funcionando al hacer clic.',
   'contextual-support.workflow.nodes.support-trigger-note.data.label':
     'Configuración: Enlace de ayuda',
   'contextual-support.workflow.nodes.support-hours-note.data.config.noteText':
-    'La demo ofrece chat todos los días de 09:00 a 17:00 UTC, una hora de referencia mundial. El último minuto elegido está incluido: 16:59 significa que cierra a las 17:00. Cambia el horario, la zona horaria y el mensaje de ausencia a la vez. La hora local es la del visitante. No se comprueban festivos, días laborables ni disponibilidad del equipo.',
+    'La demo ofrece chat de lunes a viernes de 09:00 a 17:00 UTC, una hora de referencia mundial. El último minuto elegido está incluido: 16:59 significa que cierra a las 17:00. Cambia los días seleccionados, el horario y el mensaje de ausencia a la vez. Mantén ambas condiciones en la misma zona horaria. La hora local es la del visitante. Los fines de semana se muestra el mensaje de ausencia. No se comprueban festivos ni disponibilidad del equipo.',
   'contextual-support.workflow.nodes.support-hours-note.data.label':
     'Configuración: Horario de atención',
   'contextual-support.workflow.nodes.support-embed-note.data.config.noteText':
     'La demo muestra un icono de chat. Haz clic para abrir una conversación de ejemplo; ningún agente recibe estos mensajes. Pide al equipo de tu web que conecte tu herramienta de chat. Actualiza el mensaje de ausencia y su enlace a la colección.',
   'contextual-support.workflow.nodes.support-embed-note.data.label': 'Configuración: Chat de ayuda',
   'contextual-support.workflow.nodes.contextual-support-overview.data.config.noteText':
-    'Pasa el cursor sobre Ayuda para mostrar el chat de soporte de la demo durante el horario de atención o un mensaje fuera de horario.',
+    'Pasa el cursor sobre Ayuda para mostrar el chat de soporte de la demo durante el horario de atención de lunes a viernes o un mensaje de ausencia fuera de horario y los fines de semana.',
   'contextual-support.workflow.nodes.contextual-support-overview.data.label':
     'Resumen de la plantilla',
   'contextual-support.workflow.edges.support-hours-to-support-online.label': 'Abierto',

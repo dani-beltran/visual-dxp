@@ -2,22 +2,29 @@ import type { createDataTools } from '../data';
 import type { getDateRange } from '../dateRange';
 import type { getTimeRange } from '../timeRange';
 import type { StepConfig } from '../types';
+import type { getWeekdays } from '../weekdays';
 import type { RuntimeContext } from './context';
 
 interface ConditionModules {
   dataTools: ReturnType<typeof createDataTools>;
   getDateRange: typeof getDateRange;
   getTimeRange: typeof getTimeRange;
+  getWeekdays: typeof getWeekdays;
 }
 
 export function matchesCondition(
   config: StepConfig,
   context: RuntimeContext,
-  { getDateRange, getTimeRange, dataTools }: ConditionModules,
+  { getDateRange, getTimeRange, getWeekdays, dataTools }: ConditionModules,
 ): boolean {
   const { doc, win } = context;
   const type = config.conditionType ?? 'selector';
   if (type === 'data') return dataTools.evaluate(config, context.data);
+  if (type === 'weekdays') {
+    const days = getWeekdays(config);
+    const now = new Date();
+    return days.includes(config.conditionTimeZone === 'utc' ? now.getUTCDay() : now.getDay());
+  }
   if (type === 'time-of-day') {
     const [start, end] = getTimeRange(config);
     const now = new Date();

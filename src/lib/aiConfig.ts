@@ -114,6 +114,7 @@ const configPolicies: Record<NodeKind, ConfigPolicy> = {
           'query-param': { fields: ['conditionKey', 'conditionValue'] },
           cookie: { fields: ['conditionKey', 'conditionValue'] },
           'date-range': { fields: ['conditionStartDate', 'conditionEndDate', 'conditionTimeZone'] },
+          weekdays: { fields: ['conditionWeekdays', 'conditionTimeZone'] },
           'time-of-day': {
             fields: ['conditionStartTime', 'conditionEndTime', 'conditionTimeZone'],
           },

@@ -501,6 +501,18 @@ export const englishMessages = {
   'nodeInspector.userLanguage': 'User language',
   'nodeInspector.referrerDomain': 'Referrer domain',
   'nodeInspector.withinDateRange': 'Within date range',
+  'nodeInspector.weekdays': 'Weekdays',
+  'nodeInspector.weekdaysHelp':
+    'Matches any selected day when this condition runs. Select at least one day.',
+  'weekday.monday': 'Monday',
+  'weekday.tuesday': 'Tuesday',
+  'weekday.wednesday': 'Wednesday',
+  'weekday.thursday': 'Thursday',
+  'weekday.friday': 'Friday',
+  'weekday.saturday': 'Saturday',
+  'weekday.sunday': 'Sunday',
+  'summary.weekdays': ({ days, zone }: { days: string; zone: string }) =>
+    `${days} · ${zone === 'utc' ? 'UTC' : 'Visitor local'}`,
   'nodeInspector.timeOfDay': 'Time of day',
   'nodeInspector.urlSearchParameter': 'URL search parameter',
   'nodeInspector.cookies': 'Cookies',

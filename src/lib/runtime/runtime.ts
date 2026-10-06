@@ -1,12 +1,13 @@
-import { placePopover } from '../popoverPosition';
 import { createAnalyticsTools } from '../analytics';
 import { buildCookie } from '../cookies';
 import { createDataTools } from '../data';
 import { createDataTransformTools } from '../dataTransform';
 import { getDateRange } from '../dateRange';
 import { createExperimentTools } from '../experiment';
+import { placePopover } from '../popoverPosition';
 import { getTimeRange } from '../timeRange';
 import type { Workflow } from '../types';
+import { getWeekdays } from '../weekdays';
 import { startBehaviorTrigger } from './behavior-triggers';
 import { matchesCondition } from './conditions';
 import { createRuntimeContext } from './context';
@@ -35,6 +36,7 @@ const runtimeModules = {
   matchesCondition,
   getDateRange,
   getTimeRange,
+  getWeekdays,
   createPopoverElements,
   showPopover,
   placePopover,

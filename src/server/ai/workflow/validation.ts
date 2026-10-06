@@ -1,6 +1,7 @@
 import { createAnalyticsTools } from '../../../lib/analytics';
 import { dataTransformTools } from '../../../lib/dataTransform';
 import { createExperimentTools } from '../../../lib/experiment';
+import { getWeekdays } from '../../../lib/weekdays';
 import { validateCookie } from './cookies';
 import { dataTools } from './data';
 import { getDateRange } from './dateRange';
@@ -255,6 +256,13 @@ export function validateWorkflow(workflow: Workflow): ValidationIssue[] {
           case 'data':
             try {
               dataTools.validateCondition(config);
+            } catch (error) {
+              add((error as Error).message, node.id);
+            }
+            break;
+          case 'weekdays':
+            try {
+              getWeekdays(config);
             } catch (error) {
               add((error as Error).message, node.id);
             }

@@ -128,6 +128,12 @@ export function isWorkflow(value: unknown): value is Workflow {
         !/^#[\da-f]{6}$/i.test(config.noteColor as string))
     )
       return false;
+    if (
+      config.conditionWeekdays !== undefined &&
+      (!Array.isArray(config.conditionWeekdays) ||
+        config.conditionWeekdays.some((day) => !Number.isInteger(day) || day < 0 || day > 6))
+    )
+      return false;
     if (config.transformations !== undefined) {
       try {
         dataTransformTools.validate(
