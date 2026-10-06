@@ -290,7 +290,7 @@ export function TutorialPanel({
           <div className="dxp-tutorial-actions">
             <span role="status" aria-live="polite">
               {c.ready ? '✓ ' : ''}
-              {c.ready ? t('tutorial.ready') : step !== 'name' ? t('tutorial.pending') : null}
+              {c.ready ? t('tutorial.ready') : null}
             </span>
             <button
               type="button"
@@ -302,11 +302,15 @@ export function TutorialPanel({
             </button>
             <fieldset
               className="dxp-tutorial-continue"
-              tabIndex={step === 'name' && !c.ready ? 0 : undefined}
-              aria-label={step === 'name' && !c.ready ? t('tutorial.continue') : undefined}
-              aria-describedby={step === 'name' && !c.ready ? `${id}-pending` : undefined}
+              tabIndex={!c.ready ? 0 : undefined}
+              aria-label={
+                !c.ready
+                  ? t(step === 'event' ? 'tutorial.confirmEvent' : 'tutorial.continue')
+                  : undefined
+              }
+              aria-describedby={!c.ready ? `${id}-pending` : undefined}
             >
-              {step === 'name' && !c.ready && (
+              {!c.ready && (
                 <span className="dxp-tutorial-tooltip" role="tooltip" id={`${id}-pending`}>
                   {t('tutorial.pending')}
                 </span>
@@ -314,7 +318,7 @@ export function TutorialPanel({
               <button
                 type="button"
                 className="dxp-button dxp-button-primary"
-                aria-describedby={step === 'name' && !c.ready ? `${id}-pending` : undefined}
+                aria-describedby={!c.ready ? `${id}-pending` : undefined}
                 disabled={!c.ready}
                 onClick={() => {
                   if (step === 'finish') onEditor();
