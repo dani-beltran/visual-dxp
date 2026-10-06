@@ -185,7 +185,7 @@ describe('canvas AI chat', () => {
     expect(document.activeElement).toBe(button('Close AI chat'));
     expect(host.textContent).toContain('Connect your AI assistant');
     expect(host.querySelector('.dxp-ai-context')?.textContent).toContain(
-      'AI configuration is incorrect',
+      'Check the server configuration or save a provider in AI Settings.',
     );
     expect(host.querySelector('.dxp-ai-status.error')).not.toBeNull();
     expect(composer().disabled).toBe(true);
@@ -198,7 +198,7 @@ describe('canvas AI chat', () => {
     await renderChat({ configurationError: true, selectedLabel: 'Welcome step' });
     await click(button('AI chat'));
     expect(host.querySelector('.dxp-ai-context')?.textContent).toContain(
-      'AI configuration is incorrect',
+      'Check the server configuration or save a provider in AI Settings.',
     );
     expect(host.querySelector('.dxp-ai-status.error')).not.toBeNull();
     expect(host.querySelector('.dxp-ai-context')?.textContent).not.toContain('Selected:');
@@ -459,7 +459,7 @@ describe('AI workflow integration', () => {
       await typeMessage('Explain this workflow');
       await click(button('Send message'));
       expect(host.querySelector('.dxp-ai-context')?.textContent).toContain(
-        'AI configuration is incorrect',
+        'Check the server configuration or save a provider in AI Settings.',
       );
       expect(host.querySelector('.dxp-ai-status.error')).not.toBeNull();
       await click(button('Start a new conversation'));
@@ -607,7 +607,7 @@ it('browsing provider tabs preserves requests, but cross-tab activation cancels 
   ];
   await click(providerTabs[1]);
   expect(signal.aborted).toBe(false);
-  expect(new Headers(fetcher.mock.calls[0][1]!.headers).get('X-DXP-AI-Provider')).toBe('openai');
+  expect(new Headers(fetcher.mock.calls[0][1]!.headers).has('X-DXP-AI-Provider')).toBe(false);
   const otherTab = new AISettingsStore();
   otherTab.refresh();
   await act(async () => {

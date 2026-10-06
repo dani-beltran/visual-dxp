@@ -7,7 +7,8 @@ The Next.js App Router serves the demo and `/api/ai/*` in one process. `src/serv
 ```sh
 npm install
 cp .env.example .env.local
-# Set OPENAI_API_KEY in .env.local, or save a key and model in AI Settings.
+# Set LOCAL_LLM_BASE_URL and LOCAL_LLM_MODEL (or OPENAI_API_KEY),
+# or save a provider configuration in AI Settings.
 npm run dev
 ```
 
@@ -116,7 +117,7 @@ Requests, response shapes, and the complete proposed operation batch are validat
 | 503 | Missing local key or invalid deployment URL configuration |
 | 504 | Server deadline exceeded |
 
-Chat and health responses set `Cache-Control: no-store` and `X-Content-Type-Options: nosniff`. Provider error bodies and stack traces are not sent to the browser. Expected configuration errors use safe messages. The health response contains only `{ configured: boolean, mode: 'local' | 'deployment' }`. `configured` means a nonempty local key or deployment URL exists; it does not check a URL's reachability, required deployment credentials, or credential validity.
+Chat and health responses set `Cache-Control: no-store` and `X-Content-Type-Options: nosniff`. Provider error bodies and stack traces are not sent to the browser. Expected configuration errors use safe messages. The health response contains only `{ configured: boolean, mode: 'local' | 'deployment' }`. For Self-Hosted or Claude environment defaults, `configured` checks the selected provider’s required settings and reports direct (`local`) mode. Otherwise it reports the presence of an OpenAI key or deployment URL. It does not check upstream reachability, model availability or credential validity.
 
 ## Production hosting
 
@@ -146,13 +147,13 @@ See [migration and verification](migration.md) for checks and reproducible mock 
 
 With an explicit nonempty endpoint, `showSettings` defaults to true. Set `ai.showSettings: false` to hide only the tab. With no endpoint both the tab and assistant are absent and no AI request occurs, regardless of localStorage contents. No environment setting or default URL enables the library's AI features. See README for embedding examples.
 
-The active provider is independent of the viewed settings tab. OpenAI is the default for new and existing users. Opening a tab or editing a field changes no request configuration. **Save and activate** validates format, encrypts any key, and atomically persists the configuration and selection before activation. It does not test upstream connectivity. Failed saves preserve the previous selection and effective settings. **Activate saved configuration** uses an already unlocked configuration without key re-entry. Locked providers must be unlocked first. Compact assistant settings share the same store and controls.
+The active provider is independent of the viewed settings tab. No browser provider is active by default. Existing saved configurations keep their selection; older selections without a saved configuration are cleared. Opening a tab or editing a field changes no request configuration. **Save and activate** validates format, encrypts any key, and atomically persists the configuration and selection before activation. It does not test upstream connectivity. Failed saves preserve the previous selection and effective settings. **Activate saved configuration** uses an already unlocked configuration without key re-entry. Locked providers must be unlocked first. Compact assistant settings share the same store and controls.
 
-The active badge indicates selection, not connectivity. Locked/damaged settings block requests. With no browser configuration, only that provider’s server defaults are considered; absence or rejection is an actionable error, never a fallback to another provider. Removing a configuration preserves provider selection. Server-side credentials are intended only for development and debugging and are not advertised or selectable in the product UI.
+The active badge indicates the user's selection, not connectivity. Saved active user settings take precedence over environment variables; locked/damaged active settings block requests instead of falling back. With no active browser provider, requests omit provider selection and the server uses `LOCAL_LLM_BASE_URL`, `LOCAL_LLM_MODEL`, and optional `LOCAL_LLM_API_KEY` when a local URL or model is set. Incomplete or invalid local settings fail without switching providers. Otherwise a configured `OPENAI_API_KEY` or `LANGGRAPH_API_URL` selects OpenAI; when neither is set, `ANTHROPIC_API_KEY` and `ANTHROPIC_MODEL` select Claude. `OPENAI_MODEL` alone does not configure OpenAI. Removing the active configuration clears its selection and returns to server defaults. Server-side credentials remain private and are not copied into browser settings.
 
 | Header | Value | Logging policy |
 | --- | --- | --- |
-| `X-DXP-AI-Provider` | `openai`, `claude`, or `local`; omitted legacy requests mean OpenAI | Non-secret |
+| `X-DXP-AI-Provider` | `openai`, `claude`, or `local`; omitted requests use server defaults, while legacy browser overrides mean OpenAI | Non-secret |
 | `X-DXP-AI-Override` | `browser` when using saved browser configuration | May log presence only |
 | `X-DXP-OpenAI-Key` / `X-DXP-OpenAI-Model` | OpenAI browser key/model; legacy protocol retained | Always redact key |
 | `X-DXP-AI-Key` / `X-DXP-AI-Model` | Claude or Self-Hosted browser key/model | Always redact key |
@@ -178,7 +179,7 @@ Browser overrides replace the complete configuration for their selected provider
 
 All direct execution uses one bounded loop (40 model calls, at most 100 calls per turn, at most 100 staged mutations, 8,192 output tokens per call, no automatic retries, 2 MiB per upstream response). It adapts the existing tool schemas and private mutation functions. Self-Hosted models must honor a forced `read_workflow` call first. An endpoint/model that rejects tools or ignores that choice fails clearly. Unknown tools, malformed arguments, invalid mutations, truncation, cancellation and exhausted bounds discard the entire batch, including earlier staged edits. There is no partial commit. A capability check demonstrates basic tool calling, not comprehensive model quality.
 
-OpenTelemetry now instruments the server-side AI workflow and tool loop; built-in SDK telemetry remains disabled to avoid duplicates. Full prompts/responses/tool data are exported only when `CAPTURE_LLM_CONTENT=true`, after redaction. See [capture controls, Grafana setup and retention](observability.md). Browser credentials never enter LangGraph state/checkpoints or LangSmith. If `LANGGRAPH_API_URL` is set, OpenAI server-default requests retain the existing stateless remote contract; Claude/Self-Hosted server-default requests return 409. Browser configurations for all providers still execute directly. See [remote deployment](langchain.md).
+OpenTelemetry now instruments the server-side AI workflow and tool loop; built-in SDK telemetry remains disabled to avoid duplicates. Full prompts/responses/tool data are exported only when `CAPTURE_LLM_CONTENT=true`, after redaction. See [capture controls, Grafana setup and retention](observability.md). Browser credentials never enter LangGraph state/checkpoints or LangSmith. If `LANGGRAPH_API_URL` is set, OpenAI server-default requests retain the existing stateless remote contract; Claude server-default requests return 409. Self-Hosted server defaults and browser configurations for all providers execute directly. See [remote deployment](langchain.md).
 
 ### Self-Hosted model setup
 
@@ -192,7 +193,7 @@ LOCAL_LLM_MODEL=your-installed-tool-capable-model
 LOCAL_LLM_API_KEY=
 ```
 
-Ollama commonly exposes `/v1` on port 11434; LM Studio commonly uses port 1234. Enter the actual base URL and loaded model ID in **Self-Hosted**, then save and activate. Model IDs are editable and accept repository-style IDs and runtime tags. Model availability and tool support depend on the runtime and model; compatible API formatting alone is insufficient.
+Set the environment variables above and restart the app to use Self-Hosted without saving browser settings. Alternatively, enter the actual base URL and loaded model ID in **Self-Hosted**, then save and activate; those user settings take precedence. Ollama commonly exposes `/v1` on port 11434; LM Studio commonly uses port 1234. Model IDs are editable and accept repository-style IDs and runtime tags. Model availability and tool support depend on the runtime and model; compatible API formatting alone is insufficient.
 
 Self-Hosted connects to an OpenAI-compatible model server on any host reachable from the backend. The model base URL is separate from the browser’s application endpoint (`/api/ai/chat`). Requests originate from the **application backend**: localhost identifies the backend machine/container, not the visitor’s computer. A hosted demo can connect to a model on a visitor’s laptop only if that model server is reachable from the hosted backend.
 

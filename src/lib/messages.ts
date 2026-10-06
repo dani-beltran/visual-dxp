@@ -114,8 +114,7 @@ export const englishMessages = {
   'analytics.reservedEventName':
     'Choose a custom event name that is not reserved by Google Analytics or Visual DXP.',
   'analytics.invalidIdentity': 'Workflow ID and reporting version must contain 1–100 characters.',
-  'analytics.outputHint':
-    'Continues to the next step, even if analytics is unavailable.',
+  'analytics.outputHint': 'Continues to the next step, even if analytics is unavailable.',
   'analytics.milestoneHint':
     'This node requires an analytics integration to send events. Configure an integration in the Analytics tab.',
   'analytics.customDisabledHint':
@@ -241,6 +240,9 @@ export const englishMessages = {
   'aiSettings.unavailableRestoreOrRemoveBrowserSettings':
     'Unavailable — restore or remove browser settings',
   'aiSettings.noSavedConfiguration': 'No saved configuration',
+  'aiSettings.noActiveProvider': 'No active provider',
+  'canvasChat.checkAiConfiguration':
+    'Check the server configuration or save a provider in AI Settings.',
   'aiSettings.browserSettingsReady': 'Browser settings ready',
   'aiSettings.aiProviders': 'AI providers',
   'aiSettings.active': 'Active',

@@ -38,7 +38,7 @@ type Message = AIChatMessage & { id: number; changeCount?: number; reasoning?: s
 
 export function CanvasChat({
   configured,
-  activeProvider = 'OpenAI',
+  activeProvider,
   locked = false,
   configurationError = false,
   selectedLabel,
@@ -227,7 +227,11 @@ export function CanvasChat({
             </span>
             <div>
               <h2 id={`${id}-title`}>{t('canvasChat.yourWorkflowAssistant')}</h2>
-              <p>{t('aiSettings.activeProvider', { label: activeProvider })}</p>
+              <p>
+                {activeProvider
+                  ? t('aiSettings.activeProvider', { label: activeProvider })
+                  : t('aiSettings.noActiveProvider')}
+              </p>
             </div>
             <button
               type="button"
@@ -266,9 +270,14 @@ export function CanvasChat({
                   ? t('canvasChat.unlockActiveproviderInSettingsBelowToUseAi', {
                       activeProvider: String(activeProvider),
                     })
-                  : t('canvasChat.aiConfigurationIsIncorrectForActiveproviderCheckSettingsBelow', {
-                      activeProvider: String(activeProvider),
-                    })}
+                  : activeProvider
+                    ? t(
+                        'canvasChat.aiConfigurationIsIncorrectForActiveproviderCheckSettingsBelow',
+                        {
+                          activeProvider,
+                        },
+                      )
+                    : t('canvasChat.checkAiConfiguration')}
               </span>
             ) : selectedLabel ? (
               <span>{t('canvasChat.selectedStep', { label: selectedLabel })}</span>

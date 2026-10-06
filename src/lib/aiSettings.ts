@@ -28,7 +28,7 @@ interface SavedConfig {
 }
 interface Document {
   version: 2;
-  activeProvider: AIProvider;
+  activeProvider: AIProvider | null;
   viewedProvider: AIProvider;
   providers: Partial<Record<AIProvider, SavedConfig>>;
 }
@@ -42,7 +42,7 @@ export interface ProviderSettingsSnapshot {
   errorKey?: 'aiSettings.storageUnavailable' | 'aiSettings.providerDamaged';
 }
 export interface AISettingsSnapshot extends ProviderSettingsSnapshot {
-  activeProvider: AIProvider;
+  activeProvider: AIProvider | null;
   viewedProvider: AIProvider;
   providers: Record<AIProvider, ProviderSettingsSnapshot>;
   effectiveRevision: number;
@@ -57,7 +57,7 @@ const blank = (): ProviderSettingsSnapshot => ({
 });
 const initial = (): Document => ({
   version: 2,
-  activeProvider: 'openai',
+  activeProvider: null,
   viewedProvider: 'openai',
   providers: {},
 });
@@ -99,11 +99,11 @@ function decode(raw: string): Document {
     const { model, origin, salt, iv, ciphertext } = value;
     const config: SavedConfig = { model, origin, credential: { version: 1, salt, iv, ciphertext } };
     validateConfig(config, 'openai');
-    return { ...initial(), providers: { openai: config } };
+    return { ...initial(), activeProvider: 'openai', providers: { openai: config } };
   }
   if (
     value?.version !== 2 ||
-    !isAIProvider(value.activeProvider) ||
+    (value.activeProvider !== null && !isAIProvider(value.activeProvider)) ||
     !isAIProvider(value.viewedProvider) ||
     !value.providers ||
     typeof value.providers !== 'object' ||
@@ -111,7 +111,7 @@ function decode(raw: string): Document {
   )
     throw new Error();
   // Whitelist persisted fields: unknown properties never enter snapshots/requests.
-  const doc = {
+  const doc: Document = {
     ...initial(),
     activeProvider: value.activeProvider,
     viewedProvider: value.viewedProvider,
@@ -142,6 +142,8 @@ function decode(raw: string): Document {
       };
     }
   }
+  // Older records implicitly selected OpenAI even when nothing had been saved.
+  if (doc.activeProvider && !doc.providers[doc.activeProvider]) doc.activeProvider = null;
   return doc;
 }
 function aad(config: SavedConfig, provider: AIProvider, version: number) {
@@ -196,6 +198,13 @@ export class AISettingsStore {
     };
   };
   private buildSnapshot(): AISettingsSnapshot {
+    const unavailable = this.unavailable
+      ? {
+          status: 'unavailable' as const,
+          error: this.unavailable,
+          errorKey: 'aiSettings.storageUnavailable' as const,
+        }
+      : {};
     const providers = Object.fromEntries(
       AI_PROVIDERS.map((provider) => {
         const saved = this.doc.providers[provider];
@@ -220,19 +229,14 @@ export class AISettingsStore {
                     'This provider’s browser settings are damaged. Remove or replace its configuration.',
                 }
               : {}),
-            ...(this.unavailable
-              ? {
-                  status: 'unavailable',
-                  error: this.unavailable,
-                  errorKey: 'aiSettings.storageUnavailable',
-                }
-              : {}),
+            ...unavailable,
           },
         ];
       }),
     ) as Record<AIProvider, ProviderSettingsSnapshot>;
     return {
-      ...providers[this.doc.activeProvider],
+      ...(this.doc.activeProvider ? providers[this.doc.activeProvider] : blank()),
+      ...unavailable,
       providers,
       activeProvider: this.doc.activeProvider,
       viewedProvider: this.doc.viewedProvider,
@@ -418,7 +422,7 @@ export class AISettingsStore {
     this.cancel();
     this.emit();
   }
-  async unlock(passphrase: string, provider = this.doc.activeProvider) {
+  async unlock(passphrase: string, provider = this.doc.activeProvider ?? this.doc.viewedProvider) {
     this.refresh();
     const saved = this.doc.providers[provider];
     if (!saved?.credential || this.unavailable)
@@ -488,17 +492,22 @@ export class AISettingsStore {
     this.cancel();
     this.emit();
   }
-  remove = (provider = this.doc.activeProvider) => {
+  remove = (provider = this.doc.activeProvider ?? this.doc.viewedProvider) => {
     this.refresh();
     const providers = { ...this.doc.providers };
     delete providers[provider];
-    this.persist({ ...this.doc, providers });
+    const wasActive = provider === this.doc.activeProvider;
+    this.persist({
+      ...this.doc,
+      providers,
+      activeProvider: wasActive ? null : this.doc.activeProvider,
+    });
     delete this.keys[provider];
     delete this.confirmations[provider];
-    if (provider === this.doc.activeProvider) this.cancel();
+    if (wasActive) this.cancel();
     this.emit();
   };
-  confirmOrigin(endpoint: string, provider = this.doc.activeProvider) {
+  confirmOrigin(endpoint: string, provider = this.doc.activeProvider ?? this.doc.viewedProvider) {
     const url = resolveAIEndpoint(endpoint);
     if (!allowsBrowserCredentials(url))
       throw Object.assign(new Error('Browser credentials require an HTTPS AI server.'), {
@@ -509,7 +518,10 @@ export class AISettingsStore {
     if (provider === this.doc.activeProvider) this.cancel();
     this.emit();
   }
-  needsConfirmation(endpoint: string, provider = this.doc.activeProvider) {
+  needsConfirmation(
+    endpoint: string,
+    provider = this.doc.activeProvider ?? this.doc.viewedProvider,
+  ) {
     const origin = resolveAIEndpoint(endpoint).origin;
     const saved = this.doc.providers[provider];
     return !!saved && saved.origin !== origin && this.confirmations[provider] !== origin;
@@ -517,8 +529,12 @@ export class AISettingsStore {
   forRequest(endpoint: string, controller: AbortController): AIRequestConfiguration | undefined {
     this.refresh();
     const provider = this.doc.activeProvider;
-    const state = this.snapshot.providers[provider];
+    const state = this.snapshot;
     if (state.status === 'unavailable') throw new Error(state.error);
+    if (!provider) {
+      this.requests.add(controller);
+      return undefined;
+    }
     if (state.status === 'locked')
       throw Object.assign(
         new Error(`Unlock ${AI_PROVIDER_LABELS[provider]} in AI Settings before using AI.`),
@@ -529,7 +545,7 @@ export class AISettingsStore {
       );
     if (state.status === 'server') {
       this.requests.add(controller);
-      return provider === 'openai' ? undefined : { provider, source: 'server' };
+      return { provider, source: 'server' };
     }
     const url = resolveAIEndpoint(endpoint);
     if (!allowsBrowserCredentials(url))

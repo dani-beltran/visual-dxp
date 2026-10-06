@@ -28,7 +28,7 @@ afterEach(() => {
 });
 it('persists viewed and active providers independently and keeps three saved configurations', async () => {
   const store = new AISettingsStore();
-  expect(store.getSnapshot().activeProvider).toBe('openai');
+  expect(store.getSnapshot().activeProvider).toBeNull();
   await store.saveProvider('openai', openai, pass, endpoint);
   await store.saveProvider('claude', claude, pass, endpoint);
   await store.saveProvider('local', local, '', endpoint);
@@ -51,8 +51,8 @@ it('persists viewed and active providers independently and keeps three saved con
   expect(get(restored)).toMatchObject({ provider: 'claude', ...claude });
   expect(Object.keys(saved().providers)).toHaveLength(3);
   restored.remove('claude');
-  expect(get(restored)).toEqual({ provider: 'claude', source: 'server' });
-  expect(restored.getSnapshot().activeProvider).toBe('claude');
+  expect(get(restored)).toBeUndefined();
+  expect(restored.getSnapshot().activeProvider).toBeNull();
   expect(saved().providers.local.model).toBe(local.model);
 });
 it('only cancels when the effective configuration changes, including server-default requests', async () => {
@@ -236,11 +236,54 @@ it('recovers one damaged provider without losing healthy configurations or chang
   expect(store.getSnapshot()).toMatchObject({ activeProvider: 'claude', status: 'unavailable' });
   expect(() => get(store)).toThrow(/damaged/);
   store.remove('claude');
-  expect(get(store)).toEqual({ provider: 'claude', source: 'server' });
+  expect(get(store)).toBeUndefined();
   expect(saved().providers.local.model).toBe(local.model);
   await store.unlock(pass, 'openai');
   store.activate('openai');
   expect(get(store)).toMatchObject(openai);
+});
+
+it('leaves provider selection to the server until a user saves and activates settings', async () => {
+  const store = new AISettingsStore();
+  expect(store.getSnapshot()).toMatchObject({ activeProvider: null, status: 'server' });
+  store.view('local');
+  const restored = new AISettingsStore();
+  restored.refresh();
+  expect(restored.getSnapshot()).toMatchObject({ activeProvider: null, viewedProvider: 'local' });
+  const fetcher = vi.fn().mockResolvedValue(Response.json({ message: 'Ready', operations: [] }));
+  vi.stubGlobal('fetch', fetcher);
+  await requestAIChat(
+    { endpoint },
+    {
+      messages: [{ role: 'user', content: 'Explain' }],
+      workflow: defaultWorkflow,
+      selectedNodeIds: [],
+    },
+    undefined,
+    get(restored),
+  );
+  const headers = fetcher.mock.calls[0][1].headers as Headers;
+  expect(headers.has(AI_PROVIDER_HEADER)).toBe(false);
+  expect(headers.has(AI_KEY_HEADER)).toBe(false);
+  expect(headers.has(AI_BASE_URL_HEADER)).toBe(false);
+});
+
+it('clears the implicit provider selection in older settings without deleting saved providers', async () => {
+  const store = new AISettingsStore();
+  await store.saveProvider('local', local, '', endpoint);
+  const doc = saved();
+  doc.activeProvider = 'openai';
+  localStorage.setItem(AI_SETTINGS_STORAGE_KEY, JSON.stringify(doc));
+  store.refresh();
+  expect(store.getSnapshot().activeProvider).toBeNull();
+  expect(get(store)).toBeUndefined();
+  store.activate('local');
+  const request = new AbortController();
+  store.forRequest(endpoint, request);
+  store.remove('local');
+  expect(request.signal.aborted).toBe(true);
+  expect(store.getSnapshot().activeProvider).toBeNull();
+  expect(get(store)).toBeUndefined();
 });
 
 it.each(['https://models.example.com/v1', 'http://192.168.1.1:1234/v1'])(

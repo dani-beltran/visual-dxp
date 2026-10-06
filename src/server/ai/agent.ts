@@ -20,6 +20,7 @@ import {
   createProviderModel,
   providerGenerationOptions,
   resolveProviderConfiguration,
+  serverDefaultProvider,
 } from './providers';
 import { createWorkflowTools } from './tools';
 import type { AIChatRequest, AIChatResponse } from './workflow/ai';
@@ -469,6 +470,8 @@ export async function respondToAIChat(
 ): Promise<AIChatResponse> {
   // Browser credentials never enter deployment state, checkpoints or LangSmith.
   if (config && isBrowserConfiguration(config))
+    return runLocalAgent(request, signal, config, onText, onReasoning);
+  if ((config?.provider ?? serverDefaultProvider()) === 'local')
     return runLocalAgent(request, signal, config, onText, onReasoning);
   if (process.env.LANGGRAPH_API_URL?.trim()) {
     if (config && config.provider !== 'openai')
