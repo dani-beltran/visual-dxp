@@ -134,7 +134,7 @@ it('builds and tests through the real editor, then visits every feature without 
   expect(button('Continue').disabled).toBe(true);
   await input('[aria-label="Workflow name"]', 'Autumn announcement');
   await click('Continue');
-  await click('Choose website');
+  await click('Change target website');
   expect(el('[role="dialog"] .dxp-tutorial')).toBeTruthy();
   await click('Save website');
   await click('Continue');
@@ -499,10 +499,8 @@ it('supports an optional host practice target without a demo header or demo URL'
   await input('.dxp-tutorial input', 'My first workflow.');
   await click('Continue');
   expect(host.textContent).toContain('https://practice.example.test');
-  await click('Choose website');
-  expect(el<HTMLInputElement>('.dxp-website-settings input').value).toBe(
-    'https://practice.example.test',
-  );
+  await click('Change target website');
+  await input('.dxp-website-settings input', 'https://practice.example.test');
   expect(latest.websiteUrl).toBe('');
   await click('Save website');
   expect(latest.websiteUrl).toBe('https://practice.example.test');

@@ -28,7 +28,6 @@ export const tutorialEnglish = {
   'tutorial.website.title': 'Choose the demo website',
   'tutorial.website.body':
     'Workflows add experiences to a target website. Open the website control, leave its demo input empty, and save. The included /demo-site.html needs no credentials or installation.',
-  'tutorial.website.open': 'Choose website',
   'tutorial.website.demo': 'Use demo website',
   'tutorial.trigger.title': 'Add a trigger',
   'tutorial.trigger.body':

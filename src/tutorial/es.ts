@@ -28,7 +28,6 @@ export const tutorialSpanish = {
   'tutorial.website.title': 'Elige el sitio de demostración',
   'tutorial.website.body':
     'Los flujos añaden experiencias a un sitio web de destino. Abre el control del sitio, deja vacío el campo para usar la demostración y guarda. /demo-site.html no necesita credenciales ni instalación.',
-  'tutorial.website.open': 'Elegir sitio web',
   'tutorial.website.demo': 'Usar sitio de demostración',
   'tutorial.trigger.title': 'Añade un disparador',
   'tutorial.trigger.body':

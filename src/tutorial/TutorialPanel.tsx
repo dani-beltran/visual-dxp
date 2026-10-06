@@ -19,7 +19,6 @@ export function TutorialPanel({
   presets,
   onReset,
   onRename,
-  onWebsite,
   onSelect,
   onTest,
   onClosePreview,
@@ -37,7 +36,6 @@ export function TutorialPanel({
   presets?: readonly WorkflowPreset[];
   onReset: () => void;
   onRename: (name: string) => void;
-  onWebsite: () => void;
   onSelect: (id: string) => void;
   onTest: () => void;
   onClosePreview: () => void;
@@ -163,11 +161,6 @@ export function TutorialPanel({
                   {t('tutorial.workflowName')}
                   <input value={workflow.name} onChange={(e) => onRename(e.target.value)} />
                 </label>
-              )}
-              {step === 'website' && (
-                <button type="button" className="dxp-button" onClick={onWebsite}>
-                  {t('tutorial.website.open')}
-                </button>
               )}
               {nodeId && workflow.nodes.some((n) => n.id === nodeId) && selectedId !== nodeId && (
                 <button type="button" className="dxp-button" onClick={() => onSelect(nodeId)}>

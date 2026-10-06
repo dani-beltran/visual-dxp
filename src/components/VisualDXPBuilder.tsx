@@ -1231,7 +1231,6 @@ function Builder({
           tutorialController.begin(next);
         }}
         onRename={api.renameWorkflow}
-        onWebsite={() => configureWebsite({ suggestedUrl: tutorial.websiteUrl })}
         onSelect={(id) => {
           setPicking(false);
           changeView('canvas');
