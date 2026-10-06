@@ -45,7 +45,7 @@ export const tutorialSpanish = {
     'Añade Ventana emergente desde la biblioteca y abre sus ajustes. Muestra contenido sobre el sitio web. Revisa Contenido HTML y Posición; conserva el HTML predeterminado y los demás ajustes para este ejercicio.',
   'tutorial.connect.title': 'Conecta el flujo',
   'tutorial.connect.body':
-    'Separa los nodos en el lienzo. Arrastra desde el círculo de salida a la derecha del Disparador hasta la entrada a la izquierda de Espera; después conecta Espera con Ventana emergente. Con el teclado, selecciona cada nodo de origen y usa Conectar con en sus ajustes.',
+    'Separa los nodos en el lienzo. Arrastra desde el círculo de salida a la derecha del Disparador hasta la entrada a la izquierda de Espera; después conecta Espera con Ventana emergente. Como alternativa, selecciona cada nodo de origen y usa Conectar con en sus ajustes.',
   'tutorial.connectionHint': 'Disparador → Espera → Ventana emergente',
   'tutorial.test.title': 'Prueba tu flujo',
   'tutorial.test.body':

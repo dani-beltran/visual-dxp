@@ -45,7 +45,7 @@ export const tutorialEnglish = {
     'Add Popover from the library and open its settings. A popover displays content over the website. Look at HTML content and Position; keep the default HTML content and all other settings unchanged for this exercise.',
   'tutorial.connect.title': 'Connect the workflow',
   'tutorial.connect.body':
-    'Move the nodes apart on the canvas. Drag from the output circle on the right of Trigger to the input circle on the left of Delay, then connect Delay to Popover. For keyboard access, select each source node and use Connect to in its inspector.',
+    'Move the nodes apart on the canvas. Drag from the output circle on the right of Trigger to the input circle on the left of Delay, then connect Delay to Popover. Alternatively, select each source node and use Connect to in its inspector.',
   'tutorial.connectionHint': 'Trigger → Delay → Popover',
   'tutorial.test.title': 'Test your workflow',
   'tutorial.test.body':
