@@ -74,8 +74,7 @@
 .dxp-tutorial-path {
   font-weight: 600;
 }
-.dxp-tutorial input,
-.dxp-node-connections select {
+.dxp-tutorial input {
   padding: 6px;
   border: 1px solid var(--dxp-line);
   border-radius: 5px;
@@ -86,28 +85,10 @@
   outline: 2px solid var(--dxp-focus, #26825c);
   outline-offset: 3px;
 }
-.dxp-tutorial :focus-visible,
-.dxp-node-connections :focus-visible {
+.dxp-tutorial :focus-visible {
   outline: 2px solid var(--dxp-focus, #26825c);
   outline-offset: 3px;
 }
-.dxp-node-connections {
-  display: grid;
-  gap: 8px;
-  margin-top: 18px;
-}
-.dxp-node-connections select {
-  width: 100%;
-}
-.dxp-tutorial select {
-  padding: 6px;
-  border: 1px solid var(--dxp-line);
-  border-radius: 5px;
-  background: var(--dxp-canvas);
-  color: var(--dxp-text);
-  margin-inline-start: 8px;
-}
-
 .dxp-tutorial-continue {
   border: 0;
   padding: 0;

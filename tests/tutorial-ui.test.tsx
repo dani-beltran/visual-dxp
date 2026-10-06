@@ -1,5 +1,7 @@
 // @vitest-environment jsdom
+import { Position } from '@xyflow/react';
 import { act } from 'react';
+import * as nodeCatalog from '../src/lib/catalog';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { App } from '../src/app';
@@ -76,12 +78,31 @@ async function input(selector: string, value: string) {
     field.dispatchEvent(new Event('input', { bubbles: true }));
   });
 }
-async function choose(selector: string, value: string) {
-  await act(async () => {
-    const field = el<HTMLSelectElement>(selector);
-    field.value = value;
-    field.dispatchEvent(new Event('change', { bubbles: true }));
-  });
+async function connectSockets(source: string, target: string) {
+  const from = el(`[data-nodeid="${source}"].source`);
+  const to = el(`[data-nodeid="${target}"].target`);
+  const previous = Object.getOwnPropertyDescriptor(document, 'elementFromPoint');
+  Object.defineProperty(document, 'elementFromPoint', { configurable: true, value: () => to });
+  try {
+    await act(async () =>
+      from.dispatchEvent(
+        new MouseEvent('mousedown', { bubbles: true, button: 0, clientX: 100, clientY: 100 }),
+      ),
+    );
+    await act(async () =>
+      document.dispatchEvent(
+        new MouseEvent('mousemove', { bubbles: true, clientX: 300, clientY: 200 }),
+      ),
+    );
+    await act(async () =>
+      document.dispatchEvent(
+        new MouseEvent('mouseup', { bubbles: true, clientX: 300, clientY: 200 }),
+      ),
+    );
+  } finally {
+    if (previous) Object.defineProperty(document, 'elementFromPoint', previous);
+    else Reflect.deleteProperty(document, 'elementFromPoint');
+  }
 }
 async function selectNode(id: string) {
   await act(async () =>
@@ -124,6 +145,17 @@ it('keeps the empty state unchanged, and the reusable builder tutorial is opt-in
 });
 
 it('builds and tests through the real editor, then visits every feature without modifying the workflow', async () => {
+  // Supply layout measurements that jsdom cannot calculate; use the real socket drag handlers.
+  const factory = nodeCatalog.createNode;
+  vi.spyOn(nodeCatalog, 'createNode').mockImplementation((...args) => ({
+    ...factory(...args),
+    width: 220,
+    height: 140,
+    handles: [
+      { type: 'source', position: Position.Right, x: 220, y: 70 },
+      { type: 'target', position: Position.Left, x: 0, y: 70 },
+    ],
+  }));
   await render();
   expect(step()).toBe('Build your first digital experience.');
   expect(button('Continue').disabled).toBe(false);
@@ -160,12 +192,9 @@ it('builds and tests through the real editor, then visits every feature without 
 
   await click('Continue');
   expect(button('Continue').disabled).toBe(true);
-  await selectNode(trigger.id);
-  await choose('.dxp-node-connections select', delay.id);
-  await click('Connect nodes');
-  await selectNode(delay.id);
-  await choose('.dxp-node-connections select', popover.id);
-  await click('Connect nodes');
+  expect(host.querySelector('.dxp-node-connections')).toBeNull();
+  await connectSockets(trigger.id, delay.id);
+  await connectSockets(delay.id, popover.id);
   expect(validateWorkflow(latest)).toEqual([]);
   await click('Continue');
   await click('Test workflow');

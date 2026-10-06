@@ -108,7 +108,6 @@ import { EdgeInspector } from './EdgeInspector';
 import { ElementPicker } from './ElementPicker';
 import { InfoBox } from './InfoBox';
 import { MultiNodeInspector } from './MultiNodeInspector';
-import { NodeConnections } from './NodeConnections';
 import { NodeInspector } from './NodeInspector';
 import { NodeLibrary } from './NodeLibrary';
 import { PopoverPreview } from './PopoverPreview';
@@ -1449,6 +1448,7 @@ function Builder({
                 };
               }}
               onConnect={onConnect}
+              connectOnClick={false}
               onNodeDragStart={() => {
                 flushActivity();
                 dragStartWorkflow.current = copyWorkflow(current.current);
@@ -1647,14 +1647,6 @@ function Builder({
         ) : selected ? (
           <NodeInspector
             node={selected}
-            connections={
-              <NodeConnections
-                key={selected.id}
-                node={selected}
-                nodes={workflow.nodes}
-                onConnect={onConnect}
-              />
-            }
             analytics={workflow.analytics}
             analyticsTabId={`${viewId}-analytics-tab`}
             onOpenAnalytics={() => {

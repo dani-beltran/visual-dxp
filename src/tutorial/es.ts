@@ -3,8 +3,6 @@ export const tutorialSpanish = {
     `Los flujos añaden experiencias a un sitio web de destino. Abre el control del sitio y guarda el destino de práctica: ${url}. Tu anfitrión proporciona este sitio y su puente de vista previa.`,
   'tutorial.restoreContent':
     'El HTML predeterminado ha cambiado. Usa Deshacer para recuperarlo, o elimina esta Ventana emergente y añade una nueva desde la biblioteca.',
-  'tutorial.selectSource': 'Seleccionar nodo de origen',
-  'tutorial.chooseSource': 'Elige un nodo de origen',
   'tutorial.untitled': 'Flujo sin título',
   'tutorial.entry': 'Iniciar tutorial interactivo',
   'tutorial.progress': ({ current, total }: { current: number; total: number }) =>
@@ -45,7 +43,7 @@ export const tutorialSpanish = {
     'Añade Ventana emergente desde la biblioteca y abre sus ajustes. Muestra contenido sobre el sitio web. Revisa Contenido HTML y Posición; conserva el HTML predeterminado y los demás ajustes para este ejercicio.',
   'tutorial.connect.title': 'Conecta el flujo',
   'tutorial.connect.body':
-    'Separa los nodos en el lienzo. Arrastra desde el círculo de salida a la derecha del Disparador hasta la entrada a la izquierda de Espera; después conecta Espera con Ventana emergente. Como alternativa, selecciona cada nodo de origen y usa Conectar con en sus ajustes.',
+    'Separa los nodos en el lienzo. Arrastra desde el círculo de salida a la derecha del Disparador hasta la entrada a la izquierda de Espera; después conecta Espera con Ventana emergente.',
   'tutorial.connectionHint': 'Disparador → Espera → Ventana emergente',
   'tutorial.test.title': 'Prueba tu flujo',
   'tutorial.test.body':
@@ -94,9 +92,6 @@ export const tutorialSpanish = {
   'tutorial.resumeRepair': 'Reanudar y corregir',
   'tutorial.startOver': 'Empezar de nuevo…',
   'tutorial.workflowName': 'Nombre del flujo',
-  'tutorial.connectTo': 'Conectar con',
-  'tutorial.chooseTarget': 'Elige un nodo de destino',
-  'tutorial.connectAction': 'Conectar nodos',
   'tutorial.backupNote':
     'JSON del flujo conserva este lienzo, incluido su destino de práctica o sin terminar. El despliegue de JavaScript requiere un destino de producción válido.',
 };

@@ -61,7 +61,7 @@ export function TutorialPanel({
           event: 'inspector',
           delay: c.record?.ids.delay ? 'inspector' : 'add-delay',
           popover: c.record?.ids.popover ? 'inspector' : 'add-popover',
-          connect: 'connections',
+          connect: '',
           test: previewOpen ? 'run' : 'test',
           result: 'log',
           ai: 'chat',
@@ -173,31 +173,7 @@ export function TutorialPanel({
                   (n) => n.id === nodeId && n.data.config.content !== c.record?.defaultContent,
                 ) && <p role="status">{t('tutorial.restoreContent')}</p>}
               {step === 'connect' && (
-                <>
-                  <p className="dxp-tutorial-path">{t('tutorial.connectionHint')}</p>
-                  <label>
-                    {t('tutorial.selectSource')}
-                    <select
-                      value={
-                        selectedId === c.record?.ids.trigger || selectedId === c.record?.ids.delay
-                          ? (selectedId ?? '')
-                          : ''
-                      }
-                      onChange={(e) => onSelect(e.target.value)}
-                    >
-                      <option value="">{t('tutorial.chooseSource')}</option>
-                      {workflow.nodes
-                        .filter(
-                          (n) => n.id === c.record?.ids.trigger || n.id === c.record?.ids.delay,
-                        )
-                        .map((n) => (
-                          <option value={n.id} key={n.id}>
-                            {n.data.label}
-                          </option>
-                        ))}
-                    </select>
-                  </label>
-                </>
+                <p className="dxp-tutorial-path">{t('tutorial.connectionHint')}</p>
               )}
               {step === 'test' && !previewOpen && !options.host?.testControl && (
                 <button type="button" className="dxp-button" onClick={onTest}>

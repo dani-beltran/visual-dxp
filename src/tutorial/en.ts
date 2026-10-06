@@ -3,8 +3,6 @@ export const tutorialEnglish = {
     `Workflows add experiences to a target website. Open the website control and save the practice target: ${url}. Your host provides this practice website and its preview bridge.`,
   'tutorial.restoreContent':
     'The default HTML changed. Use Undo to restore it, or delete this Popover and add a new one from the library.',
-  'tutorial.selectSource': 'Select source node',
-  'tutorial.chooseSource': 'Choose a source node',
   'tutorial.untitled': 'Untitled workflow',
   'tutorial.entry': 'Start interactive tutorial',
   'tutorial.progress': ({ current, total }: { current: number; total: number }) =>
@@ -45,7 +43,7 @@ export const tutorialEnglish = {
     'Add Popover from the library and open its settings. A popover displays content over the website. Look at HTML content and Position; keep the default HTML content and all other settings unchanged for this exercise.',
   'tutorial.connect.title': 'Connect the workflow',
   'tutorial.connect.body':
-    'Move the nodes apart on the canvas. Drag from the output circle on the right of Trigger to the input circle on the left of Delay, then connect Delay to Popover. Alternatively, select each source node and use Connect to in its inspector.',
+    'Move the nodes apart on the canvas. Drag from the output circle on the right of Trigger to the input circle on the left of Delay, then connect Delay to Popover.',
   'tutorial.connectionHint': 'Trigger → Delay → Popover',
   'tutorial.test.title': 'Test your workflow',
   'tutorial.test.body':
@@ -94,9 +92,6 @@ export const tutorialEnglish = {
   'tutorial.resumeRepair': 'Resume and repair',
   'tutorial.startOver': 'Start over…',
   'tutorial.workflowName': 'Workflow name',
-  'tutorial.connectTo': 'Connect to',
-  'tutorial.chooseTarget': 'Choose a target node',
-  'tutorial.connectAction': 'Connect nodes',
   'tutorial.backupNote':
     'Workflow JSON preserves this canvas, including its practice or unfinished website target. JavaScript deployment requires a valid production target.',
 };

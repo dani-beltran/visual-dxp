@@ -14,7 +14,7 @@ Exit keeps your work. An active tutorial resumes automatically after reload, wit
 
 Embedded builders do not enable the tutorial by default. Opt in with `tutorial={{ websiteUrl: '/demo-site.html' }}` and serve the bundled practice page at that path. Without application header controls, the guide offers a workflow-name field and a Test workflow action. AI and Presets steps appear only when those editor capabilities are supplied; export discovery needs the optional `tutorial.host` adapter. Hosts can provide `storageKey` for a distinct progress scope; otherwise the key derives from `persistenceKey`, or progress stays in memory when neither is supplied. Host controls use `data-tutorial="name"`, `"test"`, and `"export"` for highlights; the host adapter supplies a shared DOM `root` and its export dialog container so guidance stays within its focus context.
 
-For keyboard connections, select a source node (Enter or Space on a focused node), choose **Connect to** in the inspector, then **Connect nodes**. This uses the same connection validation and undo history as dragging handles. The tutorial also offers a source-node selector. Back revisits guidance without undoing edits.
+Connect nodes by dragging from an output socket to an input socket. Back revisits tutorial guidance without undoing edits.
 
 ## Common DXP presets
 

@@ -33,7 +33,6 @@ import '../styles/inspector.css';
 
 interface NodeInspectorProps {
   node: WorkflowNode;
-  connections?: ReactNode;
   forwardsData?: boolean;
   analytics?: import('../lib/types').AnalyticsSettings;
   onOpenAnalytics?: () => void;
@@ -112,7 +111,6 @@ function NumberInput({
 
 export function NodeInspector({
   node,
-  connections,
   forwardsData = false,
   analytics,
   onOpenAnalytics,
@@ -1163,7 +1161,6 @@ export function NodeInspector({
             </div>
           )}
         </section>
-        {connections}
       </div>
       <footer className="dxp-inspector-footer">
         <button
