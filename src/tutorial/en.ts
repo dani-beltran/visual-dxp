@@ -16,7 +16,7 @@ export const tutorialEnglish = {
   'tutorial.ready': 'Ready to continue',
   'tutorial.pending': 'Complete the instruction to continue',
   'tutorial.intro.title': 'Build your first digital experience.',
-  'tutorial.intro.body': 'You can exit at any time and keep your work. Select Continue to begin.',
+  'tutorial.intro.body': 'Select Continue to begin.',
   'tutorial.name.title': 'Name your workflow',
   'tutorial.name.body':
     'Give your workflow a name using the workflow name field—for example, “My first workflow.”. Any nonempty name different from the default works.',

@@ -16,8 +16,7 @@ export const tutorialSpanish = {
   'tutorial.ready': 'Listo para continuar',
   'tutorial.pending': 'Completa la instrucción para continuar',
   'tutorial.intro.title': 'Crea tu primera experiencia digital.',
-  'tutorial.intro.body':
-    'Puedes salir en cualquier momento y conservar tu trabajo. Pulsa Continuar para empezar.',
+  'tutorial.intro.body': 'Pulsa Continuar para empezar.',
   'tutorial.name.title': 'Pon nombre a tu flujo',
   'tutorial.name.body':
     'Escribe un nombre para tu flujo en el campo de nombre; por ejemplo, «Mi primer flujo». Se acepta cualquier nombre no vacío distinto del predeterminado.',
