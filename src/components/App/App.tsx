@@ -3,6 +3,7 @@ import '../../styles/shared.css';
 import { ArrowDownToLine, ArrowUpRight, Check, Code2, Copy, FileJson, Play, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { appMessages } from '../../app/locales/appMessages';
+import { detectBrowserLanguage } from '../../app/locales/browserLanguage';
 import { spanishMessages } from '../../app/locales/es';
 import { createActivityStore } from '../../lib/activity';
 import { download } from '../../lib/download';
@@ -40,7 +41,8 @@ export function App({
   i18n,
   ...builderProps
 }: AppProps) {
-  // Use host localization unless the user has saved a supported language choice.
+  const [browserLanguage] = useState(detectBrowserLanguage);
+  // Saved choices override host localization, then browser preferences.
   const [language, setLanguage] = useState<'en' | 'es' | null>(() => {
     try {
       const saved = localStorage.getItem(languageStorageKey);
@@ -59,14 +61,14 @@ export function App({
       // Keep language switching usable when browser storage is unavailable.
     }
   }
-  const hostLanguage = i18n?.locale ?? 'en';
+  const hostLanguage = i18n?.locale ?? (browserLanguage === 'es' ? 'es-ES' : 'en');
   const selectedLanguage =
     language ?? (hostLanguage.split('-')[0].toLowerCase() === 'es' ? 'es' : hostLanguage);
   const builderI18n = useMemo(() => {
     if (language === 'es') return { locale: 'es-ES', messages: spanishMessages };
     if (language === 'en') return { locale: 'en' };
     if (hostLanguage.split('-')[0].toLowerCase() === 'es') {
-      return { ...i18n, messages: { ...spanishMessages, ...i18n?.messages } };
+      return { ...i18n, locale: hostLanguage, messages: { ...spanishMessages, ...i18n?.messages } };
     }
     return i18n;
   }, [language, hostLanguage, i18n]);
