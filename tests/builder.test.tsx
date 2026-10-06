@@ -100,6 +100,7 @@ describe('builder and host boundary', () => {
       ['Edit', 'Duplicate', 'Delete'],
     );
     await click(element('[role="menuitem"]'));
+    expect(document.activeElement).toBe(element('.dxp-inspector input'));
     expect(element('[data-id="second"]').classList.contains('selected')).toBe(true);
     expect(host.querySelector('[role="menu"]')).toBeNull();
     await contextMenu('[data-id="second"]');

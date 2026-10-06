@@ -41,6 +41,7 @@ import {
   useCallback,
   useEffect,
   useId,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -431,6 +432,12 @@ function Builder({
   changeCallback.current = onChange;
   const upload = useRef<HTMLInputElement>(null);
   const canvas = useRef<HTMLDivElement>(null);
+  const focusInspector = useRef(false);
+  useLayoutEffect(() => {
+    if (!focusInspector.current) return;
+    focusInspector.current = false;
+    canvas.current?.parentElement?.querySelector<HTMLInputElement>('.dxp-inspector input')?.focus();
+  });
   const panModifierPressed = useKeyPress(['Meta', 'Control'], {
     actInsideInputWithModifier: false,
   });
@@ -1672,11 +1679,7 @@ function Builder({
                   else {
                     setSelectedId(target.id);
                     setSelectedEdgeId(null);
-                    requestAnimationFrame(() =>
-                      canvas.current?.parentElement
-                        ?.querySelector<HTMLInputElement>('.dxp-inspector input')
-                        ?.focus(),
-                    );
+                    focusInspector.current = true;
                   }
                 }}
               />
