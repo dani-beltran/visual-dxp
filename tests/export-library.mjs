@@ -252,7 +252,7 @@ for (const library of [esm, umd]) {
             step('experiment', 'experiment', {
               experimentSplit: variant === 'a' ? 100 : 0,
               experimentAnalytics: 'ga4',
-              experimentId: 'built-test',
+              experimentKey: 'built-test',
               experimentSelector: '.cta',
               experimentInteraction: interaction,
               experimentDelivery: delivery,

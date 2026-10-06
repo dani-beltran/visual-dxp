@@ -4,12 +4,6 @@ import { ArrowDownToLine, ArrowUpRight, Check, Code2, Copy, FileJson, Play, X } 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { appMessages } from '../../app/locales/appMessages';
 import { spanishMessages } from '../../app/locales/es';
-import { AppPreferences } from '../AppPreferences/AppPreferences';
-import {
-  VisualDXPBuilder,
-  type VisualDXPBuilderApi,
-  type VisualDXPBuilderProps,
-} from '../VisualDXPBuilder/VisualDXPBuilder';
 import { createActivityStore } from '../../lib/activity';
 import { download } from '../../lib/download';
 import { exportWorkflow, validateWorkflow } from '../../lib/export';
@@ -18,6 +12,12 @@ import { restoreWorkflow } from '../../lib/initialWorkflow';
 import { validateExportTarget } from '../../lib/targeting';
 import type { Workflow } from '../../lib/types';
 import { useDialogFocus } from '../../lib/useDialogFocus';
+import { AppPreferences } from '../AppPreferences/AppPreferences';
+import {
+  VisualDXPBuilder,
+  type VisualDXPBuilderApi,
+  type VisualDXPBuilderProps,
+} from '../VisualDXPBuilder/VisualDXPBuilder';
 import './App.css';
 
 const themeStorageKey = 'visual-dxp-theme';

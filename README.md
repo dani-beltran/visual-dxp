@@ -51,6 +51,23 @@ npm run check:fix    # Apply safe lint fixes, formatting, and import organizatio
 [Biome](https://biomejs.dev/) handles linting and formatting, configured in `biome.json`.
 Generated output, dependencies, and `package-lock.json` are excluded.
 
+## Pull request validation
+
+The GitHub Actions workflow in `.github/workflows/ci.yml` runs on every pull request,
+pushes to `main`, merge queues, and manual dispatches. It uses Node.js 24 and `npm ci`
+with the committed lockfile. Four jobs validate:
+
+- Biome lint, formatting, and import organization, then generated Next.js route types and TypeScript.
+- The full Vitest suite (including frontend and mocked backend tests).
+- The production Next.js build and HTTP smoke test.
+- The reusable library build and ESM/UMD targeting, analytics, and cookie tests.
+
+No provider API keys or repository secrets are required. New commits cancel outdated
+runs for the same pull request. To enforce validation before merging, configure the
+target branch's GitHub ruleset or branch protection to require **CI passed**. This
+aggregate check fails if any validation fails, is cancelled, or is skipped; adding
+the workflow alone does not enable branch protection.
+
 ## Use in another React project
 
 Build and install this local package from your application (the package is not published to npm):

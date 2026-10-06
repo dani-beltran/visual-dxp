@@ -1,6 +1,6 @@
+import type { PreviewExecutionEvent, Workflow, WorkflowNode } from '../lib/types';
 import { tutorialEnglish } from './en';
 import { tutorialSpanish } from './es';
-import type { PreviewExecutionEvent, Workflow, WorkflowNode } from '../lib/types';
 
 export const steps = [
   'intro',
