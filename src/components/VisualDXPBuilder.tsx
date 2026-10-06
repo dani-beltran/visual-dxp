@@ -114,6 +114,7 @@ import { ElementPicker } from './ElementPicker';
 import { InfoBox } from './InfoBox';
 import { MultiNodeInspector } from './MultiNodeInspector';
 import { NodeInspector } from './NodeInspector';
+import { NodeContextMenu } from './NodeContextMenu';
 import { NodeLibrary } from './NodeLibrary';
 import { PopoverPreview } from './PopoverPreview';
 import { PresetsPanel } from './PresetsPanel';
@@ -296,6 +297,8 @@ function Builder({
   const setSelectedId = useCallback((id: string | null) => {
     setSelectedIds(id ? [id] : []);
   }, []);
+  const [nodeMenu, setNodeMenu] = useState<{ id: string; x: number; y: number } | null>(null);
+  const closeNodeMenu = useCallback(() => setNodeMenu(null), []);
   const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
   const [shiftSelectionActive, setShiftSelectionActive] = useState(false);
   const shiftSelection = useRef<{
@@ -1040,24 +1043,24 @@ function Builder({
       `edge:${selectedEdge.id}:label`,
     );
   }
-  function removeNode() {
-    if (!selected) return;
+  function removeNode(target = selected) {
+    if (!target) return;
     commit(
       (w) => ({
         ...w,
-        nodes: removeNodes(w.nodes, new Set([selected.id])),
-        edges: w.edges.filter((e) => e.source !== selectedId && e.target !== selectedId),
+        nodes: removeNodes(w.nodes, new Set([target.id])),
+        edges: w.edges.filter((e) => e.source !== target.id && e.target !== target.id),
       }),
-      activityAction('activity.nodeDeleted', { label: selected.data.label }),
+      activityAction('activity.nodeDeleted', { label: target.data.label }),
     );
     setSelectedId(null);
   }
-  function duplicate() {
-    if (!selected) return;
-    const copy = duplicateNode(current.current, selected);
+  function duplicate(target = selected) {
+    if (!target) return;
+    const copy = duplicateNode(current.current, target);
     commit(
       () => copy.workflow,
-      activityAction('activity.nodeDuplicated', { label: selected.data.label }),
+      activityAction('activity.nodeDuplicated', { label: target.data.label }),
     );
     setSelectedId(copy.selectedId);
     setSelectedEdgeId(null);
@@ -1416,6 +1419,10 @@ function Builder({
         <div
           className={`dxp-canvas${panModifierPressed ? ' dxp-canvas-pan-held' : ''}${shiftSelectionActive ? ' dxp-canvas-shift-selecting' : ''}`}
           ref={canvas}
+          onContextMenu={(event) => {
+            event.preventDefault();
+            closeNodeMenu();
+          }}
           onDragOver={(e) => {
             e.preventDefault();
             e.dataTransfer.dropEffect = 'move';
@@ -1481,6 +1488,18 @@ function Builder({
                 }
                 dragStartWorkflow.current = null;
               }}
+              onNodeContextMenu={(event, node) => {
+                event.preventDefault();
+                event.stopPropagation();
+                flushActivity();
+                const bounds = canvas.current?.getBoundingClientRect();
+                if (bounds)
+                  setNodeMenu({
+                    id: node.id,
+                    x: event.clientX - bounds.left,
+                    y: event.clientY - bounds.top,
+                  });
+              }}
               onNodeClick={(event, node) => {
                 flushActivity();
                 if (event.shiftKey && shiftSelection.current) {
@@ -1507,6 +1526,7 @@ function Builder({
                 setSelectedId(null);
                 setSelectedEdgeId(null);
               }}
+              onMoveStart={closeNodeMenu}
               onMove={(_, viewport) => setZoom(Math.round(viewport.zoom * 100))}
               fitView
               fitViewOptions={{ padding: 0.18, minZoom: 0.35, maxZoom: 1 }}
@@ -1636,6 +1656,31 @@ function Builder({
               )}
             </ReactFlow>
           </NoteEditingContext.Provider>
+          {nodeMenu &&
+            view === 'canvas' &&
+            workflow.nodes.some((node) => node.id === nodeMenu.id) && (
+              <NodeContextMenu
+                x={nodeMenu.x}
+                y={nodeMenu.y}
+                onClose={closeNodeMenu}
+                onAction={(action) => {
+                  const target = current.current.nodes.find((node) => node.id === nodeMenu.id);
+                  closeNodeMenu();
+                  if (!target) return;
+                  if (action === 'duplicate') duplicate(target);
+                  else if (action === 'delete') removeNode(target);
+                  else {
+                    setSelectedId(target.id);
+                    setSelectedEdgeId(null);
+                    requestAnimationFrame(() =>
+                      canvas.current?.parentElement
+                        ?.querySelector<HTMLInputElement>('.dxp-inspector input')
+                        ?.focus(),
+                    );
+                  }
+                }}
+              />
+            )}
         </div>
         {selectedIds.length > 1 ? (
           <MultiNodeInspector
@@ -1666,8 +1711,8 @@ function Builder({
             onChange={patchNode}
             onClose={() => setSelectedId(null)}
             onPickElement={() => setPicking(true)}
-            onDelete={removeNode}
-            onDuplicate={duplicate}
+            onDelete={() => removeNode()}
+            onDuplicate={() => duplicate()}
             onPreviewContent={() => setModal('popover-preview')}
           />
         ) : selectedEdge ? (

@@ -1325,3 +1325,34 @@
 .dxp-builder .react-flow__handle.dxp-output-second {
   transform: translate(50%, 50%);
 }
+
+.dxp-node-context-menu {
+  position: absolute;
+  z-index: 100;
+  min-width: 160px;
+  padding: 5px;
+  border: 1px solid var(--dxp-line-strong);
+  border-radius: 10px;
+  background: var(--dxp-surface);
+  box-shadow: 0 8px 24px #0002;
+}
+.dxp-node-context-menu button {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 9px 12px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--dxp-text);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+.dxp-node-context-menu button:hover,
+.dxp-node-context-menu button:focus-visible {
+  background: var(--dxp-surface-muted);
+  outline: 2px solid var(--dxp-primary-border);
+  outline-offset: -2px;
+}

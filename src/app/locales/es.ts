@@ -565,6 +565,8 @@ export const spanishMessages = {
     'Conecta los pasos que quieras repetir a Cuerpo. Conecta el siguiente paso a Finalizado.',
   'nodeInspector.data': 'Datos',
   'nodeInspector.next': 'Siguiente',
+  'nodeInspector.actions': 'Acciones del nodo',
+  'nodeInspector.edit': 'Editar',
   'nodeInspector.duplicate': 'Duplicar',
   'nodeInspector.delete': 'Eliminar',
   'nodeLibrary.moreNodes': 'Más nodos',

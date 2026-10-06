@@ -596,6 +596,8 @@ export const englishMessages = {
   'nodeInspector.next': 'Next',
   'nodeInspector.duplicateItemname': ({ itemName }: { itemName: string }) =>
     `Duplicate ${itemName}`,
+  'nodeInspector.actions': 'Node actions',
+  'nodeInspector.edit': 'Edit',
   'nodeInspector.duplicate': 'Duplicate',
   'nodeInspector.deleteItemname': ({ itemName }: { itemName: string }) => `Delete ${itemName}`,
   'nodeInspector.delete': 'Delete',
