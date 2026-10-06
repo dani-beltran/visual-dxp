@@ -223,7 +223,7 @@ async function executeLocalAgent(
           turn === 0 &&
           !calls.some((call) => call.toolName === 'read_workflow')
         )
-          throw new Error('Local model did not honor required tool choice.');
+          throw new Error('Self-Hosted model did not honor required tool choice.');
         if (!calls.length) {
           if (result.finishReason !== 'stop') throw new Error('Incomplete provider response.');
           if (unresolvedCalls.length) {
@@ -332,7 +332,7 @@ async function executeLocalAgent(
     throw new AIServiceError(
       422,
       config.provider === 'local'
-        ? 'Local model request failed. Check reachability, model ID and tool-call support. No workflow changes were applied.'
+        ? 'Self-Hosted model request failed. Check reachability, model ID and tool-call support. No workflow changes were applied.'
         : 'Provider request failed. Check the selected provider key and model. No workflow changes were applied; no fallback was used.',
       config.provider === 'local' ? 'local_capabilities' : 'provider_failed',
     );

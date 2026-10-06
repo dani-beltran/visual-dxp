@@ -11,7 +11,7 @@ cp .env.example .env.local
 npm run dev
 ```
 
-Open http://127.0.0.1:3000. `OPENAI_MODEL` defaults to `gpt-6-luna`. See [execution and deployment setup](langchain.md) for remote execution. Claude uses ANTHROPIC_API_KEY and ANTHROPIC_MODEL; Local uses the settings below. Restart after changing environment variables. Browser AI Settings updates apply immediately and never change these files. The demo no longer reads `VITE_DXP_AI_ENDPOINT`; old Vite settings can be removed from your local environment. Do not copy secrets into any public variable.
+Open http://127.0.0.1:3000. `OPENAI_MODEL` defaults to `gpt-6-luna`. See [execution and deployment setup](langchain.md) for remote execution. Claude uses ANTHROPIC_API_KEY and ANTHROPIC_MODEL; Self-Hosted uses the settings below. Restart after changing environment variables. Browser AI Settings updates apply immediately and never change these files. The demo no longer reads `VITE_DXP_AI_ENDPOINT`; old Vite settings can be removed from your local environment. Do not copy secrets into any public variable.
 
 The demo passes exactly:
 
@@ -155,8 +155,8 @@ The active badge indicates selection, not connectivity. Locked/damaged settings 
 | `X-DXP-AI-Provider` | `openai`, `claude`, or `local`; omitted legacy requests mean OpenAI | Non-secret |
 | `X-DXP-AI-Override` | `browser` when using saved browser configuration | May log presence only |
 | `X-DXP-OpenAI-Key` / `X-DXP-OpenAI-Model` | OpenAI browser key/model; legacy protocol retained | Always redact key |
-| `X-DXP-AI-Key` / `X-DXP-AI-Model` | Claude or Local browser key/model | Always redact key |
-| `X-DXP-AI-Base-URL` | Local provider base URL only | Prefer omission |
+| `X-DXP-AI-Key` / `X-DXP-AI-Model` | Claude or Self-Hosted browser key/model | Always redact key |
+| `X-DXP-AI-Base-URL` | Self-Hosted provider base URL only | Prefer omission |
 
 The local key header is absent when authentication is not configured. Cloud keys and model IDs are mandatory for browser overrides. The server also accepts generic key/model headers for OpenAI but rejects mixing the legacy and generic pairs, or using OpenAI headers with another provider. Incomplete overrides, unknown providers, and cloud destination overrides fail before provider work. All of these headers are reserved and cannot be supplied via `ai.headers`.
 
@@ -172,31 +172,31 @@ Direct execution uses explicit request-scoped instances of `@ai-sdk/openai`, `@a
 | --- | --- | --- |
 | OpenAI | `https://api.openai.com/v1/responses`, `store: false`, encrypted reasoning continuation | `OPENAI_API_KEY`, `OPENAI_MODEL` (default `gpt-6-luna`); existing optional LangGraph mode |
 | Claude | `https://api.anthropic.com/v1/messages` | `ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL` (both required) |
-| Local | Loopback base URL + `/chat/completions` | `LOCAL_LLM_BASE_URL`, `LOCAL_LLM_MODEL`, optional `LOCAL_LLM_API_KEY` |
+| Self-Hosted | Configured HTTP(S) base URL + `/chat/completions` | `LOCAL_LLM_BASE_URL`, `LOCAL_LLM_MODEL`, optional `LOCAL_LLM_API_KEY` |
 
 Browser overrides replace the complete configuration for their selected provider. An empty local browser key means no authentication, even if server environment keys exist. No cross-provider credential mixing, model mixing, or retry/fallback occurs. Cloud environment base URL overrides are ignored.
 
-All direct execution uses one bounded loop (40 model calls, at most 100 calls per turn, at most 100 staged mutations, 8,192 output tokens per call, no automatic retries, 2 MiB per upstream response). It adapts the existing tool schemas and private mutation functions. Local models must honor a forced `read_workflow` call first. An endpoint/model that rejects tools or ignores that choice fails clearly. Unknown tools, malformed arguments, invalid mutations, truncation, cancellation and exhausted bounds discard the entire batch, including earlier staged edits. There is no partial commit. A capability check demonstrates basic tool calling, not comprehensive model quality.
+All direct execution uses one bounded loop (40 model calls, at most 100 calls per turn, at most 100 staged mutations, 8,192 output tokens per call, no automatic retries, 2 MiB per upstream response). It adapts the existing tool schemas and private mutation functions. Self-Hosted models must honor a forced `read_workflow` call first. An endpoint/model that rejects tools or ignores that choice fails clearly. Unknown tools, malformed arguments, invalid mutations, truncation, cancellation and exhausted bounds discard the entire batch, including earlier staged edits. There is no partial commit. A capability check demonstrates basic tool calling, not comprehensive model quality.
 
-OpenTelemetry now instruments the server-side AI workflow and tool loop; built-in SDK telemetry remains disabled to avoid duplicates. Full prompts/responses/tool data are exported only when `CAPTURE_LLM_CONTENT=true`, after redaction. See [capture controls, Grafana setup and retention](observability.md). Browser credentials never enter LangGraph state/checkpoints or LangSmith. If `LANGGRAPH_API_URL` is set, OpenAI server-default requests retain the existing stateless remote contract; Claude/Local server-default requests return 409. Browser configurations for all providers still execute directly. See [remote deployment](langchain.md).
+OpenTelemetry now instruments the server-side AI workflow and tool loop; built-in SDK telemetry remains disabled to avoid duplicates. Full prompts/responses/tool data are exported only when `CAPTURE_LLM_CONTENT=true`, after redaction. See [capture controls, Grafana setup and retention](observability.md). Browser credentials never enter LangGraph state/checkpoints or LangSmith. If `LANGGRAPH_API_URL` is set, OpenAI server-default requests retain the existing stateless remote contract; Claude/Self-Hosted server-default requests return 409. Browser configurations for all providers still execute directly. See [remote deployment](langchain.md).
 
-### Local model setup
+### Self-Hosted model setup
 
 Start an OpenAI-compatible runtime and load a model that supports tool calls. For example:
 
 ```dotenv
-# Only localhost, 127.0.0.1, or [::1]; no allowlist configuration needed.
+# Any HTTP(S) model server URL reachable from the backend; no allowlist configuration needed.
 # Optional development/debugging defaults:
 LOCAL_LLM_BASE_URL=http://127.0.0.1:11434/v1
 LOCAL_LLM_MODEL=your-installed-tool-capable-model
 LOCAL_LLM_API_KEY=
 ```
 
-Ollama commonly exposes `/v1` on port 11434; LM Studio commonly uses port 1234. Enter the actual base URL and loaded model ID in **Local**, then save and activate. Model IDs are editable and accept repository-style IDs and runtime tags. Model availability and tool support depend on the runtime and model; compatible API formatting alone is insufficient.
+Ollama commonly exposes `/v1` on port 11434; LM Studio commonly uses port 1234. Enter the actual base URL and loaded model ID in **Self-Hosted**, then save and activate. Model IDs are editable and accept repository-style IDs and runtime tags. Model availability and tool support depend on the runtime and model; compatible API formatting alone is insufficient.
 
-Local is for developers and debugging and only works when running the demo app locally alongside an OpenAI-compatible model server. The model base URL is separate from the browser’s application endpoint (`/api/ai/chat`). Requests originate from the **application backend**: localhost identifies the backend machine/container, not the visitor’s computer. The hosted demo cannot connect to a model on a visitor’s laptop.
+Self-Hosted connects to an OpenAI-compatible model server on any host reachable from the backend. The model base URL is separate from the browser’s application endpoint (`/api/ai/chat`). Requests originate from the **application backend**: localhost identifies the backend machine/container, not the visitor’s computer. A hosted demo can connect to a model on a visitor’s laptop only if that model server is reachable from the hosted backend.
 
-Only HTTP(S) URLs with a host of `localhost`, `127.0.0.1`, or `[::1]` are accepted. The backend rewrites `localhost` to `127.0.0.1` so DNS cannot change its destination. Ports and base paths are configurable. Remote hosts, private network addresses, URL credentials, queries, fragments, unsupported protocols and redirects are rejected. `AI_LOCAL_ALLOWED_BASE_URLS` is no longer used. Loopback access is intended for trusted local development; it still permits requests to other services listening on the backend’s loopback interfaces.
+Any HTTP(S) API base URL is accepted, including remote hosts and private network addresses. The backend rewrites `localhost` to `127.0.0.1` so DNS cannot change its destination. Ports and base paths are configurable. URL credentials, queries, fragments, unsupported protocols and redirects are rejected. `AI_LOCAL_ALLOWED_BASE_URLS` is no longer used.
 
 ## Encryption and isolation
 
@@ -237,7 +237,7 @@ The final `result` contains the validated reply and complete operation batch. A 
 Reasoning events appear in a collapsible **Reasoning summary** section on the assistant message. They stay in memory with the displayed conversation and are excluded from later chat history requests. `requestAIChat` accepts an optional sixth argument, `onReasoning(text)`, alongside its existing fifth-argument text callback. No summary section appears if the provider returns none.
 
 - OpenAI Responses uses `reasoning: { summary: "auto" }` through the SDK's `reasoningSummary` option. The SDK omits this setting for models it identifies as non-reasoning models. Encrypted reasoning items remain in the internal tool loop for continuity and are never sent to the chat UI.
-- Local OpenAI-compatible Chat Completions requests include `reasoning: { summary: "auto" }` as an extension. The SDK reads streamed `reasoning_content` or `reasoning` fields. This is not a standard Chat Completions option: support, summary availability, and the content returned depend on the server/model. Servers that reject this option fail the request without applying staged edits; there is no automatic retry.
+- Self-Hosted OpenAI-compatible Chat Completions requests include `reasoning: { summary: "auto" }` as an extension. The SDK reads streamed `reasoning_content` or `reasoning` fields. This is not a standard Chat Completions option: support, summary availability, and the content returned depend on the server/model. Servers that reject this option fail the request without applying staged edits; there is no automatic retry.
 - Claude Opus/Sonnet 4.6–4.8 and the supported 5-series, Fable, and Mythos models use `thinking: { type: "adaptive", display: "summarized" }`. Earlier thinking-capable Claude models (3.7 Sonnet, Opus/Sonnet 4/4.1/4.5, Haiku 4.5) use extended thinking with a 2,048-token budget within the existing 8,192-token output limit; those models return visible thinking by default. Other Claude IDs keep their existing behavior. Adaptive thinking may return no summary for simple requests. Enabling thinking can increase latency and output-token usage.
 
 Provider references: [OpenAI reasoning summaries](https://developers.openai.com/api/docs/guides/reasoning#reasoning-summaries) and [Claude thinking](https://platform.claude.com/docs/en/build-with-claude/thinking).

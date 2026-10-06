@@ -102,7 +102,7 @@ it('accepts unauthenticated local settings without Web Crypto and encrypts optio
   await store.saveProvider('local', { ...local, apiKey: 'local-secret-key' }, pass, endpoint);
   expect(localStorage.getItem(AI_SETTINGS_STORAGE_KEY)).not.toContain('local-secret-key');
   store.lock();
-  expect(() => get(store)).toThrow(/Unlock Local/);
+  expect(() => get(store)).toThrow(/Unlock Self-Hosted/);
   await store.unlock(pass, 'local');
   expect(get(store)).toMatchObject({ apiKey: 'local-secret-key' });
 });
@@ -242,3 +242,14 @@ it('recovers one damaged provider without losing healthy configurations or chang
   store.activate('openai');
   expect(get(store)).toMatchObject(openai);
 });
+
+it.each(['https://models.example.com/v1', 'http://192.168.1.1:1234/v1'])(
+  'saves and restores a local provider at %s',
+  async (baseURL) => {
+    const store = new AISettingsStore();
+    await store.saveProvider('local', { ...local, baseURL }, '', endpoint);
+    const restored = new AISettingsStore();
+    restored.refresh();
+    expect(get(restored)).toMatchObject({ provider: 'local', ...local, baseURL });
+  },
+);

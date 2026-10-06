@@ -78,7 +78,7 @@ export function allowedLocalBaseURL(value: string): string {
   } catch {
     throw new AIServiceError(
       400,
-      'Local models require a localhost, 127.0.0.1, or [::1] API base URL on the backend machine.',
+      'Self-Hosted models require an HTTP(S) API base URL without credentials, query, or fragment.',
       'local_destination',
     );
   }

@@ -977,7 +977,7 @@ export async function requestAIChat(
       if (override && (response.status === 400 || response.status === 422))
         throw new AIConfigurationError(
           provider === 'local'
-            ? 'Run the demo app and model server locally. Check the localhost base URL, optional key, and model. The model must support workflow tool calls. No changes were applied.'
+            ? 'Check that the model server is reachable from the backend and verify the API base URL, optional key, and model. The model must support workflow tool calls. No changes were applied.'
             : 'Check your browser API key and model in AI Settings. The override was rejected; no server fallback was used.',
         );
       if (response.status === 409)
