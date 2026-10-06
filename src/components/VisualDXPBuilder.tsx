@@ -153,7 +153,7 @@ export interface VisualDXPBuilderProps {
   /** Host-supplied translations; omitted messages fall back to English. */
   i18n?: BuilderI18n;
   initialWorkflow?: Workflow;
-  /** Optional, explicitly launched tutorial. Hosts supply the practice website. */
+  /** Optional tutorial that starts on load unless completed or dismissed. Hosts supply the practice website. */
   tutorial?: TutorialOptions;
   /** Optional configurations shown in Presets. Applying replaces the graph as one undoable edit. */
   presets?: readonly WorkflowPreset[];

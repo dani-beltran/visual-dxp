@@ -39,6 +39,7 @@ export interface TutorialOptions {
 export interface TutorialRecord {
   version: 1;
   status: 'in-progress' | 'dismissed' | 'completed';
+  needsReset?: boolean;
   step: TutorialStep;
   ids: Partial<Record<TutorialKind, string>>;
   defaultContent?: string;
@@ -89,6 +90,7 @@ export function readTutorial(key?: string): TutorialRecord | null {
       !steps.includes(value.step) ||
       !['in-progress', 'dismissed', 'completed'].includes(value.status) ||
       typeof value.fingerprint !== 'string' ||
+      (value.needsReset !== undefined && typeof value.needsReset !== 'boolean') ||
       ['ids', 'inspected', 'visited'].some(
         (k) => !value[k] || typeof value[k] !== 'object' || Array.isArray(value[k]),
       ) ||

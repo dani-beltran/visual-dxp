@@ -38,13 +38,22 @@ export function useTutorial({
 }) {
   const key = options?.storageKey ?? (persistenceKey ? `${persistenceKey}:tutorial:v1` : undefined);
   const [record, setRecord] = useState<TutorialRecord | null>(() =>
-    options ? readTutorial(key) : null,
+    options
+      ? (readTutorial(key) ?? {
+          ...newTutorial(workflow),
+          needsReset: !!(workflow.nodes.length || workflow.edges.length),
+        })
+      : null,
   );
   const [active, setActive] = useState(record?.status === 'in-progress');
   const [gate, setGate] = useState<'reset' | 'mismatch' | null>(() =>
-    record?.status === 'in-progress' && record.fingerprint !== tutorialFingerprint(workflow)
-      ? 'mismatch'
-      : null,
+    record?.status !== 'in-progress'
+      ? null
+      : record.needsReset
+        ? 'reset'
+        : record.fingerprint !== tutorialFingerprint(workflow)
+          ? 'mismatch'
+          : null,
   );
   const [error, setError] = useState(false);
   const run = useRef<TutorialRun | null>(null);
@@ -114,7 +123,8 @@ export function useTutorial({
     setError(false);
     if (record && record.status !== 'completed') {
       setRecord({ ...record, status: 'in-progress', step });
-      if (record.fingerprint !== fingerprint) setGate('mismatch');
+      if (record.needsReset) setGate('reset');
+      else if (record.fingerprint !== fingerprint) setGate('mismatch');
     } else if (workflow.nodes.length || workflow.edges.length) setGate('reset');
     else setRecord(newTutorial(workflow));
   }

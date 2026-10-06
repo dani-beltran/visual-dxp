@@ -125,7 +125,7 @@ it('keeps the empty state unchanged, and the reusable builder tutorial is opt-in
 
 it('builds and tests through the real editor, then visits every feature without modifying the workflow', async () => {
   await render();
-  expect(host.querySelector('.dxp-tutorial')).toBeNull();
+  expect(step()).toBe('Build your first digital experience.');
   await launch();
   expect(step()).toBe('Build your first digital experience.');
   await input('[aria-label="Workflow name"]', 'My first workflow.');
@@ -211,10 +211,10 @@ it('builds and tests through the real editor, then visits every feature without 
   );
 });
 
-it('resumes active progress after reload and keeps an explicitly closed tutorial closed', async () => {
+it('automatically starts and resumes progress, then keeps an explicitly closed tutorial closed', async () => {
   vi.useFakeTimers();
   await render();
-  expect(host.querySelector('.dxp-tutorial')).toBeNull();
+  expect(step()).toBe('Build your first digital experience.');
   await launch();
   await input('[aria-label="Workflow name"]', 'My first workflow.');
   await click('Continue');
@@ -231,6 +231,27 @@ it('resumes active progress after reload and keeps an explicitly closed tutorial
   root = createRoot(host);
   await render();
   expect(host.querySelector('.dxp-tutorial')).toBeNull();
+});
+
+it('protects existing work on automatic launch and remembers dismissal of the reset prompt', async () => {
+  const existing = { ...defaultWorkflow, nodes: [createNode('note')] };
+  localStorage.setItem(key, JSON.stringify(existing));
+  await render();
+  expect(step()).toBe('Start a new tutorial?');
+  expect(latest).toMatchObject(existing);
+  await act(async () => root.unmount());
+  root = createRoot(host);
+  await render();
+  expect(step()).toBe('Start a new tutorial?');
+  expect(latest).toMatchObject(existing);
+  await click('Cancel');
+  await act(async () => root.unmount());
+  root = createRoot(host);
+  await render();
+  expect(host.querySelector('.dxp-tutorial')).toBeNull();
+  await launch();
+  expect(step()).toBe('Start a new tutorial?');
+  expect(latest).toMatchObject(existing);
 });
 
 it('opens recovery for changed active workflows and remembers Cancel without accepting the mismatch', async () => {
