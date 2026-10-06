@@ -228,7 +228,7 @@ it('builds and tests through the real editor, then visits every feature without 
   expect(JSON.parse(el('.dxp-code code').textContent!)).toMatchObject({
     websiteUrl: '/demo-site.html',
   });
-  await click('Close export');
+  await click('Close dialog');
   await click('Continue');
   expect(step()).toBe('Discover Presets');
   await click('Presets');
