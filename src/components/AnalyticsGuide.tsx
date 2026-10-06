@@ -154,9 +154,8 @@ export function AnalyticsGuide() {
       </details>
       <details className="dxp-analytics-chapter">
         <summary>
-          <h4>{t('analytics.guide.legacyTitle')}</h4>
+          <h4>{t('analytics.guide.privacyTitle')}</h4>
         </summary>
-        {paragraph('analytics.guide.legacy')}
         {paragraph('analytics.guide.privacy')}
       </details>
     </section>

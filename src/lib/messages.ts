@@ -89,11 +89,9 @@ export const englishMessages = {
     'An Experiment step sends experiment_id and variant_id automatically. Build comparison segments from its assignment event, then compare downstream milestones for A and B. Custom milestone events do not inherit variant_id; do not assume a simple variant breakdown on those events will work. Keep the Experiment ID stable during a test; changing it starts fresh browser assignments.',
   'analytics.guide.scope':
     'Visual DXP executes the experiment and GA4 reports the observations. This does not create a native GA experiment or automatically determine statistical significance. Google’s experiment integration guide covers “In-house and custom experiments”. A milestone should confirm a real outcome; workflow completion alone is not a conversion.',
-  'analytics.guide.legacyTitle': '7. Existing workflows and data boundaries',
-  'analytics.guide.legacy':
-    'Older saved CTA configurations can still send experiment_view when the CTA is visible and experiment_cta after a matching click or change. They include experiment_id and variant_id; the CTA event also includes cta_type. If you use those legacy events, forward them in GTM, register the needed dimensions, and compare experiment_view → experiment_cta. New workflows use automatic assignment tracking and Track event milestones.',
+  'analytics.guide.privacyTitle': '7. Data and privacy',
   'analytics.guide.privacy':
-    'Visual DXP sends built-in metadata and custom values explicitly mapped in Payload. Never map personal information or secrets. It reuses the website’s analytics and consent configuration. Use descriptive reporting IDs and milestone names, without personal information. Legacy per-node settings remain active when no shared configuration has been saved; explicitly choose No tracking here to turn tracking off.',
+    'Visual DXP sends built-in metadata and custom values explicitly mapped in Payload. Never map personal information or secrets. It reuses the website’s analytics and consent configuration. Use descriptive reporting IDs and milestone names, without personal information.',
   'analytics.guide.tagLink': 'Google guide: send GA4 events',
   'analytics.guide.gtmLink': 'Google guide: configure GA4 event tags',
   'analytics.guide.dimensionsLink': 'Google guide: event-scoped custom dimensions',
@@ -136,12 +134,6 @@ export const englishMessages = {
   'builder.analytics': 'Analytics',
   'analytics.description':
     'Configure workflow progress, experiment assignments, and custom milestone events here.',
-  'analytics.legacy':
-    'This workflow uses saved per-experiment settings. Changing a setting here applies one shared configuration to all tracked experiments.',
-  'analytics.trackExperiment': 'Track this experiment',
-  'analytics.nodeHint': 'Delivery and measurement settings are managed in the Analytics tab.',
-  'analytics.disabledHint':
-    'Enable Google Analytics in the Analytics tab to send events for this experiment.',
   'analytics.openSettings': 'Open Analytics settings',
   'activity.analyticsUpdated': 'Updated analytics settings',
   'errors.ai.invalid_workflow_edit': aiEditFailures.invalid_workflow_edit,
@@ -155,48 +147,16 @@ export const englishMessages = {
   'experiment.none': 'No tracking',
   'experiment.premium': 'Premium',
   'experiment.id': 'Experiment ID',
-  'experiment.idHint':
-    'Required. Identifies this experiment in analytics. This is not the GA measurement ID.',
-  'experiment.cta': 'CTA element',
-  'experiment.interaction': 'CTA interaction',
-  'experiment.click': 'Click',
-  'experiment.change': 'Field value committed',
-  'experiment.clickInteractionHint': 'Click tracks activation, including nested elements.',
-  'experiment.changeInteractionHint':
-    'Change tracks committed changes on inputs, selects, and checkboxes.',
-  'experiment.interactionHint':
-    'Click tracks activation, including nested elements. Change tracks committed changes on inputs, selects, and checkboxes.',
-  'experiment.mapping':
-    'Google Analytics uses the Experiment ID configured above as experiment_id. Variants are mapped to variant_id: Variant A → a; Variant B → b. These dimensions are sent with experiment_view and experiment_cta events.',
   'experiment.delivery': 'Event delivery',
   'experiment.gtag': 'Google tag',
   'experiment.gtm': 'Google Tag Manager',
   'experiment.gtagHint':
     'Calls the website’s existing window.gtag. Leave the measurement ID empty to use its existing destinations.',
-  'experiment.gtmHint':
-    'Pushes experiment_view and experiment_cta with experiment_id, variant_id, and cta_type (CTA only) to the existing window.dataLayer. The website owner must configure GTM custom event triggers, data layer variables for these parameters, and GA4 event tags to forward them.',
   'experiment.measurementId': 'GA4 measurement ID (optional)',
   'experiment.measurementIdHint':
     'When the website has multiple destinations, enter an ID to target a particular GA4 stream.',
   'experiment.privacyHint':
     'Uses only the selected delivery method. Visual DXP does not install another tag or change website consent. Queued events are not confirmed delivery; blocked or missing analytics will not stop the workflow. Editor previews simulate events in the execution log.',
-  'experiment.reporting': 'Set up reporting in Google Analytics',
-  'experiment.guideInstall':
-    'Install or reuse the website’s GA4 tag. For Google Tag Manager, configure forwarding as described above.',
-  'experiment.guideId': 'Choose an Experiment ID in Visual DXP, such as homepage-cta-v1.',
-  'experiment.guideDimensions':
-    'Create event-scoped custom dimensions for experiment_id and variant_id to compare experiment assignments.',
-  'experiment.guideValues':
-    'Values such as homepage-cta-v1, a, and b arrive automatically with events. You do not manually register each value.',
-  'experiment.guideExplore':
-    'In Explorations, filter dxp_workflow_step by experiment_id and compare variant_id. Add Track event milestones to measure progression or conversions.',
-  'experiment.guideDebug':
-    'Verify both events and their parameters in DebugView using your website’s GA4 debug mode or GTM Preview.',
-  'experiment.guideScope':
-    'Visual DXP runs the experiment; GA4 reports its results. This does not create a native Google Analytics experiment or automatically determine statistical significance.',
-  'experiment.guideIntegrationLink': 'Create an experiment integration with Google Analytics',
-  'experiment.guideIntegrationHint': 'Read “In-house and custom experiments”.',
-  'experiment.guideFunnelLink': 'GA4 funnel exploration',
   'experiment.invalidPlatform': 'Choose a supported analytics platform.',
   'experiment.requiredId': 'Enter an Experiment ID for analytics.',
   'experiment.requiredSelector': 'Choose a CTA element for analytics.',

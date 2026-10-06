@@ -88,11 +88,9 @@ export const spanishMessages = {
     'El paso Experimento envía experiment_id y variant_id automáticamente. Crea segmentos a partir de la asignación y compara los hitos posteriores de A y B. Los eventos de hito no heredan variant_id; no asumas que basta con desglosarlos por variante. Mantén estable el ID durante la prueba; cambiarlo reinicia las asignaciones del navegador.',
   'analytics.guide.scope':
     'Visual DXP ejecuta el experimento y GA4 muestra las observaciones. No crea un experimento nativo de GA ni determina automáticamente la significación estadística. La guía de integración de Google incluye “In-house and custom experiments”. Un hito debe confirmar un resultado real; completar un flujo no equivale a convertir.',
-  'analytics.guide.legacyTitle': '7. Flujos existentes y límites de los datos',
-  'analytics.guide.legacy':
-    'Las configuraciones CTA antiguas pueden seguir enviando experiment_view cuando el CTA es visible y experiment_cta tras un clic o cambio válido. Incluyen experiment_id y variant_id; el evento CTA añade cta_type. Si usas estos eventos heredados, reenvíalos en GTM, registra las dimensiones necesarias y compara experiment_view → experiment_cta. Los flujos nuevos usan asignaciones automáticas e hitos Registrar evento.',
+  'analytics.guide.privacyTitle': '7. Datos y privacidad',
   'analytics.guide.privacy':
-    'Visual DXP envía los metadatos integrados y los valores asignados explícitamente en Carga útil. No incluyas información personal ni secretos. Reutiliza la analítica y el consentimiento del sitio. Usa ID y nombres descriptivos sin información personal. Los ajustes heredados por nodo siguen activos si no hay configuración compartida guardada; selecciona explícitamente Sin seguimiento aquí para desactivarlos.',
+    'Visual DXP envía los metadatos integrados y los valores asignados explícitamente en Carga útil. No incluyas información personal ni secretos. Reutiliza la analítica y el consentimiento del sitio. Usa ID y nombres descriptivos sin información personal.',
   'analytics.guide.tagLink': 'Guía de Google: enviar eventos GA4',
   'analytics.guide.gtmLink': 'Guía de Google: configurar etiquetas de evento GA4',
   'analytics.guide.dimensionsLink': 'Guía de Google: dimensiones personalizadas de evento',
@@ -136,12 +134,6 @@ export const spanishMessages = {
   'builder.analytics': 'Analítica',
   'analytics.description':
     'Configura aquí el progreso del flujo, las asignaciones de experimentos y los hitos personalizados.',
-  'analytics.legacy':
-    'Este flujo usa ajustes guardados por experimento. Al cambiar un ajuste aquí se aplicará una configuración compartida a todos los experimentos con seguimiento.',
-  'analytics.trackExperiment': 'Registrar este experimento',
-  'analytics.nodeHint': 'La entrega y la medición se configuran en la pestaña Analítica.',
-  'analytics.disabledHint':
-    'Activa Google Analytics en la pestaña Analítica para enviar eventos de este experimento.',
   'analytics.openSettings': 'Abrir ajustes de analítica',
   'activity.analyticsUpdated': 'Ajustes de analítica actualizados',
   'errors.ai.invalid_workflow_edit':
@@ -157,50 +149,16 @@ export const spanishMessages = {
   'experiment.none': 'Sin seguimiento',
   'experiment.premium': 'Premium',
   'experiment.id': 'ID del experimento',
-  'experiment.idHint':
-    'Obligatorio. Identifica el experimento en analítica. No es el ID de medición de GA.',
-  'experiment.cta': 'Elemento CTA',
-  'experiment.interaction': 'Interacción del CTA',
-  'experiment.click': 'Clic',
-  'experiment.change': 'Valor del campo confirmado',
-  'experiment.clickInteractionHint':
-    'Clic registra la activación, incluidos los elementos anidados.',
-  'experiment.changeInteractionHint':
-    'Registra cambios confirmados en campos, selectores y casillas.',
-  'experiment.interactionHint':
-    'Clic registra la activación, incluidos los elementos anidados. Change registra cambios confirmados en campos, selectores y casillas.',
-  'experiment.mapping':
-    'Google Analytics usa el ID del experimento configurado arriba como experiment_id. Las variantes se asignan a variant_id de la siguiente forma: Variante A → a; Variante B → b. Esta dimensión se enviará con los eventos experiment_view y experiment_cta.',
   'experiment.delivery': 'Envío de eventos',
   'experiment.gtag': 'Etiqueta de Google',
   'experiment.gtm': 'Google Tag Manager',
   'experiment.gtagHint':
     'Usa window.gtag ya instalado en el sitio. Deja vacío el ID de medición para usar sus destinos existentes.',
-  'experiment.gtmHint':
-    'Añade experiment_view y experiment_cta con experiment_id, variant_id y cta_type (solo CTA) a window.dataLayer existente. El propietario del sitio debe configurar activadores de eventos personalizados, variables de la capa de datos para estos parámetros y etiquetas de eventos GA4 que los envíen.',
   'experiment.measurementId': 'ID de medición de GA4 (opcional)',
   'experiment.measurementIdHint':
     'Si el sitio web tiene varios destinos, introduce un ID para dirigir los eventos a un flujo de GA4 específico.',
   'experiment.privacyHint':
     'Solo usa el método de envío seleccionado. Visual DXP no instala otra etiqueta ni cambia el consentimiento del sitio. Un evento en cola no confirma la recepción; la analítica bloqueada o ausente no detiene el flujo. La vista previa simula eventos en el registro de ejecución.',
-  'experiment.reporting': 'Configurar informes en Google Analytics',
-  'experiment.guideInstall':
-    'Instala o reutiliza la etiqueta GA4 del sitio. En Google Tag Manager, configura el envío descrito arriba.',
-  'experiment.guideId': 'Elige un ID del experimento en Visual DXP, como homepage-cta-v1.',
-  'experiment.guideDimensions':
-    'Crea dimensiones personalizadas de evento para experiment_id y variant_id para comparar las asignaciones de los experimentos.',
-  'experiment.guideValues':
-    'Valores como homepage-cta-v1, a y b llegan automáticamente con los eventos. No se registra cada valor manualmente.',
-  'experiment.guideExplore':
-    'En Exploraciones, filtra dxp_workflow_step por experiment_id y compara variant_id. Añade hitos Registrar evento para medir el progreso o las conversiones.',
-  'experiment.guideDebug':
-    'Verifica ambos eventos y sus parámetros en DebugView con el modo de depuración GA4 del sitio o la vista previa de GTM.',
-  'experiment.guideScope':
-    'Visual DXP ejecuta el experimento; GA4 informa de los resultados. No se crea un experimento nativo de Google Analytics ni se determina automáticamente la significación estadística.',
-  'experiment.guideIntegrationLink': 'Crear una integración de experimentos con Google Analytics',
-  'experiment.guideIntegrationHint':
-    'Consulta “In-house and custom experiments” (experimentos propios y personalizados).',
-  'experiment.guideFunnelLink': 'Exploración de embudos de GA4',
   'experiment.invalidPlatform': 'Elige una plataforma de analítica compatible.',
   'experiment.requiredId': 'Introduce un ID del experimento para analítica.',
   'experiment.requiredSelector': 'Elige un elemento CTA para analítica.',

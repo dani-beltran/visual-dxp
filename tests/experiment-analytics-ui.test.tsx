@@ -155,7 +155,7 @@ it('shows the Guide only when Google Analytics is selected', async () => {
   expect(guide?.textContent).toContain('Custom Event');
   expect(guide?.textContent).toContain('Custom definitions');
   expect(guide?.textContent).toContain('DebugView');
-  expect(guide?.textContent).toContain('experiment_view → experiment_cta');
+  expect(guide?.textContent).not.toMatch(/legacy|deprecated|experiment_view|experiment_cta/i);
   expect(guide?.textContent).toContain('do not inherit variant_id');
   expect(guide?.querySelectorAll('tbody tr')).toHaveLength(4);
   expect(guide?.querySelectorAll('a')).toHaveLength(6);

@@ -63,7 +63,6 @@ export function AnalyticsSettings({
     <section className="dxp-analytics-settings dxp-inspector" aria-labelledby={id('heading')}>
       <h2 id={id('heading')}>{t('builder.analytics')}</h2>
       <p className="dxp-inspector-hint">{t('analytics.description')}</p>
-      {workflow.analytics === undefined && legacy && <InfoBox>{t('analytics.legacy')}</InfoBox>}
       <fieldset className="dxp-analytics-platforms">
         <legend className="dxp-sr-only">{t('experiment.analytics')}</legend>
         {(['none', 'ga4', 'posthog'] as const).map((value) => (

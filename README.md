@@ -511,16 +511,14 @@ Saved workflow configuration uses `kind: 'experiment'`, `config: { experimentSpl
 
 Open the **Analytics** tab to the right of **Activity** and select **Google Analytics**. Configure delivery and the optional measurement ID once for the workflow. Every executed Experiment is automatically tracked through `dxp_workflow_step`, with `experiment_id` (the Experiment ID or node ID when empty) and `variant_id` (`a` or `b`). The Experiment node’s Parameters section contains an info box linking directly to Analytics; it has no separate tracking controls. Use **Track event** nodes on the experiment’s paths to mark milestones or confirmed conversions.
 
-Shared settings are saved with the workflow, support Undo/Redo, and apply in preview and exported scripts. Selecting **No tracking** disables workflow and experiment events. Existing saved CTA exposure/interaction configurations remain supported for compatibility; the following `experiment_view` and `experiment_cta` details describe that legacy tracking. Legacy per-node configurations without shared settings retain their original behavior.
+Shared settings are saved with the workflow, support Undo/Redo, and apply in preview and exported scripts. Selecting **No tracking** disables workflow and experiment events.
 
 The target website must already have analytics installed. Choose exactly one delivery method:
 
 - **Google tag** calls existing `window.gtag('event', name, parameters)`. An optional workflow `analytics.measurementId` supplies `send_to`; omission uses the tag’s existing destinations.
-- **Google Tag Manager** pushes `{ event: name, ...parameters }` to existing `window.dataLayer`. The website owner must configure custom event triggers for `experiment_view` / `experiment_cta`, data layer variables for the parameters, and GA4 event tags to forward them. A data layer push alone does not deliver a GA4 event.
+- **Google Tag Manager** pushes `{ event: name, ...parameters }` to existing `window.dataLayer`. The website owner must configure custom event triggers for workflow lifecycle events and your custom milestone names, data layer variables for the parameters, and GA4 event tags to forward them. A data layer push alone does not deliver a GA4 event.
 
 Visual DXP installs no Google tag, requests no API secret, and does not configure consent. Logs distinguish simulated events, events queued to the selected API (delivery unconfirmed), and unavailable analytics. Missing or throwing analytics never stops the workflow. Editor previews always simulate tracking and show the event name and parameters in the execution log.
-
-`experiment_view` contains `experiment_id` and `variant_id` (`a` or `b` from the actual assigned branch). It records exposure only when the configured CTA is visible in the viewport, including content inserted or replaced by downstream DOM steps. Exposure is deduplicated per reporting ID and variant within the runtime. `experiment_cta` adds `cta_type` (`click` or `change`), tracks matching interactions only after exposure, and supports nested click targets. Delegated passive listeners survive DOM replacement without interception of navigation or form submission. Repeated execution does not duplicate a single interaction; simultaneous experiments remain independent. Runtime destruction removes listeners and observers. No element text, input values, or visitor identifiers are collected by this tracking integration.
 
 Set the shared configuration in `workflow.analytics`:
 
@@ -528,23 +526,11 @@ Set the shared configuration in `workflow.analytics`:
 { "provider": "ga4", "delivery": "gtag", "measurementId": "G-XXXXXXXXXX" }
 ```
 
-Example legacy Experiment configuration (retained for compatibility):
-
-```json
-{
-  "experimentSplit": 50,
-  "experimentKey": "homepage-cta-v1",
-  "experimentAnalytics": "ga4",
-  "experimentSelector": ".checkout-cta",
-  "experimentInteraction": "click"
-}
-```
-
-The Analytics tab’s unified Guide covers Google tag and GTM setup, event verification, custom dimensions, funnel reporting, and legacy CTA compatibility. It explains event-scoped custom dimensions (`experiment_id`, `variant_id`), automatic parameter values, comparison of assignments using `dxp_workflow_step` and custom milestones in Explorations, and verification in DebugView. See [Google’s experiment integration guide](https://developers.google.com/analytics/devguides/collection/ga4/integration), specifically **In-house and custom experiments**, and [GA4 funnel exploration](https://support.google.com/analytics/answer/9327974?hl=en). Visual DXP executes experiments and GA4 reports results; the integration does not create native GA experiments or calculate statistical significance.
+The Analytics tab’s unified Guide covers Google tag and GTM setup, event verification, custom dimensions, funnel reporting, and data privacy. It explains event-scoped custom dimensions (`experiment_id`, `variant_id`), automatic parameter values, comparison of assignments using `dxp_workflow_step` and custom milestones in Explorations, and verification in DebugView. See [Google’s experiment integration guide](https://developers.google.com/analytics/devguides/collection/ga4/integration), specifically **In-house and custom experiments**, and [GA4 funnel exploration](https://support.google.com/analytics/answer/9327974?hl=en). Visual DXP executes experiments and GA4 reports results; the integration does not create native GA experiments or calculate statistical significance.
 
 ### Workflow funnels and custom milestones
 
-Selecting **Google Analytics** in the **Analytics** tab also enables workflow progress events. Set a stable **Workflow ID** and **Reporting version** there. Older settings without those fields use the workflow name and reporting version `1`; the reporting version is independent of the workflow JSON schema version.
+Selecting **Google Analytics** in the **Analytics** tab also enables workflow progress events. Set a stable **Workflow ID** and **Reporting version** there. When omitted, these fields default to the workflow name and reporting version `1`; the reporting version is independent of the workflow JSON schema version.
 
 | Event | When it is sent | Additional parameters |
 | --- | --- | --- |
@@ -558,6 +544,6 @@ Add a **Track event** node to mark a milestone on a specific path. Configure a s
 
 Event names support 1–40 ASCII letters, numbers, and underscores, starting with a letter. Automatic GA4 web event names and Visual DXP lifecycle/experiment names are reserved; `dxp_`, `query_id`, `google_`, `ga_`, and `firebase_` prefixes are rejected. See [Google’s event naming rules](https://support.google.com/analytics/answer/13316687?hl=en). The optional **Payload (JSON)** field sends explicitly mapped event parameters, e.g. `{ "plan": "{{plan}}", "value": {{price}} }`. It uses incoming-data variables with the same JSON escaping and type preservation as HTTP request bodies. Leave it empty to send only workflow metadata. Missing variables or invalid JSON stop the step; reserved metadata and routing fields cannot be overridden. With GTM, map custom parameters in the GA4 event tag. Do not include personal information or secrets.
 
-Google tag delivery uses the existing `gtag` function and optional measurement destination. For **GTM**, configure custom event triggers for the three lifecycle names and every custom milestone name, data layer variables for their parameters, and GA4 event tags. No tracking means no workflow or milestone events. Legacy per-experiment settings alone do not enable workflow events; select Google Analytics in the shared tab. Previews simulate all events in the execution log.
+Google tag delivery uses the existing `gtag` function and optional measurement destination. For **GTM**, configure custom event triggers for the three lifecycle names and every custom milestone name, data layer variables for their parameters, and GA4 event tags. No tracking means no workflow or milestone events. Previews simulate all events in the execution log.
 
 Register the low-cardinality identifiers you need as event-scoped custom dimensions and build a [GA4 Funnel exploration](https://support.google.com/analytics/answer/9327974?hl=en), for example `dxp_workflow_started → offer_accepted → lead_confirmed`. For automatic steps, filter `dxp_workflow_step` by `step_id` and the workflow ID/version. Verify collection with DebugView. Avoid registering unique `run_id` values as a custom dimension: GA4 funnels count users, while raw event exports can support exact per-run analysis.
