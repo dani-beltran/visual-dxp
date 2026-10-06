@@ -1,4 +1,5 @@
 import { configBeforeAIPatch, validateAIConfigWrite } from '../../../lib/aiConfig';
+import { type AIReviewProposal, parseReviewProposal } from '../../../lib/aiReview';
 import { RecoverableToolError } from '../../../lib/aiToolErrors';
 import { isAnalyticsSettings } from '../../../lib/analytics';
 import { type BrandingProfile, parseBrandingProfile } from '../../../lib/branding';
@@ -10,6 +11,7 @@ import { validateWorkflow } from './validation';
 export interface AIChatMessage {
   role: 'user' | 'assistant';
   content: string;
+  reviewProposal?: AIReviewProposal;
 }
 
 export interface AIChatRequest {
@@ -42,6 +44,7 @@ export type WorkflowOperation =
   | { type: 'remove_edge'; id: string };
 
 export interface AIChatResponse {
+  reviewProposal?: AIReviewProposal;
   message: string;
   operations: WorkflowOperation[];
 }
@@ -554,6 +557,9 @@ export function parseAIChatResponse(value: unknown): AIChatResponse {
   return {
     message: text(input.message, 'AI reply', AI_LIMITS.messageCharacters),
     operations: operations(input.operations),
+    ...(input.reviewProposal !== undefined
+      ? { reviewProposal: parseReviewProposal(input.reviewProposal) }
+      : {}),
   };
 }
 
@@ -572,6 +578,9 @@ export function parseAIChatRequest(value: unknown): AIChatRequest {
     return {
       role: message.role,
       content: text(message.content, 'Chat message', AI_LIMITS.messageCharacters),
+      ...(message.role === 'assistant' && message.reviewProposal !== undefined
+        ? { reviewProposal: parseReviewProposal(message.reviewProposal) }
+        : {}),
     };
   });
   if (messages.at(-1)?.role !== 'user')

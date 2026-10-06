@@ -34,6 +34,7 @@ export interface CanvasChatProps {
   ) => Promise<{
     message: string;
     changeCount: number;
+    reviewProposal?: AIChatMessage['reviewProposal'];
   }>;
 }
 
@@ -170,7 +171,10 @@ export function CanvasChat({
         },
       );
       if (controller.signal.aborted || request.current !== controller) return;
-      history.current = [...conversation, { role: 'assistant', content: result.message }];
+      history.current = [
+        ...conversation,
+        { role: 'assistant', content: result.message, reviewProposal: result.reviewProposal },
+      ];
       setMessages((previous) => [
         ...previous.filter((message) => message.id !== assistantId),
         {

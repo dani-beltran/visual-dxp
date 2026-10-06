@@ -156,7 +156,7 @@ it('streams deployment custom events before receiving the final state', async ()
 });
 
 it.each([false, true])(
-  'streams provider tokens before generation finishes (graph: %s)',
+  'holds final text until review while streaming reasoning (graph: %s)',
   async (useGraph) => {
     vi.stubEnv('OPENAI_API_KEY', 'test-private-key');
     const source = channel();
@@ -232,7 +232,7 @@ it.each([false, true])(
       content_index: 0,
       delta: 'Hello',
     });
-    await vi.waitFor(() => expect(chunks).toEqual(['Hello']));
+    expect(chunks).toEqual([]);
     event({
       type: 'response.completed',
       response: {
@@ -242,7 +242,8 @@ it.each([false, true])(
       },
     });
     source.close();
-    expect((await result).message).toBe('Hello');
+    expect((await result).message).toBe('Done.');
+    expect(chunks).toEqual(['Done.']);
   },
 );
 
@@ -563,3 +564,9 @@ it.each(['invalid', 'duplicate', 'changed'])('rejects %s early workflow events',
   ).rejects.toThrow();
   expect(ready).toHaveBeenCalledTimes(mode === 'invalid' ? 0 : 1);
 });
+
+// Provider/tool-loop tests isolate the independent semantic review call.
+vi.mock('../../src/server/ai/review', async (original) => ({
+  ...(await original<typeof import('../../src/server/ai/review')>()),
+  reviewWorkflow: vi.fn(async () => ({ summary: 'Done.', findings: [], question: '' })),
+}));

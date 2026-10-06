@@ -36,7 +36,7 @@ function request(extra: Record<string, string> = {}, url = 'https://builder.test
     body: JSON.stringify(input),
   });
 }
-function response(model: string) {
+function response(model: string, review = false) {
   return Response.json({
     id: 'resp-test',
     object: 'response',
@@ -49,7 +49,15 @@ function response(model: string) {
         id: 'msg-test',
         role: 'assistant',
         status: 'completed',
-        content: [{ type: 'output_text', text: 'Ready.', annotations: [] }],
+        content: [
+          {
+            type: 'output_text',
+            text: review
+              ? JSON.stringify({ summary: 'Ready.', findings: [], question: '' })
+              : 'Ready.',
+            annotations: [],
+          },
+        ],
       },
     ],
     usage: { input_tokens: 1, output_tokens: 1, total_tokens: 2 },
@@ -93,7 +101,10 @@ describe('request-scoped browser AI', () => {
       expect(String(init.body)).not.toContain('user-key');
       expect(String(init.body)).not.toContain('server-key');
       await new Promise((resolve) => setTimeout(resolve, 5));
-      return response(body.model);
+      return response(
+        body.model,
+        JSON.stringify(body.input).includes('You are a read-only workflow reviewer.'),
+      );
     });
     vi.stubGlobal('fetch', fetcher);
     const outcomes = await Promise.all(
@@ -114,6 +125,8 @@ describe('request-scoped browser AI', () => {
     expect(fetcher.mock.calls.map(([url]) => String(url))).toEqual([
       'https://api.openai.com/v1/responses',
       'https://api.openai.com/v1/responses',
+      'https://api.openai.com/v1/responses',
+      'https://api.openai.com/v1/responses',
     ]);
     expect(JSON.stringify(outcomes)).not.toContain('user-key');
     expect(JSON.stringify(logs.map((log) => log.mock.calls))).not.toContain('user-key');
@@ -127,7 +140,10 @@ describe('request-scoped browser AI', () => {
       const body = JSON.parse(String(init.body));
       expect(body.model).toBe('server-model');
       expect(new Headers(init.headers).get('authorization')).toBe('Bearer server-key');
-      return response(body.model);
+      return response(
+        body.model,
+        JSON.stringify(body.input).includes('You are a read-only workflow reviewer.'),
+      );
     });
     await respondToAIChat(input, new AbortController().signal);
   });

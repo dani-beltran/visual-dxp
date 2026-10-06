@@ -896,3 +896,24 @@ it('rejects an early workflow batch after the canvas changes', async () => {
   expect(onChange.mock.lastCall?.[0]).toEqual({ ...baseline, name: 'Manual title' });
   expect(host.querySelector('[role="alert"]')?.textContent).toContain('The canvas changed');
 });
+
+it('retains the reviewed proposal and canvas version when the user approves an alternative', async () => {
+  const reviewProposal = {
+    workflowVersion: 'a'.repeat(64),
+    proposal: 'Track confirmed purchases. Apply this?',
+  };
+  const onSend = vi
+    .fn()
+    .mockResolvedValueOnce({ message: reviewProposal.proposal, changeCount: 1, reviewProposal })
+    .mockResolvedValueOnce({ message: 'Applied.', changeCount: 1 });
+  await renderChat({ onSend, open: true });
+  await typeMessage('Add purchase tracking');
+  await pressKey('Enter');
+  await typeMessage('Yes, apply that');
+  await pressKey('Enter');
+  expect(onSend.mock.calls[1][0]).toContainEqual({
+    role: 'assistant',
+    content: reviewProposal.proposal,
+    reviewProposal,
+  });
+});

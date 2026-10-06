@@ -354,3 +354,13 @@ it('authors ordered Data Transform nodes and flow-only connections through the A
   ).toBe(false);
   expect(toolkit.getWorkflow()).toEqual(before);
 });
+
+// Provider/tool-loop tests isolate the independent semantic review call.
+vi.mock('../../src/server/ai/review', async (original) => ({
+  ...(await original<typeof import('../../src/server/ai/review')>()),
+  reviewWorkflow: vi.fn(async () => ({
+    summary: 'Added and connected a 2-second delay.',
+    findings: [],
+    question: '',
+  })),
+}));

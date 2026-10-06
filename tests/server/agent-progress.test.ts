@@ -882,7 +882,7 @@ describe.each([false, true])('agent progress (streaming: %s)', (streaming) => {
   });
 });
 
-it('commits a complete batch before the explanation and disables further tools', async () => {
+it('commits a reviewed batch without another editor generation', async () => {
   const calls = provider(
     [
       ['update_node', { id: 'offer', label: 'Updated offer' }],
@@ -891,15 +891,6 @@ it('commits a complete batch before the explanation and disables further tools',
     true,
   );
   const ready = vi.fn();
-  const implementation = vi.mocked(streamText).getMockImplementation();
-  if (!implementation) throw new Error('Missing provider mock.');
-  vi.mocked(streamText).mockImplementation((...args) => {
-    if (calls().length === 3) {
-      expect(ready).toHaveBeenCalledTimes(1);
-      expect(args[0].toolChoice).toBe('none');
-    }
-    return implementation(...args);
-  });
   const result = await runLocalAgent(
     request(),
     new AbortController().signal,
@@ -911,7 +902,7 @@ it('commits a complete batch before the explanation and disables further tools',
   expect(ready).toHaveBeenCalledTimes(1);
   expect(ready.mock.calls[0][0].operations).toEqual(result.operations);
   expect(result.operations).toHaveLength(1);
-  expect(calls()).toHaveLength(3);
+  expect(calls()).toHaveLength(2);
 });
 
 it('does not commit while a failed edit remains unresolved', async () => {
@@ -1033,7 +1024,7 @@ it('recovers a local textual finish marker without streaming markup or applying 
     undefined,
     ready,
   );
-  expect(result.message).toBe('Updated the offer label.');
+  expect(result.message).toBe('Changed the selected trigger to scroll thrashing.');
   expect(result.operations).toHaveLength(1);
   expect(ready).toHaveBeenCalledTimes(1);
   expect(text.mock.calls.flat().join('')).not.toContain('<tool');
@@ -1063,7 +1054,7 @@ it('does not interpret a textual mutation as an executable tool call', async () 
   expect(ready).not.toHaveBeenCalled();
 });
 
-it('bounds repeated textual finish markers and commits only once', async () => {
+it('finishes after the first reviewed textual finish marker', async () => {
   const calls = provider(
     [['read_workflow', {}]],
     true,
@@ -1083,7 +1074,17 @@ it('bounds repeated textual finish markers and commits only once', async () => {
       undefined,
       ready,
     ),
-  ).rejects.toThrow();
+  ).resolves.toMatchObject({ operations: [] });
   expect(ready).toHaveBeenCalledTimes(1);
-  expect(calls()).toHaveLength(4);
+  expect(calls()).toHaveLength(2);
 });
+
+// Provider/tool-loop tests isolate the independent semantic review call.
+vi.mock('../../src/server/ai/review', async (original) => ({
+  ...(await original<typeof import('../../src/server/ai/review')>()),
+  reviewWorkflow: vi.fn(async () => ({
+    summary: 'Changed the selected trigger to scroll thrashing.',
+    findings: [],
+    question: '',
+  })),
+}));

@@ -318,7 +318,9 @@ it.each(['complete', 'disconnect', 'abort'] as const)(
       content_index: 0,
       delta: 'Hello 🌍',
     });
-    await vi.waitFor(() => expect(chunks.join('')).toBe('Hello 🌍'));
+    // Let the stream consume the delta before testing interruption; text is held for review.
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    expect(chunks).toEqual([]);
     expect(bodies().filter((b) => b.event_type === 'llm.output')).toHaveLength(0);
     if (mode === 'complete')
       send({
@@ -332,6 +334,7 @@ it.each(['complete', 'disconnect', 'abort'] as const)(
     if (mode === 'abort') signal.abort();
     controller.close();
     await settled;
+    expect(chunks).toEqual(mode === 'complete' ? ['Ready.'] : []);
     await flushTelemetry();
     const output = bodies().find((b) => b.event_type === 'llm.output');
     expect(output?.content_json).toContain('Hello 🌍');
@@ -394,3 +397,9 @@ it('keeps successful execution intact when exporters or flushing fail', async ()
   });
   await expect(flushTelemetry()).resolves.toBeUndefined();
 });
+
+// Provider/tool-loop tests isolate the independent semantic review call.
+vi.mock('../../src/server/ai/review', async (original) => ({
+  ...(await original<typeof import('../../src/server/ai/review')>()),
+  reviewWorkflow: vi.fn(async () => ({ summary: 'Ready.', findings: [], question: '' })),
+}));
