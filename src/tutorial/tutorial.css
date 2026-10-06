@@ -46,14 +46,14 @@
   grid-column: 1 / -1;
 }
 .dxp-tutorial-heading > span,
-.dxp-tutorial-actions > span {
+.dxp-tutorial-actions > span[role='status'] {
   color: var(--dxp-muted);
   font-size: 11px;
 }
 .dxp-tutorial-actions {
   margin-top: 10px;
 }
-.dxp-tutorial-actions > span {
+.dxp-tutorial-actions > span[role='status'] {
   margin-inline-end: auto;
 }
 .dxp-tutorial-content {
@@ -106,4 +106,33 @@
   background: var(--dxp-canvas);
   color: var(--dxp-text);
   margin-inline-start: 8px;
+}
+
+.dxp-tutorial-continue {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+  position: relative;
+  display: inline-flex;
+}
+.dxp-tutorial-tooltip {
+  display: none;
+  position: absolute;
+  bottom: calc(100% + 8px);
+  right: 0;
+  width: max-content;
+  max-width: 240px;
+  padding: 6px 10px;
+  border: 1px solid var(--dxp-line);
+  border-radius: 6px;
+  background: var(--dxp-surface);
+  color: var(--dxp-text);
+  box-shadow: 0 4px 12px rgb(0 0 0 / 15%);
+  font-size: 11px;
+  pointer-events: none;
+}
+.dxp-tutorial-continue:hover .dxp-tutorial-tooltip,
+.dxp-tutorial-continue:focus-visible .dxp-tutorial-tooltip {
+  display: block;
 }

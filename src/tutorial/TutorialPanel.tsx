@@ -290,7 +290,7 @@ export function TutorialPanel({
           <div className="dxp-tutorial-actions">
             <span role="status" aria-live="polite">
               {c.ready ? '✓ ' : ''}
-              {t(c.ready ? 'tutorial.ready' : 'tutorial.pending')}
+              {c.ready ? t('tutorial.ready') : step !== 'name' ? t('tutorial.pending') : null}
             </span>
             <button
               type="button"
@@ -300,23 +300,36 @@ export function TutorialPanel({
             >
               {t('tutorial.back')}
             </button>
-            <button
-              type="button"
-              className="dxp-button dxp-button-primary"
-              disabled={!c.ready}
-              onClick={() => {
-                if (step === 'finish') onEditor();
-                c.next();
-              }}
+            <fieldset
+              className="dxp-tutorial-continue"
+              tabIndex={step === 'name' && !c.ready ? 0 : undefined}
+              aria-label={step === 'name' && !c.ready ? t('tutorial.continue') : undefined}
+              aria-describedby={step === 'name' && !c.ready ? `${id}-pending` : undefined}
             >
-              {t(
-                step === 'finish'
-                  ? 'tutorial.keepEditing'
-                  : step === 'event'
-                    ? 'tutorial.confirmEvent'
-                    : 'tutorial.continue',
+              {step === 'name' && !c.ready && (
+                <span className="dxp-tutorial-tooltip" role="tooltip" id={`${id}-pending`}>
+                  {t('tutorial.pending')}
+                </span>
               )}
-            </button>
+              <button
+                type="button"
+                className="dxp-button dxp-button-primary"
+                aria-describedby={step === 'name' && !c.ready ? `${id}-pending` : undefined}
+                disabled={!c.ready}
+                onClick={() => {
+                  if (step === 'finish') onEditor();
+                  c.next();
+                }}
+              >
+                {t(
+                  step === 'finish'
+                    ? 'tutorial.keepEditing'
+                    : step === 'event'
+                      ? 'tutorial.confirmEvent'
+                      : 'tutorial.continue',
+                )}
+              </button>
+            </fieldset>
           </div>
         )}
       </div>
