@@ -27,7 +27,7 @@ export const tutorialSpanish = {
     'Crearás un flujo que muestra una ventana emergente de bienvenida tras una breve espera, lo probarás en el sitio de demostración y descubrirás herramientas para crear más.',
   'tutorial.website.title': 'Elige el sitio de demostración',
   'tutorial.website.body':
-    'Los flujos añaden experiencias a un sitio web de destino. Abre el control del sitio, deja vacío el campo para usar la demostración y guarda. /demo-site.html no necesita credenciales ni instalación.',
+    'Los flujos añaden experiencias a un sitio web de destino. Abre el control del sitio, deja el campo vacío para usar el sitio de demostración o añade tu propio sitio web y, por último, guarda.',
   'tutorial.website.demo': 'Usar sitio de demostración',
   'tutorial.trigger.title': 'Añade un disparador',
   'tutorial.trigger.body':

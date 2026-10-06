@@ -27,7 +27,7 @@ export const tutorialEnglish = {
     'You’ll build a workflow that shows a welcoming popover after a short delay, test it on the demo website, and discover tools to help you create more.',
   'tutorial.website.title': 'Choose the demo website',
   'tutorial.website.body':
-    'Workflows add experiences to a target website. Open the website control, leave its demo input empty, and save. The included /demo-site.html needs no credentials or installation.',
+    'Workflows add experiences to a target website. Open the website control, leave input empty to use the demo website or add you own website and finally save.',
   'tutorial.website.demo': 'Use demo website',
   'tutorial.trigger.title': 'Add a trigger',
   'tutorial.trigger.body':
