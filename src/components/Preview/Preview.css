@@ -1,0 +1,212 @@
+.dxp-preview {
+  width: 1200px;
+}
+.dxp-preview-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.dxp-modal-backdrop.dxp-preview-backdrop-fullscreen {
+  padding: 0;
+}
+.dxp-preview-backdrop-fullscreen .dxp-preview {
+  width: 100%;
+  height: 100%;
+  max-height: none;
+  border-radius: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.dxp-preview-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 9px;
+  padding: 12px 20px;
+  border-top: 1px solid var(--dxp-line);
+  border-bottom: 1px solid var(--dxp-line);
+  background: var(--dxp-canvas);
+}
+.dxp-preview-url {
+  min-width: 140px;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+  color: var(--dxp-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dxp-preview-search {
+  flex: 1 1 250px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  color: var(--dxp-muted);
+  font-size: 11px;
+}
+.dxp-preview-search label {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.dxp-preview-search input {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--dxp-line);
+  border-radius: 6px;
+  background: var(--dxp-surface);
+  color: var(--dxp-text);
+  padding: 8px 10px;
+  font: inherit;
+}
+.dxp-preview-body {
+  display: flex;
+  height: 62vh;
+  min-height: 350px;
+}
+.dxp-preview-body > iframe {
+  border: 0;
+  flex: 1;
+  background: var(--dxp-surface);
+  min-width: 0;
+  width: 100%;
+}
+.dxp-preview-backdrop-fullscreen .dxp-modal-header,
+.dxp-preview-backdrop-fullscreen .dxp-preview-bar {
+  flex-shrink: 0;
+}
+.dxp-preview-backdrop-fullscreen .dxp-preview-body {
+  flex: 1;
+  height: auto;
+  min-height: 0;
+  overflow: auto;
+}
+.dxp-run-log {
+  width: 244px;
+  border-left: 1px solid var(--dxp-line);
+  overflow: auto;
+  flex-shrink: 0;
+  background: var(--dxp-canvas);
+  padding: 20px 17px;
+  display: flex;
+  flex-direction: column;
+}
+.dxp-run-log h3 {
+  font-size: 11px;
+  font-weight: 500;
+  display: flex;
+  justify-content: space-between;
+  color: var(--dxp-muted);
+  margin-bottom: 22px;
+}
+.dxp-run-log h3 > span {
+  font-size: 9px;
+  padding: 1px 6px;
+  background: var(--dxp-primary-soft);
+  border-radius: 3px;
+  color: var(--dxp-muted);
+}
+.dxp-log-empty {
+  text-align: center;
+  margin-top: 45px;
+  color: var(--dxp-subtle);
+}
+.dxp-log-empty > svg {
+  margin-bottom: 15px;
+}
+.dxp-log-empty p {
+  font-size: 11px;
+  color: var(--dxp-muted);
+  margin-bottom: 8px;
+}
+.dxp-log-empty small {
+  font-size: 10px;
+  color: var(--dxp-subtle);
+  line-height: 1.8;
+}
+.dxp-log-item {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 15px;
+  color: var(--dxp-muted);
+}
+.dxp-log-item > svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.dxp-log-item.success {
+  color: var(--dxp-success);
+}
+.dxp-log-item.error {
+  color: var(--dxp-danger);
+}
+.dxp-log-item strong {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--dxp-muted);
+}
+.dxp-log-item p {
+  font-size: 9px;
+  line-height: 1.6;
+  color: var(--dxp-subtle);
+  margin-top: 4px;
+  overflow-wrap: anywhere;
+}
+.dxp-log-note {
+  font-size: 9px !important;
+  color: var(--dxp-subtle);
+  line-height: 1.8;
+  margin-top: auto !important;
+  padding-top: 25px;
+  display: flex;
+  gap: 7px;
+}
+.dxp-log-note svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+@media (max-width: 800px) {
+  .dxp-preview-body {
+    flex-direction: column;
+  }
+}
+@media (max-width: 800px) {
+  .dxp-preview-body > iframe {
+    min-height: 300px;
+  }
+}
+@media (max-width: 800px) {
+  .dxp-run-log {
+    width: 100%;
+    height: 150px;
+    border-left: 0;
+    border-top: 1px solid var(--dxp-line);
+    padding: 15px;
+  }
+}
+@media (max-width: 800px) {
+  .dxp-log-empty {
+    margin-top: 0;
+  }
+}
+@media (max-width: 800px) {
+  .dxp-log-empty > svg,
+  .dxp-log-note {
+    display: none;
+  }
+}
+@media (max-width: 800px) {
+  .dxp-log-item {
+    margin-bottom: 8px;
+  }
+}
+@media (max-width: 800px) {
+  .dxp-preview-bar {
+    padding: 10px 13px;
+  }
+}

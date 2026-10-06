@@ -2,7 +2,7 @@
 
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
-import { ActivityPanel } from '../src/components/ActivityPanel';
+import { ActivityPanel } from '../src/components/ActivityPanel/ActivityPanel';
 import type { ActivityEntry } from '../src/lib/activity';
 
 function entry(id: string, timestamp: string): ActivityEntry {

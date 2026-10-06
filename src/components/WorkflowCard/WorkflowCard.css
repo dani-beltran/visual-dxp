@@ -1,0 +1,207 @@
+.dxp-builder .react-flow__panel.dxp-node-library-panel {
+  top: 24px;
+  left: 28px;
+  margin: 0;
+  height: calc(100% - 148px);
+  min-height: 46px;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  z-index: 6;
+}
+.dxp-node {
+  width: 225px;
+  border: 1px solid #e0e7e1;
+  background: #fff;
+  border-radius: 11px;
+  box-shadow:
+    0 3px 6px #273c2d04,
+    0 6px 19px #273c2d03;
+  padding: 17px 17px 0;
+  color: #46574a;
+  transition:
+    box-shadow 0.2s,
+    border-color 0.2s;
+  position: relative;
+}
+.dxp-node:hover {
+  box-shadow: 0 5px 22px #27463412;
+  border-color: #bdcfc1;
+}
+.dxp-node.is-selected {
+  border-color: #66a280;
+  box-shadow:
+    0 0 0 3px #6fa88415,
+    0 5px 15px #315b4110;
+}
+.dxp-node.is-running {
+  border-color: #589d75;
+  box-shadow: 0 0 0 4px #6fa88425;
+}
+.dxp-node-top {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 15px;
+}
+.dxp-node-body {
+  position: relative;
+  margin-inline: -17px;
+  padding-inline: 17px;
+  display: flow-root;
+}
+.dxp-node-body-split {
+  padding-bottom: 24px;
+}
+.dxp-node-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  display: grid;
+  place-items: center;
+}
+.dxp-node-kind {
+  font-size: 10px;
+  color: #8f9b92;
+  font-weight: 500;
+}
+.dxp-node-more {
+  margin-inline-start: auto;
+  color: #abb5ad;
+}
+.dxp-node-title {
+  position: relative;
+  margin-inline: -17px;
+  padding-inline: 17px;
+}
+.dxp-node-title > strong {
+  display: block;
+  font-size: 13px;
+  letter-spacing: -0.15px;
+  font-weight: 550;
+  line-height: 1.4;
+}
+.dxp-node-body > p {
+  font-size: 9px;
+  color: #a1aba3;
+  margin-top: 7px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 190px;
+}
+.dxp-node-footer {
+  border-top: 1px solid #f0f3f0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 18px;
+  height: 34px;
+  font-size: 8px;
+  color: #aab4ab;
+}
+.dxp-node-footer > span:first-child {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #95aa96;
+}
+.dxp-node-footer > span:last-child {
+  font-size: 6.5px;
+  letter-spacing: 1px;
+}
+.dxp-builder .react-flow__handle {
+  height: 9px;
+  width: 9px;
+  min-height: 9px;
+  min-width: 9px;
+  background: var(--dxp-socket-background);
+  border: 1.5px solid var(--dxp-socket-border);
+}
+.dxp-builder .react-flow__handle.dxp-handle-connected {
+  border-color: var(--dxp-socket-border-connected);
+}
+.dxp-builder .react-flow__handle.dxp-handle-data {
+  border-color: var(--dxp-data);
+}
+.dxp-builder .react-flow__handle-left {
+  left: -1px;
+}
+.dxp-builder .react-flow__handle-right {
+  right: -1px;
+}
+.dxp-node-pink .dxp-branch-port svg {
+  color: var(--dxp-node-output-icon);
+}
+.dxp-node-data-output {
+  color: var(--dxp-data);
+}
+@media (min-width: 1600px) {
+  .dxp-node {
+    width: 238px;
+  }
+}
+@media (max-width: 1150px) {
+  .dxp-node {
+    width: 215px;
+  }
+}
+@media (max-width: 1150px) {
+  .dxp-node-title > strong {
+    font-size: 12px;
+  }
+}
+@media (max-width: 800px) {
+  .dxp-builder .react-flow__panel.dxp-node-library-panel {
+    top: 20px;
+    left: 20px;
+  }
+}
+@media (max-width: 500px) {
+  .dxp-builder .react-flow__panel.dxp-node-library-panel {
+    left: 15px;
+  }
+}
+
+.dxp-node-incoming-value {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 10px;
+  padding: 5px 7px;
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--dxp-data) 10%, white);
+  color: #2563eb;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.dxp-branch-port {
+  position: absolute;
+  right: 9px;
+  transform: translateY(-50%);
+  font-size: 10px;
+  font-weight: 700;
+  color: #7c5ac2;
+  background: #fff;
+  padding: 1px 3px;
+  border-radius: 3px;
+  pointer-events: none;
+}
+.dxp-branch-port-first,
+.dxp-builder .react-flow__handle.dxp-output-first {
+  top: 50%;
+}
+.dxp-branch-port svg {
+  display: block;
+  color: var(--dxp-muted);
+}
+.dxp-branch-port-second,
+.dxp-builder .react-flow__handle.dxp-output-second {
+  top: auto;
+  bottom: 12px;
+  transform: translateY(50%);
+}
+.dxp-builder .react-flow__handle.dxp-output-second {
+  transform: translate(50%, 50%);
+}

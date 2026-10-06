@@ -1,0 +1,72 @@
+.dxp-note-card {
+  width: 248px;
+  padding: 13px 15px 15px;
+  border: 1px solid #76663726;
+  border-radius: 9px;
+  box-shadow: 0 3px 12px #463b1710;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+.dxp-note-card:hover {
+  border-color: #76663766;
+  box-shadow: 0 5px 18px #463b1718;
+}
+.dxp-note-card.is-transparent {
+  border-style: dashed;
+  border-color: #91a29570;
+  box-shadow: none;
+}
+.dxp-note-card.is-selected,
+.dxp-note-card:focus-within {
+  border-color: #609671;
+  box-shadow: 0 0 0 3px #60967126;
+}
+.dxp-note-header {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding-bottom: 12px;
+  cursor: grab;
+}
+.dxp-note-header:active {
+  cursor: grabbing;
+}
+.dxp-note-header > svg {
+  flex-shrink: 0;
+  opacity: 0.65;
+}
+.dxp-note-header > strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  font-weight: 600;
+  opacity: 0.8;
+}
+.dxp-note-grip {
+  margin-inline-start: auto;
+}
+.dxp-note-card .dxp-note-text {
+  display: block;
+  width: 100%;
+  min-height: 112px;
+  max-height: 320px;
+  overflow-y: auto;
+  resize: none;
+  margin: 0;
+  padding: 2px 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+  scrollbar-width: thin;
+  cursor: text;
+}
+.dxp-builder .dxp-note-card .dxp-note-text:focus {
+  outline: none;
+}

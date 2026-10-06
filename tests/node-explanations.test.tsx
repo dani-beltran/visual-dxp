@@ -3,8 +3,8 @@
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { NodeInspector } from '../src/components/NodeInspector';
-import { NodeLibrary } from '../src/components/NodeLibrary';
+import { NodeInspector } from '../src/components/NodeInspector/NodeInspector';
+import { NodeLibrary } from '../src/components/NodeLibrary/NodeLibrary';
 import { catalog, createNode } from '../src/lib/catalog';
 import { nodeDescriptions } from '../src/lib/nodeDescriptions';
 import type { NodeKind } from '../src/lib/types';

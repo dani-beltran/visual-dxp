@@ -1,11 +1,14 @@
-export type { ElementPickerProps } from './components/ElementPicker';
-export { ElementPicker } from './components/ElementPicker';
+export type { ElementPickerProps } from './components/ElementPicker/ElementPicker';
+export { ElementPicker } from './components/ElementPicker/ElementPicker';
 export type {
   VisualDXPBuilderApi,
   VisualDXPBuilderProps,
   WebsiteConfigurationOptions,
-} from './components/VisualDXPBuilder';
-export { VisualDXPBuilder, VisualDXPBuilder as default } from './components/VisualDXPBuilder';
+} from './components/VisualDXPBuilder/VisualDXPBuilder';
+export {
+  VisualDXPBuilder,
+  VisualDXPBuilder as default,
+} from './components/VisualDXPBuilder/VisualDXPBuilder';
 export type { ActivityAction, ActivityEntry, ActivityMessage, ActivityStore } from './lib/activity';
 export { createActivityStore, formatActivity } from './lib/activity';
 export type {

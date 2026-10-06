@@ -1,0 +1,34 @@
+.dxp-website-connection {
+  margin: 19px 29px 12px;
+}
+.dxp-website-connection-error h3 {
+  color: var(--dxp-text-secondary);
+  margin-bottom: 4px;
+}
+.dxp-website-connection-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 0;
+  font-size: 12px;
+  color: var(--dxp-muted);
+}
+.dxp-website-connection-status svg {
+  flex-shrink: 0;
+}
+.dxp-website-connection-connected {
+  color: var(--dxp-primary-color);
+}
+.dxp-website-connection-loading svg {
+  animation: dxp-website-connection-spin 1s linear infinite;
+}
+@keyframes dxp-website-connection-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dxp-website-connection-loading svg {
+    animation: none;
+  }
+}

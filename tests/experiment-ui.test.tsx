@@ -2,7 +2,7 @@
 import { act, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { expect, it, vi } from 'vitest';
-import { NodeInspector } from '../src/components/NodeInspector';
+import { NodeInspector } from '../src/components/NodeInspector/NodeInspector';
 import { createNode, stepSummary } from '../src/lib/catalog';
 import type { StepConfig } from '../src/lib/types';
 

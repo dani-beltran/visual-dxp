@@ -2,8 +2,8 @@
 import { act, StrictMode } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { NodeInspector } from '../src/components/NodeInspector';
-import { PopoverContentPreview } from '../src/components/PopoverContentPreview';
+import { NodeInspector } from '../src/components/NodeInspector/NodeInspector';
+import { PopoverContentPreview } from '../src/components/PopoverContentPreview/PopoverContentPreview';
 import { createNode } from '../src/lib/catalog';
 import { createRuntime } from '../src/lib/runtime/runtime';
 import type { WorkflowNode } from '../src/lib/types';

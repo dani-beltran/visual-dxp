@@ -2,7 +2,7 @@
 import { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import { expect, it, vi } from 'vitest';
-import { PresetsPanel } from '../src/components/PresetsPanel';
+import { PresetsPanel } from '../src/components/PresetsPanel/PresetsPanel';
 import { validateWorkflow } from '../src/lib/export';
 import { BuilderI18nProvider } from '../src/lib/i18nContext';
 import {

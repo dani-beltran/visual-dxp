@@ -3,8 +3,8 @@ import { Position } from '@xyflow/react';
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { DataTransformInspector } from '../src/components/DataTransformInspector';
-import { VisualDXPBuilder } from '../src/components/VisualDXPBuilder';
+import { DataTransformInspector } from '../src/components/DataTransformInspector/DataTransformInspector';
+import { VisualDXPBuilder } from '../src/components/VisualDXPBuilder/VisualDXPBuilder';
 import type { Workflow } from '../src/lib/types';
 
 let root: Root;

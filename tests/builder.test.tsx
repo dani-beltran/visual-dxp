@@ -9,7 +9,7 @@ import VisualDXPBuilder, {
   type VisualDXPBuilderApi,
   type Workflow,
 } from '../src';
-import { App } from '../src/app';
+import { App } from '../src/components/App/App';
 import { BRANDING_PROTOCOL, readBrandingProfile } from '../src/lib/branding';
 import { createNode } from '../src/lib/catalog';
 import { brandingProfile } from './helpers/branding';

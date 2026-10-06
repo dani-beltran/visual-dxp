@@ -1,0 +1,101 @@
+.dxp-canvas-tip {
+  position: relative;
+  flex-shrink: 0;
+  z-index: 7;
+}
+.dxp-canvas-help-button {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--dxp-line);
+  border-radius: 7px;
+  background: var(--dxp-surface);
+  color: var(--dxp-muted);
+  box-shadow: 0 2px 3px var(--dxp-shadow-soft);
+}
+.dxp-canvas-help-button:hover,
+.dxp-canvas-help-button.active {
+  background: var(--dxp-surface-muted);
+  color: var(--dxp-primary-color);
+}
+.dxp-canvas-help-panel {
+  position: absolute;
+  bottom: calc(100% + 12px);
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--dxp-line);
+  border-radius: 12px;
+  background: var(--dxp-surface);
+  color: var(--dxp-text-secondary);
+  box-shadow: 0 12px 36px var(--dxp-shadow);
+}
+.dxp-canvas-help-header {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--dxp-line);
+}
+.dxp-canvas-help-header h2 {
+  font-size: 13px;
+  font-weight: 650;
+}
+.dxp-canvas-help-content {
+  padding: 16px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.dxp-canvas-help-content:focus-visible {
+  outline: 2px solid var(--dxp-focus);
+  outline-offset: -3px;
+}
+.dxp-canvas-help-step {
+  display: flex;
+  gap: 11px;
+  margin-bottom: 18px;
+}
+.dxp-canvas-help-step > svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--dxp-muted);
+}
+.dxp-canvas-help-step h3 {
+  font-size: 11px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.dxp-canvas-help-step p {
+  font-size: 11px;
+  line-height: 1.65;
+  color: var(--dxp-muted);
+}
+.dxp-canvas-help-tutorial {
+  display: flex;
+  justify-content: flex-end;
+  margin-block: 16px;
+}
+.dxp-canvas-help-shortcuts {
+  margin: 0;
+  border-top: 1px solid var(--dxp-line);
+  padding-top: 12px;
+  font-size: 10px;
+}
+.dxp-canvas-help-shortcuts > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 8px;
+}
+.dxp-canvas-help-shortcuts dd {
+  margin: 0;
+}
+.dxp-canvas-help-shortcuts kbd {
+  font: inherit;
+  color: var(--dxp-muted);
+}

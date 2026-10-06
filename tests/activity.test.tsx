@@ -8,7 +8,7 @@ import {
   VisualDXPBuilder,
   type VisualDXPBuilderApi,
   type VisualDXPBuilderProps,
-} from '../src/components/VisualDXPBuilder';
+} from '../src/components/VisualDXPBuilder/VisualDXPBuilder';
 import { type ActivityEntry, type ActivityStore, createActivityStore } from '../src/lib/activity';
 import type { Workflow } from '../src/lib/types';
 

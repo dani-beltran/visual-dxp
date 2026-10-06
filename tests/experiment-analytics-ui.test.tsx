@@ -3,8 +3,8 @@ import { act, useState } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { spanishMessages } from '../src/app/locales/es';
-import { AnalyticsSettings } from '../src/components/AnalyticsSettings';
-import { NodeInspector } from '../src/components/NodeInspector';
+import { AnalyticsSettings } from '../src/components/AnalyticsSettings/AnalyticsSettings';
+import { NodeInspector } from '../src/components/NodeInspector/NodeInspector';
 import { createNode } from '../src/lib/catalog';
 import { BuilderI18nProvider } from '../src/lib/i18nContext';
 import type { AnalyticsSettings as Settings, StepConfig } from '../src/lib/types';
@@ -197,7 +197,9 @@ it('edits custom milestone nodes and validates event names without exposing inco
   await change('Payload (JSON)', '[]');
   expect(host.querySelector('[role="alert"]')?.textContent).toContain('valid JSON object');
   await change('Payload (JSON)', '');
-  expect(host.querySelector('[aria-label="Track event configuration"]')?.textContent).not.toMatch(/incoming[- ](?:data|values)/i);
+  expect(host.querySelector('[aria-label="Track event configuration"]')?.textContent).not.toMatch(
+    /incoming[- ](?:data|values)/i,
+  );
   await choose('ga4');
   await change('Workflow ID', 'lead_capture');
   await change('Reporting version', '2');

@@ -1,0 +1,309 @@
+.dxp-canvas-assistants {
+  position: relative;
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 8px;
+  z-index: 7;
+}
+.dxp-ai-button {
+  background: var(--dxp-surface-muted);
+  border-color: var(--dxp-line);
+  color: var(--dxp-primary-color);
+}
+.dxp-ai-panel {
+  position: absolute;
+  bottom: calc(100% + 12px);
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--dxp-line);
+  border-radius: 16px;
+  background: var(--dxp-surface);
+  color: var(--dxp-text-secondary);
+  box-shadow:
+    0 16px 48px var(--dxp-shadow),
+    0 2px 8px var(--dxp-shadow-soft);
+  text-align: left;
+}
+.dxp-ai-header {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 10px;
+  padding: 15px 13px;
+}
+.dxp-ai-avatar {
+  display: grid;
+  place-items: center;
+  width: 35px;
+  height: 35px;
+  flex-shrink: 0;
+  border: 1px solid var(--dxp-line);
+  border-radius: 10px;
+  background: var(--dxp-surface-muted);
+  color: var(--dxp-primary-color);
+}
+.dxp-ai-header > div {
+  flex: 1;
+  min-width: 0;
+}
+.dxp-ai-header h2 {
+  font-size: 13px;
+  font-weight: 650;
+}
+.dxp-ai-header p {
+  margin-top: 3px;
+  font-size: 10px;
+  color: var(--dxp-muted);
+}
+.dxp-ai-header .dxp-icon-button {
+  flex-shrink: 0;
+  width: 24px;
+}
+.dxp-ai-context {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 7px;
+  padding: 9px 16px;
+  border-block: 1px solid var(--dxp-line);
+  background: var(--dxp-canvas);
+  font-size: 10px;
+  color: var(--dxp-muted);
+}
+.dxp-ai-context > span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dxp-ai-status {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--dxp-primary-color);
+}
+.dxp-ai-status.ready {
+  background: var(--dxp-success);
+}
+.dxp-ai-status.error {
+  background: var(--dxp-danger);
+}
+.dxp-ai-transcript {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  padding: 20px 16px;
+}
+.dxp-ai-transcript:focus-visible {
+  outline: 2px solid var(--dxp-focus);
+  outline-offset: -3px;
+}
+.dxp-ai-welcome > svg {
+  color: var(--dxp-muted);
+  margin-bottom: 10px;
+}
+.dxp-ai-welcome h3 {
+  font-size: 16px;
+  font-weight: 550;
+  letter-spacing: -0.4px;
+}
+.dxp-ai-welcome > p {
+  font-size: 12px;
+  line-height: 1.65;
+  color: var(--dxp-muted);
+  margin-top: 7px;
+}
+.dxp-ai-suggestions {
+  display: grid;
+  gap: 7px;
+  margin: 20px 0 6px;
+}
+.dxp-ai-suggestions button {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--dxp-line);
+  border-radius: 8px;
+  text-align: left;
+  background: var(--dxp-surface);
+  color: var(--dxp-muted);
+  font-size: 11px;
+}
+.dxp-ai-suggestions button:hover:not(:disabled) {
+  background: var(--dxp-surface-muted);
+  border-color: var(--dxp-line-strong);
+}
+.dxp-ai-suggestions svg {
+  flex-shrink: 0;
+}
+.dxp-ai-setup {
+  padding: 14px;
+  border-radius: 8px;
+  background: var(--dxp-surface-muted);
+  font-size: 12px;
+  line-height: 1.65;
+}
+.dxp-ai-setup p {
+  margin-top: 4px;
+  color: var(--dxp-muted);
+}
+.dxp-ai-message {
+  margin-bottom: 18px;
+  overflow-wrap: anywhere;
+}
+.dxp-ai-message-author {
+  display: block;
+  font-size: 9px;
+  font-weight: 650;
+  color: var(--dxp-muted);
+  margin-bottom: 6px;
+}
+.dxp-ai-message-user {
+  padding: 11px 13px;
+  border: 1px solid var(--dxp-line);
+  background: var(--dxp-surface-muted);
+  border-radius: 10px 10px 2px 10px;
+  margin-left: 20px;
+}
+.dxp-ai-applied {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 9px;
+  font-size: 10px;
+  color: var(--dxp-primary-color);
+}
+.dxp-ai-thinking {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--dxp-muted);
+  font-size: 11px;
+}
+.dxp-ai-reasoning {
+  margin: 8px 0 12px;
+  padding: 8px 10px;
+  border: 1px solid var(--dxp-line);
+  border-radius: 8px;
+  background: var(--dxp-surface-muted);
+  color: var(--dxp-muted);
+}
+.dxp-ai-reasoning summary {
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 600;
+}
+.dxp-ai-reasoning summary:focus-visible {
+  outline: 2px solid var(--dxp-primary-color);
+  outline-offset: 3px;
+}
+.dxp-ai-reasoning[open] summary {
+  margin-bottom: 8px;
+}
+.dxp-ai-error {
+  padding: 10px 12px;
+  border: 1px solid var(--dxp-danger-border);
+  border-radius: 8px;
+  background: var(--dxp-danger-soft);
+  color: var(--dxp-danger);
+  font-size: 11px;
+  line-height: 1.6;
+}
+.dxp-ai-composer {
+  flex-shrink: 0;
+  padding: 12px;
+  border-top: 1px solid var(--dxp-line);
+}
+.dxp-ai-input-wrap {
+  position: relative;
+}
+.dxp-ai-composer textarea {
+  display: block;
+  width: 100%;
+  padding: 12px 46px 12px 12px;
+  resize: none;
+  border: 1px solid var(--dxp-line);
+  border-radius: 10px;
+  background: var(--dxp-canvas);
+  color: var(--dxp-text-secondary);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.dxp-ai-composer textarea::placeholder {
+  color: var(--dxp-muted);
+}
+.dxp-ai-send {
+  position: absolute;
+  right: 8px;
+  bottom: 9px;
+  width: 29px;
+  height: 29px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 7px;
+  background: var(--dxp-primary-color);
+  color: var(--dxp-on-primary, white);
+}
+.dxp-ai-send:hover:not(:disabled) {
+  background: var(--dxp-primary-hover);
+}
+.dxp-ai-composer > p {
+  margin-top: 8px;
+  text-align: center;
+  font-size: 9px;
+  color: var(--dxp-muted);
+}
+.dxp-ai-panel-compact .dxp-ai-header {
+  padding: 10px 12px;
+  gap: 7px;
+}
+.dxp-ai-panel-compact .dxp-ai-header p {
+  display: block;
+}
+.dxp-ai-panel-compact .dxp-ai-avatar {
+  width: 28px;
+  height: 28px;
+}
+.dxp-ai-panel-compact .dxp-ai-context {
+  padding-block: 6px;
+}
+.dxp-ai-panel-compact .dxp-ai-transcript {
+  padding: 12px;
+}
+.dxp-ai-panel-compact .dxp-ai-welcome > svg {
+  display: none;
+}
+.dxp-ai-panel-compact .dxp-ai-welcome h3 {
+  font-size: 14px;
+}
+.dxp-ai-panel-compact .dxp-ai-composer {
+  padding: 8px;
+}
+.dxp-ai-panel-compact .dxp-ai-composer textarea {
+  padding-block: 8px;
+}
+.dxp-ai-panel-compact .dxp-ai-setup {
+  padding: 10px;
+  font-size: 11px;
+}
+.dxp-ai-spin {
+  animation: dxp-ai-spin 1.4s linear infinite;
+}
+@keyframes dxp-ai-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dxp-ai-spin {
+    animation: none;
+  }
+}
