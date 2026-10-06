@@ -1,3 +1,4 @@
+import type { placePopover } from '../popoverPosition';
 import type { WorkflowNode } from '../types';
 import type { RuntimeContext } from './context';
 
@@ -99,6 +100,7 @@ export function showPopover(
   node: WorkflowNode,
   context: RuntimeContext,
   createElements: typeof createPopoverElements,
+  positionPopover: typeof placePopover,
 ): void {
   const { doc, win, popovers, selectorElements } = context;
   const config = node.data.config;
@@ -111,55 +113,10 @@ export function showPopover(
   let directionY = 1;
   let animation: Animation | undefined;
   function place(): void {
-    const viewportWidth = win.innerWidth || doc.documentElement.clientWidth;
-    const viewportHeight = win.innerHeight || doc.documentElement.clientHeight;
-    panel.style.transform = '';
-    panel.style.inset = 'auto';
-    if (anchor) {
-      const rect = anchor.getBoundingClientRect();
-      // Layout dimensions remain stable while entrance scale/translation is active.
-      const bounds = panel.getBoundingClientRect();
-      const panelRect = {
-        width: panel.offsetWidth || bounds.width,
-        height: panel.offsetHeight || bounds.height,
-      };
-      const left = Math.max(16, Math.min(rect.left, viewportWidth - panelRect.width - 16));
-      const above = rect.bottom + 12 + panelRect.height > viewportHeight - 16;
-      directionX = 0;
-      directionY = above ? 1 : -1;
-      panel.style.transformOrigin = above ? 'center bottom' : 'center top';
-      const top = above ? rect.top - panelRect.height - 12 : rect.bottom + 12;
-      panel.style.left = `${left}px`;
-      // Flipping above an offscreen anchor can still leave the panel below the viewport.
-      panel.style.top = `${Math.max(16, Math.min(top, viewportHeight - panelRect.height - 16))}px`;
-      if (arrow) {
-        // Leave room for the rounded corners when the panel hits a viewport edge.
-        const center = Math.max(
-          26,
-          Math.min(rect.left + rect.width / 2 - left, panelRect.width - 26),
-        );
-        arrow.style.left = `${center - 10}px`;
-        arrow.style.top = above ? 'auto' : '-9px';
-        arrow.style.bottom = above ? '-9px' : 'auto';
-        arrow.style.transform = above ? 'rotate(180deg)' : '';
-      }
-    } else {
-      const position = config.position ?? 'bottom-right';
-      directionX = position === 'center' ? 0 : position.endsWith('left') ? -1 : 1;
-      directionY = position.startsWith('top') ? -1 : 1;
-      panel.style.transformOrigin =
-        position === 'center'
-          ? 'center'
-          : `${directionX < 0 ? 'left' : 'right'} ${directionY < 0 ? 'top' : 'bottom'}`;
-      if (position === 'center') {
-        panel.style.left = '50%';
-        panel.style.top = '50%';
-        panel.style.transform = 'translate(-50%, -50%)';
-      } else {
-        panel.style[position.startsWith('top') ? 'top' : 'bottom'] = '24px';
-        panel.style[position.endsWith('left') ? 'left' : 'right'] = '24px';
-      }
-    }
+    ({ directionX, directionY } = positionPopover(panel, arrow, {
+      anchor,
+      position: config.position,
+    }));
   }
   place();
   const effect = config.popoverAnimation ?? 'none';

@@ -1,13 +1,32 @@
 .dxp-tutorial {
-  flex: 0 0 auto;
-  max-height: min(32vh, 260px);
-  overflow: auto;
-  padding: 12px 22px;
-  border-block: 1px solid var(--dxp-primary-border);
-  background: var(--dxp-surface);
+  position: fixed;
+  z-index: 210;
+  width: 360px;
+  max-width: calc(100vw - 32px);
+  bottom: 24px;
+  right: 24px;
   color: var(--dxp-text);
   font-size: 12px;
   line-height: 1.5;
+}
+.dxp-tutorial-surface {
+  max-height: min(520px, calc(100dvh - 48px));
+  overflow: auto;
+  padding: 16px;
+  border: 1px solid var(--dxp-primary-border);
+  border-radius: 12px;
+  background: var(--dxp-surface);
+  box-shadow: 0 12px 40px rgb(0 0 0 / 20%);
+}
+.dxp-tutorial-arrow {
+  position: absolute;
+  pointer-events: none;
+  overflow: visible;
+}
+.dxp-tutorial-arrow path {
+  fill: var(--dxp-surface);
+  stroke: var(--dxp-primary-border);
+  stroke-linejoin: round;
 }
 .dxp-tutorial-heading,
 .dxp-tutorial-actions {
@@ -15,6 +34,9 @@
   align-items: center;
   gap: 12px;
   flex-wrap: wrap;
+}
+.dxp-tutorial-heading > span {
+  width: 100%;
 }
 .dxp-tutorial-heading h2 {
   font-size: 15px;
@@ -34,7 +56,7 @@
   margin-inline-end: auto;
 }
 .dxp-tutorial-content {
-  max-width: 1000px;
+  min-width: 0;
 }
 .dxp-tutorial p {
   margin: 8px 0;
@@ -75,35 +97,6 @@
 }
 .dxp-node-connections select {
   width: 100%;
-}
-@media (max-width: 700px) {
-  .dxp-tutorial {
-    padding: 10px 12px;
-    max-height: 36vh;
-  }
-}
-/* Keep the practice website visible without hiding its bottom-right popover. */
-.dxp-preview:has(> .dxp-tutorial) {
-  display: flex;
-  flex-direction: column;
-  height: 90vh;
-  overflow: hidden;
-}
-.dxp-preview:has(> .dxp-tutorial) > .dxp-modal-header,
-.dxp-preview:has(> .dxp-tutorial) > .dxp-preview-bar {
-  flex-shrink: 0;
-}
-.dxp-preview:has(> .dxp-tutorial) > .dxp-preview-body {
-  flex: 1;
-  min-height: 180px;
-  height: auto;
-  overflow: auto;
-}
-.dxp-preview > .dxp-tutorial {
-  max-height: 24vh;
-}
-.dxp-preview-backdrop-fullscreen .dxp-preview:has(> .dxp-tutorial) {
-  height: 100%;
 }
 .dxp-tutorial select {
   padding: 6px;

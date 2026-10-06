@@ -1944,6 +1944,7 @@ function Builder({
                   type="button"
                   className="dxp-button dxp-button-primary"
                   onClick={saveWebsite}
+                  data-tutorial="website"
                 >
                   {t('website.save')} <ArrowRight size={14} />
                 </button>
