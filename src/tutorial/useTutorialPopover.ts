@@ -38,6 +38,9 @@ export function useTutorialPopover(scope: HTMLElement | null | undefined, target
         previous = '';
       }
       const rect = anchor?.getBoundingClientRect();
+      const libraryTarget = !!anchor && target.startsWith('add-');
+      surface.style.maxWidth =
+        libraryTarget && rect ? `${Math.max(0, win.innerWidth - rect.right - 28)}px` : '';
       const signature = [
         rect?.left,
         rect?.top,
@@ -51,7 +54,11 @@ export function useTutorialPopover(scope: HTMLElement | null | undefined, target
       if (signature !== previous) {
         previous = signature;
         if (arrow.current) arrow.current.style.display = anchor ? '' : 'none';
-        placePopover(surface, arrow.current, { anchor, avoidAnchor: true });
+        placePopover(surface, arrow.current, {
+          anchor,
+          avoidAnchor: true,
+          side: libraryTarget ? 'right' : undefined,
+        });
         surface.dataset.anchored = String(!!anchor);
       }
     };

@@ -38,6 +38,18 @@ it('places unanchored guidance bottom right and uses side space to avoid tall co
   expect(arrow.style.transform).toBe('rotate(90deg)');
 });
 
+it('places library guidance to the right even when there is room below', () => {
+  const panel = document.createElement('section');
+  const arrow = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  const anchor = document.createElement('button');
+  vi.spyOn(panel, 'getBoundingClientRect').mockReturnValue(rect(0, 0, 360, 240));
+  vi.spyOn(anchor, 'getBoundingClientRect').mockReturnValue(rect(20, 200, 32, 32));
+  placePopover(panel, arrow, { anchor, side: 'right' });
+  expect(panel.style.left).toBe('64px');
+  expect(panel.style.top).toBe('96px');
+  expect(arrow.style.transform).toBe('rotate(-90deg)');
+});
+
 it('tracks a visible target and falls back when it disappears without highlighting behind a modal', async () => {
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
   const host = document.createElement('div');

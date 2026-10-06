@@ -2,7 +2,12 @@
 export function placePopover(
   panel: HTMLElement,
   arrow: SVGSVGElement | null,
-  options: { anchor?: Element | null; position?: string; avoidAnchor?: boolean } = {},
+  options: {
+    anchor?: Element | null;
+    position?: string;
+    avoidAnchor?: boolean;
+    side?: 'right';
+  } = {},
 ) {
   const doc = panel.ownerDocument;
   const win = doc.defaultView!;
@@ -22,15 +27,18 @@ export function placePopover(
       height: panel.offsetHeight || bounds.height,
     };
     if (
-      options.avoidAnchor &&
-      rect.bottom + 12 + panelRect.height > viewportHeight - 16 &&
-      rect.top - panelRect.height - 12 < 16
+      options.side === 'right' ||
+      (options.avoidAnchor &&
+        rect.bottom + 12 + panelRect.height > viewportHeight - 16 &&
+        rect.top - panelRect.height - 12 < 16)
     ) {
       const right = viewportWidth - rect.right - 28;
       const leftSpace = rect.left - 28;
-      if (Math.max(right, leftSpace) >= panelRect.width) {
-        const onRight = right >= leftSpace;
-        const top = Math.max(16, Math.min(rect.top, viewportHeight - panelRect.height - 16));
+      if (options.side === 'right' || Math.max(right, leftSpace) >= panelRect.width) {
+        const onRight = options.side === 'right' || right >= leftSpace;
+        const desiredTop =
+          options.side === 'right' ? rect.top + (rect.height - panelRect.height) / 2 : rect.top;
+        const top = Math.max(16, Math.min(desiredTop, viewportHeight - panelRect.height - 16));
         panel.style.left = `${onRight ? rect.right + 12 : rect.left - panelRect.width - 12}px`;
         panel.style.top = `${top}px`;
         panel.style.transformOrigin = onRight ? 'left center' : 'right center';
