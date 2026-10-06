@@ -213,6 +213,11 @@
 .dxp-builder .dxp-canvas-pan-held .dxp-frame-header {
   cursor: grabbing;
 }
+.dxp-builder
+  .dxp-canvas.dxp-canvas-shift-selecting
+  :is(.react-flow__pane, .react-flow__node, .dxp-note-header, .dxp-frame-header) {
+  cursor: pointer;
+}
 .dxp-builder .react-flow__attribution {
   background: transparent;
   font-size: 7px;
