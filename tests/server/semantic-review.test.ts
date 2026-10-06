@@ -2,7 +2,7 @@ import { generateText, streamText } from 'ai';
 import { beforeEach, expect, it, vi } from 'vitest';
 import { parseAIChatRequest, parseAIChatResponse } from '../../src/lib/ai';
 import { runLocalAgent } from '../../src/server/ai/agent';
-import { reviewVersion } from '../../src/server/ai/review';
+import { reviewVersion, reviewWorkflow } from '../../src/server/ai/review';
 import {
   type AIChatRequest,
   parseAIChatRequest as parseServerRequest,
@@ -270,3 +270,132 @@ it('does not commit if cancellation arrives during review', async () => {
   ).rejects.toThrow();
   expect(ready).not.toHaveBeenCalled();
 });
+
+it('corrects the logged successful implementation finding with a null alternative', async () => {
+  const nodeId = 'delay-f1aed7f1-ce39-4f6d-9a3d-e0cb3945d22e';
+  const loggedReview = {
+    summary:
+      'Draft correctly implements adding a 3-second delay after the existing 2-second delay to achieve a 5-second total before the welcome popover appears. Execution order is valid (trigger → 2s delay → 3s delay → popover) with no cycles. The original direct edge from the first delay to the popover was properly removed and rewired through the new intermediate delay node.',
+    findings: [
+      {
+        category: 'implementation',
+        nodeIds: [nodeId],
+        evidence:
+          'New delay node added with config.duration: 3000, positioned after the first delay and before the popover. Edges correctly connect trigger→delay1, delay1→delay2, delay2→popover.',
+        consequence: 'Total wait time is now 5 seconds (2s + 3s) as requested by user.',
+        alternative: null,
+      },
+    ],
+    question: '',
+  };
+  const corrected = { summary: loggedReview.summary, findings: [], question: '' };
+  const request = input();
+  request.messages = [
+    {
+      role: 'user',
+      content: 'add a 3 seconds delay node after the delay to have 5 seconds delay in total',
+    },
+  ];
+  request.workflow.nodes.push(
+    {
+      id: 'delay',
+      type: 'workflow',
+      position: { x: 300, y: 0 },
+      data: { kind: 'delay', label: '2 Second Delay', config: { duration: 2000 } },
+    },
+    {
+      id: 'popover',
+      type: 'workflow',
+      position: { x: 600, y: 0 },
+      data: {
+        kind: 'popover',
+        label: 'Welcome',
+        config: { contentType: 'html', content: '<p>Welcome!</p>', position: 'center', width: 400 },
+      },
+    },
+  );
+  request.workflow.edges = [
+    { id: 'first', source: 'start', target: 'delay' },
+    { id: 'old', source: 'delay', target: 'popover' },
+  ];
+  const draft = structuredClone(request.workflow);
+  const node = {
+    id: nodeId,
+    type: 'workflow' as const,
+    position: { x: 450, y: 0 },
+    data: { kind: 'delay' as const, label: '3 Second Delay', config: { duration: 3000 } },
+  };
+  draft.nodes.push(node);
+  draft.edges = [
+    draft.edges[0],
+    { id: 'second', source: 'delay', target: nodeId },
+    { id: 'third', source: nodeId, target: 'popover' },
+  ];
+  const reviews = setup([], [loggedReview, corrected]);
+  const response = await reviewWorkflow({
+    model: {} as never,
+    config: {
+      provider: 'local',
+      source: 'browser',
+      apiKey: '',
+      model: 'test',
+      baseURL: 'http://127.0.0.1:11434/v1',
+    },
+    signal: new AbortController().signal,
+    request,
+    draft,
+    operations: [
+      { type: 'add_node', node },
+      { type: 'remove_edge', id: 'old' },
+      ...draft.edges.slice(1).map((edge) => ({ type: 'add_edge' as const, edge })),
+    ],
+    runtimeInstructions: '',
+  });
+  expect(response).toEqual(corrected);
+  expect(reviews).toHaveLength(2);
+  expect(reviews[1]).toEqual(reviews[0]);
+  expect(reviews[0].technicalIssues).toEqual([]);
+  const options = vi.mocked(generateText).mock.calls[1][0];
+  expect(options.system).toContain('Response JSON Schema');
+  expect(options.system).toContain('never list successful changes');
+  expect(options.messages?.[1].content).toContain('findings.0.alternative');
+});
+
+it('retries invalid review JSON without replaying edits or committing early', async () => {
+  const reviews = setup([rename, result('', [['finish_workflow', {}]])], ['not JSON', pass]);
+  const ready = vi.fn(() => expect(reviews).toHaveLength(2));
+  const response = await runLocalAgent(
+    input(),
+    new AbortController().signal,
+    config,
+    vi.fn(),
+    undefined,
+    ready,
+  );
+  expect(response.operations).toEqual([{ type: 'update_node', id: 'start', label: 'Welcome' }]);
+  expect(reviews[1]).toEqual(reviews[0]);
+  expect(ready).toHaveBeenCalledOnce();
+});
+
+it('stops after one review correction attempt and never commits invalid reviews', async () => {
+  const reviews = setup([rename, result('Done')], ['not JSON', 'still not JSON', pass]);
+  const ready = vi.fn();
+  await expect(
+    runLocalAgent(input(), new AbortController().signal, config, vi.fn(), undefined, ready),
+  ).rejects.toThrow();
+  expect(reviews).toHaveLength(2);
+  expect(ready).not.toHaveBeenCalled();
+});
+
+it.each([new Error('offline'), { ...pass, summary: 'private-test-key' }])(
+  'does not retry provider failures or unsafe responses',
+  async (review) => {
+    const reviews = setup([rename, result('Done')], [review, pass]);
+    const ready = vi.fn();
+    await expect(
+      runLocalAgent(input(), new AbortController().signal, config, vi.fn(), undefined, ready),
+    ).rejects.toThrow();
+    expect(reviews).toHaveLength(1);
+    expect(ready).not.toHaveBeenCalled();
+  },
+);
