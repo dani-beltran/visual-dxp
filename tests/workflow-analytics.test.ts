@@ -1,4 +1,3 @@
-import type { Workflow as ServerWorkflow } from '../src/server/ai/workflow/types';
 // @vitest-environment jsdom
 // @vitest-environment-options {"url":"https://example.com/shop"}
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
@@ -13,6 +12,7 @@ import {
   applyWorkflowOperations as serverApply,
   parseAIChatRequest as serverParse,
 } from '../src/server/ai/workflow/ai';
+import type { Workflow as ServerWorkflow } from '../src/server/ai/workflow/types';
 import { validateWorkflow as serverValidate } from '../src/server/ai/workflow/validation';
 
 const page = window as Window &

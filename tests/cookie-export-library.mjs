@@ -2,10 +2,15 @@
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { JSDOM } from 'jsdom';
-import * as esm from '../dist/visual-dxp.js';
 
+// The browser editor bundle includes DOM-based Markdown entity decoding.
+const editorDom = new JSDOM('');
+globalThis.document = editorDom.window.document;
+const esm = await import('../dist/visual-dxp.js');
 const require = createRequire(import.meta.url);
 const umd = require('../dist/visual-dxp.umd.cjs');
+delete globalThis.document;
+editorDom.window.close();
 
 let cookieCases = 0;
 for (const library of [esm, umd]) {
