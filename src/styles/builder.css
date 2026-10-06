@@ -165,7 +165,10 @@
   padding: 4px;
   min-width: 0;
 }
-.dxp-website-button span {
+.dxp-current-website {
+  min-width: 0;
+  font-size: 9px;
+  color: var(--dxp-muted);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -219,7 +222,9 @@
   top: 24px;
   left: 28px;
   margin: 0;
-  max-height: calc(100% - 148px);
+  height: calc(100% - 148px);
+  min-height: 46px;
+  pointer-events: none;
   display: flex;
   flex-direction: column;
   z-index: 6;
@@ -244,11 +249,15 @@
   pointer-events: auto;
 }
 .dxp-node-library-root {
+  position: relative;
+  height: 100%;
   display: flex;
   min-height: 0;
   width: max-content;
 }
 .dxp-node-library {
+  align-self: flex-start;
+  pointer-events: auto;
   min-height: 0;
   padding: 8px;
   display: flex;
@@ -278,6 +287,37 @@
 }
 .dxp-node-library-button:active {
   box-shadow: inset 0 0 0 2px currentColor;
+}
+.dxp-node-library-more {
+  background: var(--dxp-primary-soft);
+  color: var(--dxp-muted);
+}
+.dxp-node-library-overflow {
+  position: absolute;
+  left: calc(100% + 8px);
+  bottom: 0;
+  width: min(220px, calc(100vw - 100px));
+  max-height: 100%;
+  box-sizing: border-box;
+  overflow-y: auto;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border: 1px solid var(--dxp-line);
+  border-radius: 14px;
+  background: var(--dxp-surface);
+  box-shadow: 0 8px 28px var(--dxp-shadow);
+  pointer-events: auto;
+}
+.dxp-node-library-overflow .dxp-node-library-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 0 8px;
+  text-align: left;
+  font-size: 11px;
 }
 .dxp-node-library-tooltip {
   position: absolute;
@@ -1128,7 +1168,8 @@
     font-size: 8px;
     gap: 4px;
   }
-  .dxp-website-button span {
+  .dxp-current-website {
+    font-size: 8px;
     max-width: 130px;
   }
   .dxp-toolbar > .dxp-icon-button {
@@ -1199,8 +1240,8 @@
   }
 }
 @media (max-width: 500px) {
-  .dxp-website-button span {
-    display: none;
+  .dxp-current-website {
+    max-width: 90px;
   }
   .dxp-toolbar {
     padding: 0 13px;

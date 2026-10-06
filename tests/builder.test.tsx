@@ -746,3 +746,29 @@ describe('builder and host boundary', () => {
     expect(host.querySelector('[aria-label="Export workflow"]')).toBeNull();
   });
 });
+
+it.each([
+  ['example.com/shop?preview=1', 'https://example.com/shop?preview=1'],
+  ['http://example.com/shop', 'http://example.com/shop'],
+  ['https://example.com/shop', 'https://example.com/shop'],
+  ['localhost:3000/shop', 'https://localhost:3000/shop'],
+  ['//example.com/shop', 'https://example.com/shop'],
+])('configures website input %s as %s', async (inputUrl, expected) => {
+  const onChange = vi.fn<(workflow: Workflow) => void>();
+  await act(async () =>
+    root.render(<VisualDXPBuilder initialWorkflow={initialWorkflow()} onChange={onChange} />),
+  );
+  await click(element('button[aria-label="Change target website"]'));
+  const input = element<HTMLInputElement>('.dxp-website-settings input:not([type="checkbox"])');
+  const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!;
+  await act(async () => {
+    setter.call(input, inputUrl);
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  expect(host.querySelector('.dxp-website-scope')?.textContent).toContain(expected.split('?')[0]);
+  await act(async () =>
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })),
+  );
+  expect(onChange.mock.lastCall?.[0].websiteUrl).toBe(expected);
+  expect(host.querySelector('.dxp-website-settings')).toBeNull();
+});

@@ -84,7 +84,12 @@ import { NoteEditingContext } from '../lib/noteEditing';
 import { NoteSelectionProvider, useNoteSelection } from '../lib/noteSelection';
 import { normalizeWebsiteUrl } from '../lib/picker';
 import { isWorkflow } from '../lib/serialization';
-import { resolveWebsiteUrl, validateExportTarget, websiteUrlInputValue } from '../lib/targeting';
+import {
+  normalizeWebsiteInput,
+  resolveWebsiteUrl,
+  validateExportTarget,
+  websiteUrlInputValue,
+} from '../lib/targeting';
 import type {
   NodeKind,
   RunLog,
@@ -392,10 +397,10 @@ function Builder({
   let websiteScope: URL | undefined;
   let websiteConnectionUrl: string | undefined;
   try {
-    const target = resolveWebsiteUrl(websiteDraft.trim() || '/demo-site.html');
+    const websiteUrl = normalizeWebsiteInput(websiteDraft);
+    const target = resolveWebsiteUrl(websiteUrl);
     if (target.href !== resolveWebsiteUrl('/demo-site.html').href) websiteScope = target;
-    if (websiteScope)
-      websiteConnectionUrl = normalizeWebsiteUrl(websiteDraft, window.location.href);
+    if (websiteScope) websiteConnectionUrl = normalizeWebsiteUrl(websiteUrl, window.location.href);
   } catch {
     // The save action reports invalid input; omit scope until it can be parsed.
   }
@@ -1126,7 +1131,7 @@ function Builder({
   }
   function saveWebsite() {
     try {
-      const websiteUrl = websiteDraft.trim() || '/demo-site.html';
+      const websiteUrl = normalizeWebsiteInput(websiteDraft);
       resolveWebsiteUrl(websiteUrl);
       const next = {
         ...current.current,
@@ -1362,6 +1367,11 @@ function Builder({
             : t('builder.readyToBuild')}
         </span>
         <div className="dxp-toolbar-spacer" />
+        <span className="dxp-current-website" title={workflow.websiteUrl}>
+          {!workflow.websiteUrl.trim() || workflow.websiteUrl === '/demo-site.html'
+            ? t('builder.demoWebsite')
+            : workflow.websiteUrl.replace(/^https?:\/\//, '')}
+        </span>
         <button
           type="button"
           className="dxp-website-button"
@@ -1370,11 +1380,6 @@ function Builder({
           onClick={() => configureWebsite()}
         >
           <Globe2 size={14} />
-          <span>
-            {workflow.websiteUrl === '/demo-site.html'
-              ? t('builder.demoWebsite')
-              : workflow.websiteUrl.replace(/^https?:\/\//, '')}
-          </span>
           <ChevronDown size={12} />
         </button>
         <span className="dxp-toolbar-divider" />

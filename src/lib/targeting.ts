@@ -8,6 +8,17 @@ export interface ExportOptions {
   baseUrl?: string;
 }
 
+/** Normalize modal input while preserving explicit protocols and local preview paths. */
+export function normalizeWebsiteInput(value: string): string {
+  const input = value.trim();
+  if (!input) return '/demo-site.html';
+  if (input.startsWith('//')) return `https:${input}`;
+  if (/^(?:\/|\.\.?\/)/.test(input)) return input;
+  const hasProtocol = /^[a-z][a-z\d+.-]*:/i.test(input);
+  const hasHostPort = /^[^/:?#]+:\d+(?:[/?#]|$)/.test(input);
+  return hasProtocol && !hasHostPort ? input : `https://${input}`;
+}
+
 /** Keep the built-in demo implicit in website URL inputs. */
 export function websiteUrlInputValue(value: string): string {
   if (value.trim() === '/demo-site.html') return '';
