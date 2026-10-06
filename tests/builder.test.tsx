@@ -74,6 +74,260 @@ async function click(target: HTMLElement) {
 }
 
 describe('builder and host boundary', () => {
+  it('shows only one inspector when a connection and nodes are selected together', async () => {
+    const workflow = initialWorkflow();
+    workflow.nodes = ['first', 'second', 'third'].map((id, index) => ({
+      ...createNode('delay', { x: index * 300, y: 0 }),
+      id,
+      width: 220,
+      height: 140,
+      handles: [
+        { type: 'source', position: Position.Right, x: 220, y: 70 },
+        { type: 'target', position: Position.Left, x: 0, y: 70 },
+      ],
+    }));
+    workflow.edges = [{ id: 'connection', source: 'first', target: 'second' }];
+    await act(async () => root.render(<VisualDXPBuilder initialWorkflow={workflow} />));
+    await act(async () => {
+      element('[data-id="connection"]').dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+    expect(host.querySelectorAll('.dxp-inspector')).toHaveLength(1);
+    expect(element('.dxp-inspector').getAttribute('aria-label')).toBe('Connection configuration');
+    for (const [index, id] of ['first', 'second', 'third'].entries()) {
+      await act(async () => {
+        host.dispatchEvent(
+          new KeyboardEvent('keydown', { key: 'Shift', shiftKey: true, bubbles: true }),
+        );
+      });
+      await act(async () => {
+        element(`[data-id="${id}"]`).dispatchEvent(
+          new KeyboardEvent('keydown', { key: 'Enter', shiftKey: true, bubbles: true }),
+        );
+      });
+      await act(async () => {
+        element(`[data-id="${id}"]`).dispatchEvent(
+          new KeyboardEvent('keyup', { key: 'Enter', shiftKey: true, bubbles: true }),
+        );
+      });
+      expect(host.querySelectorAll('.react-flow__node.selected')).toHaveLength(index);
+      await act(async () => {
+        element('[data-id="connection"]').dispatchEvent(
+          new MouseEvent('click', { shiftKey: true, bubbles: true }),
+        );
+      });
+      await act(async () => {
+        host.dispatchEvent(new KeyboardEvent('keyup', { key: 'Shift', bubbles: true }));
+      });
+      expect(element('[data-id="connection"]').classList.contains('selected')).toBe(false);
+      expect(host.querySelectorAll('.dxp-inspector')).toHaveLength(1);
+      expect(host.querySelector('[aria-label="Connection configuration"]')).toBeNull();
+      if (index > 0)
+        expect(element('.dxp-inspector h2').textContent).toBe(`${index + 1} nodes selected`);
+    }
+    await act(async () => {
+      host.dispatchEvent(new KeyboardEvent('keyup', { key: 'Shift', bubbles: true }));
+    });
+  });
+
+  it.each(['metaKey', 'ctrlKey'] as const)(
+    'pans on mouse movement alone with %s and stops on release',
+    async (modifier) => {
+      const workflow = initialWorkflow();
+      workflow.nodes = [{ ...createNode('delay', { x: 0, y: 0 }), id: 'step' }];
+      await act(async () => root.render(<VisualDXPBuilder initialWorkflow={workflow} />));
+      const viewport = element('.react-flow__viewport');
+      const move = async (
+        x: number,
+        y: number,
+        held: boolean,
+        target = element('[data-id="step"]'),
+      ) => {
+        await act(async () => {
+          target.dispatchEvent(
+            new MouseEvent('mousemove', {
+              bubbles: true,
+              clientX: x,
+              clientY: y,
+              buttons: 0,
+              [modifier]: held,
+            }),
+          );
+        });
+      };
+      const before = viewport.style.transform;
+      await move(100, 100, false);
+      await move(180, 150, true);
+      expect(viewport.style.transform).not.toBe(before);
+      const panned = viewport.style.transform;
+      await move(220, 180, false);
+      expect(viewport.style.transform).toBe(panned);
+      await move(250, 200, true, element('.react-flow__panel button'));
+      expect(viewport.style.transform).toBe(panned);
+      await act(async () => window.dispatchEvent(new Event('blur')));
+      await move(400, 400, true);
+      expect(viewport.style.transform).toBe(panned);
+      await move(420, 410, true);
+      expect(viewport.style.transform).not.toBe(panned);
+      expect(element('[data-id="step"]').classList.contains('selected')).toBe(false);
+    },
+  );
+
+  it.each(['Meta', 'Control', ' ', null])(
+    'pans by dragging with %s and preserves unmodified dragging',
+    async (key) => {
+      await act(async () => root.render(<VisualDXPBuilder initialWorkflow={initialWorkflow()} />));
+      const viewport = element('.react-flow__viewport');
+      const before = viewport.style.transform;
+      const modifiers = { metaKey: key === 'Meta', ctrlKey: key === 'Control' };
+      if (key) {
+        await act(async () => {
+          host.dispatchEvent(
+            new KeyboardEvent('keydown', {
+              key,
+              code: key === ' ' ? 'Space' : key,
+              bubbles: true,
+              ...modifiers,
+            }),
+          );
+        });
+      }
+      const mouseEvent = (type: string, options: MouseEventInit) => {
+        const event = new MouseEvent(type, options);
+        Object.defineProperty(event, 'view', { value: window });
+        return event;
+      };
+      await act(async () => {
+        element('.react-flow__pane').dispatchEvent(
+          mouseEvent('mousedown', {
+            bubbles: true,
+            clientX: 100,
+            clientY: 100,
+            buttons: 1,
+            ...modifiers,
+          }),
+        );
+        window.dispatchEvent(
+          mouseEvent('mousemove', {
+            bubbles: true,
+            clientX: 180,
+            clientY: 150,
+            buttons: 1,
+            ...modifiers,
+          }),
+        );
+        window.dispatchEvent(
+          mouseEvent('mouseup', {
+            bubbles: true,
+            clientX: 180,
+            clientY: 150,
+            ...modifiers,
+          }),
+        );
+      });
+      expect(viewport.style.transform).not.toBe(before);
+      if (key) {
+        await act(async () => {
+          host.dispatchEvent(
+            new KeyboardEvent('keyup', { key, code: key === ' ' ? 'Space' : key, bubbles: true }),
+          );
+        });
+      }
+    },
+  );
+
+  it('toggles nodes with Shift-click, resets selection, and deletes the selected group', async () => {
+    const workflow = initialWorkflow();
+    workflow.nodes = ['first', 'second', 'third'].map((id, index) => ({
+      ...createNode('delay', { x: index * 300, y: 0 }),
+      id,
+    }));
+    workflow.edges = [{ id: 'connection', source: 'first', target: 'third' }];
+    const onChange = vi.fn<(workflow: Workflow) => void>();
+    await act(async () =>
+      root.render(<VisualDXPBuilder initialWorkflow={workflow} onChange={onChange} />),
+    );
+    const selected = () =>
+      [...host.querySelectorAll('.react-flow__node.selected')].map((node) =>
+        node.getAttribute('data-id'),
+      );
+    const shiftClick = async (id: string) => {
+      const before = selected();
+      await act(async () => {
+        host.dispatchEvent(
+          new KeyboardEvent('keydown', { key: 'Shift', shiftKey: true, bubbles: true }),
+        );
+      });
+      await act(async () => {
+        element(`[data-id="${id}"]`).dispatchEvent(
+          new MouseEvent('click', { shiftKey: true, bubbles: true }),
+        );
+      });
+      expect(selected()).toEqual(before);
+      await act(async () => {
+        host.dispatchEvent(new KeyboardEvent('keyup', { key: 'Shift', bubbles: true }));
+      });
+    };
+    await click(element('[data-id="first"]'));
+    await shiftClick('second');
+    expect(selected()).toEqual(['first', 'second']);
+    expect(element('.dxp-inspector h2').textContent).toBe('2 nodes selected');
+    expect(button('Delete nodes')).toBeTruthy();
+    await shiftClick('third');
+    expect(element('.dxp-inspector h2').textContent).toBe('3 nodes selected');
+    await shiftClick('third');
+    await shiftClick('first');
+    expect(selected()).toEqual(['second']);
+    expect(host.querySelector('aside[aria-label="Selected nodes"]')).toBeNull();
+    await shiftClick('third');
+    await click(element('[data-id="second"]'));
+    expect(selected()).toEqual(['second']);
+    await shiftClick('first');
+    await click(element('.react-flow__pane'));
+    expect(selected()).toEqual([]);
+    await click(element('[data-id="first"]'));
+    await shiftClick('third');
+    await act(async () => {
+      host.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    });
+    await act(async () => {
+      host.dispatchEvent(new KeyboardEvent('keyup', { key: 'Escape', bubbles: true }));
+    });
+    expect(selected()).toEqual([]);
+    await click(element('[data-id="first"]'));
+    await shiftClick('second');
+    await act(async () => {
+      host.dispatchEvent(new KeyboardEvent('keydown', { key: 'Delete', bubbles: true }));
+    });
+    await act(async () => {
+      host.dispatchEvent(new KeyboardEvent('keyup', { key: 'Delete', bubbles: true }));
+    });
+    expect(onChange.mock.lastCall?.[0].nodes.map((node) => node.id)).toEqual(['third']);
+    await click(element('button[title^="Undo"]'));
+    expect(onChange.mock.lastCall?.[0].nodes.map((node) => node.id)).toEqual([
+      'first',
+      'second',
+      'third',
+    ]);
+    await click(element('[data-id="first"]'));
+    await shiftClick('second');
+    await click(element('button[aria-label="Close selection details"]'));
+    expect(selected()).toEqual([]);
+    expect(host.querySelector('.dxp-inspector')).toBeNull();
+    await click(element('[data-id="first"]'));
+    await shiftClick('second');
+    await click(button('Delete nodes'));
+    expect(onChange.mock.lastCall?.[0].nodes.map((node) => node.id)).toEqual(['third']);
+    expect(onChange.mock.lastCall?.[0].edges).toEqual([]);
+    expect(host.querySelector('.dxp-inspector')).toBeNull();
+    await click(element('button[title^="Undo"]'));
+    expect(onChange.mock.lastCall?.[0].nodes.map((node) => node.id)).toEqual([
+      'first',
+      'second',
+      'third',
+    ]);
+    expect(onChange.mock.lastCall?.[0].edges).toEqual(workflow.edges);
+  });
+
   it.each([
     ['fork', 'true', 'false', false],
     ['loop', 'body', 'done', false],
