@@ -68,7 +68,6 @@ export const tutorialEnglish = {
   'tutorial.export.title': 'Discover workflow export',
   'tutorial.export.body':
     'Open Export workflow. JavaScript exports a standalone script for your target website; Workflow JSON saves an editable definition. Copy and Download are available for export. Inspect the options, then close the dialog; no download is required. The demo is for practice: real deployment requires configuring and validating your intended website target.',
-  'tutorial.openExport': 'Open export',
   'tutorial.closeExport': 'Close export',
   'tutorial.presets.title': 'Discover Presets',
   'tutorial.presets.body':

@@ -185,17 +185,13 @@ export function TutorialPanel({
                   {aiUnavailable && <p>{t('tutorial.ai.unavailable')}</p>}
                 </>
               )}
-              {step === 'export' && (
+              {step === 'export' && options.host?.exportOpen && (
                 <button
                   type="button"
                   className="dxp-button"
-                  onClick={
-                    options.host?.exportOpen
-                      ? options.host.closeExport
-                      : () => options.host?.openExport()
-                  }
+                  onClick={options.host.closeExport}
                 >
-                  {t(options.host?.exportOpen ? 'tutorial.closeExport' : 'tutorial.openExport')}
+                  {t('tutorial.closeExport')}
                 </button>
               )}
               {step === 'presets' && (

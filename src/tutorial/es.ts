@@ -68,7 +68,6 @@ export const tutorialSpanish = {
   'tutorial.export.title': 'Descubre la exportación',
   'tutorial.export.body':
     'Abre Exportar flujo. JavaScript exporta un script independiente para tu sitio; JSON del flujo de trabajo guarda una definición editable. Puedes usar Copiar y Descargar. Revisa las opciones y cierra el diálogo; no hace falta descargar. La demostración es para practicar: publicar requiere configurar y validar el sitio de destino real.',
-  'tutorial.openExport': 'Abrir exportación',
   'tutorial.closeExport': 'Cerrar exportación',
   'tutorial.presets.title': 'Descubre las plantillas',
   'tutorial.presets.body':
