@@ -1,3 +1,5 @@
+import { conditionTimeZoneLabel } from '../../lib/conditionTimeZone';
+import { weekdays } from '../../lib/weekdays';
 import '../../styles/base.css';
 import '../../styles/shared.css';
 import '../../styles/inspector.css';
@@ -587,6 +589,7 @@ export function NodeInspector({
                 <option value="language">{t('nodeInspector.userLanguage')}</option>
                 <option value="referrer">{t('nodeInspector.referrerDomain')}</option>
                 <option value="date-range">{t('nodeInspector.withinDateRange')}</option>
+                <option value="weekdays">{t('nodeInspector.weekdays')}</option>
                 <option value="time-of-day">{t('nodeInspector.timeOfDay')}</option>
                 <option value="query-param">{t('nodeInspector.urlSearchParameter')}</option>
                 <option value="cookie">{t('nodeInspector.cookies')}</option>
@@ -656,12 +659,13 @@ export function NodeInspector({
             )}
             {conditionType === 'date-range' && (
               <InfoBox>
-                {t('nodeInspector.dateRangeHelp', { zone: config.conditionTimeZone || 'local' })}
+                {t('nodeInspector.dateRangeHelp', { zone: conditionTimeZoneLabel(config) })}
               </InfoBox>
             )}
+            {conditionType === 'weekdays' && <InfoBox>{t('nodeInspector.weekdaysHelp')}</InfoBox>}
             {conditionType === 'time-of-day' && (
               <InfoBox>
-                {t('nodeInspector.timeRangeHelp', { zone: config.conditionTimeZone || 'local' })}
+                {t('nodeInspector.timeRangeHelp', { zone: conditionTimeZoneLabel(config) })}
               </InfoBox>
             )}
             {variableCondition && (
@@ -727,7 +731,9 @@ export function NodeInspector({
                 />
               </Field>
             )}
-            {(conditionType === 'date-range' || conditionType === 'time-of-day') && (
+            {(conditionType === 'date-range' ||
+              conditionType === 'time-of-day' ||
+              conditionType === 'weekdays') && (
               <Field
                 label={
                   conditionType === 'date-range'
@@ -738,10 +744,17 @@ export function NodeInspector({
               >
                 <Select
                   id={id('condition-time-zone')}
-                  value={config.conditionTimeZone ?? 'local'}
+                  value={
+                    config.conditionTimeZone === 'utc'
+                      ? 'offset'
+                      : (config.conditionTimeZone ?? 'local')
+                  }
                   onChange={(event) =>
                     update({
                       conditionTimeZone: event.target.value as StepConfig['conditionTimeZone'],
+                      ...(event.target.value === 'offset'
+                        ? { conditionTimeZoneOffset: config.conditionTimeZoneOffset ?? 0 }
+                        : {}),
                     })
                   }
                 >
@@ -750,10 +763,40 @@ export function NodeInspector({
                       ? t('nodeInspector.visitorLocalDate')
                       : t('nodeInspector.visitorLocalTime')}
                   </option>
-                  <option value="utc">{t('nodeInspector.utc')}</option>
+                  <option value="offset">{t('nodeInspector.fixedTimeZone')}</option>
                 </Select>
               </Field>
             )}
+            {['date-range', 'time-of-day', 'weekdays'].includes(conditionType) &&
+              (config.conditionTimeZone === 'offset' || config.conditionTimeZone === 'utc') && (
+                <>
+                  <Field
+                    label={t('nodeInspector.utcOffset')}
+                    htmlFor={id('condition-time-zone-offset')}
+                    hint={t('nodeInspector.utcOffsetHelp')}
+                  >
+                    <input
+                      id={id('condition-time-zone-offset')}
+                      type="number"
+                      min={-12}
+                      max={14}
+                      step={1}
+                      value={
+                        config.conditionTimeZone === 'utc'
+                          ? 0
+                          : (config.conditionTimeZoneOffset ?? '')
+                      }
+                      onChange={(event) =>
+                        update({
+                          conditionTimeZone: 'offset',
+                          conditionTimeZoneOffset:
+                            event.target.value === '' ? undefined : event.target.valueAsNumber,
+                        })
+                      }
+                    />
+                  </Field>
+                </>
+              )}
             {conditionType === 'date-range' && (
               <>
                 <Field label={t('nodeInspector.startDate')} htmlFor={id('condition-start-date')}>
@@ -777,6 +820,36 @@ export function NodeInspector({
                   />
                 </Field>
               </>
+            )}
+            {conditionType === 'weekdays' && (
+              <fieldset className="dxp-inspector-weekdays">
+                <legend>{t('nodeInspector.weekdays')}</legend>
+                <div className="dxp-inspector-weekday-options">
+                  {weekdays.map((day) => {
+                    const name = t(`weekday.${day.name}`);
+                    return (
+                      <label key={day.value} title={name}>
+                        <input
+                          type="checkbox"
+                          aria-label={name}
+                          checked={config.conditionWeekdays?.includes(day.value) ?? false}
+                          onChange={(event) => {
+                            const selected = new Set(config.conditionWeekdays ?? []);
+                            if (event.target.checked) selected.add(day.value);
+                            else selected.delete(day.value);
+                            update({
+                              conditionWeekdays: weekdays
+                                .filter((item) => selected.has(item.value))
+                                .map((item) => item.value),
+                            });
+                          }}
+                        />
+                        <span aria-hidden="true">{name.charAt(0)}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </fieldset>
             )}
             {conditionType === 'time-of-day' && (
               <>

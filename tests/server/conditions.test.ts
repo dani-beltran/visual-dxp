@@ -23,6 +23,28 @@ const base: Workflow = {
   edges: [],
 };
 const configs: StepConfig[] = [
+  {
+    conditionType: 'weekdays',
+    conditionWeekdays: [1, 2],
+    conditionTimeZone: 'offset',
+    conditionTimeZoneOffset: 14,
+  },
+  {
+    conditionType: 'date-range',
+    conditionStartDate: '2026-10-05',
+    conditionEndDate: '2026-10-05',
+    conditionTimeZone: 'offset',
+    conditionTimeZoneOffset: -12,
+  },
+  {
+    conditionType: 'time-of-day',
+    conditionStartTime: '09:00',
+    conditionEndTime: '17:00',
+    conditionTimeZone: 'offset',
+    conditionTimeZoneOffset: 5,
+  },
+  { conditionType: 'weekdays', conditionWeekdays: [1, 6] },
+  { conditionType: 'weekdays', conditionWeekdays: [1, 2, 3], conditionTimeZone: 'utc' },
   { conditionType: 'time-of-day', conditionStartTime: '09:00', conditionEndTime: '17:00' },
   {
     conditionType: 'time-of-day',
@@ -127,6 +149,30 @@ describe('visitor condition tools and contracts', () => {
   });
 
   it.each([
+    { conditionType: 'weekdays', conditionWeekdays: [1], conditionTimeZone: 'offset' },
+    {
+      conditionType: 'weekdays',
+      conditionWeekdays: [1],
+      conditionTimeZone: 'offset',
+      conditionTimeZoneOffset: 15,
+    },
+    {
+      conditionType: 'time-of-day',
+      conditionStartTime: '09:00',
+      conditionEndTime: '17:00',
+      conditionTimeZone: 'offset',
+      conditionTimeZoneOffset: -13,
+    },
+    {
+      conditionType: 'date-range',
+      conditionStartDate: '2026-10-05',
+      conditionEndDate: '2026-10-05',
+      conditionTimeZone: 'offset',
+      conditionTimeZoneOffset: 5.5,
+    },
+    { conditionType: 'weekdays', conditionWeekdays: [] },
+    { conditionType: 'weekdays', conditionWeekdays: [7] },
+    { conditionType: 'weekdays' },
     { conditionType: 'time-of-day' },
     { conditionType: 'time-of-day', conditionStartTime: '09:00' },
     { conditionType: 'time-of-day', conditionEndTime: '17:00' },

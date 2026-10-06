@@ -74,7 +74,7 @@ async function change(label: string, value: string) {
 it('edits each condition type with the corresponding fields and preserves legacy selectors', async () => {
   expect(field('Condition type').value).toBe('selector');
   expect(field('Element exists').value).toBe('#legacy');
-  expect([...field('Condition type').querySelectorAll('option')]).toHaveLength(9);
+  expect([...field('Condition type').querySelectorAll('option')]).toHaveLength(10);
   await change('Condition type', 'device');
   expect(field('Device is').value).toBe('desktop');
   await change('Device is', 'mobile');
@@ -137,18 +137,19 @@ it('edits inclusive date ranges and keeps the dates when switching condition typ
   expect(stepSummary('fork', current)).toBe('Within 2026-09-01 to 2026-09-30 · Visitor local');
   expect(host.textContent).toContain('Both dates are included');
   expect(host.textContent).toContain('visitor’s local time zone');
-  await change('Date based on', 'utc');
+  await change('Date based on', 'offset');
   expect(current).toMatchObject({
-    conditionTimeZone: 'utc',
+    conditionTimeZone: 'offset',
+    conditionTimeZoneOffset: 0,
     conditionStartDate: '2026-09-01',
     conditionEndDate: '2026-09-30',
   });
-  expect(stepSummary('fork', current)).toBe('Within 2026-09-01 to 2026-09-30 · UTC');
-  expect(host.textContent).toContain('Both dates are included, using UTC.');
+  expect(stepSummary('fork', current)).toBe('Within 2026-09-01 to 2026-09-30 · UTC+00:00');
+  expect(host.textContent).toContain('Both dates are included, using UTC+00:00.');
   await change('Condition type', 'selector');
   expect(field('Element exists').value).toBe('#legacy');
   await change('Condition type', 'date-range');
-  expect(field('Date based on').value).toBe('utc');
+  expect(field('Date based on').value).toBe('offset');
   expect(field('Start date').value).toBe('2026-09-01');
   expect(field('End date').value).toBe('2026-09-30');
   await change('Date based on', 'local');
@@ -170,24 +171,25 @@ it('edits time-of-day ranges and keeps their time zone and times when switching 
   expect(host.textContent).not.toContain('Start date');
   await change('Start time', '22:00');
   await change('End time', '06:00');
-  await change('Time based on', 'utc');
+  await change('Time based on', 'offset');
   expect(current).toMatchObject({
     conditionType: 'time-of-day',
     conditionStartTime: '22:00',
     conditionEndTime: '06:00',
-    conditionTimeZone: 'utc',
+    conditionTimeZone: 'offset',
+    conditionTimeZoneOffset: 0,
   });
-  expect(stepSummary('fork', current)).toBe('Time 22:00–06:00 · UTC');
+  expect(stepSummary('fork', current)).toBe('Time 22:00–06:00 · UTC+00:00');
   expect(host.textContent).toContain('current time using UTC');
   expect(host.textContent).toContain('Both selected minutes are included');
   expect(host.textContent).toContain('earlier end time crosses midnight');
   expect(field('End time').hasAttribute('min')).toBe(false);
   await change('Condition type', 'date-range');
-  expect(field('Date based on').value).toBe('utc');
+  expect(field('Date based on').value).toBe('offset');
   await change('Start date', '2026-09-01');
   await change('End date', '2026-09-30');
   await change('Condition type', 'time-of-day');
-  expect(field('Time based on').value).toBe('utc');
+  expect(field('Time based on').value).toBe('offset');
   expect(field('Start time').value).toBe('22:00');
   expect(field('End time').value).toBe('06:00');
   expect(current.conditionStartDate).toBe('2026-09-01');
@@ -328,4 +330,58 @@ it('edits and validates templated content without a toggle or variable explanati
   await change('New text', 'Static again');
   expect(host.querySelector('[role="alert"]')).toBeNull();
   expect(host.querySelector('.dxp-inspector-incoming-data')).toBeNull();
+});
+
+it('selects multiple weekdays, removes days and preserves selections when switching types', async () => {
+  await change('Condition type', 'weekdays');
+  const checkbox = (name: string) =>
+    host.querySelector<HTMLInputElement>(`input[aria-label="${name}"]`)!;
+  expect(host.querySelectorAll('input[type="checkbox"]')).toHaveLength(7);
+  expect(
+    [...host.querySelectorAll('.dxp-inspector-weekday-options span')].map(
+      (item) => item.textContent,
+    ),
+  ).toEqual(['M', 'T', 'W', 'T', 'F', 'S', 'S']);
+  for (const name of ['Saturday', 'Monday']) await act(async () => checkbox(name).click());
+  expect(current.conditionWeekdays).toEqual([1, 6]);
+  expect(stepSummary('fork', current)).toBe('Monday, Saturday · Visitor local');
+  await change('Time based on', 'offset');
+  await change('Condition type', 'selector');
+  await change('Condition type', 'weekdays');
+  expect(checkbox('Monday').checked).toBe(true);
+  expect(checkbox('Saturday').checked).toBe(true);
+  expect(field('Time based on').value).toBe('offset');
+  await act(async () => checkbox('Saturday').click());
+  for (const name of ['Tuesday', 'Wednesday']) await act(async () => checkbox(name).click());
+  expect(current.conditionWeekdays).toEqual([1, 2, 3]);
+  expect(stepSummary('fork', current)).toBe('Monday, Tuesday, Wednesday · UTC+00:00');
+});
+
+it('edits and preserves a fixed UTC offset across calendar condition types', async () => {
+  await change('Condition type', 'weekdays');
+  await change('Time based on', 'offset');
+  const offset = field('UTC offset (hours)');
+  expect(offset.type).toBe('number');
+  expect(offset.getAttribute('min')).toBe('-12');
+  expect(offset.getAttribute('max')).toBe('14');
+  expect(offset.getAttribute('step')).toBe('1');
+  expect(offset.value).toBe('0');
+  expect(host.textContent).toContain('From −12 to +14.');
+  expect(host.textContent).not.toContain('Fixed offsets do not change');
+  await change('UTC offset (hours)', '5');
+  expect(current.conditionTimeZoneOffset).toBe(5);
+  expect(stepSummary('fork', current)).toContain('UTC+05:00');
+  await change('Condition type', 'time-of-day');
+  expect(field('UTC offset (hours)').value).toBe('5');
+  expect(host.textContent).toContain('current time using UTC+05:00');
+  await change('Condition type', 'date-range');
+  expect(host.textContent).toContain('Both dates are included, using UTC+05:00');
+  await change('UTC offset (hours)', '-12');
+  expect(stepSummary('fork', current)).toContain('UTC−12:00');
+  await change('Date based on', 'local');
+  expect(() => field('UTC offset (hours)')).toThrow('Missing field');
+  await change('Date based on', 'offset');
+  expect(field('UTC offset (hours)').value).toBe('-12');
+  await change('UTC offset (hours)', '');
+  expect(current.conditionTimeZoneOffset).toBeUndefined();
 });

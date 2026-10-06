@@ -7,6 +7,7 @@ import type { createExperimentTools } from '../experiment';
 import type { placePopover } from '../popoverPosition';
 import type { getTimeRange } from '../timeRange';
 import type { Workflow } from '../types';
+import type { getWeekdays } from '../weekdays';
 import type { matchesCondition } from './conditions';
 import type { RuntimeContext } from './context';
 import type { createExperimentAnalytics } from './experiment-analytics';
@@ -25,6 +26,7 @@ interface ExecutionModules {
   matchesCondition: typeof matchesCondition;
   getDateRange: typeof getDateRange;
   getTimeRange: typeof getTimeRange;
+  getWeekdays: typeof getWeekdays;
   createPopoverElements: typeof createPopoverElements;
   showPopover: typeof showPopover;
   placePopover: typeof placePopover;
@@ -42,6 +44,7 @@ export function createExecution(
     matchesCondition,
     getDateRange,
     getTimeRange,
+    getWeekdays,
     createPopoverElements,
     showPopover,
     placePopover,
@@ -277,7 +280,7 @@ export function createExecution(
             selectedHandle = matchesCondition(
               config,
               { ...context, data: input },
-              { getDateRange, getTimeRange, dataTools },
+              { getDateRange, getTimeRange, getWeekdays, dataTools },
             )
               ? 'true'
               : 'false';

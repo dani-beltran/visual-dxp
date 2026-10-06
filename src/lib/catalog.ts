@@ -14,11 +14,13 @@ import {
   Timer,
 } from 'lucide-react';
 import { blankPreset } from '../presets/blank';
+import { conditionTimeZoneLabel } from './conditionTimeZone';
 import { dataTools } from './data';
 import { FRAME_HEIGHT, FRAME_WIDTH } from './frames';
 import { type BuilderTranslator, translateEnglish } from './i18n';
 import { nodeDescriptions } from './nodeDescriptions';
 import type { NodeKind, StepConfig, Workflow, WorkflowNode } from './types';
+import { weekdays } from './weekdays';
 export const catalog: {
   kind: NodeKind;
   label: string;
@@ -240,17 +242,26 @@ export function stepSummary(
               ? JSON.stringify(c.conditionValue ?? '')
               : '',
           });
+        case 'weekdays':
+          return t('summary.weekdays', {
+            days:
+              weekdays
+                .filter((day) => c.conditionWeekdays?.includes(day.value))
+                .map((day) => t(`weekday.${day.name}`))
+                .join(', ') || '…',
+            zone: conditionTimeZoneLabel(c),
+          });
         case 'time-of-day':
           return t('summary.time', {
             start: c.conditionStartTime || '…',
             end: c.conditionEndTime || '…',
-            zone: c.conditionTimeZone || 'local',
+            zone: conditionTimeZoneLabel(c),
           });
         case 'date-range':
           return t('summary.date', {
             start: c.conditionStartDate || '…',
             end: c.conditionEndDate || '…',
-            zone: c.conditionTimeZone || 'local',
+            zone: conditionTimeZoneLabel(c),
           });
         case 'selector':
           return t('summary.selector', { selector: c.condition || t('summary.chooseSelector') });

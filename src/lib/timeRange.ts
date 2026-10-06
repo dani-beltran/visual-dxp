@@ -3,14 +3,29 @@ import type { StepConfig } from './types';
 /** Self-contained so validation and standalone workflow scripts use the same rules. */
 export function getTimeRange(config: StepConfig): [number, number] {
   if (
+    config.conditionTimeZone === 'offset' &&
+    (typeof config.conditionTimeZoneOffset !== 'number' ||
+      !Number.isFinite(config.conditionTimeZoneOffset) ||
+      config.conditionTimeZoneOffset < -12 ||
+      config.conditionTimeZoneOffset > 14 ||
+      !Number.isInteger(config.conditionTimeZoneOffset))
+  )
+    throw new Error('Enter a whole-hour UTC offset from -12 to +14.');
+  if (
     config.conditionTimeZone !== undefined &&
     config.conditionTimeZone !== 'local' &&
-    config.conditionTimeZone !== 'utc'
+    config.conditionTimeZone !== 'utc' &&
+    config.conditionTimeZone !== 'offset'
   )
-    throw Object.assign(new Error('Choose visitor local time or UTC for the time of day.'), {
-      messageKey: 'errors.timeRange.chooseVisitorLocalTimeOrUtcForTheTimeOf',
-      messageParams: {},
-    });
+    throw Object.assign(
+      new Error(
+        'Choose visitor local time or UTC, or enter a fixed UTC offset, for the time of day.',
+      ),
+      {
+        messageKey: 'errors.timeRange.chooseVisitorLocalTimeOrUtcForTheTimeOf',
+        messageParams: {},
+      },
+    );
   const minutes = (value: string | undefined, label: string): number => {
     if (
       typeof value !== 'string' ||

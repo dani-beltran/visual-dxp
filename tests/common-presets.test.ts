@@ -258,9 +258,12 @@ describe('preset execution with a mocked browser and network', () => {
     ['2026-10-01T09:00:00Z', true],
     ['2026-10-01T16:59:59Z', true],
     ['2026-10-01T17:00:00Z', false],
-    ['2026-10-04T12:00:00Z', true],
+    ['2026-10-02T12:00:00Z', true],
+    ['2026-10-03T12:00:00Z', false],
+    ['2026-10-04T12:00:00Z', false],
+    ['2026-10-05T12:00:00Z', true],
   ])(
-    'opens contextual support only on hover and selects the UTC hours branch at %s',
+    'opens contextual support only on hover and checks UTC weekdays and opening hours at %s',
     async (time, open) => {
       vi.setSystemTime(new Date(time));
       runtime(contextualSupportPreset).start();
@@ -274,7 +277,8 @@ describe('preset execution with a mocked browser and network', () => {
       await vi.advanceTimersByTimeAsync(0);
       expect(successful()).toEqual([
         'support-hover',
-        'support-hours',
+        'support-weekdays',
+        ...([0, 6].includes(new Date(time).getUTCDay()) ? [] : ['support-hours']),
         open ? 'support-online' : 'support-offline',
       ]);
       expect(popover(open ? 'support-offline' : 'support-online')).toBeNull();
@@ -282,7 +286,7 @@ describe('preset execution with a mocked browser and network', () => {
       expect(popover('support-online')).toBeNull();
       expect(document.querySelector('iframe')).toBeNull();
       if (!open) {
-        expect(popover('support-offline')?.textContent).toContain('09:00–17:00 UTC daily');
+        expect(popover('support-offline')?.textContent).toContain('09:00–17:00 UTC, Monday–Friday');
       }
       expect(request).not.toHaveBeenCalled();
     },

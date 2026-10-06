@@ -2,38 +2,50 @@ import type { createDataTools } from '../data';
 import type { getDateRange } from '../dateRange';
 import type { getTimeRange } from '../timeRange';
 import type { StepConfig } from '../types';
+import type { getWeekdays } from '../weekdays';
 import type { RuntimeContext } from './context';
 
 interface ConditionModules {
   dataTools: ReturnType<typeof createDataTools>;
   getDateRange: typeof getDateRange;
   getTimeRange: typeof getTimeRange;
+  getWeekdays: typeof getWeekdays;
 }
 
 export function matchesCondition(
   config: StepConfig,
   context: RuntimeContext,
-  { getDateRange, getTimeRange, dataTools }: ConditionModules,
+  { getDateRange, getTimeRange, getWeekdays, dataTools }: ConditionModules,
 ): boolean {
   const { doc, win } = context;
   const type = config.conditionType ?? 'selector';
   if (type === 'data') return dataTools.evaluate(config, context.data);
+  // Shift the timestamp, then read UTC components to avoid the host's time zone.
+  const conditionNow = () =>
+    new Date(
+      Date.now() +
+        (config.conditionTimeZone === 'offset' ? config.conditionTimeZoneOffset! * 3_600_000 : 0),
+    );
+  const useUTC = config.conditionTimeZone === 'utc' || config.conditionTimeZone === 'offset';
+  if (type === 'weekdays') {
+    const days = getWeekdays(config);
+    const now = conditionNow();
+    return days.includes(useUTC ? now.getUTCDay() : now.getDay());
+  }
   if (type === 'time-of-day') {
     const [start, end] = getTimeRange(config);
-    const now = new Date();
-    const minutes =
-      config.conditionTimeZone === 'utc'
-        ? now.getUTCHours() * 60 + now.getUTCMinutes()
-        : now.getHours() * 60 + now.getMinutes();
+    const now = conditionNow();
+    const minutes = useUTC
+      ? now.getUTCHours() * 60 + now.getUTCMinutes()
+      : now.getHours() * 60 + now.getMinutes();
     return start <= end ? minutes >= start && minutes <= end : minutes >= start || minutes <= end;
   }
   if (type === 'date-range') {
     const [start, end] = getDateRange(config);
-    const now = new Date();
-    const today =
-      config.conditionTimeZone === 'utc'
-        ? now.toISOString().slice(0, 10)
-        : `${String(now.getFullYear()).padStart(4, '0')}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const now = conditionNow();
+    const today = useUTC
+      ? now.toISOString().slice(0, 10)
+      : `${String(now.getFullYear()).padStart(4, '0')}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     return today >= start && today <= end;
   }
   if (type === 'selector') {

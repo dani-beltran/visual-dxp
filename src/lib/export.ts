@@ -11,6 +11,7 @@ import { type ExportOptions, matchesTargetUrl, validateExportTarget } from './ta
 import { getTimeRange } from './timeRange';
 import { elementTriggerEvents, validateTriggerConfig } from './triggers';
 import type { ValidationIssue, Workflow } from './types';
+import { getWeekdays } from './weekdays';
 
 export function validateWorkflow(
   workflow: Workflow,
@@ -278,6 +279,13 @@ export function validateWorkflow(
           case 'data':
             try {
               dataTools.validateCondition(config);
+            } catch (error) {
+              add((error as Error).message, node.id);
+            }
+            break;
+          case 'weekdays':
+            try {
+              getWeekdays(config);
             } catch (error) {
               add((error as Error).message, node.id);
             }

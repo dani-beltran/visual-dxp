@@ -471,6 +471,21 @@ export const spanishMessages = {
   'nodeInspector.userLanguage': 'Idioma del usuario',
   'nodeInspector.referrerDomain': 'Dominio de referencia',
   'nodeInspector.withinDateRange': 'Dentro del intervalo de fechas',
+  'nodeInspector.weekdays': 'Días de la semana',
+  'nodeInspector.weekdaysHelp':
+    'Coincide con cualquiera de los días seleccionados al evaluar la condición. Selecciona al menos un día.',
+  'weekday.monday': 'Lunes',
+  'weekday.tuesday': 'Martes',
+  'weekday.wednesday': 'Miércoles',
+  'weekday.thursday': 'Jueves',
+  'weekday.friday': 'Viernes',
+  'weekday.saturday': 'Sábado',
+  'weekday.sunday': 'Domingo',
+  'summary.weekdays': ({ days, zone }: { days: string; zone: string }) =>
+    `${days} · ${zone.startsWith('UTC') ? zone : zone === 'utc' ? 'UTC' : 'Hora local del visitante'}`,
+  'nodeInspector.fixedTimeZone': 'Zona horaria específica (desfase UTC)',
+  'nodeInspector.utcOffset': 'Desfase UTC (horas)',
+  'nodeInspector.utcOffsetHelp': 'De −12 a +14. Sin ajuste por horario de verano.',
   'nodeInspector.timeOfDay': 'Hora del día',
   'nodeInspector.urlSearchParameter': 'Parámetro de búsqueda de la URL',
   'nodeInspector.cookies': 'Cookies',
@@ -750,11 +765,11 @@ export const spanishMessages = {
   'errors.cookies.theEncodedCookieAndItsSettingsMustFitWithin4':
     'La cookie codificada y su configuración deben ocupar como máximo 4.096 bytes.',
   'errors.dateRange.chooseVisitorLocalTimeOrUtcForTheDateRange':
-    'Elige la hora local del visitante o UTC para el intervalo de fechas.',
+    'Elige la hora local del visitante, UTC o un desfase UTC fijo para el intervalo de fechas.',
   'errors.dateRange.endDateMustBeOnOrAfterTheStartDate':
     'La fecha de fin debe ser igual o posterior a la fecha de inicio.',
   'errors.timeRange.chooseVisitorLocalTimeOrUtcForTheTimeOf':
-    'Elige la hora local del visitante o UTC para la hora del día.',
+    'Elige la hora local del visitante, UTC o un desfase UTC fijo para la hora del día.',
   'errors.data.dataPathMustBeText': 'La ruta de datos debe ser texto.',
   'errors.data.incomingCssClassesMustBeTextANumberABoolean':
     'Las clases CSS de entrada deben ser texto, un número, un booleano o un array de cadenas.',
@@ -1244,9 +1259,9 @@ export const spanishMessages = {
   'summary.data': ({ path, operator, value }) =>
     `${path} · ${operator.toLowerCase()}${value ? ` ${value}` : ''}`,
   'summary.time': ({ start, end, zone }) =>
-    `Hora ${start}–${end} · ${zone === 'utc' ? 'UTC' : 'Hora local del visitante'}`,
+    `Hora ${start}–${end} · ${zone.startsWith('UTC') ? zone : zone === 'utc' ? 'UTC' : 'Hora local del visitante'}`,
   'summary.date': ({ start, end, zone }) =>
-    `Del ${start} al ${end} · ${zone === 'utc' ? 'UTC' : 'Hora local del visitante'}`,
+    `Del ${start} al ${end} · ${zone.startsWith('UTC') ? zone : zone === 'utc' ? 'UTC' : 'Hora local del visitante'}`,
   'summary.selector': ({ selector }) => `${selector} existe en la página`,
   'summary.device': ({ value }) =>
     `El dispositivo es ${value === 'desktop' ? 'un ordenador' : value === 'mobile' ? 'un móvil' : value}`,
@@ -1270,9 +1285,9 @@ export const spanishMessages = {
   'nodeInspector.annotationOutputs': ({ kind }) =>
     `Sin salidas. ${kind === 'note' ? 'Las notas' : 'Los marcos'} organizan el lienzo y no ejecutan pasos del flujo de trabajo.`,
   'nodeInspector.dateRangeHelp': ({ zone }) =>
-    `Verdadero cuando la fecha actual está dentro de este intervalo. Se incluyen ambas fechas, usando ${zone === 'utc' ? 'UTC' : 'la zona horaria local del visitante'}.`,
+    `Verdadero cuando la fecha actual está dentro de este intervalo. Se incluyen ambas fechas, usando ${zone.startsWith('UTC') ? zone : zone === 'utc' ? 'UTC' : 'la zona horaria local del visitante'}.`,
   'nodeInspector.timeRangeHelp': ({ zone }) =>
-    `Comprueba la hora actual usando ${zone === 'utc' ? 'UTC' : 'la zona horaria local del visitante'}. Se incluyen ambos minutos seleccionados. Una hora de fin anterior cruza la medianoche. Si las horas son iguales, solo coincide ese minuto.`,
+    `Comprueba la hora actual usando ${zone.startsWith('UTC') ? zone : zone === 'utc' ? 'UTC' : 'la zona horaria local del visitante'}. Se incluyen ambos minutos seleccionados. Una hora de fin anterior cruza la medianoche. Si las horas son iguales, solo coincide ese minuto.`,
   'canvasChat.editsApplied': ({ count }) =>
     `${count} ${count === 1 ? 'cambio aplicado' : 'cambios aplicados'} · Deshacer en el lienzo`,
   'websiteSetup.installInstructions': ({ filename }) =>

@@ -23,25 +23,28 @@ export const englishPresetMessages = {
   'complexity.advanced': 'advanced',
   'contextual-support.name': 'Contextual support by opening hours',
   'contextual-support.description':
-    'Hover over Help to reveal the demo support chat during opening hours or show an offline message outside them.',
+    'Hover over Help to reveal the demo support chat during Monday–Friday opening hours or show an offline message outside them, including weekends.',
   'contextual-support.workflow.name': 'Contextual support by opening hours',
   'contextual-support.workflow.nodes.support-hover.data.label': 'Hover over Help',
+  'contextual-support.workflow.nodes.support-weekdays.data.label': 'Support weekdays (UTC)',
+  'contextual-support.workflow.edges.support-weekdays-to-support-hours.label': 'Weekday',
+  'contextual-support.workflow.edges.support-weekdays-to-support-offline.label': 'Weekend',
   'contextual-support.workflow.nodes.support-hours.data.label': 'Support hours (UTC)',
   'contextual-support.workflow.nodes.support-online.data.label': 'Support center',
   'contextual-support.workflow.nodes.support-offline.data.config.content':
-    '<div style="margin:-28px -24px -24px;padding:36px 24px 28px;background:#f8f6f1;color:#353b32;font-family:Arial,Helvetica,sans-serif;box-sizing:border-box;overflow-wrap:anywhere"><div style="padding:0 0 16px;border-bottom:1px solid #dedfd4"><span style="font-family:Georgia,serif;font-size:25px;letter-spacing:-1px">atelier<span aria-hidden="true" style="font-family:Arial,Helvetica,sans-serif;font-size:9px;vertical-align:top;margin-left:3px">®</span></span></div><p style="margin:22px 0 12px;font-size:10px;letter-spacing:1.7px;text-transform:uppercase;color:#697856">Here to help</p><h2 style="margin:0 0 14px;font-family:Georgia,serif;font-size:29px;font-weight:400;line-height:1.15">We’ll be back soon</h2><p style="margin:0;font-size:13px;line-height:1.75;color:#626b59">Our support hours are 09:00–17:00 UTC daily. Please visit again during those hours. In the meantime, explore the collection at your own pace.</p><a href="#collection" style="display:inline-block;margin-top:22px;padding:12px 20px;background:#697856;color:#fff;border-radius:6px;text-decoration:none;font-size:13px">Explore the collection ↗</a></div>',
+    '<div style="margin:-28px -24px -24px;padding:36px 24px 28px;background:#f8f6f1;color:#353b32;font-family:Arial,Helvetica,sans-serif;box-sizing:border-box;overflow-wrap:anywhere"><div style="padding:0 0 16px;border-bottom:1px solid #dedfd4"><span style="font-family:Georgia,serif;font-size:25px;letter-spacing:-1px">atelier<span aria-hidden="true" style="font-family:Arial,Helvetica,sans-serif;font-size:9px;vertical-align:top;margin-left:3px">®</span></span></div><p style="margin:22px 0 12px;font-size:10px;letter-spacing:1.7px;text-transform:uppercase;color:#697856">Here to help</p><h2 style="margin:0 0 14px;font-family:Georgia,serif;font-size:29px;font-weight:400;line-height:1.15">We’ll be back soon</h2><p style="margin:0;font-size:13px;line-height:1.75;color:#626b59">Our support hours are 09:00–17:00 UTC, Monday–Friday. Please visit again during those hours. In the meantime, explore the collection at your own pace.</p><a href="#collection" style="display:inline-block;margin-top:22px;padding:12px 20px;background:#697856;color:#fff;border-radius:6px;text-decoration:none;font-size:13px">Explore the collection ↗</a></div>',
   'contextual-support.workflow.nodes.support-offline.data.label': 'Outside support hours',
   'contextual-support.workflow.nodes.support-trigger-note.data.config.noteText':
-    'Choose the Help link that starts this journey. In the demo, move the mouse over Help in the footer to show chat during opening hours or an away message outside them. Clicking the link still works as usual.',
+    'Choose the Help link that starts this journey. In the demo, move the mouse over Help in the footer to show chat during Monday–Friday opening hours or an away message outside them, including weekends. Clicking the link still works as usual.',
   'contextual-support.workflow.nodes.support-trigger-note.data.label': 'Setup: Help link',
   'contextual-support.workflow.nodes.support-hours-note.data.config.noteText':
-    'The demo offers chat every day from 09:00 to 17:00 UTC, a worldwide reference time. The last selected minute is included: 16:59 means it closes at 17:00. Update the hours, time zone, and away message together. Local time means the visitor’s time zone. Holidays, weekdays, and staff availability are not checked.',
+    'The demo offers chat Monday–Friday from 09:00 to 17:00 UTC, a worldwide reference time. The last selected minute is included: 16:59 means it closes at 17:00. Update the selected weekdays, hours, and away message together. Keep both conditions in the same time zone. Local time means the visitor’s time zone. Weekends show the away message. Holidays and staff availability are not checked.',
   'contextual-support.workflow.nodes.support-hours-note.data.label': 'Setup: Opening hours',
   'contextual-support.workflow.nodes.support-embed-note.data.config.noteText':
     'The demo reveals a chat icon. Click it to open a sample conversation; no support agent receives these messages. For your website, ask your website team to connect your own chat tool. Update the away message and its collection link.',
   'contextual-support.workflow.nodes.support-embed-note.data.label': 'Setup: Support chat',
   'contextual-support.workflow.nodes.contextual-support-overview.data.config.noteText':
-    'Hover over Help to reveal the demo support chat during opening hours or show an offline message outside them.',
+    'Hover over Help to reveal the demo support chat during Monday–Friday opening hours or show an offline message outside them, including weekends.',
   'contextual-support.workflow.nodes.contextual-support-overview.data.label': 'Preset overview',
   'contextual-support.workflow.edges.support-hours-to-support-online.label': 'Open',
   'contextual-support.workflow.edges.support-hours-to-support-offline.label': 'Closed',

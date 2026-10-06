@@ -113,9 +113,24 @@ const configPolicies: Record<NodeKind, ConfigPolicy> = {
           referrer: { fields: ['conditionValue'] },
           'query-param': { fields: ['conditionKey', 'conditionValue'] },
           cookie: { fields: ['conditionKey', 'conditionValue'] },
-          'date-range': { fields: ['conditionStartDate', 'conditionEndDate', 'conditionTimeZone'] },
+          'date-range': {
+            fields: [
+              'conditionStartDate',
+              'conditionEndDate',
+              'conditionTimeZone',
+              'conditionTimeZoneOffset',
+            ],
+          },
+          weekdays: {
+            fields: ['conditionWeekdays', 'conditionTimeZone', 'conditionTimeZoneOffset'],
+          },
           'time-of-day': {
-            fields: ['conditionStartTime', 'conditionEndTime', 'conditionTimeZone'],
+            fields: [
+              'conditionStartTime',
+              'conditionEndTime',
+              'conditionTimeZone',
+              'conditionTimeZoneOffset',
+            ],
           },
           data: {
             variants: [

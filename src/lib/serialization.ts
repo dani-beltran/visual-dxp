@@ -57,6 +57,7 @@ const strings = [
   'noteColor',
 ];
 const numbers = [
+  'conditionTimeZoneOffset',
   'experimentSplit',
   'cookieDays',
   'duration',
@@ -126,6 +127,12 @@ export function isWorkflow(value: unknown): value is Workflow {
       (config.noteColor !== undefined &&
         config.noteColor !== 'transparent' &&
         !/^#[\da-f]{6}$/i.test(config.noteColor as string))
+    )
+      return false;
+    if (
+      config.conditionWeekdays !== undefined &&
+      (!Array.isArray(config.conditionWeekdays) ||
+        config.conditionWeekdays.some((day) => !Number.isInteger(day) || day < 0 || day > 6))
     )
       return false;
     if (config.transformations !== undefined) {
