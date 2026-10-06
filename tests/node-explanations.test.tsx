@@ -82,3 +82,49 @@ it.each(Object.keys(nodeDescriptions) as NodeKind[])(
     expect(onAdd).toHaveBeenCalledExactlyOnceWith(kind);
   },
 );
+
+it('moves vertically overflowing nodes into a submenu and restores them after resizing', async () => {
+  let resize = () => {};
+  let availableHeight = 110;
+  vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockImplementation(() => availableHeight);
+  vi.stubGlobal(
+    'ResizeObserver',
+    class {
+      constructor(callback: () => void) {
+        resize = callback;
+      }
+      observe() {}
+      disconnect() {}
+    },
+  );
+  const onAdd = vi.fn();
+  try {
+    await act(async () => root.render(<NodeLibrary onAdd={onAdd} />));
+    expect(host.querySelectorAll('.dxp-node-library > button')).toHaveLength(3);
+    const more = host.querySelector<HTMLButtonElement>('[aria-label="More nodes"]')!;
+    await act(async () => more.click());
+    const overflow = host.querySelector('.dxp-node-library-overflow')!;
+    expect(overflow.querySelectorAll('button')).toHaveLength(catalog.length - 2);
+    const node = overflow.querySelector<HTMLButtonElement>('button')!;
+    const setData = vi.fn();
+    const drag = new Event('dragstart', { bubbles: true });
+    Object.defineProperty(drag, 'dataTransfer', { value: { setData } });
+    await act(async () => node.dispatchEvent(drag));
+    expect(setData).toHaveBeenCalledWith('application/visual-dxp-node', catalog[2].kind);
+    await act(async () => node.click());
+    expect(onAdd).toHaveBeenCalledWith(catalog[2].kind);
+    expect(host.querySelector('.dxp-node-library-overflow')).toBeNull();
+    expect(document.activeElement).toBe(more);
+    await act(async () => more.click());
+    await act(async () =>
+      more.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })),
+    );
+    expect(host.querySelector('.dxp-node-library-overflow')).toBeNull();
+    availableHeight = 600;
+    await act(async () => resize());
+    expect(host.querySelector('[aria-label="More nodes"]')).toBeNull();
+    expect(host.querySelectorAll('.dxp-node-library > button')).toHaveLength(catalog.length);
+  } finally {
+    vi.restoreAllMocks();
+  }
+});

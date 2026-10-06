@@ -567,6 +567,7 @@ export const spanishMessages = {
   'nodeInspector.next': 'Siguiente',
   'nodeInspector.duplicate': 'Duplicar',
   'nodeInspector.delete': 'Eliminar',
+  'nodeLibrary.moreNodes': 'Más nodos',
   'nodeLibrary.nodeLibrary': 'Biblioteca de nodos',
   'noteCard.dragToMoveNote': 'Arrastra para mover la nota',
   'noteCard.note': 'Nota',

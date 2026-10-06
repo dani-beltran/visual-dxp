@@ -599,6 +599,7 @@ export const englishMessages = {
   'nodeInspector.duplicate': 'Duplicate',
   'nodeInspector.deleteItemname': ({ itemName }: { itemName: string }) => `Delete ${itemName}`,
   'nodeInspector.delete': 'Delete',
+  'nodeLibrary.moreNodes': 'More nodes',
   'nodeLibrary.nodeLibrary': 'Node library',
   'nodeLibrary.addLabel': ({ label }: { label: string }) => `Add ${label}`,
   'noteCard.dragToMoveNote': 'Drag to move note',
