@@ -1,7 +1,6 @@
 import { useEffect, useId, useRef } from 'react';
 import { useBuilderI18n } from '../lib/i18nContext';
-import type { Workflow, WorkflowPreset } from '../lib/types';
-import { localizeCommonDXPPreset } from '../presets';
+import type { Workflow } from '../lib/types';
 import type { TutorialOptions } from './model';
 import type { TutorialController } from './useTutorial';
 import { useTutorialPopover } from './useTutorialPopover';
@@ -16,7 +15,6 @@ export function TutorialPanel({
   previewOpen,
   auxiliaryOpen,
   aiUnavailable,
-  presets,
   onReset,
   onRename,
   onSelect,
@@ -32,7 +30,6 @@ export function TutorialPanel({
   previewOpen: boolean;
   auxiliaryOpen?: boolean;
   aiUnavailable: boolean;
-  presets?: readonly WorkflowPreset[];
   onReset: () => void;
   onRename: (name: string) => void;
   onSelect: (id: string) => void;
@@ -40,7 +37,7 @@ export function TutorialPanel({
   onEditor: () => void;
   onBackup: () => void;
 }) {
-  const { t, locale } = useBuilderI18n();
+  const { t } = useBuilderI18n();
   const id = useId();
   const heading = useRef<HTMLHeadingElement>(null);
   // Preserve editor focus during hands-on work; recover focus when the launch control unmounts.
@@ -193,21 +190,6 @@ export function TutorialPanel({
                 >
                   {t('tutorial.closeExport')}
                 </button>
-              )}
-              {step === 'presets' && (
-                <p>
-                  {presets
-                    ?.filter((p) =>
-                      [
-                        'blank',
-                        'welcome-journey',
-                        'delayed-welcome',
-                        'headline-experiment',
-                      ].includes(p.id),
-                    )
-                    .map((p) => localizeCommonDXPPreset(p, locale).name)
-                    .join(' · ')}
-                </p>
               )}
               {step === 'finish' && (
                 <p>

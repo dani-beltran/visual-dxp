@@ -71,7 +71,7 @@ export const tutorialEnglish = {
   'tutorial.closeExport': 'Close export',
   'tutorial.presets.title': 'Discover Presets',
   'tutorial.presets.body':
-    'Open Presets. Presets are editable starting points for common website experiences. Explore the available examples listed below. Applying a preset replaces the workflow name, nodes and connections as an undoable edit, keeping the website target. Inspect them without applying one to keep your work.',
+    'Open Presets. Presets are editable starting points for common website experiences. Applying a preset replaces the workflow name, nodes and connections as an undoable edit, keeping the website target.',
   'tutorial.finish.title': 'You built a digital experience',
   'tutorial.finish.body':
     'You created nodes, configured a page-load trigger and a one-second delay, connected the workflow and tested the default popover. Keep building with the tools you just explored. Canvas Help is always the place to return to this tutorial.',

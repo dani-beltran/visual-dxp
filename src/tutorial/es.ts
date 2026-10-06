@@ -71,7 +71,7 @@ export const tutorialSpanish = {
   'tutorial.closeExport': 'Cerrar exportación',
   'tutorial.presets.title': 'Descubre las plantillas',
   'tutorial.presets.body':
-    'Abre Plantillas. Son puntos de partida editables para experiencias web habituales. Explora los ejemplos disponibles indicados abajo. Aplicar una plantilla sustituye el nombre, los nodos y las conexiones mediante un cambio reversible y conserva el sitio de destino. Revísalas sin aplicar ninguna para conservar tu trabajo.',
+    'Abre Plantillas. Son puntos de partida editables para experiencias web habituales. Aplicar una plantilla sustituye el nombre, los nodos y las conexiones mediante un cambio reversible y conserva el sitio de destino.',
   'tutorial.finish.title': 'Has creado una experiencia digital',
   'tutorial.finish.body':
     'Has creado nodos, configurado un disparador de carga de página y una espera de un segundo, conectado el flujo y probado la ventana emergente predeterminada. Sigue creando con las herramientas que acabas de explorar. Siempre puedes volver a este tutorial desde Ayuda del lienzo.',

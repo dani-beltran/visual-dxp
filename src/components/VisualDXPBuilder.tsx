@@ -1214,7 +1214,6 @@ function Builder({
         previewOpen={modal === 'preview'}
         auxiliaryOpen={modal === 'popover-preview' || picking}
         aiUnavailable={aiConfigurationError || aiSettingsState.status !== 'unlocked'}
-        presets={presets}
         onReset={() => {
           setPicking(false);
           tutorial.host?.closeExport();
