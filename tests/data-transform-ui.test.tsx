@@ -144,14 +144,24 @@ it.each(['delay', 'fork', 'loop', 'experiment'] as const)(
       element('[data-id="delay"] .react-flow__handle.target').classList.contains('dxp-handle-data'),
     ).toBe(true);
     for (const handle of host.querySelectorAll('[data-id="delay"] .react-flow__handle.source')) {
-      expect(handle.classList.contains('dxp-handle-data')).toBe(true);
+      const connected = workflow.edges.some(
+        (edge) =>
+          edge.source === 'delay' &&
+          (edge.sourceHandle ?? null) === handle.getAttribute('data-handleid'),
+      );
+      expect(handle.classList.contains('dxp-handle-connected')).toBe(connected);
+      expect(handle.classList.contains('dxp-handle-data')).toBe(connected);
     }
     if (kind === 'fork') {
       await click('[data-id="delay"]');
       const outputs = element('.dxp-inspector-branches');
       expect(outputs.textContent).toContain('TrueForwards data when the condition matches');
       expect(outputs.textContent).toContain('FalseForwards data when the condition does not match');
-      expect(outputs.querySelectorAll('.dxp-inspector-dot-data')).toHaveLength(2);
+      expect(
+        [...outputs.querySelectorAll('.dxp-inspector-branch-letter')].map(
+          (label) => label.textContent,
+        ),
+      ).toEqual(['T', 'F']);
     }
     expect(
       element('[data-id="dom"] .react-flow__handle.target').classList.contains('dxp-handle-data'),
@@ -189,7 +199,8 @@ it.each(['delay', 'fork', 'loop', 'experiment'] as const)(
       await click('[data-id="delay"]');
       const outputs = element('.dxp-inspector-branches');
       expect(outputs.textContent).toContain('TrueCondition matches');
-      expect(outputs.querySelector('.dxp-inspector-dot-data')).toBeNull();
+      expect(outputs.textContent).toContain('FalseCondition does not match');
+      expect(outputs.textContent).not.toContain('Forwards data');
     }
   },
 );

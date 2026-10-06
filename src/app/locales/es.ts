@@ -318,7 +318,7 @@ export const spanishMessages = {
     'Haz clic en un icono de la biblioteca de nodos o arrástralo al lienzo. Pasa el cursor sobre un icono para ver su nombre. Empieza tu recorrido con un Disparador.',
   'canvasHelp.arrangeAndConfigure': 'Organizar y configurar',
   'canvasHelp.dragNodesToMoveThemClickANodeToOpenItsSettings':
-    'Arrastra los nodos para moverlos. Haz clic en un nodo para abrir su configuración, donde también puedes duplicarlo o eliminarlo.',
+    'Arrastra los nodos para moverlos. Haz clic en un nodo para abrir su configuración, donde también puedes duplicarlo o eliminarlo. Mantén pulsada la tecla Mayús y haz clic en los nodos para añadirlos a la selección o quitarlos de ella. Mueve los nodos seleccionados juntos.',
   'canvasHelp.leaveANote': 'Dejar una nota',
   'canvasHelp.addANoteAndTypeDirectlyOnTheCanvasSelectTextThen':
     'Añade una Nota y escribe directamente en el lienzo. Selecciona texto y usa su configuración para ponerlo en negrita, cursiva o tachado. También puedes cambiar el fondo o elegir transparencia. Arrastra su cabecera para moverla.',
@@ -333,7 +333,7 @@ export const spanishMessages = {
   'canvasHelp.useVariablesDescription':
     'Los nodos de petición HTTP producen datos que fluyen de un paso a otro por las conexiones. En cualquier parámetro de texto de un nodo, las variables se sustituyen por los campos de datos a los que apuntan cuando se ejecuta el flujo. Escribe Hola {{user.name}} para insertar un nombre, {{items[0].name}} para el primer elemento o {{$}} para el valor completo de entrada.',
   'canvasHelp.dragEmptySpaceToPanScrollPinchOrUseTheZoomButtons':
-    'Arrastra un espacio vacío para desplazarte. Usa la rueda, el gesto de pellizco o los botones de zoom para acercar o alejar. Ajustar todos los nodos muestra el recorrido completo; el minimapa ofrece una vista general.',
+    'Mantén pulsada la tecla ⌘ / Ctrl y mueve el ratón para desplazarte sin hacer clic, o arrastra un espacio vacío como siempre. Usa la rueda, el gesto de pellizco o los botones de zoom para acercar o alejar. Ajustar todos los nodos muestra el recorrido completo; el minimapa ofrece una vista general.',
   'canvasHelp.canvasHelp': 'Ayuda del lienzo',
   'canvasHelp.howToUseTheCanvas': 'Cómo usar el lienzo',
   'canvasHelp.closeCanvasHelp': 'Cerrar ayuda del lienzo',
@@ -1189,6 +1189,10 @@ export const spanishMessages = {
       ? `Se cambió el nombre de la conexión de «${source}» a «${target}» por «${label}»`
       : `Se eliminó el nombre de la conexión de «${source}» a «${target}»`,
   'canvas.nodeCount': ({ count }) => `${count} ${count === 1 ? 'nodo' : 'nodos'}`,
+  'nodeInspector.multipleNodes': 'Nodos seleccionados',
+  'nodeInspector.closeSelectionDetails': 'Cerrar detalles de la selección',
+  'nodeInspector.selectedNodeCount': ({ count }) => `${count} nodos seleccionados`,
+  'nodeInspector.deleteNodes': 'Eliminar nodos',
   'canvas.connectionCount': ({ count }) => `${count} ${count === 1 ? 'conexión' : 'conexiones'}`,
   'activity.actionCount': ({ count }) => `${count} ${count === 1 ? 'acción' : 'acciones'}`,
   'errors.dateRange.chooseAValidLabelDateYyyyMmDd': ({ label }) =>

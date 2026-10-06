@@ -11,6 +11,7 @@ import {
   Panel,
   ReactFlow,
   ReactFlowProvider,
+  useKeyPress,
   useReactFlow,
 } from '@xyflow/react';
 import {
@@ -100,6 +101,7 @@ import { CanvasHelp } from './CanvasHelp';
 import { EdgeInspector } from './EdgeInspector';
 import { ElementPicker } from './ElementPicker';
 import { InfoBox } from './InfoBox';
+import { MultiNodeInspector } from './MultiNodeInspector';
 import { NodeInspector } from './NodeInspector';
 import { NodeLibrary } from './NodeLibrary';
 import { PopoverPreview } from './PopoverPreview';
@@ -280,8 +282,65 @@ function Builder({
   const dragStartWorkflow = useRef<Workflow | null>(null);
   const resizeStartWorkflow = useRef<Workflow | null>(null);
   const [, refreshHistory] = useState(0);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const selectedId = selectedIds.length === 1 ? selectedIds[0] : null;
+  const setSelectedId = useCallback((id: string | null) => {
+    setSelectedIds(id ? [id] : []);
+  }, []);
   const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
+  const [shiftSelectionActive, setShiftSelectionActive] = useState(false);
+  const shiftSelection = useRef<{
+    changes: Map<string, boolean>;
+    clicks: Map<string, boolean>;
+  } | null>(null);
+  const selectionRef = useRef(selectedIds);
+  selectionRef.current = selectedIds;
+  useEffect(() => {
+    const down = (event: KeyboardEvent) => {
+      if (event.key !== 'Shift' || shiftSelection.current) return;
+      if (
+        event.target instanceof Element &&
+        event.target.closest('input, textarea, select, [contenteditable="true"]')
+      )
+        return;
+      shiftSelection.current = { changes: new Map(), clicks: new Map() };
+      setShiftSelectionActive(true);
+    };
+    const finish = () => {
+      const pending = shiftSelection.current;
+      shiftSelection.current = null;
+      setShiftSelectionActive(false);
+      if (!pending?.changes.size) return;
+      setSelectedIds((ids) => {
+        const next = new Set(ids);
+        for (const [id, selected] of pending.changes) {
+          if (selected) next.add(id);
+          else next.delete(id);
+        }
+        return [...next];
+      });
+      setSelectedEdgeId(null);
+      const next = {
+        ...current.current,
+        edges: current.current.edges.map((edge) =>
+          edge.selected ? { ...edge, selected: false } : edge,
+        ),
+      };
+      current.current = next;
+      setWorkflow(next);
+    };
+    const up = (event: KeyboardEvent) => {
+      if (event.key === 'Shift') finish();
+    };
+    window.addEventListener('keydown', down, true);
+    window.addEventListener('keyup', up, true);
+    window.addEventListener('blur', finish);
+    return () => {
+      window.removeEventListener('keydown', down, true);
+      window.removeEventListener('keyup', up, true);
+      window.removeEventListener('blur', finish);
+    };
+  }, []);
   const [canvasAssistant, setCanvasAssistant] = useState<'chat' | 'help' | null>(null);
   const [assistantRevision, setAssistantRevision] = useState(0);
   const { setSelection: setNoteSelection } = useNoteSelection();
@@ -349,7 +408,48 @@ function Builder({
   changeCallback.current = onChange;
   const upload = useRef<HTMLInputElement>(null);
   const canvas = useRef<HTMLDivElement>(null);
+  const panModifierPressed = useKeyPress(['Meta', 'Control'], {
+    actInsideInputWithModifier: false,
+  });
   const flow = useReactFlow<WorkflowNode>();
+  useEffect(() => {
+    const element = canvas.current;
+    if (!element || view !== 'canvas') return;
+    let previous: { x: number; y: number } | null = null;
+    const reset = () => {
+      previous = null;
+    };
+    const move = (event: MouseEvent) => {
+      const target = event.target instanceof Element ? event.target : null;
+      const controls =
+        'input, textarea, select, button, a, [contenteditable="true"], .react-flow__panel, .react-flow__minimap';
+      if (
+        target?.closest(controls) ||
+        document.activeElement?.closest('input, textarea, select, [contenteditable="true"]')
+      ) {
+        reset();
+        return;
+      }
+      const start = previous;
+      previous = { x: event.clientX, y: event.clientY };
+      // Button-held drags remain handled by React Flow.
+      if (!start || event.buttons || event.shiftKey || (!event.metaKey && !event.ctrlKey)) return;
+      const viewport = flow.getViewport();
+      void flow.setViewport({
+        ...viewport,
+        x: viewport.x + event.clientX - start.x,
+        y: viewport.y + event.clientY - start.y,
+      });
+    };
+    element.addEventListener('mousemove', move);
+    element.addEventListener('mouseleave', reset);
+    window.addEventListener('blur', reset);
+    return () => {
+      element.removeEventListener('mousemove', move);
+      element.removeEventListener('mouseleave', reset);
+      window.removeEventListener('blur', reset);
+    };
+  }, [flow, view]);
   const [fitPreset, setFitPreset] = useState(false);
   useEffect(() => {
     if (!fitPreset || view !== 'canvas') return;
@@ -393,10 +493,10 @@ function Builder({
               dragHandle: '.dxp-frame-header',
             }
           : {}),
-        selected: n.id === selectedId,
+        selected: selectedIds.includes(n.id),
         data: { ...n.data, status: statuses[n.id] || 'idle' },
       })),
-    [workflow.nodes, selectedId, statuses],
+    [workflow.nodes, selectedIds, statuses],
   );
   const edges = useMemo(() => {
     const dataFlows = new Map(
@@ -412,11 +512,12 @@ function Builder({
         dataFlows.get(edge.target) !== undefined;
       return {
         ...edge,
+        selectable: !shiftSelectionActive && edge.selectable !== false,
         ...(typeof edge.label === 'string' && edge.label ? { ariaLabel: edge.label } : {}),
         ...(carriesData ? { className: `${edge.className ?? ''} dxp-edge-data`.trim() } : {}),
       };
     });
-  }, [workflow.nodes, workflow.edges]);
+  }, [workflow.nodes, workflow.edges, shiftSelectionActive]);
 
   const translation = useRef(t);
   translation.current = t;
@@ -619,7 +720,7 @@ function Builder({
         notify(t('builder.theChangeWasUndoneButItsActivityEntryCouldNotBeRemoved'));
       }
     }
-  }, [flushActivity, notify, t]);
+  }, [flushActivity, notify, t, setSelectedId]);
   const redo = useCallback(() => {
     const next = history.current.future.pop();
     if (!next) return;
@@ -633,7 +734,7 @@ function Builder({
     setConnectionPreviews({});
     refreshHistory((x) => x + 1);
     if (next.activity) appendActivity(next.activity.store, next.activity.entry);
-  }, [flushActivity, appendActivity]);
+  }, [flushActivity, appendActivity, setSelectedId]);
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (
@@ -653,6 +754,8 @@ function Builder({
   useEffect(() => {
     const close = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
+        shiftSelection.current = null;
+        setShiftSelectionActive(false);
         setPicking(false);
         closeWebsite();
         setSelectedId(null);
@@ -661,9 +764,24 @@ function Builder({
     };
     window.addEventListener('keydown', close);
     return () => window.removeEventListener('keydown', close);
-  }, [closeWebsite]);
+  }, [closeWebsite, setSelectedId]);
   const onNodesChange = useCallback(
     (changes: NodeChange<WorkflowNode>[]) => {
+      const selections = changes.filter((change) => change.type === 'select');
+      if (shiftSelection.current) {
+        for (const change of selections) {
+          shiftSelection.current.changes.set(change.id, change.selected);
+        }
+      } else if (selections.length) {
+        setSelectedIds((previous) => {
+          const next = new Set(previous);
+          for (const change of selections) {
+            if (change.selected) next.add(change.id);
+            else next.delete(change.id);
+          }
+          return [...next];
+        });
+      }
       // React Flow reports connected-edge and node removals separately. Handle both in onDelete.
       const meaningful = changes.filter((c) => c.type !== 'select' && c.type !== 'remove');
       if (!meaningful.length) return;
@@ -726,25 +844,31 @@ function Builder({
     },
     [remember, recordActivity, flushActivity],
   );
-  const onEdgesChange = useCallback((changes: EdgeChange[]) => {
-    const updates = changes.filter((change) => change.type !== 'remove');
-    if (!updates.length) return;
-    const next = {
-      ...current.current,
-      edges: applyEdgeChanges(updates, current.current.edges),
-    };
-    current.current = next;
-    setWorkflow(next);
-    const selection = updates.find((change) => change.type === 'select' && change.selected);
-    if (selection?.type === 'select') {
-      setSelectedId(null);
-      setSelectedEdgeId(selection.id);
-    } else {
-      setSelectedEdgeId((id) =>
-        next.edges.some((edge) => edge.id === id && edge.selected) ? id : null,
+  const onEdgesChange = useCallback(
+    (changes: EdgeChange[]) => {
+      const updates = changes.filter(
+        (change) =>
+          change.type !== 'remove' && !(shiftSelection.current && change.type === 'select'),
       );
-    }
-  }, []);
+      if (!updates.length) return;
+      const next = {
+        ...current.current,
+        edges: applyEdgeChanges(updates, current.current.edges),
+      };
+      current.current = next;
+      setWorkflow(next);
+      const selection = updates.find((change) => change.type === 'select' && change.selected);
+      if (selection?.type === 'select') {
+        setSelectedId(null);
+        setSelectedEdgeId(selection.id);
+      } else {
+        setSelectedEdgeId((id) =>
+          next.edges.some((edge) => edge.id === id && edge.selected) ? id : null,
+        );
+      }
+    },
+    [setSelectedId],
+  );
   function onDelete({ nodes, edges }: { nodes: WorkflowNode[]; edges: WorkflowEdge[] }) {
     const removedNodes = new Set(nodes.map((node) => node.id));
     const removedEdges = new Set(edges.map((edge) => edge.id));
@@ -774,7 +898,7 @@ function Builder({
       }),
       action,
     );
-    if (selectedId && removedNodes.has(selectedId)) setSelectedId(null);
+    setSelectedIds((ids) => ids.filter((id) => !removedNodes.has(id)));
     if (selectedEdge && !current.current.edges.some((edge) => edge.id === selectedEdge.id))
       setSelectedEdgeId(null);
   }
@@ -1024,7 +1148,7 @@ function Builder({
         messages,
         workflow: snapshot,
         brandingProfile: readBrandingProfile(snapshot.websiteUrl),
-        selectedNodeIds: selectedId ? [selectedId] : [],
+        selectedNodeIds: selectedIds,
       },
       AbortSignal.any([signal, controller.signal]),
       override,
@@ -1053,7 +1177,7 @@ function Builder({
         () => updated,
         activityAction('activity.aiEditsApplied', { count: response.operations.length }),
       );
-      if (selectedId && !updated.nodes.some((node) => node.id === selectedId)) setSelectedId(null);
+      setSelectedIds((ids) => ids.filter((id) => updated.nodes.some((node) => node.id === id)));
       if (selectedEdgeId && !updated.edges.some((edge) => edge.id === selectedEdgeId))
         setSelectedEdgeId(null);
       notify(t('builder.aiUpdatedYourWorkflowUseUndoToRevertThisChange'));
@@ -1210,7 +1334,7 @@ function Builder({
       >
         {/* biome-ignore lint/a11y/noStaticElementInteractions: Dropping is an alternative to the keyboard-accessible node library buttons. */}
         <div
-          className="dxp-canvas"
+          className={`dxp-canvas${panModifierPressed ? ' dxp-canvas-pan-held' : ''}${shiftSelectionActive ? ' dxp-canvas-shift-selecting' : ''}`}
           ref={canvas}
           onDragOver={(e) => {
             e.preventDefault();
@@ -1276,17 +1400,28 @@ function Builder({
                 }
                 dragStartWorkflow.current = null;
               }}
-              onNodeClick={(_, node) => {
+              onNodeClick={(event, node) => {
                 flushActivity();
-                setSelectedId(node.id);
+                if (event.shiftKey && shiftSelection.current) {
+                  const pending = shiftSelection.current;
+                  const selected = !(
+                    pending.clicks.get(node.id) ?? selectionRef.current.includes(node.id)
+                  );
+                  pending.clicks.set(node.id, selected);
+                  pending.changes.set(node.id, selected);
+                  return;
+                }
+                if (!event.shiftKey && !event.metaKey && !event.ctrlKey) setSelectedId(node.id);
                 setSelectedEdgeId(null);
               }}
-              onEdgeClick={(_, edge) => {
+              onEdgeClick={(event, edge) => {
+                if (event.shiftKey || shiftSelection.current) return;
                 flushActivity();
                 setSelectedId(null);
                 setSelectedEdgeId(edge.id);
               }}
-              onPaneClick={() => {
+              onPaneClick={(event) => {
+                if (event.shiftKey || shiftSelection.current) return;
                 flushActivity();
                 setSelectedId(null);
                 setSelectedEdgeId(null);
@@ -1297,6 +1432,8 @@ function Builder({
               minZoom={0.25}
               maxZoom={1.8}
               elevateNodesOnSelect={false}
+              multiSelectionKeyCode={['Shift', 'Meta', 'Control']}
+              panActivationKeyCode={['Space', 'Meta', 'Control']}
               deleteKeyCode={view === 'canvas' ? ['Backspace', 'Delete'] : null}
               proOptions={{ hideAttribution: true }}
             >
@@ -1403,7 +1540,21 @@ function Builder({
             </ReactFlow>
           </NoteEditingContext.Provider>
         </div>
-        {selected && (
+        {selectedIds.length > 1 ? (
+          <MultiNodeInspector
+            count={selectedIds.length}
+            onClose={() => setSelectedId(null)}
+            onDelete={() => {
+              const ids = new Set(selectedIds);
+              onDelete({
+                nodes: current.current.nodes.filter((node) => ids.has(node.id)),
+                edges: current.current.edges.filter(
+                  (edge) => ids.has(edge.source) || ids.has(edge.target),
+                ),
+              });
+            }}
+          />
+        ) : selected ? (
           <NodeInspector
             node={selected}
             analytics={workflow.analytics}
@@ -1422,8 +1573,7 @@ function Builder({
             onDuplicate={duplicate}
             onPreviewContent={() => setModal('popover-preview')}
           />
-        )}
-        {selectedEdge && (
+        ) : selectedEdge ? (
           <EdgeInspector
             edge={selectedEdge}
             sourceLabel={
@@ -1442,7 +1592,7 @@ function Builder({
               setSelectedEdgeId(null);
             }}
           />
-        )}
+        ) : null}
       </div>
       {showPresets && presets && (
         <div

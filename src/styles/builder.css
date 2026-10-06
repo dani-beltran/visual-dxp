@@ -190,8 +190,25 @@
 .dxp-builder .react-flow__pane {
   cursor: grab;
 }
+.dxp-canvas-shift-selecting {
+  -webkit-user-select: none;
+  user-select: none;
+}
+.dxp-canvas-shift-selecting :is(input, textarea, [contenteditable='true']) {
+  -webkit-user-select: text;
+  user-select: text;
+}
 .dxp-builder .react-flow__node {
   cursor: pointer;
+}
+.dxp-builder .react-flow__pane.draggable:active,
+.dxp-builder .react-flow__pane.dragging,
+.dxp-builder .react-flow__node.dragging,
+.dxp-builder .dxp-canvas-pan-held .react-flow__pane,
+.dxp-builder .dxp-canvas-pan-held .react-flow__node,
+.dxp-builder .dxp-canvas-pan-held .dxp-note-header,
+.dxp-builder .dxp-canvas-pan-held .dxp-frame-header {
+  cursor: grabbing;
 }
 .dxp-builder .react-flow__attribution {
   background: transparent;

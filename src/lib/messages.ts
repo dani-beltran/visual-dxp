@@ -345,7 +345,7 @@ export const englishMessages = {
     'Click an icon in the node library or drag it onto the canvas. Hover over an icon to see its name. Start your journey with a Trigger.',
   'canvasHelp.arrangeAndConfigure': 'Arrange and configure',
   'canvasHelp.dragNodesToMoveThemClickANodeToOpenItsSettings':
-    'Drag nodes to move them. Click a node to open its settings, where you can also duplicate or delete it.',
+    'Drag nodes to move them. Click a node to open its settings, where you can also duplicate or delete it. Hold Shift and click nodes to add them to or remove them from the selection. Move selected nodes together.',
   'canvasHelp.leaveANote': 'Leave a note',
   'canvasHelp.addANoteAndTypeDirectlyOnTheCanvasSelectTextThen':
     'Add a Note and type directly on the canvas. Select text, then use its settings to make that selection bold, italic, or struck through. You can also change the background or choose transparency. Drag its header to move it.',
@@ -360,7 +360,7 @@ export const englishMessages = {
   'canvasHelp.useVariablesDescription':
     'HTTP Request nodes produce data that flows from step to step along connections. In any node text parameter, variables are replaced with the data fields they point to when the workflow runs. Write Hello {{user.name}} to insert a name, {{items[0].name}} for the first item, or {{$}} for the whole incoming value.',
   'canvasHelp.dragEmptySpaceToPanScrollPinchOrUseTheZoomButtons':
-    'Drag empty space to pan. Scroll, pinch, or use the zoom buttons to zoom. Fit all nodes brings the whole journey into view; the minimap gives you an overview.',
+    'Hold ⌘ / Ctrl and move the mouse to pan without clicking, or drag empty space as usual. Scroll, pinch, or use the zoom buttons to zoom. Fit all nodes brings the whole journey into view; the minimap gives you an overview.',
   'canvasHelp.canvasHelp': 'Canvas help',
   'canvasHelp.howToUseTheCanvas': 'How to use the canvas',
   'canvasHelp.closeCanvasHelp': 'Close canvas help',
@@ -820,6 +820,10 @@ export const englishMessages = {
       : `Removed the name of the connection from “${source}” to “${target}”`,
   'canvas.nodeCount': ({ count }: { count: number }) =>
     `${count} ${count === 1 ? 'node' : 'nodes'}`,
+  'nodeInspector.multipleNodes': 'Selected nodes',
+  'nodeInspector.closeSelectionDetails': 'Close selection details',
+  'nodeInspector.selectedNodeCount': ({ count }: { count: number }) => `${count} nodes selected`,
+  'nodeInspector.deleteNodes': 'Delete nodes',
   'canvas.connectionCount': ({ count }: { count: number }) =>
     `${count} ${count === 1 ? 'connection' : 'connections'}`,
   'activity.actionCount': ({ count }: { count: number }) =>
