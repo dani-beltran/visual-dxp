@@ -23,6 +23,7 @@ import {
   serverDefaultProvider,
 } from './providers';
 import { createWorkflowTools } from './tools';
+import { hasToolText, isTextualWorkflowFinish, toolTextEmitter } from './toolText';
 import type { AIChatRequest, AIChatResponse } from './workflow/ai';
 import { applyWorkflowOperations, parseAIChatResponse } from './workflow/ai';
 
@@ -77,9 +78,12 @@ export async function runLocalAgent(
   input?: AIRequestConfiguration,
   onText?: (text: string) => void,
   onReasoning?: (text: string) => void,
+  onWorkflowReady?: (response: AIChatResponse) => void,
 ): Promise<AIChatResponse> {
   return withWorkflow(request.workflow, () =>
-    withStep('edit_workflow', () => executeLocalAgent(request, signal, input, onText, onReasoning)),
+    withStep('edit_workflow', () =>
+      executeLocalAgent(request, signal, input, onText, onReasoning, onWorkflowReady),
+    ),
   );
 }
 
@@ -89,6 +93,7 @@ async function executeLocalAgent(
   input?: AIRequestConfiguration,
   onText?: (text: string) => void,
   onReasoning?: (text: string) => void,
+  onWorkflowReady?: (response: AIChatResponse) => void,
 ): Promise<AIChatResponse> {
   const config = resolveProviderConfiguration(input);
   addSecrets(config.apiKey);
@@ -107,6 +112,26 @@ async function executeLocalAgent(
       },
     ]),
   );
+  if (onWorkflowReady)
+    tools.finish_workflow = {
+      description:
+        'Commit the complete workflow edit batch. Call only after all requested edits are finished. No further edits are possible after this tool; explain the result afterward.',
+      inputSchema: jsonSchema({ type: 'object', properties: {}, additionalProperties: false }),
+    };
+  let ready: AIChatResponse | undefined;
+  let explanationRepairs = 0;
+  const commitWorkflow = () => {
+    const response = parseAIChatResponse({
+      message: 'Workflow ready.',
+      operations: toolkit.getOperations(),
+    });
+    applyWorkflowOperations(request.workflow, response.operations);
+    if (config.apiKey && JSON.stringify(response).includes(config.apiKey))
+      throw new Error('Unsafe response.');
+    signal.throwIfAborted();
+    ready = response;
+    onWorkflowReady?.(response);
+  };
   const messages: ModelMessage[] = request.messages.map(({ role, content }) => ({ role, content }));
   // No-op repetition detection is separate from the request-wide correction budget.
   const unchangedMutations = new Set<string>();
@@ -123,7 +148,13 @@ async function executeLocalAgent(
         const requireWorkflowRead = config.provider === 'local' && turn === 0;
         const options = {
           model,
-          system: systemPrompt,
+          system:
+            systemPrompt +
+            (ready
+              ? '\nThe workflow is already complete. Do not call any tools or output tool-call markup. Give only a concise explanation of the completed changes in the user’s language.'
+              : onWorkflowReady
+                ? '\nWhen all requested edits are complete, call finish_workflow before writing your final explanation.'
+                : ''),
           messages,
           tools: requireWorkflowRead ? { read_workflow: tools.read_workflow } : tools,
           abortSignal: signal,
@@ -131,7 +162,11 @@ async function executeLocalAgent(
           telemetry: { isEnabled: false, recordInputs: false, recordOutputs: false },
           // Some local servers reject named tool choices. Offering only the read tool
           // with required selection preserves the mandatory first workflow read.
-          toolChoice: requireWorkflowRead ? ('required' as const) : ('auto' as const),
+          toolChoice: ready
+            ? ('none' as const)
+            : requireWorkflowRead
+              ? ('required' as const)
+              : ('auto' as const),
           ...providerGenerationOptions(config),
         };
         const callId = randomUUID();
@@ -144,7 +179,7 @@ async function executeLocalAgent(
             messages,
           },
           async (firstToken) =>
-            onText || onReasoning
+            onText || onReasoning || onWorkflowReady
               ? await (async () => {
                   const stream = streamText({
                     ...options,
@@ -152,7 +187,8 @@ async function executeLocalAgent(
                     // Handle failures below without the SDK logging provider payloads.
                     onError: () => {},
                   });
-                  const emit = safeTextEmitter(config.apiKey, (text) => onText?.(text));
+                  const emitText = toolTextEmitter((text) => onText?.(text));
+                  const emit = safeTextEmitter(config.apiKey, (text) => emitText(text));
                   const emitReasoning = safeTextEmitter(config.apiKey, (text) =>
                     onReasoning?.(text),
                   );
@@ -190,6 +226,7 @@ async function executeLocalAgent(
                     }
                     if (!finished) throw new Error('Provider stream interrupted.');
                     emit('', true);
+                    emitText('', true);
                     emitReasoning('', true);
                     return {
                       content: await stream.content,
@@ -231,6 +268,26 @@ async function executeLocalAgent(
             editFailure = 'invalid_workflow_edit';
             throw new Error('A failed workflow edit remains unresolved.');
           }
+          if (hasToolText(result.text)) {
+            if (
+              config.provider !== 'local' ||
+              !onWorkflowReady ||
+              !isTextualWorkflowFinish(result.text) ||
+              explanationRepairs >= 1
+            )
+              throw new Error('Provider returned tool syntax instead of an answer.');
+            // Some local tool parsers leave empty-argument finish calls in text.
+            // Treat only this exact marker as completion of the validated draft.
+            if (!ready) commitWorkflow();
+            else explanationRepairs++;
+            messages.push(...result.responseMessages);
+            messages.push({
+              role: 'user',
+              content:
+                'The workflow is complete. Reply with a brief plain-language summary now. Do not output tool calls or tool markup.',
+            });
+            return;
+          }
           const response = parseAIChatResponse({
             message: result.text,
             operations: toolkit.getOperations(),
@@ -238,9 +295,11 @@ async function executeLocalAgent(
           applyWorkflowOperations(request.workflow, response.operations);
           return response;
         }
+        if (ready) throw new Error('Workflow edits are already committed.');
         if (calls.length > 100) throw new Error('Too many tool calls.');
         messages.push(...result.responseMessages);
         let skipRemainingCalls = false;
+        let finishRequested = false;
         for (const call of calls) {
           signal.throwIfAborted();
           const output = await withSpan(
@@ -265,7 +324,14 @@ async function executeLocalAgent(
                     error: 'Skipped; resubmit after correction. This call was not executed.',
                     retryable: true,
                   })
-                : toolkit.invokePrivate(call.toolName, call.input);
+                : call.toolName === 'finish_workflow' && onWorkflowReady
+                  ? (() => {
+                      // Providers may return parallel calls in any order. Commit only
+                      // after every edit in this turn has been processed below.
+                      finishRequested = true;
+                      return JSON.stringify({ ok: true });
+                    })()
+                  : toolkit.invokePrivate(call.toolName, call.input);
               capture('tool.result', 'tool', value, fields);
               const result = JSON.parse(value);
               if (skipRemainingCalls) return value;
@@ -322,6 +388,7 @@ async function executeLocalAgent(
             ],
           });
         }
+        if (finishRequested && !skipRemainingCalls && !unresolvedCalls.length) commitWorkflow();
       });
       if (completed) return completed;
     }
@@ -376,10 +443,11 @@ export async function runRemoteAgent(
   signal: AbortSignal,
   onText?: (text: string) => void,
   onReasoning?: (text: string) => void,
+  onWorkflowReady?: (response: AIChatResponse) => void,
 ): Promise<AIChatResponse> {
   return withWorkflow(request.workflow, () =>
     withSpan('workflow.deployment', {}, () =>
-      executeRemoteAgent(request, signal, onText, onReasoning),
+      executeRemoteAgent(request, signal, onText, onReasoning, onWorkflowReady),
     ),
   );
 }
@@ -389,6 +457,7 @@ async function executeRemoteAgent(
   signal: AbortSignal,
   onText?: (text: string) => void,
   onReasoning?: (text: string) => void,
+  onWorkflowReady?: (response: AIChatResponse) => void,
 ): Promise<AIChatResponse> {
   let base: URL;
   try {
@@ -404,7 +473,7 @@ async function executeRemoteAgent(
   } catch {
     throw new AIServiceError(503, 'LANGGRAPH_API_URL must be a valid Agent Server HTTP(S) URL.');
   }
-  base.pathname = `${base.pathname.replace(/\/$/, '')}/runs/${onText || onReasoning ? 'stream' : 'wait'}`;
+  base.pathname = `${base.pathname.replace(/\/$/, '')}/runs/${onText || onReasoning || onWorkflowReady ? 'stream' : 'wait'}`;
   const key = process.env.LANGSMITH_API_KEY?.trim();
   const carrier = outboundContext();
   const upstream = await fetch(base, {
@@ -421,10 +490,10 @@ async function executeRemoteAgent(
       config: {
         configurable: {
           dxpTelemetry: carrier,
-          ...(onText || onReasoning ? { streamAIText: true } : {}),
+          ...(onText || onReasoning || onWorkflowReady ? { streamAIText: true } : {}),
         },
       },
-      ...(onText || onReasoning ? { stream_mode: ['custom', 'values'] } : {}),
+      ...(onText || onReasoning || onWorkflowReady ? { stream_mode: ['custom', 'values'] } : {}),
     }),
     signal,
     redirect: 'error',
@@ -438,12 +507,20 @@ async function executeRemoteAgent(
     );
   }
   let payload: unknown;
-  if (onText || onReasoning) {
+  let committed: AIChatResponse | undefined;
+  if (onText || onReasoning || onWorkflowReady) {
     for await (const event of serverEvents(upstream, 2 * 1024 * 1024)) {
       signal.throwIfAborted();
       if (event.event === 'error') throw new AIServiceError(502, 'The AI deployment failed.');
       if (event.event === 'custom') {
         const data = JSON.parse(event.data);
+        if (data.type === 'workflow-ready') {
+          if (committed) throw new Error('Duplicate workflow batch.');
+          const ready = parseAIChatResponse(data.response);
+          applyWorkflowOperations(request.workflow, ready.operations);
+          committed = ready;
+          onWorkflowReady?.(ready);
+        }
         if (data.type === 'text' && typeof data.text === 'string') onText?.(data.text);
         if (data.type === 'reasoning' && typeof data.text === 'string') onReasoning?.(data.text);
       }
@@ -457,6 +534,8 @@ async function executeRemoteAgent(
     );
   }
   const response = parseAIChatResponse(payload.response);
+  if (committed && JSON.stringify(committed.operations) !== JSON.stringify(response.operations))
+    throw new Error('Workflow changed after commitment.');
   applyWorkflowOperations(request.workflow, response.operations);
   return response;
 }
@@ -467,12 +546,13 @@ export async function respondToAIChat(
   config?: AIRequestConfiguration,
   onText?: (text: string) => void,
   onReasoning?: (text: string) => void,
+  onWorkflowReady?: (response: AIChatResponse) => void,
 ): Promise<AIChatResponse> {
   // Browser credentials never enter deployment state, checkpoints or LangSmith.
   if (config && isBrowserConfiguration(config))
-    return runLocalAgent(request, signal, config, onText, onReasoning);
+    return runLocalAgent(request, signal, config, onText, onReasoning, onWorkflowReady);
   if ((config?.provider ?? serverDefaultProvider()) === 'local')
-    return runLocalAgent(request, signal, config, onText, onReasoning);
+    return runLocalAgent(request, signal, config, onText, onReasoning, onWorkflowReady);
   if (process.env.LANGGRAPH_API_URL?.trim()) {
     if (config && config.provider !== 'openai')
       throw new AIServiceError(
@@ -480,7 +560,7 @@ export async function respondToAIChat(
         'This provider is unavailable in the current execution mode. Save its configuration in AI Settings.',
         'unsupported_execution',
       );
-    return runRemoteAgent(request, signal, onText, onReasoning);
+    return runRemoteAgent(request, signal, onText, onReasoning, onWorkflowReady);
   }
-  return runLocalAgent(request, signal, config, onText, onReasoning);
+  return runLocalAgent(request, signal, config, onText, onReasoning, onWorkflowReady);
 }

@@ -1171,12 +1171,39 @@ function Builder({
     signal: AbortSignal,
     onText?: (text: string) => void,
     onReasoning?: (text: string) => void,
+    onApplied?: (count: number) => void,
   ) {
     if (!aiEnabled || !ai) throw new Error(t('builder.connectTheAssistantServiceToStartChatting'));
     const snapshot = copyWorkflow(current.current);
     const baseline = workflowFingerprint(snapshot);
     const controller = new AbortController();
     const override = aiSettings.forRequest(ai.endpoint, controller);
+    let applied = false;
+    let changeCount = 0;
+    const applyResponse: NonNullable<Parameters<typeof requestAIChat>[6]> = (response) => {
+      if (applied) return;
+      signal.throwIfAborted();
+      controller.signal.throwIfAborted();
+      if (baseline !== workflowFingerprint(current.current)) {
+        throw new Error(t('builder.theCanvasChangedWhileIWasWorkingSendYourMessageAgainTo'));
+      }
+      const updated = applyWorkflowOperations(current.current, response.operations);
+      const changed = workflowFingerprint(updated) !== baseline;
+      if (changed) {
+        commit(
+          () => updated,
+          activityAction('activity.aiEditsApplied', { count: response.operations.length }),
+        );
+        setSelectedIds((ids) => ids.filter((id) => updated.nodes.some((node) => node.id === id)));
+        if (selectedEdgeId && !updated.edges.some((edge) => edge.id === selectedEdgeId))
+          setSelectedEdgeId(null);
+        notify(t('builder.aiUpdatedYourWorkflowUseUndoToRevertThisChange'));
+        requestAnimationFrame(() => void flow.fitView({ padding: 0.2, duration: 300 }));
+      }
+      changeCount = changed ? response.operations.length : 0;
+      applied = true;
+      onApplied?.(changeCount);
+    };
     const response = await requestAIChat(
       ai,
       {
@@ -1189,6 +1216,7 @@ function Builder({
       override,
       onText,
       onReasoning,
+      applyResponse,
     )
       .then((result) => {
         setAIRequestConfigurationError(false);
@@ -1200,25 +1228,8 @@ function Builder({
         throw error;
       })
       .finally(() => aiSettings.finishRequest(controller));
-    signal.throwIfAborted();
-    controller.signal.throwIfAborted();
-    if (baseline !== workflowFingerprint(current.current)) {
-      throw new Error(t('builder.theCanvasChangedWhileIWasWorkingSendYourMessageAgainTo'));
-    }
-    const updated = applyWorkflowOperations(current.current, response.operations);
-    const changed = workflowFingerprint(updated) !== baseline;
-    if (changed) {
-      commit(
-        () => updated,
-        activityAction('activity.aiEditsApplied', { count: response.operations.length }),
-      );
-      setSelectedIds((ids) => ids.filter((id) => updated.nodes.some((node) => node.id === id)));
-      if (selectedEdgeId && !updated.edges.some((edge) => edge.id === selectedEdgeId))
-        setSelectedEdgeId(null);
-      notify(t('builder.aiUpdatedYourWorkflowUseUndoToRevertThisChange'));
-      requestAnimationFrame(() => void flow.fitView({ padding: 0.2, duration: 300 }));
-    }
-    return { message: response.message, changeCount: changed ? response.operations.length : 0 };
+    applyResponse(response);
+    return { message: response.message, changeCount };
   }
   const tutorialPanel =
     tutorial && tutorialController.active ? (

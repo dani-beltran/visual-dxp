@@ -855,6 +855,7 @@ export async function requestAIChat(
   configuration?: AIRequestConfiguration,
   onText?: (text: string) => void,
   onReasoning?: (text: string) => void,
+  onWorkflowReady?: (response: AIChatResponse) => void,
 ): Promise<AIChatResponse> {
   const override =
     configuration && isBrowserConfiguration(configuration) ? configuration : undefined;
@@ -928,7 +929,9 @@ export async function requestAIChat(
   headers.set('Content-Type', 'application/json');
   headers.set(
     'Accept',
-    onText || onReasoning ? 'application/x-ndjson, application/json' : 'application/json',
+    onText || onReasoning || onWorkflowReady
+      ? 'application/x-ndjson, application/json'
+      : 'application/json',
   );
   try {
     let response: Response;
@@ -1027,6 +1030,7 @@ export async function requestAIChat(
     let value: unknown;
     if (response.headers.get('content-type')?.includes('application/x-ndjson')) {
       let finished = false;
+      let ready: AIChatResponse | undefined;
       const emit = safeTextEmitter(override?.apiKey ?? '', (text) => onText?.(text));
       const emitReasoning = safeTextEmitter(override?.apiKey ?? '', (text) => onReasoning?.(text));
       for await (const line of responseLines(response, AI_LIMITS.payloadBytes)) {
@@ -1038,15 +1042,30 @@ export async function requestAIChat(
           emit(event.text);
         } else if (event.type === 'reasoning' && typeof event.text === 'string') {
           emitReasoning(event.text);
+        } else if (event.type === 'workflow-ready') {
+          if (ready) throw new Error('Duplicate workflow batch.');
+          if (override?.apiKey && JSON.stringify(event.response).includes(override.apiKey))
+            throw new Error('Unsafe workflow response.');
+          const parsed = parseAIChatResponse(event.response);
+          applyWorkflowOperations(request.workflow, parsed.operations);
+          ready = parsed;
+          onWorkflowReady?.(parsed);
         } else if (event.type === 'result') {
+          if (
+            ready &&
+            JSON.stringify(ready.operations) !==
+              JSON.stringify(parseAIChatResponse(event.response).operations)
+          )
+            throw new Error('Workflow changed after commitment.');
           value = event.response;
           finished = true;
         } else {
           const failure = event.type === 'error' ? workflowEditError(event) : undefined;
           if (failure) throw failure;
-          throw new Error(
-            'The AI request failed. No changes were applied. Try again or check AI Settings.',
-          );
+          throw Object.assign(new Error('The AI request failed. Try again or check AI Settings.'), {
+            messageKey: 'errors.ai.theAiRequestFailedTryAgainOrCheckAiSettings',
+            messageParams: {},
+          });
         }
       }
       if (!finished) throw new Error('The AI response was interrupted. No changes were applied.');

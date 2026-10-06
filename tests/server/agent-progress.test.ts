@@ -715,3 +715,209 @@ describe.each([false, true])('agent progress (streaming: %s)', (streaming) => {
     });
   });
 });
+
+it('commits a complete batch before the explanation and disables further tools', async () => {
+  const calls = provider(
+    [
+      ['update_node', { id: 'offer', label: 'Updated offer' }],
+      ['finish_workflow', {}],
+    ],
+    true,
+  );
+  const ready = vi.fn();
+  const implementation = vi.mocked(streamText).getMockImplementation();
+  if (!implementation) throw new Error('Missing provider mock.');
+  vi.mocked(streamText).mockImplementation((...args) => {
+    if (calls().length === 3) {
+      expect(ready).toHaveBeenCalledTimes(1);
+      expect(args[0].toolChoice).toBe('none');
+    }
+    return implementation(...args);
+  });
+  const result = await runLocalAgent(
+    request(),
+    new AbortController().signal,
+    config,
+    vi.fn(),
+    undefined,
+    ready,
+  );
+  expect(ready).toHaveBeenCalledTimes(1);
+  expect(ready.mock.calls[0][0].operations).toEqual(result.operations);
+  expect(result.operations).toHaveLength(1);
+  expect(calls()).toHaveLength(3);
+});
+
+it('does not commit while a failed edit remains unresolved', async () => {
+  provider(
+    [
+      ['update_node', { id: 'start', config: { event: 'not-an-event' } }],
+      ['finish_workflow', {}],
+    ],
+    true,
+  );
+  const ready = vi.fn();
+  await expect(
+    runLocalAgent(request(), new AbortController().signal, config, vi.fn(), undefined, ready),
+  ).rejects.toThrow();
+  expect(ready).not.toHaveBeenCalled();
+});
+
+it.each(['first', 'last'])(
+  'accepts finish_workflow %s in the same provider batch as the final edit',
+  async (position) => {
+    const edit: Call = ['update_node', { id: 'offer', label: 'Updated offer' }];
+    const finish: Call = ['finish_workflow', {}];
+    provider([position === 'first' ? [finish, edit] : [edit, finish]], true);
+    const ready = vi.fn();
+    const result = await runLocalAgent(
+      request(),
+      new AbortController().signal,
+      config,
+      vi.fn(),
+      undefined,
+      ready,
+    );
+    expect(ready).toHaveBeenCalledTimes(1);
+    expect(ready.mock.calls[0][0].operations).toEqual(result.operations);
+    expect(result.operations).toHaveLength(1);
+  },
+);
+
+it('keeps the batch private when an edit after finish_workflow fails, then permits correction', async () => {
+  provider(
+    [
+      [
+        ['finish_workflow', {}],
+        ['update_node', { id: 'start', config: { event: 'not-an-event' } }],
+      ],
+      ['update_node', { id: 'start', config: scroll }],
+      ['finish_workflow', {}],
+    ],
+    true,
+  );
+  const ready = vi.fn();
+  const implementation = vi.mocked(streamText).getMockImplementation();
+  if (!implementation) throw new Error('Missing provider mock.');
+  let turn = 0;
+  vi.mocked(streamText).mockImplementation((...args) => {
+    if (++turn <= 3) expect(ready).not.toHaveBeenCalled();
+    return implementation(...args);
+  });
+  const result = await runLocalAgent(
+    request(),
+    new AbortController().signal,
+    config,
+    vi.fn(),
+    undefined,
+    ready,
+  );
+  expect(ready).toHaveBeenCalledTimes(1);
+  expect(ready.mock.calls[0][0].operations).toEqual(result.operations);
+  expect(result.operations).toHaveLength(1);
+});
+
+it('recovers a local textual finish marker without streaming markup or applying twice', async () => {
+  const marker = '<tool_call>\n<function=finish_workflow>\n</function>\n</tool_call>';
+  provider(
+    [
+      ['read_workflow', {}],
+      ['update_node', { id: 'offer', label: 'Updated offer' }],
+    ],
+    true,
+    'Updated the offer label.',
+  );
+  const implementation = vi.mocked(streamText).getMockImplementation();
+  if (!implementation) throw new Error('Missing provider mock.');
+  let turn = 0;
+  vi.mocked(streamText).mockImplementation((...args) => {
+    const result = implementation(...args);
+    turn++;
+    if (turn === 4) {
+      expect(args[0].toolChoice).toBe('none');
+      expect(args[0].system).not.toContain('call finish_workflow before');
+    }
+    if (turn !== 3) return result;
+    return {
+      ...result,
+      text: marker,
+      responseMessages: [{ role: 'assistant', content: marker }],
+      fullStream: (async function* () {
+        for (const text of [
+          '<too',
+          'l_call>\n<function=',
+          'finish_workflow>\n</function>\n</tool_call>',
+        ])
+          yield { type: 'text-delta', text };
+        yield { type: 'finish' };
+      })(),
+    } as never;
+  });
+  const ready = vi.fn();
+  const text = vi.fn();
+  const result = await runLocalAgent(
+    request(),
+    new AbortController().signal,
+    {
+      ...config,
+      provider: 'local',
+      baseURL: 'http://127.0.0.1:5050/v1',
+    },
+    text,
+    undefined,
+    ready,
+  );
+  expect(result.message).toBe('Updated the offer label.');
+  expect(result.operations).toHaveLength(1);
+  expect(ready).toHaveBeenCalledTimes(1);
+  expect(text.mock.calls.flat().join('')).not.toContain('<tool');
+});
+
+it('does not interpret a textual mutation as an executable tool call', async () => {
+  provider(
+    [['read_workflow', {}]],
+    true,
+    '<tool_call><function=remove_node><parameter=id>start</parameter></function></tool_call>',
+  );
+  const ready = vi.fn();
+  await expect(
+    runLocalAgent(
+      request(),
+      new AbortController().signal,
+      {
+        ...config,
+        provider: 'local',
+        baseURL: 'http://127.0.0.1:5050/v1',
+      },
+      vi.fn(),
+      undefined,
+      ready,
+    ),
+  ).rejects.toThrow();
+  expect(ready).not.toHaveBeenCalled();
+});
+
+it('bounds repeated textual finish markers and commits only once', async () => {
+  const calls = provider(
+    [['read_workflow', {}]],
+    true,
+    '<tool_call><function=finish_workflow></function></tool_call>',
+  );
+  const ready = vi.fn();
+  await expect(
+    runLocalAgent(
+      request(),
+      new AbortController().signal,
+      {
+        ...config,
+        provider: 'local',
+        baseURL: 'http://127.0.0.1:5050/v1',
+      },
+      vi.fn(),
+      undefined,
+      ready,
+    ),
+  ).rejects.toThrow();
+  expect(ready).toHaveBeenCalledTimes(1);
+  expect(calls()).toHaveLength(4);
+});

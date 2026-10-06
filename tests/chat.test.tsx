@@ -240,6 +240,7 @@ describe('canvas AI chat', () => {
       expect.any(AbortSignal),
       expect.any(Function),
       expect.any(Function),
+      expect.any(Function),
     );
     expect(composer().value).toBe('');
     expect(document.activeElement).toBe(composer());
@@ -781,4 +782,117 @@ it('connects streamed reasoning through the builder while applying only the fina
   );
   expect(host.querySelector('.dxp-ai-reasoning')?.textContent).toContain('Checking the delay.');
   expect(host.querySelector('.dxp-ai-applied')?.textContent).toContain('1 edit applied');
+});
+
+it.each(['complete', 'interrupt'])(
+  'applies the workflow before the explanation ends (%s) and never reapplies it',
+  async (mode) => {
+    let stream!: ReadableStreamDefaultController<Uint8Array>;
+    const encoder = new TextEncoder();
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        new Response(
+          new ReadableStream({
+            start(controller) {
+              stream = controller;
+            },
+          }),
+          { headers: { 'Content-Type': 'application/x-ndjson' } },
+        ),
+      ),
+    );
+    const { onChange, baseline } = await renderConnectedBuilder();
+    await typeMessage('Rename the delay');
+    await click(button('Send message'));
+    const response = {
+      message: 'Ready.',
+      operations: [{ type: 'update_node', id: 'delay', label: 'Pause' }],
+    };
+    await act(async () => {
+      stream.enqueue(encoder.encode(JSON.stringify({ type: 'workflow-ready', response }) + '\n'));
+    });
+    expect(onChange.mock.lastCall?.[0].nodes.find((node) => node.id === 'delay')?.data.label).toBe(
+      'Pause',
+    );
+    expect(host.querySelector('.dxp-ai-applied')?.textContent).toContain('1 edit applied');
+    expect(button('Stop generating')).toBeTruthy();
+    await click(undoButton());
+    expect(onChange.mock.lastCall?.[0]).toEqual(baseline);
+    await act(async () => {
+      if (mode === 'complete')
+        stream.enqueue(
+          encoder.encode(
+            JSON.stringify({ type: 'result', response: { ...response, message: 'Renamed.' } }) +
+              '\n',
+          ),
+        );
+      stream.close();
+    });
+    expect(onChange.mock.lastCall?.[0]).toEqual(baseline);
+    expect(undoButton().disabled).toBe(true);
+    if (mode === 'interrupt') {
+      expect(host.querySelector('[role="alert"]')?.textContent).toContain(
+        'Workflow changes were applied',
+      );
+      expect(host.querySelector('[role="alert"]')?.textContent).not.toContain('No changes');
+    }
+  },
+);
+
+it('preserves applied edit status when the user stops the explanation', async () => {
+  await renderChat({
+    onSend: async (_messages, signal, _text, _reasoning, applied) => {
+      applied?.(2);
+      return new Promise((_resolve, reject) =>
+        signal.addEventListener('abort', () => reject(new Error('Stopped'))),
+      );
+    },
+  });
+  await click(button('AI chat'));
+  await typeMessage('Update my workflow');
+  await click(button('Send message'));
+  expect(host.querySelector('.dxp-ai-applied')?.textContent).toContain('2 edits applied');
+  await click(button('Stop generating'));
+  expect(host.querySelector('.dxp-ai-applied')?.textContent).toContain('2 edits applied');
+  expect(host.querySelector('[role="alert"]')?.textContent).toContain(
+    'Workflow changes were applied',
+  );
+  expect(composer().value).toBe('');
+});
+
+it('rejects an early workflow batch after the canvas changes', async () => {
+  let stream!: ReadableStreamDefaultController<Uint8Array>;
+  vi.stubGlobal(
+    'fetch',
+    vi.fn().mockResolvedValue(
+      new Response(
+        new ReadableStream({
+          start(controller) {
+            stream = controller;
+          },
+        }),
+        { headers: { 'Content-Type': 'application/x-ndjson' } },
+      ),
+    ),
+  );
+  const { onChange, baseline, api } = await renderConnectedBuilder();
+  await typeMessage('Rename the delay');
+  await click(button('Send message'));
+  await act(async () => api.renameWorkflow('Manual title'));
+  await act(async () =>
+    stream.enqueue(
+      new TextEncoder().encode(
+        JSON.stringify({
+          type: 'workflow-ready',
+          response: {
+            message: 'Ready.',
+            operations: [{ type: 'update_node', id: 'delay', label: 'Pause' }],
+          },
+        }) + '\n',
+      ),
+    ),
+  );
+  expect(onChange.mock.lastCall?.[0]).toEqual({ ...baseline, name: 'Manual title' });
+  expect(host.querySelector('[role="alert"]')?.textContent).toContain('The canvas changed');
 });

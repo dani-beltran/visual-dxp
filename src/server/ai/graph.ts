@@ -30,6 +30,7 @@ export const graph = new StateGraph(State)
               undefined,
               writer ? (text) => writer({ type: 'text', text }) : undefined,
               writer ? (text) => writer({ type: 'reasoning', text }) : undefined,
+              writer ? (response) => writer({ type: 'workflow-ready', response }) : undefined,
             ),
           config.configurable?.dxpTelemetry as Carrier | undefined,
         ),
