@@ -191,18 +191,6 @@ export function TutorialPanel({
                   {t('tutorial.closeExport')}
                 </button>
               )}
-              {step === 'finish' && (
-                <p>
-                  {[
-                    c.sequence.includes('ai') && t('tutorial.ai.title'),
-                    t('tutorial.help.title'),
-                    c.sequence.includes('export') && t('tutorial.export.title'),
-                    c.sequence.includes('presets') && t('tutorial.presets.title'),
-                  ]
-                    .filter(Boolean)
-                    .join(' · ')}
-                </p>
-              )}
               {c.missing && (
                 <div role="status">
                   <p>
