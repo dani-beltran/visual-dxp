@@ -5,13 +5,13 @@ The editing harness reviews both technical validity and whether the resulting wo
 ## Completion flow
 
 1. Tools stage requested operations in a private draft.
-2. `applyWorkflowOperations` replays and validates the batch using the existing graph/configuration rules. Existing unrelated validation issues retain their existing policy; validation findings are also supplied to the reviewer, so it must not claim a clean pass when issues remain.
+2. The harness finalizes [local structural layout](ai-layout.md), including any required position operations in the same batch. `applyWorkflowOperations` replays and validates the batch using the existing graph/configuration rules. Existing unrelated validation issues retain their existing policy; validation findings are also supplied to the reviewer, so it must not claim a clean pass when issues remain.
 3. A separate, read-only model call receives the original workflow, actual final draft, staged changes, conversation, selected nodes, branding context, technical findings, workflow versions, and supported runtime behavior. It does not receive the editor's proposed final answer and has no editing tools.
 4. The harness parses and validates the structured review. It checks bounded fields, referenced node IDs, required questions, completion status, and credentials before accepting it.
 5. Implementation errors return the draft to the editor. Design concerns and missing context become explanations and proposals, without applying an alternative.
 6. Only an accepted review allows `workflow-ready` and the reviewed response to reach the client. The existing canvas fingerprint check still rejects applying a batch if the user changed the canvas during the request.
 
-This gate covers ordinary text completion, `finish_workflow`, and the supported local-model textual finish marker. A finish tool in a parallel batch waits until every mutation in that batch has been processed. Failed/unresolved tool calls cannot reach commitment. Every repair receives a new review of the resulting draft; there is no reusable stale review cache.
+This gate covers ordinary text completion, `finish_workflow`, and the supported local-model textual finish marker. A finish tool in a parallel batch waits until every mutation in that batch has been processed. Failed/unresolved tool calls cannot reach commitment. Every structural repair runs layout again before technical validation and review. Every repair receives a new review of the resulting draft; there is no reusable stale review cache.
 
 All direct providers and the repository's LangGraph deployment use this harness. Redeploy the graph when updating a remote deployment; the proxy cannot add semantic review to an older external graph.
 

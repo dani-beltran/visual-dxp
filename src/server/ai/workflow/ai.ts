@@ -56,7 +56,7 @@ export const AI_LIMITS = {
   messages: 40,
   messageCharacters: 12000,
   payloadBytes: 1024 * 1024,
-  timeoutMs: 240000,
+  timeoutMs: 480000,
 } as const;
 
 const kinds = new Set<NodeKind>([
@@ -237,12 +237,15 @@ function node(value: unknown): WorkflowNode {
   if (settings.noteMarks !== undefined)
     settings.noteMarks = parseNoteMarks(settings.noteMarks, (settings.noteText ?? '').length);
   const dimensions: { width?: number; height?: number } = {};
-  if (data.kind === 'frame') {
+  {
+    const measured =
+      input.measured === undefined ? {} : record(input.measured, 'Measured dimensions');
     for (const key of ['width', 'height'] as const) {
-      if (input[key] === undefined) continue;
-      if (typeof input[key] !== 'number' || !Number.isFinite(input[key]) || input[key] <= 0)
+      const dimension = input[key] ?? measured[key];
+      if (dimension === undefined) continue;
+      if (typeof dimension !== 'number' || !Number.isFinite(dimension) || dimension <= 0)
         throw new Error('Frame dimensions must be positive numbers.');
-      dimensions[key] = input[key];
+      dimensions[key] = dimension;
     }
   }
   return {
@@ -269,7 +272,7 @@ function handle(value: unknown): string | null {
   return value as string;
 }
 
-function edge(value: unknown): WorkflowEdge {
+function edge(value: unknown, preserveMetadata = false): WorkflowEdge {
   const input = record(value, 'Connection');
   if (input.targetHandle != null) throw new Error('Connections cannot specify target handles.');
   return {
@@ -277,6 +280,9 @@ function edge(value: unknown): WorkflowEdge {
     source: id(input.source),
     target: id(input.target),
     type: 'smoothstep',
+    ...(!preserveMetadata || input.data === undefined
+      ? {}
+      : { data: structuredClone(record(input.data, 'Connection metadata')) }),
     ...(input.sourceHandle !== undefined ? { sourceHandle: handle(input.sourceHandle) } : {}),
     ...(input.label !== undefined
       ? { label: text(input.label, 'Connection label', 200, true) }
@@ -360,7 +366,7 @@ function workflowShape(value: unknown): Workflow {
     includeSubpages: input.includeSubpages ?? false,
     ...(input.analytics === undefined ? {} : { analytics: { ...input.analytics } }),
     nodes: input.nodes.map(node),
-    edges: input.edges.map(edge),
+    edges: input.edges.map((entry) => edge(entry, true)),
   };
 }
 
