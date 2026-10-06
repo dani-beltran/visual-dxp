@@ -2,6 +2,7 @@ import {
   Braces,
   CircleHelp,
   Frame,
+  GraduationCap,
   Hand,
   MousePointer2,
   Plus,
@@ -179,6 +180,7 @@ export function CanvasHelp({
             {onTutorial && (
               <div className="dxp-canvas-help-tutorial">
                 <button type="button" className="dxp-button" onClick={onTutorial}>
+                  <GraduationCap size={16} aria-hidden="true" />
                   {tutorialLabel}
                 </button>
               </div>
