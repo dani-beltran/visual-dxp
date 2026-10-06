@@ -490,7 +490,7 @@ HTML and DOM actions are author-controlled content. Import workflows from truste
 ## Source layout
 
 - `src/app/` — Next.js layout, client-only editor entry, and Node API Route Handlers.
-- `src/demo/Demo/Demo.tsx` — demo activity, persistence, and same-origin AI configuration.
+- `src/app/EditorApp.tsx` — demo activity, persistence, and same-origin AI configuration.
 - `src/components/App/App.tsx` — reusable demo host UI, project header, test trigger, and export dialog.
 - `src/components/VisualDXPBuilder/VisualDXPBuilder.tsx` — independent editor, state/history, import, persistence, and test preview.
 - `src/components/` — workflow cards, node inspector, picker, and live preview. Each component has a `ComponentName/` folder containing `ComponentName.tsx` and its imported `ComponentName.css`.

@@ -1,12 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { App } from '../../components/App/App';
-import { commonDXPPresets } from '../../presets';
-import { createLocalStorageActivityStore } from '../activityStore';
-import './Demo.css';
+import { App } from '../components/App/App';
+import { commonDXPPresets } from '../presets';
+import { createLocalStorageActivityStore } from './activityStore';
+import './EditorApp.css';
 
-export default function Demo() {
+export default function EditorApp() {
   const [activityStore] = useState(() => createLocalStorageActivityStore('visual-dxp-activity-v1'));
   return (
     <App
