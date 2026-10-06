@@ -137,6 +137,8 @@ export const spanishMessages = {
     'Configura aquí el progreso del flujo, las asignaciones de experimentos y los hitos personalizados.',
   'analytics.openSettings': 'Abrir ajustes de analítica',
   'activity.analyticsUpdated': 'Ajustes de analítica actualizados',
+  'errors.ai.semantic_review_failed':
+    'El flujo sigue sin ajustarse a la petición tras la revisión. No se aplicó ningún cambio. Prueba a aclarar el comportamiento deseado.',
   'errors.ai.invalid_workflow_edit':
     'La IA propuso un cambio de flujo inválido. No se aplicó ningún cambio. Prueba con una petición más específica.',
   'errors.ai.repeated_tool_loop':

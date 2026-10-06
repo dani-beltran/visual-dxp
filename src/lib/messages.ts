@@ -137,6 +137,7 @@ export const englishMessages = {
     'Configure workflow progress, experiment assignments, and custom milestone events here.',
   'analytics.openSettings': 'Open Analytics settings',
   'activity.analyticsUpdated': 'Updated analytics settings',
+  'errors.ai.semantic_review_failed': aiEditFailures.semantic_review_failed,
   'errors.ai.invalid_workflow_edit': aiEditFailures.invalid_workflow_edit,
   'errors.ai.repeated_tool_loop': aiEditFailures.repeated_tool_loop,
   'nodes.experiment.label': 'Experiment',

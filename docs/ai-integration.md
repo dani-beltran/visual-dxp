@@ -245,3 +245,7 @@ Reasoning events appear in a collapsible **Reasoning summary** section on the as
 Provider references: [OpenAI reasoning summaries](https://developers.openai.com/api/docs/guides/reasoning#reasoning-summaries) and [Claude thinking](https://platform.claude.com/docs/en/build-with-claude/thinking).
 
 Direct providers use the AI SDK streaming API. LangGraph uses `/runs/stream` with custom text/reasoning/workflow-ready events and final state values; redeploy the graph from this revision to enable early workflow commitment on existing deployments. Reverse proxies should forward chunks without buffering; the route sends `Cache-Control: no-store, no-transform` and `X-Accel-Buffering: no`.
+
+## Final semantic review
+
+The agent now gates workflow commitment on a separate read-only review of intent and runtime behavior, in addition to technical validation. See [Final workflow review](ai-semantic-review.md) for repair limits, user-approved alternatives, versioned follow-up proposals, streaming behavior, and deployment requirements.

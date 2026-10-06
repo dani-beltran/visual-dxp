@@ -1,5 +1,7 @@
 /** Fixed public messages; never forward tool errors or provider payloads. */
 export const aiEditFailures = {
+  semantic_review_failed:
+    'The workflow still does not match the request after review. No workflow changes were applied. Try clarifying the intended behavior.',
   invalid_workflow_edit:
     'The AI proposed an invalid workflow edit. No workflow changes were applied. Try a more specific request.',
   repeated_tool_loop:

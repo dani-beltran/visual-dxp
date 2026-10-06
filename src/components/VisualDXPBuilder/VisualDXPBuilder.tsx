@@ -1229,7 +1229,7 @@ function Builder({
       })
       .finally(() => aiSettings.finishRequest(controller));
     applyResponse(response);
-    return { message: response.message, changeCount };
+    return { message: response.message, changeCount, reviewProposal: response.reviewProposal };
   }
   const tutorialPanel =
     tutorial && tutorialController.active ? (

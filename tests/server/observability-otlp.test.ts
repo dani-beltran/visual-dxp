@@ -154,3 +154,9 @@ it('exports real OTLP JSON to a local receiver and survives a failed receiver', 
     vi.unstubAllEnvs();
   }
 }, 15000);
+
+// Provider/tool-loop tests isolate the independent semantic review call.
+vi.mock('../../src/server/ai/review', async (original) => ({
+  ...(await original<typeof import('../../src/server/ai/review')>()),
+  reviewWorkflow: vi.fn(async () => ({ summary: 'Ready.', findings: [], question: '' })),
+}));

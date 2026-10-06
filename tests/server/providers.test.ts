@@ -675,3 +675,9 @@ it.each([
   ).resolves.toMatchObject({ message: 'Done.', operations: [] });
   expect(fetcher).toHaveBeenCalledTimes(provider === 'local' ? 2 : 1);
 });
+
+// Provider/tool-loop tests isolate the independent semantic review call.
+vi.mock('../../src/server/ai/review', async (original) => ({
+  ...(await original<typeof import('../../src/server/ai/review')>()),
+  reviewWorkflow: vi.fn(async () => ({ summary: 'Done.', findings: [], question: '' })),
+}));
