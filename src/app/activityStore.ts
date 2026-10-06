@@ -12,7 +12,7 @@ function isActivityEntry(value: unknown): value is ActivityEntry {
   );
 }
 
-/** Demo-only persistence; embedded builders still use the host's activity store. */
+/** Application persistence; embedded builders still use the host's activity store. */
 export function createLocalStorageActivityStore(persistenceKey: string) {
   let entries: ActivityEntry[] = [];
   try {

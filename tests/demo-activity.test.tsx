@@ -3,8 +3,8 @@
 import { act, StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { createLocalStorageActivityStore } from '../src/demo/activityStore';
-import Demo from '../src/demo/Demo/Demo';
+import { createLocalStorageActivityStore } from '../src/app/activityStore';
+import EditorApp from '../src/app/EditorApp';
 import type { ActivityEntry } from '../src/lib/activity';
 import { commonDXPPresets } from '../src/presets';
 
@@ -23,7 +23,7 @@ afterEach(() => {
   localStorage.clear();
 });
 
-describe('demo activity persistence', () => {
+describe('editor activity persistence', () => {
   it('restores entries and persists additions, removals, and an empty history', () => {
     localStorage.setItem(persistenceKey, JSON.stringify([entry]));
     const store = createLocalStorageActivityStore(persistenceKey);
@@ -81,7 +81,7 @@ describe('demo activity persistence', () => {
     expect(createLocalStorageActivityStore(persistenceKey).getSnapshot()).toEqual([entry, next]);
   });
 
-  it('keeps the demo activity after remounting and saves Undo and Redo changes', async () => {
+  it('keeps the editor activity after remounting and saves Undo and Redo changes', async () => {
     vi.useFakeTimers();
     vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
     vi.stubGlobal(
@@ -99,7 +99,7 @@ describe('demo activity persistence', () => {
       act(async () => {
         root.render(
           <StrictMode>
-            <Demo />
+            <EditorApp />
           </StrictMode>,
         );
       });
