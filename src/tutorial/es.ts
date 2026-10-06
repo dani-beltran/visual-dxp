@@ -16,7 +16,11 @@ export const tutorialSpanish = {
   'tutorial.ready': 'Listo para continuar',
   'tutorial.pending': 'Completa la instrucción para continuar',
   'tutorial.intro.title': 'Crea tu primera experiencia digital.',
-  'tutorial.intro.body': 'Pon el nombre “My first workflow.” en el campo de nombre del flujo.',
+  'tutorial.intro.body':
+    'Puedes salir en cualquier momento y conservar tu trabajo. Pulsa Continuar para empezar.',
+  'tutorial.name.title': 'Pon nombre a tu flujo',
+  'tutorial.name.body':
+    'Escribe un nombre para tu flujo en el campo de nombre; por ejemplo, «Mi primer flujo». Se acepta cualquier nombre no vacío distinto del predeterminado.',
   'tutorial.intro.about':
     'Una plataforma de experiencia digital (DXP) ayuda a los equipos a crear, gestionar y personalizar experiencias en canales digitales. Visual DXP se centra en sitios web: conectas disparadores y acciones en un flujo visual para decidir qué ven los visitantes y cuándo.',
   'tutorial.intro.exercise':

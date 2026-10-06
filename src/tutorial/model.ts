@@ -1,7 +1,10 @@
+import { tutorialEnglish } from './en';
+import { tutorialSpanish } from './es';
 import type { PreviewExecutionEvent, Workflow, WorkflowNode } from '../lib/types';
 
 export const steps = [
   'intro',
+  'name',
   'website',
   'trigger',
   'event',
@@ -40,6 +43,7 @@ export interface TutorialRecord {
   version: 1;
   status: 'in-progress' | 'dismissed' | 'completed';
   needsReset?: boolean;
+  defaultName?: string;
   step: TutorialStep;
   ids: Partial<Record<TutorialKind, string>>;
   defaultContent?: string;
@@ -70,9 +74,13 @@ export function tutorialFingerprint(w: Workflow) {
       .sort(),
   });
 }
-export function newTutorial(w: Workflow): TutorialRecord {
+export function newTutorial(
+  w: Workflow,
+  defaultName = tutorialEnglish['tutorial.untitled'],
+): TutorialRecord {
   return {
     version: 1,
+    defaultName,
     status: 'in-progress',
     step: 'intro',
     ids: {},
@@ -102,7 +110,7 @@ export function readTutorial(key?: string): TutorialRecord | null {
       ['ai', 'help', 'export', 'presets'].some(
         (k) => value.visited[k] !== undefined && typeof value.visited[k] !== 'boolean',
       ) ||
-      ['defaultContent', 'confirmedTrigger', 'tested'].some(
+      ['defaultContent', 'confirmedTrigger', 'tested', 'defaultName'].some(
         (k) => value[k] !== undefined && typeof value[k] !== 'string',
       )
     )
@@ -140,7 +148,14 @@ export function requirements(record: TutorialRecord, w: Workflow, websiteUrl: st
       (e) => e.source === source && e.target === target && !e.sourceHandle && !e.targetHandle,
     );
   return {
-    intro: w.name.trim() === 'My first workflow.',
+    intro: true,
+    name:
+      !!w.name.trim() &&
+      !(
+        record.defaultName !== undefined
+          ? [record.defaultName]
+          : [tutorialEnglish['tutorial.untitled'], tutorialSpanish['tutorial.untitled']]
+      ).some((name) => name.trim() === w.name.trim()),
     website: w.websiteUrl === websiteUrl,
     trigger: !!trigger,
     event:

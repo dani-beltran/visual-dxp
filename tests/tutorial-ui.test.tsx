@@ -126,9 +126,13 @@ it('keeps the empty state unchanged, and the reusable builder tutorial is opt-in
 it('builds and tests through the real editor, then visits every feature without modifying the workflow', async () => {
   await render();
   expect(step()).toBe('Build your first digital experience.');
+  expect(button('Continue').disabled).toBe(false);
   await launch();
   expect(step()).toBe('Build your first digital experience.');
-  await input('[aria-label="Workflow name"]', 'My first workflow.');
+  await click('Continue');
+  expect(step()).toBe('Name your workflow');
+  expect(button('Continue').disabled).toBe(true);
+  await input('[aria-label="Workflow name"]', 'Autumn announcement');
   await click('Continue');
   await click('Choose website');
   expect(el('[role="dialog"] .dxp-tutorial')).toBeTruthy();
@@ -216,6 +220,8 @@ it('automatically starts and resumes progress, then keeps an explicitly closed t
   await render();
   expect(step()).toBe('Build your first digital experience.');
   await launch();
+  await click('Continue');
+  expect(step()).toBe('Name your workflow');
   await input('[aria-label="Workflow name"]', 'My first workflow.');
   await click('Continue');
   await act(async () => vi.advanceTimersByTimeAsync(1000));
@@ -283,6 +289,8 @@ it('opens recovery for changed active workflows and remembers Cancel without acc
 it('keeps dismissed and completed tutorials closed, supports manual resume and cancels reset without edits', async () => {
   await render();
   await launch();
+  await click('Continue');
+  expect(step()).toBe('Name your workflow');
   await input('[aria-label="Workflow name"]', 'My first workflow.');
   await click('Continue');
   await click('Exit');
@@ -337,7 +345,8 @@ it('adapts optional capabilities and keeps progress functional without storage',
     ),
   );
   await launch();
-  expect(el('.dxp-tutorial').textContent).toContain('Step 1 of 11');
+  expect(el('.dxp-tutorial').textContent).toContain('Step 1 of 12');
+  await click('Continue');
   await input('.dxp-tutorial input', 'My first workflow.');
   await click('Continue');
   await click('Exit');
@@ -486,6 +495,7 @@ it('supports an optional host practice target without a demo header or demo URL'
     ),
   );
   await launch();
+  await click('Continue');
   await input('.dxp-tutorial input', 'My first workflow.');
   await click('Continue');
   expect(host.textContent).toContain('https://practice.example.test');

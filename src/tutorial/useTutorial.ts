@@ -1,3 +1,4 @@
+import { useBuilderI18n } from '../lib/i18nContext';
 import { useEffect, useRef, useState } from 'react';
 import type { PreviewExecutionEvent, Workflow, WorkflowNode } from '../lib/types';
 import {
@@ -36,11 +37,12 @@ export function useTutorial({
   aiAvailable: boolean;
   presetsAvailable: boolean;
 }) {
+  const { t } = useBuilderI18n();
   const key = options?.storageKey ?? (persistenceKey ? `${persistenceKey}:tutorial:v1` : undefined);
   const [record, setRecord] = useState<TutorialRecord | null>(() =>
     options
       ? (readTutorial(key) ?? {
-          ...newTutorial(workflow),
+          ...newTutorial(workflow, t('tutorial.untitled')),
           needsReset: !!(workflow.nodes.length || workflow.edges.length),
         })
       : null,
@@ -126,10 +128,10 @@ export function useTutorial({
       if (record.needsReset) setGate('reset');
       else if (record.fingerprint !== fingerprint) setGate('mismatch');
     } else if (workflow.nodes.length || workflow.edges.length) setGate('reset');
-    else setRecord(newTutorial(workflow));
+    else setRecord(newTutorial(workflow, t('tutorial.untitled')));
   }
   function begin(w: Workflow) {
-    setRecord(newTutorial(w));
+    setRecord(newTutorial(w, t('tutorial.untitled')));
     setGate(null);
     setActive(true);
     run.current = null;
@@ -175,7 +177,7 @@ export function useTutorial({
     if (
       run.current?.succeeded.length === 3 &&
       !run.current.error &&
-      ['intro', 'website', 'trigger', 'event', 'delay', 'popover', 'connect'].every(
+      ['intro', 'name', 'website', 'trigger', 'event', 'delay', 'popover', 'connect'].every(
         (s) => checks[s as keyof typeof checks],
       )
     ) {
@@ -253,7 +255,11 @@ export function useTutorial({
     back: () => go(sequence[Math.max(0, sequence.indexOf(step) - 1)]),
     resumeRepair: () => {
       setGate(null);
-      setRecord((p) => (p ? { ...p, status: 'in-progress', fingerprint } : newTutorial(workflow)));
+      setRecord((p) =>
+        p
+          ? { ...p, status: 'in-progress', fingerprint }
+          : newTutorial(workflow, t('tutorial.untitled')),
+      );
     },
   };
 }

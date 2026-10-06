@@ -76,6 +76,25 @@ describe('blank initialization', () => {
   });
 });
 describe('tutorial prerequisites and execution', () => {
+  it('accepts any nonempty custom name and rejects localized or host-supplied defaults', () => {
+    const w = createEmptyWorkflow();
+    const record = newTutorial(w, 'New experience');
+    for (const name of ['', '   ', 'New experience']) {
+      expect(requirements(record, { ...w, name }, '/demo-site.html').name).toBe(false);
+    }
+    for (const name of ['Autumn launch', 'Mi primer flujo', 'Welcome']) {
+      expect(requirements(record, { ...w, name }, '/demo-site.html').name).toBe(true);
+    }
+    expect(requirements(record, w, '/demo-site.html').intro).toBe(true);
+    for (const defaultName of ['Untitled workflow', 'Flujo sin título', 'New experience']) {
+      const localized = { ...w, name: defaultName };
+      const progress = newTutorial(localized, defaultName);
+      expect(requirements(progress, localized, '/demo-site.html').name).toBe(false);
+      expect(
+        missingPrerequisite({ ...progress, step: 'website' }, localized, '/demo-site.html'),
+      ).toBe('name');
+    }
+  });
   it('tracks generated IDs and preserves the exact catalog HTML without translated labels', () => {
     const { w, r } = exercise();
     const popoverDefault = catalog.find((n) => n.kind === 'popover')!.config.content;

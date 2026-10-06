@@ -56,7 +56,8 @@ export function TutorialPanel({
     c.gate || auxiliaryOpen
       ? ''
       : {
-          intro: 'name',
+          intro: '',
+          name: 'name',
           website: 'website',
           trigger: 'add-trigger',
           event: 'inspector',
@@ -161,7 +162,7 @@ export function TutorialPanel({
                   ? t('tutorial.website.custom', { url: options.websiteUrl })
                   : t(`tutorial.${step}.body`)}
               </p>
-              {step === 'intro' && !options.host?.nameControl && (
+              {step === 'name' && !options.host?.nameControl && (
                 <label>
                   {t('tutorial.workflowName')}
                   <input value={workflow.name} onChange={(e) => onRename(e.target.value)} />

@@ -16,7 +16,10 @@ export const tutorialEnglish = {
   'tutorial.ready': 'Ready to continue',
   'tutorial.pending': 'Complete the instruction to continue',
   'tutorial.intro.title': 'Build your first digital experience.',
-  'tutorial.intro.body': 'Name your workflow “My first workflow.” using the workflow name field.',
+  'tutorial.intro.body': 'You can exit at any time and keep your work. Select Continue to begin.',
+  'tutorial.name.title': 'Name your workflow',
+  'tutorial.name.body':
+    'Give your workflow a name using the workflow name field—for example, “My first workflow.”. Any nonempty name different from the default works.',
   'tutorial.intro.about':
     'A Digital Experience Platform (DXP) helps teams create, manage, and personalize experiences across digital channels. Visual DXP focuses on website experiences: you connect triggers and actions in a visual workflow to decide what visitors see and when.',
   'tutorial.intro.exercise':
