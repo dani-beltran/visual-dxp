@@ -173,6 +173,99 @@ const cases: {
 ];
 
 describe('configuration dependencies across node kinds', () => {
+  it.each([
+    ['fork', { condition: '#cta' }, { conditionType: 'device' }, { conditionValue: 'mobile' }],
+    [
+      'fork',
+      { conditionType: 'device', conditionValue: 'desktop' },
+      { conditionType: 'device', conditionValue: 'tablet' },
+      { conditionValue: 'mobile' },
+    ],
+    ['fork', { condition: '#cta' }, { conditionType: 'language' }, { conditionValue: 'es' }],
+    [
+      'fork',
+      { condition: '#cta' },
+      { conditionType: 'referrer' },
+      { conditionValue: 'example.com' },
+    ],
+    [
+      'fork',
+      { condition: '#cta' },
+      { conditionType: 'query-param' },
+      { conditionKey: 'source', conditionValue: '' },
+    ],
+    [
+      'fork',
+      { condition: '#cta' },
+      { conditionType: 'date-range', conditionStartDate: '2026-10-06' },
+      { conditionEndDate: '2026-10-07' },
+    ],
+    [
+      'fork',
+      { condition: '#cta' },
+      { conditionType: 'time-of-day', conditionStartTime: '09:00' },
+      { conditionEndTime: '17:00' },
+    ],
+    ['fork', { condition: '#cta' }, { conditionType: 'weekdays' }, { conditionWeekdays: [1, 2] }],
+    [
+      'fork',
+      { condition: '#cta' },
+      { conditionType: 'weekdays', conditionWeekdays: [1], conditionTimeZone: 'offset' },
+      { conditionTimeZoneOffset: 2 },
+    ],
+    [
+      'fork',
+      { condition: '#cta' },
+      { conditionType: 'data', conditionOperator: 'matches', conditionValue: '[' },
+      { conditionValue: '^hello' },
+    ],
+    ['dom', { selector: 'h1' }, { action: 'attribute' }, { attribute: 'title' }],
+    ['popover', { content: 'Hello' }, { contentType: 'iframe' }, { url: 'https://example.com' }],
+    ['popover', { content: 'Hello' }, { position: 'anchor' }, { selector: '#cta' }],
+    [
+      'trigger',
+      { event: 'page-load' },
+      { event: 'click', selector: '' },
+      { selector: '#shop-now' },
+    ],
+    ['http', { url: 'https://example.com' }, { headers: '{broken' }, { headers: '{}' }],
+    [
+      'cookie',
+      { cookieName: 'audience', cookieValue: '' },
+      { cookieName: 'bad name' },
+      { cookieName: 'audience' },
+    ],
+    [
+      'track-event',
+      { analyticsEventName: 'purchase' },
+      { analyticsEventName: 'bad name' },
+      { analyticsEventName: 'purchase' },
+    ],
+  ] satisfies [NodeKind, StepConfig, StepConfig, StepConfig][])(
+    'makes semantic %s failures recoverable for adds and updates: %j → %j',
+    (kind, before, invalid, repair) => {
+      const original = workflow(kind, before);
+      if (kind === 'trigger') original.edges = [];
+      for (const name of ['add_node', 'update_node']) {
+        const toolkit = createWorkflowTools(original, []);
+        const args = name === 'add_node' ? { kind } : { id: 'target' };
+        const result = JSON.parse(toolkit.invokePrivate(name, { ...args, config: invalid }));
+        expect(result).toMatchObject({
+          ok: false,
+          code: 'invalid_configuration',
+          retryable: true,
+          error: expect.stringContaining('Correct the node configuration'),
+        });
+        expect(toolkit.getOperations()).toEqual([]);
+        expect(toolkit.getWorkflow()).toEqual(original);
+        expect(
+          JSON.parse(toolkit.invokePrivate(name, { ...args, config: { ...invalid, ...repair } })),
+        ).toMatchObject({ ok: true });
+        expect(applyClient(original, toolkit.getOperations())).toEqual(toolkit.getWorkflow());
+      }
+    },
+  );
+
   it.each(cases)(
     '$name: stages once and replays identically on server and client',
     ({ kind, before, patch, after }) => {

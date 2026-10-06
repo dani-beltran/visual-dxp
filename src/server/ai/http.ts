@@ -38,6 +38,7 @@ type ChatHandler = (
   override?: AIRequestConfiguration,
   onText?: (text: string) => void,
   onReasoning?: (text: string) => void,
+  onWorkflowReady?: (response: AIChatResponse) => void,
 ) => Promise<AIChatResponse>;
 
 function json(status: number, body: unknown, correlation: Record<string, string> = {}): Response {
@@ -223,7 +224,11 @@ export async function handleChat(
       return json(429, { error: 'AI request limit reached. Try again in a minute.' });
     if (browserKey && JSON.stringify(input).includes(browserKey))
       return json(400, { error: 'Credentials must not appear in chat or workflow data.' });
-    const execute = (onText?: (text: string) => void, onReasoning?: (text: string) => void) =>
+    const execute = (
+      onText?: (text: string) => void,
+      onReasoning?: (text: string) => void,
+      onWorkflowReady?: (response: AIChatResponse) => void,
+    ) =>
       withWorkflow(
         input.workflow,
         async () => {
@@ -231,7 +236,7 @@ export async function handleChat(
           telemetryHeaders['X-DXP-Run-Id'] = ids.workflow_run_id;
           telemetryHeaders['X-DXP-Trace-Id'] = ids.trace_id;
           const result = await abortable(
-            () => handler(input, controller.signal, override, onText, onReasoning),
+            () => handler(input, controller.signal, override, onText, onReasoning, onWorkflowReady),
             controller.signal,
           );
           controller.signal.throwIfAborted();
@@ -260,6 +265,7 @@ export async function handleChat(
           const emitReasoning = safeTextEmitter(browserKey, (text) =>
             send({ type: 'reasoning', text }),
           );
+          let ready: AIChatResponse | undefined;
           void (async () => {
             try {
               const result = await execute(
@@ -271,6 +277,16 @@ export async function handleChat(
                   controller.signal.throwIfAborted();
                   emitReasoning(text);
                 },
+                (response) => {
+                  controller.signal.throwIfAborted();
+                  if (ready) throw new Error('Duplicate workflow batch.');
+                  if (browserKey && JSON.stringify(response).includes(browserKey))
+                    throw new Error('Unsafe response.');
+                  const parsed = parseAIChatResponse(response);
+                  applyWorkflowOperations(input.workflow, parsed.operations);
+                  ready = parsed;
+                  send({ type: 'workflow-ready', response: parsed });
+                },
               );
               controller.signal.throwIfAborted();
               if (browserKey && JSON.stringify(result).includes(browserKey))
@@ -279,6 +295,8 @@ export async function handleChat(
               applyWorkflowOperations(input.workflow, parsed.operations);
               emit('', true);
               emitReasoning('', true);
+              if (ready && JSON.stringify(ready.operations) !== JSON.stringify(parsed.operations))
+                throw new Error('Workflow changed after commitment.');
               send({ type: 'result', response: parsed });
             } catch (error) {
               const failure = controller.signal.aborted ? controller.signal.reason : error;

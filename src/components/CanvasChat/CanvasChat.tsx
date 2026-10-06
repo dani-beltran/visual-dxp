@@ -30,6 +30,7 @@ export interface CanvasChatProps {
     signal: AbortSignal,
     onText?: (text: string) => void,
     onReasoning?: (text: string) => void,
+    onApplied?: (count: number) => void,
   ) => Promise<{
     message: string;
     changeCount: number;
@@ -50,9 +51,12 @@ export function CanvasChat({
 }: CanvasChatProps) {
   const { t } = useBuilderI18n();
   const suggestions = [
-    t('canvasChat.addAWelcomePopoverAfterA2SecondDelay'),
-    t('canvasChat.explainThisWorkflow'),
-    t('canvasChat.changeTheSelectedStep'),
+    { prompt: t('canvasChat.addAWelcomePopoverAfterA2SecondDelay') },
+    { prompt: t('canvasChat.explainThisWorkflow') },
+    {
+      label: `${t('canvasChat.changeTheSelectedStep')}...`,
+      prompt: `${t('canvasChat.changeTheSelectedStep')} `,
+    },
   ];
   const [internalOpen, setInternalOpen] = useState(false);
   const open = controlledOpen ?? internalOpen;
@@ -134,8 +138,15 @@ export function CanvasChat({
     const assistantId = sequence.current++;
     let partial = '';
     let reasoning = '';
+    let changeCount = 0;
     const updatePartial = () => {
-      const message: Message = { role: 'assistant', content: partial, reasoning, id: assistantId };
+      const message: Message = {
+        role: 'assistant',
+        content: partial,
+        reasoning,
+        changeCount,
+        id: assistantId,
+      };
       setMessages((previous) => [...previous.filter((entry) => entry.id !== assistantId), message]);
     };
     try {
@@ -150,6 +161,11 @@ export function CanvasChat({
         (text) => {
           if (controller.signal.aborted || request.current !== controller) return;
           reasoning += text;
+          updatePartial();
+        },
+        (count) => {
+          if (controller.signal.aborted || request.current !== controller) return;
+          changeCount = count;
           updatePartial();
         },
       );
@@ -167,6 +183,14 @@ export function CanvasChat({
       ]);
     } catch (cause) {
       if (request.current !== controller) return;
+      if (changeCount) {
+        history.current = [
+          ...conversation,
+          { role: 'assistant', content: partial || t('canvasChat.explanationInterrupted') },
+        ];
+        setError(t('canvasChat.explanationInterrupted'));
+        return;
+      }
       setMessages((previous) => previous.filter((message) => message.id !== assistantId));
       setError(
         controller.signal.aborted
@@ -306,14 +330,14 @@ export function CanvasChat({
                     {suggestions.map((suggestion) => (
                       <button
                         type="button"
-                        key={suggestion}
+                        key={suggestion.prompt}
                         disabled={!configured}
                         onClick={() => {
-                          setDraft(suggestion);
+                          setDraft(suggestion.prompt);
                           input.current?.focus();
                         }}
                       >
-                        {suggestion}
+                        {suggestion.label ?? suggestion.prompt}
                         <ArrowUp size={13} aria-hidden="true" />
                       </button>
                     ))}

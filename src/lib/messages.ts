@@ -306,7 +306,9 @@ export const englishMessages = {
   'activityPanel.changesToThisWorkflowWillAppearHere': 'Changes to this workflow will appear here.',
   'canvasChat.addAWelcomePopoverAfterA2SecondDelay': 'Add a welcome popover after a 2-second delay',
   'canvasChat.explainThisWorkflow': 'Explain what this workflow does',
-  'canvasChat.changeTheSelectedStep': 'Change the selected step',
+  'canvasChat.changeTheSelectedStep': 'Change the selected nodes for',
+  'canvasChat.explanationInterrupted':
+    'Explanation stopped. Workflow changes were applied. Use Undo to revert them.',
   'canvasChat.stoppedNoChangesWereMade': 'Stopped. No changes were made.',
   'canvasChat.valueNoChangesWereMade': ({ value }: { value: string }) =>
     `${value} No changes were made.`,

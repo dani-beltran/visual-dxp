@@ -286,7 +286,10 @@ export function validateWorkflow(workflow: Workflow): ValidationIssue[] {
             break;
           case 'device':
             if (!['desktop', 'mobile'].includes(config.conditionValue ?? ''))
-              add('Choose desktop or mobile for the device condition.', node.id);
+              add(
+                'Set config.conditionValue to desktop or mobile for the device condition.',
+                node.id,
+              );
             break;
           case 'language':
             try {

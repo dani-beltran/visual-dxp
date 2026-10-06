@@ -133,16 +133,22 @@ it('streams deployment custom events before receiving the final state', async ()
   vi.stubGlobal('fetch', fetcher);
   const chunks: string[] = [];
   const reasoning: string[] = [];
+  const ready = vi.fn();
   const result = runRemoteAgent(
     input,
     new AbortController().signal,
     (text) => chunks.push(text),
     (text) => reasoning.push(text),
+    ready,
   );
   source.write('event: custom\ndata: {"type":"reasoning","text":"Checking."}\n\n');
+  source.write(
+    'event: custom\ndata: {"type":"workflow-ready","response":{"message":"Ready.","operations":[]}}\n\n',
+  );
   source.write('event: custom\ndata: {"type":"text","text":"Hola"}\n\n');
   await vi.waitFor(() => expect(chunks).toEqual(['Hola']));
   expect(reasoning).toEqual(['Checking.']);
+  expect(ready).toHaveBeenCalledWith({ message: 'Ready.', operations: [] });
   source.write('event: values\ndata: {"response":{"message":"Hola","operations":[]}}\n\n');
   source.close();
   expect((await result).message).toBe('Hola');
@@ -472,4 +478,88 @@ it('blocks credentials split across reasoning events in the client', async () =>
     ),
   ).rejects.toThrow('Unsafe');
   expect(summaries.join('')).toBe('Checking ');
+});
+
+it('delivers the validated workflow through HTTP before explanation completion', async () => {
+  let finish!: () => void;
+  const pending = new Promise<void>((resolve) => {
+    finish = resolve;
+  });
+  const batch = { message: 'Ready.', operations: [] };
+  const response = await handleChat(
+    new Request('https://builder.test/api/ai/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/x-ndjson' },
+      body: JSON.stringify(input),
+    }),
+    async (_input, _signal, _config, emit, _reasoning, ready) => {
+      ready?.(batch);
+      await pending;
+      emit?.('Explained.');
+      return { ...batch, message: 'Explained.' };
+    },
+  );
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue(response));
+  const ready = vi.fn();
+  const text = vi.fn();
+  let completed = false;
+  const result = requestAIChat(
+    { endpoint: 'https://builder.test/api/ai/chat' },
+    input,
+    undefined,
+    undefined,
+    text,
+    undefined,
+    ready,
+  ).then((value) => {
+    completed = true;
+    return value;
+  });
+  await vi.waitFor(() => expect(ready).toHaveBeenCalledWith(batch));
+  expect(completed).toBe(false);
+  expect(text).not.toHaveBeenCalled();
+  finish();
+  expect(await result).toEqual({ ...batch, message: 'Explained.' });
+});
+
+it.each(['invalid', 'duplicate', 'changed'])('rejects %s early workflow events', async (mode) => {
+  const batch = { message: 'Ready.', operations: [] };
+  const events =
+    mode === 'invalid'
+      ? [
+          {
+            type: 'workflow-ready',
+            response: { ...batch, operations: [{ type: 'remove_node', id: 'missing' }] },
+          },
+        ]
+      : [
+          { type: 'workflow-ready', response: batch },
+          mode === 'duplicate'
+            ? { type: 'workflow-ready', response: batch }
+            : {
+                type: 'result',
+                response: { ...batch, operations: [{ type: 'remove_node', id: 'missing' }] },
+              },
+        ];
+  vi.stubGlobal(
+    'fetch',
+    vi.fn().mockResolvedValue(
+      new Response(events.map((event) => JSON.stringify(event)).join('\n') + '\n', {
+        headers: { 'Content-Type': 'application/x-ndjson' },
+      }),
+    ),
+  );
+  const ready = vi.fn();
+  await expect(
+    requestAIChat(
+      { endpoint: 'https://builder.test/api/ai/chat' },
+      input,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      ready,
+    ),
+  ).rejects.toThrow();
+  expect(ready).toHaveBeenCalledTimes(mode === 'invalid' ? 0 : 1);
 });
