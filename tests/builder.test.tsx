@@ -74,6 +74,57 @@ async function click(target: HTMLElement) {
 }
 
 describe('builder and host boundary', () => {
+  it('offers node actions for the right-clicked node and suppresses other canvas menus', async () => {
+    const workflow = initialWorkflow();
+    workflow.nodes = ['first', 'second'].map((id, index) => ({
+      ...createNode('delay', { x: index * 300, y: 0 }),
+      id,
+    }));
+    workflow.edges = [{ id: 'connection', source: 'first', target: 'second' }];
+    await act(async () => root.render(<VisualDXPBuilder initialWorkflow={workflow} />));
+    await click(element('[data-id="first"]'));
+    const contextMenu = async (selector: string) => {
+      const event = new MouseEvent('contextmenu', {
+        bubbles: true,
+        cancelable: true,
+        clientX: 100,
+        clientY: 100,
+      });
+      await act(async () => {
+        element(selector).dispatchEvent(event);
+      });
+      expect(event.defaultPrevented).toBe(true);
+    };
+    await contextMenu('[data-id="second"]');
+    expect([...host.querySelectorAll('[role="menuitem"]')].map((item) => item.textContent)).toEqual(
+      ['Edit', 'Duplicate', 'Delete'],
+    );
+    await click(element('[role="menuitem"]'));
+    expect(document.activeElement).toBe(element('.dxp-inspector input'));
+    expect(element('[data-id="second"]').classList.contains('selected')).toBe(true);
+    expect(host.querySelector('[role="menu"]')).toBeNull();
+    await contextMenu('[data-id="second"]');
+    await click(element('[role="menuitem"]:nth-child(2)'));
+    expect(host.querySelectorAll('.react-flow__node')).toHaveLength(3);
+    await contextMenu('[data-id="second"]');
+    await click(element('[role="menuitem"]:nth-child(3)'));
+    expect(host.querySelector('[data-id="second"]')).toBeNull();
+    expect(host.querySelector('[data-id="first"]')).not.toBeNull();
+    expect(host.querySelector('[data-id="connection"]')).toBeNull();
+    await contextMenu('[data-id="first"]');
+    await contextMenu('.react-flow__pane');
+    expect(host.querySelector('[role="menu"]')).toBeNull();
+    await contextMenu('.dxp-node-library-panel');
+    expect(host.querySelector('[role="menu"]')).toBeNull();
+    await contextMenu('[data-id="first"]');
+    await act(async () => {
+      element('[role="menuitem"]').dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
+      );
+    });
+    expect(host.querySelector('[role="menu"]')).toBeNull();
+  });
+
   it('shows only one inspector when a connection and nodes are selected together', async () => {
     const workflow = initialWorkflow();
     workflow.nodes = ['first', 'second', 'third'].map((id, index) => ({
