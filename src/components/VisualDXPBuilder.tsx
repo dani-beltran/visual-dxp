@@ -1237,7 +1237,6 @@ function Builder({
           setSelectedEdgeId(null);
         }}
         onTest={api.testWorkflow}
-        onClosePreview={() => setModal(null)}
         onEditor={() => {
           setPicking(false);
           tutorial.host?.closeExport();

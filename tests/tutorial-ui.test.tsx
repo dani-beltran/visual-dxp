@@ -210,7 +210,7 @@ it('builds and tests through the real editor, then visits every feature without 
   await act(async () => vi.advanceTimersByTimeAsync(1));
   expect(step()).toBe('Your popover worked');
   expect(frame.contentDocument!.body.textContent).toContain('Good things start here.');
-  await click('Return to editor');
+  await click('Close preview');
   await click('Continue');
   vi.useRealTimers();
   const completed = tutorialFingerprint(latest);

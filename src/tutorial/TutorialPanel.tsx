@@ -21,7 +21,6 @@ export function TutorialPanel({
   onRename,
   onSelect,
   onTest,
-  onClosePreview,
   onEditor,
   onBackup,
 }: {
@@ -38,7 +37,6 @@ export function TutorialPanel({
   onRename: (name: string) => void;
   onSelect: (id: string) => void;
   onTest: () => void;
-  onClosePreview: () => void;
   onEditor: () => void;
   onBackup: () => void;
 }) {
@@ -178,11 +176,6 @@ export function TutorialPanel({
               {step === 'test' && !previewOpen && !options.host?.testControl && (
                 <button type="button" className="dxp-button" onClick={onTest}>
                   {t('tutorial.openTest')}
-                </button>
-              )}
-              {step === 'result' && previewOpen && (
-                <button type="button" className="dxp-button" onClick={onClosePreview}>
-                  {t('tutorial.closePreview')}
                 </button>
               )}
               {step === 'ai' && (
