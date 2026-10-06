@@ -40,8 +40,12 @@ export function useTutorial({
   const [record, setRecord] = useState<TutorialRecord | null>(() =>
     options ? readTutorial(key) : null,
   );
-  const [active, setActive] = useState(false);
-  const [gate, setGate] = useState<'reset' | 'mismatch' | null>(null);
+  const [active, setActive] = useState(record?.status === 'in-progress');
+  const [gate, setGate] = useState<'reset' | 'mismatch' | null>(() =>
+    record?.status === 'in-progress' && record.fingerprint !== tutorialFingerprint(workflow)
+      ? 'mismatch'
+      : null,
+  );
   const [error, setError] = useState(false);
   const run = useRef<TutorialRun | null>(null);
   const ref = useRef(record);
@@ -109,8 +113,8 @@ export function useTutorial({
     setActive(true);
     setError(false);
     if (record && record.status !== 'completed') {
+      setRecord({ ...record, status: 'in-progress', step });
       if (record.fingerprint !== fingerprint) setGate('mismatch');
-      else setRecord({ ...record, status: 'in-progress', step });
     } else if (workflow.nodes.length || workflow.edges.length) setGate('reset');
     else setRecord(newTutorial(workflow));
   }
@@ -125,11 +129,11 @@ export function useTutorial({
     setActive(false);
     setGate(null);
     run.current = null;
-    if (record && !gate)
+    if (record)
       setRecord({
         ...record,
         status: record.status === 'completed' ? 'completed' : 'dismissed',
-        fingerprint,
+        fingerprint: gate ? record.fingerprint : fingerprint,
       });
   }
   function created(node: WorkflowNode) {

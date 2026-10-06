@@ -167,11 +167,6 @@ export function CanvasHelp({
             tabIndex={0}
             aria-label={t('canvasHelp.canvasInstructions')}
           >
-            {onTutorial && (
-              <button type="button" className="dxp-button" onClick={onTutorial}>
-                {tutorialLabel}
-              </button>
-            )}
             {instructions.map(({ icon: Icon, title, text }) => (
               <div className="dxp-canvas-help-step" key={title}>
                 <Icon size={17} aria-hidden="true" />
@@ -201,6 +196,11 @@ export function CanvasHelp({
                 </dd>
               </div>
             </dl>
+            {onTutorial && (
+              <button type="button" className="dxp-button" onClick={onTutorial}>
+                {tutorialLabel}
+              </button>
+            )}
           </section>
         </section>
       )}

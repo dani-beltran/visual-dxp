@@ -1600,17 +1600,7 @@ function Builder({
                   <CanvasHelp
                     open={canvasAssistant === 'help'}
                     onOpenChange={toggleHelp}
-                    tutorialLabel={
-                      tutorial
-                        ? t(
-                            tutorialController.record?.status === 'completed'
-                              ? 'tutorial.replay'
-                              : tutorialController.record
-                                ? 'tutorial.resume'
-                                : 'tutorial.entry',
-                          )
-                        : undefined
-                    }
+                    tutorialLabel={tutorial ? t('tutorial.entry') : undefined}
                     onTutorial={
                       tutorial
                         ? () => {

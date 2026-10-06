@@ -6,9 +6,7 @@ export const tutorialEnglish = {
   'tutorial.selectSource': 'Select source node',
   'tutorial.chooseSource': 'Choose a source node',
   'tutorial.untitled': 'Untitled workflow',
-  'tutorial.entry': 'Interactive tutorial',
-  'tutorial.resume': 'Interactive tutorial · Resume',
-  'tutorial.replay': 'Interactive tutorial · Replay',
+  'tutorial.entry': 'Start interactive tutorial',
   'tutorial.progress': ({ current, total }: { current: number; total: number }) =>
     `Step ${current} of ${total}`,
   'tutorial.back': 'Back',

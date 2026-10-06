@@ -6,9 +6,7 @@ export const tutorialSpanish = {
   'tutorial.selectSource': 'Seleccionar nodo de origen',
   'tutorial.chooseSource': 'Elige un nodo de origen',
   'tutorial.untitled': 'Flujo sin título',
-  'tutorial.entry': 'Tutorial interactivo',
-  'tutorial.resume': 'Tutorial interactivo · Reanudar',
-  'tutorial.replay': 'Tutorial interactivo · Repetir',
+  'tutorial.entry': 'Iniciar tutorial interactivo',
   'tutorial.progress': ({ current, total }: { current: number; total: number }) =>
     `Paso ${current} de ${total}`,
   'tutorial.back': 'Atrás',

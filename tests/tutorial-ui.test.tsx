@@ -90,7 +90,11 @@ async function selectNode(id: string) {
 }
 async function launch() {
   await click('Canvas help');
-  await click('Interactive tutorial');
+  expect(
+    el('.dxp-canvas-help-shortcuts').compareDocumentPosition(button('Start interactive tutorial')) &
+      Node.DOCUMENT_POSITION_FOLLOWING,
+  ).toBeTruthy();
+  await click('Start interactive tutorial');
 }
 function step() {
   return el('.dxp-tutorial-heading h2').textContent;
@@ -113,7 +117,7 @@ it('keeps the empty state unchanged, and the reusable builder tutorial is opt-in
     'Every experience starts somewhere.Add a trigger from the library to begin your journey.Add your first trigger',
   );
   await click('Canvas help');
-  expect(host.textContent).not.toContain('Interactive tutorial');
+  expect(host.textContent).not.toContain('Start interactive tutorial');
 });
 
 it('builds and tests through the real editor, then visits every feature without modifying the workflow', async () => {
@@ -204,7 +208,55 @@ it('builds and tests through the real editor, then visits every feature without 
   );
 });
 
-it('exits, resumes after reload only on request, detects mismatches and cancels reset without edits', async () => {
+it('resumes active progress after reload and keeps an explicitly closed tutorial closed', async () => {
+  vi.useFakeTimers();
+  await render();
+  expect(host.querySelector('.dxp-tutorial')).toBeNull();
+  await launch();
+  await input('[aria-label="Workflow name"]', 'My first workflow.');
+  await click('Continue');
+  await act(async () => vi.advanceTimersByTimeAsync(1000));
+  vi.useRealTimers();
+  const before = tutorialFingerprint(latest);
+  await act(async () => root.unmount());
+  root = createRoot(host);
+  await render();
+  expect(step()).toBe('Choose the demo website');
+  expect(tutorialFingerprint(latest)).toBe(before);
+  await click('Exit');
+  await act(async () => root.unmount());
+  root = createRoot(host);
+  await render();
+  expect(host.querySelector('.dxp-tutorial')).toBeNull();
+});
+
+it('opens recovery for changed active workflows and remembers Cancel without accepting the mismatch', async () => {
+  const original = newTutorial(defaultWorkflow);
+  const changed = { ...defaultWorkflow, nodes: [createNode('note')] };
+  localStorage.setItem(progressKey, JSON.stringify(original));
+  localStorage.setItem(key, JSON.stringify(changed));
+  await render();
+  expect(step()).toBe('Review saved tutorial progress');
+  expect(latest).toMatchObject(changed);
+  await click('Cancel');
+  expect(JSON.parse(localStorage.getItem(progressKey)!)).toMatchObject({
+    status: 'dismissed',
+    fingerprint: original.fingerprint,
+  });
+  await act(async () => root.unmount());
+  root = createRoot(host);
+  await render();
+  expect(host.querySelector('.dxp-tutorial')).toBeNull();
+  await launch();
+  expect(step()).toBe('Review saved tutorial progress');
+  await act(async () => root.unmount());
+  root = createRoot(host);
+  await render();
+  expect(step()).toBe('Review saved tutorial progress');
+  expect(latest).toMatchObject(changed);
+});
+
+it('keeps dismissed and completed tutorials closed, supports manual resume and cancels reset without edits', async () => {
   await render();
   await launch();
   await input('[aria-label="Workflow name"]', 'My first workflow.');
@@ -218,7 +270,7 @@ it('exits, resumes after reload only on request, detects mismatches and cancels 
   await render();
   expect(host.querySelector('.dxp-tutorial')).toBeNull();
   await click('Canvas help');
-  await click('Interactive tutorial · Resume');
+  await click('Start interactive tutorial');
   expect(step()).toBe('Choose the demo website');
   await click('Exit');
   const changed = { ...latest, nodes: [createNode('note')] };
@@ -227,7 +279,7 @@ it('exits, resumes after reload only on request, detects mismatches and cancels 
   root = createRoot(host);
   await render();
   await click('Canvas help');
-  await click('Interactive tutorial · Resume');
+  await click('Start interactive tutorial');
   expect(step()).toBe('Review saved tutorial progress');
   await click('Resume and repair');
   expect(latest.nodes).toHaveLength(1);
@@ -237,8 +289,9 @@ it('exits, resumes after reload only on request, detects mismatches and cancels 
   await act(async () => root.unmount());
   root = createRoot(host);
   await render();
+  expect(host.querySelector('.dxp-tutorial')).toBeNull();
   await click('Canvas help');
-  await click('Interactive tutorial · Replay');
+  await click('Start interactive tutorial');
   expect(step()).toBe('Start a new tutorial?');
   await click('Cancel');
   expect(latest).toMatchObject(changed);
@@ -265,7 +318,7 @@ it('adapts optional capabilities and keeps progress functional without storage',
   await click('Continue');
   await click('Exit');
   await click('Canvas help');
-  await click('Interactive tutorial · Resume');
+  await click('Start interactive tutorial');
   expect(step()).toBe('Choose the demo website');
 });
 
@@ -299,7 +352,7 @@ it('rejects old preview events, reports active execution errors, and allows a su
   const { r } = savedExercise();
   await render();
   await click('Canvas help');
-  await click('Interactive tutorial · Resume');
+  await click('Start interactive tutorial');
   await click('Test workflow');
   const frame = el<HTMLIFrameElement>('iframe[title="Workflow preview website"]');
   connectPreview(frame);
@@ -350,7 +403,7 @@ it('gives recovery guidance when the demo cannot load, without completing the te
   vi.mocked(fetch).mockRejectedValue(new Error('Unavailable'));
   await render();
   await click('Canvas help');
-  await click('Interactive tutorial · Resume');
+  await click('Start interactive tutorial');
   await click('Test workflow');
   expect(step()).toBe('Test your workflow');
   expect(button('Run workflow').disabled).toBe(true);
@@ -363,7 +416,7 @@ it('recovers from real deletion and Undo and keeps Back independent of history',
   const { w } = savedExercise();
   await render();
   await click('Canvas help');
-  await click('Interactive tutorial · Resume');
+  await click('Start interactive tutorial');
   await selectNode(w.nodes[1].id);
   await click('Delete');
   expect(host.textContent).toContain('A prerequisite changed.');
@@ -384,7 +437,7 @@ it('requires explicit reset confirmation and can Undo the reset', async () => {
   localStorage.setItem(progressKey, JSON.stringify({ ...r, status: 'completed' }));
   await render();
   await click('Canvas help');
-  await click('Interactive tutorial · Replay');
+  await click('Start interactive tutorial');
   expect(tutorialFingerprint(latest)).toBe(tutorialFingerprint(w));
   await click('Save workflow JSON');
   expect(el('.dxp-export-modal .dxp-tutorial')).toBeTruthy();
