@@ -67,7 +67,7 @@ export const tutorialEnglish = {
     'Open Canvas Help to inspect guidance on adding, arranging, configuring and connecting nodes, canvas controls, and keyboard shortcuts. Return here any time to resume or replay this interactive tutorial.',
   'tutorial.export.title': 'Discover workflow export',
   'tutorial.export.body':
-    'Open Export workflow. JavaScript exports a standalone script for your target website; Workflow JSON saves an editable definition. Copy and Download are available for export. Inspect the options, then close the dialog; no download is required. The demo is for practice: real deployment requires configuring and validating your intended website target.',
+    'Open Export workflow. JavaScript exports a standalone script for your target website; Workflow JSON saves an editable definition. Copy and Download are available for export. Inspect the options, then close the dialog; no download is required. The demo is for practice: real deployment requires configuring and validating your intended website target. Close export to continue.',
   'tutorial.presets.title': 'Discover Presets',
   'tutorial.presets.body':
     'Open Presets. Presets are editable starting points for common website experiences. Applying a preset replaces the workflow name, nodes and connections as an undoable edit, keeping the website target.',

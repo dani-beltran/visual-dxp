@@ -67,7 +67,7 @@ export const tutorialSpanish = {
     'Abre Ayuda del lienzo para consultar cómo añadir, organizar, configurar y conectar nodos, los controles del lienzo y los atajos de teclado. Vuelve aquí para reanudar o repetir este tutorial.',
   'tutorial.export.title': 'Descubre la exportación',
   'tutorial.export.body':
-    'Abre Exportar flujo. JavaScript exporta un script independiente para tu sitio; JSON del flujo de trabajo guarda una definición editable. Puedes usar Copiar y Descargar. Revisa las opciones y cierra el diálogo; no hace falta descargar. La demostración es para practicar: publicar requiere configurar y validar el sitio de destino real.',
+    'Abre Exportar flujo. JavaScript exporta un script independiente para tu sitio; JSON del flujo de trabajo guarda una definición editable. Puedes usar Copiar y Descargar. Revisa las opciones y cierra el diálogo; no hace falta descargar. La demostración es para practicar: publicar requiere configurar y validar el sitio de destino real. Cierra la exportación para continuar.',
   'tutorial.presets.title': 'Descubre las plantillas',
   'tutorial.presets.body':
     'Abre Plantillas. Son puntos de partida editables para experiencias web habituales. Aplicar una plantilla sustituye el nombre, los nodos y las conexiones mediante un cambio reversible y conserva el sitio de destino.',
