@@ -1,0 +1,119 @@
+.dxp-tutorial {
+  position: fixed;
+  z-index: 210;
+  width: 360px;
+  max-width: calc(100vw - 32px);
+  bottom: 24px;
+  right: 24px;
+  color: var(--dxp-text);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.dxp-tutorial-surface {
+  max-height: min(520px, calc(100dvh - 48px));
+  overflow: auto;
+  padding: 16px;
+  border: 1px solid var(--dxp-primary-border);
+  border-radius: 12px;
+  background: var(--dxp-surface);
+  box-shadow: 0 12px 40px rgb(0 0 0 / 20%);
+}
+.dxp-tutorial-arrow {
+  position: absolute;
+  pointer-events: none;
+  overflow: visible;
+}
+.dxp-tutorial-arrow path {
+  fill: var(--dxp-surface);
+  stroke: var(--dxp-primary-border);
+  stroke-linejoin: round;
+}
+.dxp-tutorial-heading,
+.dxp-tutorial-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.dxp-tutorial-heading {
+  display: grid;
+  grid-template-columns: 1fr auto;
+}
+.dxp-tutorial-heading h2 {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0;
+  grid-column: 1 / -1;
+}
+.dxp-tutorial-heading > span,
+.dxp-tutorial-actions > span[role='status'] {
+  color: var(--dxp-muted);
+  font-size: 11px;
+}
+.dxp-tutorial-actions {
+  margin-top: 10px;
+}
+.dxp-tutorial-actions > span[role='status'] {
+  margin-inline-end: auto;
+}
+.dxp-tutorial-content {
+  min-width: 0;
+}
+.dxp-tutorial p {
+  margin: 8px 0;
+}
+.dxp-tutorial blockquote {
+  margin: 8px 0;
+  padding-inline-start: 12px;
+  border-inline-start: 2px solid var(--dxp-primary-border);
+}
+.dxp-tutorial summary {
+  cursor: pointer;
+  color: var(--dxp-primary-color);
+}
+.dxp-tutorial-path {
+  font-weight: 600;
+}
+.dxp-tutorial input {
+  padding: 6px;
+  border: 1px solid var(--dxp-line);
+  border-radius: 5px;
+  background: var(--dxp-canvas);
+  color: var(--dxp-text);
+}
+.dxp-tutorial-target {
+  outline: 2px solid var(--dxp-focus, #26825c);
+  outline-offset: 3px;
+}
+.dxp-tutorial :focus-visible {
+  outline: 2px solid var(--dxp-focus, #26825c);
+  outline-offset: 3px;
+}
+.dxp-tutorial-continue {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+  position: relative;
+  display: inline-flex;
+}
+.dxp-tutorial-tooltip {
+  display: none;
+  position: absolute;
+  bottom: calc(100% + 8px);
+  right: 0;
+  width: max-content;
+  max-width: 240px;
+  padding: 6px 10px;
+  border: 1px solid var(--dxp-line);
+  border-radius: 6px;
+  background: var(--dxp-surface);
+  color: var(--dxp-text);
+  box-shadow: 0 4px 12px rgb(0 0 0 / 15%);
+  font-size: 11px;
+  pointer-events: none;
+}
+.dxp-tutorial-continue:hover .dxp-tutorial-tooltip,
+.dxp-tutorial-continue:focus-visible .dxp-tutorial-tooltip {
+  display: block;
+}

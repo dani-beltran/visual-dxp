@@ -1,3 +1,4 @@
+import { placePopover } from '../popoverPosition';
 import { createAnalyticsTools } from '../analytics';
 import { buildCookie } from '../cookies';
 import { createDataTools } from '../data';
@@ -36,6 +37,7 @@ const runtimeModules = {
   getTimeRange,
   createPopoverElements,
   showPopover,
+  placePopover,
   startTriggers,
   startBehaviorTrigger,
   startZoomTrigger,

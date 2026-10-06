@@ -190,6 +190,7 @@ export function CanvasChat({
       <button
         ref={trigger}
         type="button"
+        data-tutorial="chat"
         className={`dxp-canvas-help-button dxp-ai-button ${open ? 'active' : ''}`}
         aria-label={t('canvasChat.aiChat')}
         title={t('canvasChat.aiChat')}

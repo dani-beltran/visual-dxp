@@ -9,6 +9,7 @@ export default function Demo() {
   const [activityStore] = useState(() => createLocalStorageActivityStore('visual-dxp-activity-v1'));
   return (
     <App
+      tutorial={{ websiteUrl: '/demo-site.html' }}
       presets={commonDXPPresets}
       activityStore={activityStore}
       persistenceKey="visual-dxp-workflow-v1"

@@ -590,6 +590,11 @@
   line-height: 1.65;
   color: var(--dxp-muted);
 }
+.dxp-canvas-help-tutorial {
+  display: flex;
+  justify-content: flex-end;
+  margin-block: 16px;
+}
 .dxp-canvas-help-shortcuts {
   margin: 0;
   border-top: 1px solid var(--dxp-line);

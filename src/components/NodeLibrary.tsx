@@ -32,6 +32,7 @@ export function NodeLibrary({ onAdd }: { onAdd: (kind: NodeKind) => void }) {
           <button
             type="button"
             className={`dxp-node-library-button dxp-color-${color}`}
+            data-tutorial={`add-${kind}`}
             key={kind}
             aria-label={t('nodeLibrary.addLabel', { label: String(label) })}
             aria-describedby={activeTooltip === kind ? `${tooltipPrefix}-${kind}` : undefined}

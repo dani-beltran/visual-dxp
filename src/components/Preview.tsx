@@ -10,11 +10,12 @@ import {
   Square,
   X,
 } from 'lucide-react';
-import { useCallback, useEffect, useId, useState } from 'react';
+import type { ReactNode } from 'react';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import type { ConnectionPreview } from '../lib/connections';
 import { validateWorkflow } from '../lib/export';
 import { useBuilderI18n } from '../lib/i18nContext';
-import type { RunLog, Workflow } from '../lib/types';
+import type { PreviewExecutionEvent, RunLog, Workflow } from '../lib/types';
 import { useDialogFocus } from '../lib/useDialogFocus';
 import { IsolatedPreview } from './IsolatedPreview';
 
@@ -32,7 +33,11 @@ export function Preview({
   onLog,
   onConnectionPreview,
   onPreviewStart,
+  guidance,
+  onExecution,
 }: {
+  guidance?: ReactNode;
+  onExecution?: (event: PreviewExecutionEvent) => void;
   workflow: Workflow;
   onConnectionPreview?: (edgeId: string, preview: ConnectionPreview) => void;
   onPreviewStart?: () => void;
@@ -51,6 +56,7 @@ export function Preview({
   const [running, setRunning] = useState(false);
   const [logs, setLogs] = useState<RunLog[]>([]);
   const [error, setError] = useState('');
+  const activeRun = useRef('');
   const [key, setKey] = useState(0);
   const [revision, setRevision] = useState(0);
   const stop = useCallback(() => setRunning(false), []);
@@ -67,6 +73,7 @@ export function Preview({
     const issues = validateWorkflow(workflow, t);
     if (issues.length) {
       setError(issues.map((issue) => issue.message).join(' '));
+      onExecution?.({ type: 'error', runId: activeRun.current });
       return;
     }
     setRevision((value) => value + 1);
@@ -158,6 +165,7 @@ export function Preview({
           <button
             type="button"
             className="dxp-button dxp-button-primary"
+            data-tutorial="run"
             onClick={run}
             disabled={!ready}
           >
@@ -165,6 +173,7 @@ export function Preview({
             {running ? t('preview.restartWorkflow') : t('preview.runWorkflow')}
           </button>
         </div>
+        {guidance}
         <div className="dxp-preview-body">
           <IsolatedPreview
             key={`${workflow.websiteUrl}-${key}`}
@@ -178,7 +187,16 @@ export function Preview({
               setReady(value);
               if (!value) setRunning(false);
             }}
-            onError={setError}
+            onExecution={(event) => {
+              if (event.type === 'start') activeRun.current = event.runId;
+              if (event.type === 'stop' && activeRun.current === event.runId)
+                activeRun.current = '';
+              onExecution?.(event);
+            }}
+            onError={(message) => {
+              setError(message);
+              if (message) onExecution?.({ type: 'error', runId: activeRun.current });
+            }}
             onClose={onClose}
             onConnectionPreview={onConnectionPreview}
             onLog={(log) => {
@@ -187,7 +205,7 @@ export function Preview({
               onLog(log);
             }}
           />
-          <aside className="dxp-run-log">
+          <aside className="dxp-run-log" data-tutorial="log">
             <h3>
               {t('preview.executionLog')}{' '}
               <span>{logs.filter((x) => x.status === 'success').length}</span>

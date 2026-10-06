@@ -5,7 +5,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from '../src/app';
 import { VisualDXPBuilder } from '../src/components/VisualDXPBuilder';
 import { createActivityStore } from '../src/lib/activity';
-import { defaultWorkflow } from '../src/lib/catalog';
+import { welcomeJourneyPreset } from '../src/presets/welcome-journey';
+
+const exampleWorkflow: Workflow = welcomeJourneyPreset.workflow;
+
 import type { Workflow } from '../src/lib/types';
 
 let host: HTMLDivElement;
@@ -91,7 +94,7 @@ async function renderApp(websiteUrl = '/demo-site.html') {
   await act(async () =>
     root.render(
       <App
-        initialWorkflow={{ ...defaultWorkflow, websiteUrl }}
+        initialWorkflow={{ ...exampleWorkflow, websiteUrl }}
         onExport={onExport}
         onChange={onChange}
         activityStore={store}
@@ -231,7 +234,7 @@ describe('host export flow', () => {
     const { onExport, store } = await renderApp('https://example.com/');
     await click('Export workflow');
     await click(tab);
-    await importWorkflow({ ...defaultWorkflow, websiteUrl: '/demo-site.html#invalidated' });
+    await importWorkflow({ ...exampleWorkflow, websiteUrl: '/demo-site.html#invalidated' });
     await click(action);
     expect(host.querySelector('[aria-label="Export workflow"]')).toBeNull();
     expect(host.querySelector('[aria-label="Target website"]')).not.toBeNull();
@@ -241,7 +244,7 @@ describe('host export flow', () => {
     const { onExport, store } = await renderApp('https://example.com/');
     await click('Export workflow');
     await importWorkflow({
-      ...defaultWorkflow,
+      ...exampleWorkflow,
       websiteUrl: 'https://example.com/',
       nodes: [],
       edges: [],
@@ -254,7 +257,7 @@ describe('host export flow', () => {
 
 describe('builder targeting persistence', () => {
   it('defaults old workflows to false and saves, undoes, redoes, restores and imports scope', async () => {
-    const old = { ...defaultWorkflow };
+    const old = { ...exampleWorkflow };
     delete old.includeSubpages;
     localStorage.setItem(persistenceKey, JSON.stringify(old));
     const onChange = vi.fn<(workflow: Workflow) => void>();
@@ -311,9 +314,9 @@ describe('builder targeting persistence', () => {
     await act(async () => root.render(null));
     await render();
     expect(onChange.mock.lastCall?.[0].includeSubpages).toBe(true);
-    await importWorkflow({ ...defaultWorkflow, includeSubpages: false });
+    await importWorkflow({ ...exampleWorkflow, includeSubpages: false });
     expect(onChange.mock.lastCall?.[0].includeSubpages).toBe(false);
-    await importWorkflow({ ...defaultWorkflow, includeSubpages: true });
+    await importWorkflow({ ...exampleWorkflow, includeSubpages: true });
     expect(onChange.mock.lastCall?.[0].includeSubpages).toBe(true);
     await importWorkflow(old);
     expect(onChange.mock.lastCall?.[0].includeSubpages).toBe(false);

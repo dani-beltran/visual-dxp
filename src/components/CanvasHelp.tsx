@@ -2,6 +2,7 @@ import {
   Braces,
   CircleHelp,
   Frame,
+  GraduationCap,
   Hand,
   MousePointer2,
   Plus,
@@ -15,7 +16,11 @@ import { useBuilderI18n } from '../lib/i18nContext';
 export function CanvasHelp({
   open: controlledOpen,
   onOpenChange,
+  onTutorial,
+  tutorialLabel,
 }: {
+  onTutorial?: () => void;
+  tutorialLabel?: string;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
 } = {}) {
@@ -124,6 +129,7 @@ export function CanvasHelp({
       }}
     >
       <button
+        data-tutorial="help"
         ref={button}
         type="button"
         className={`dxp-canvas-help-button ${open ? 'active' : ''}`}
@@ -171,6 +177,14 @@ export function CanvasHelp({
                 </div>
               </div>
             ))}
+            {onTutorial && (
+              <div className="dxp-canvas-help-tutorial">
+                <button type="button" className="dxp-button" onClick={onTutorial}>
+                  <GraduationCap size={16} aria-hidden="true" />
+                  {tutorialLabel}
+                </button>
+              </div>
+            )}
             <dl className="dxp-canvas-help-shortcuts">
               <div>
                 <dt>{t('common.undo')}</dt>

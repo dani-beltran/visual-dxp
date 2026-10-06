@@ -1,3 +1,4 @@
+import type { placePopover } from '../popoverPosition';
 import type { createAnalyticsTools } from '../analytics';
 import type { buildCookie } from '../cookies';
 import type { createDataTools, DataSelection } from '../data';
@@ -26,6 +27,7 @@ interface ExecutionModules {
   getTimeRange: typeof getTimeRange;
   createPopoverElements: typeof createPopoverElements;
   showPopover: typeof showPopover;
+  placePopover: typeof placePopover;
 }
 
 export function createExecution(
@@ -42,6 +44,7 @@ export function createExecution(
     getTimeRange,
     createPopoverElements,
     showPopover,
+    placePopover,
     createDataTools,
     createDataTransformTools,
   }: ExecutionModules,
@@ -285,7 +288,7 @@ export function createExecution(
               throw new Error('Repeat count must be an integer from 1 to 1,000.');
             break;
           case 'popover':
-            showPopover(node, context, createPopoverElements);
+            showPopover(node, context, createPopoverElements, placePopover);
             break;
           default:
             throw new Error(`Unknown step type: ${String(node.data.kind)}.`);

@@ -213,6 +213,7 @@ export function NodeInspector({
   return (
     <aside
       className="dxp-inspector"
+      data-tutorial="inspector"
       aria-label={t('nodeInspector.labelConfiguration', { label: String(metadata.label) })}
     >
       <header className="dxp-inspector-header">

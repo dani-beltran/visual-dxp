@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import * as frontend from '../src/lib/ai';
-import { defaultWorkflow } from '../src/lib/catalog';
+import { welcomeJourneyPreset } from '../src/presets/welcome-journey';
+
+const exampleWorkflow: Workflow = welcomeJourneyPreset.workflow;
+
 import { exportWorkflow, validateWorkflow } from '../src/lib/export';
 import { isWorkflow } from '../src/lib/serialization';
 import type { Workflow } from '../src/lib/types';
@@ -11,7 +14,7 @@ describe('target scope across JSON and AI boundaries', () => {
   it.each([undefined, false, true])(
     'preserves includeSubpages=%s through request and response parsing',
     (includeSubpages) => {
-      const workflow = { ...defaultWorkflow, includeSubpages };
+      const workflow = { ...exampleWorkflow, includeSubpages };
       const restored = JSON.parse(JSON.stringify(workflow));
       expect(isWorkflow(restored)).toBe(true);
       expect(restored.includeSubpages ?? false).toBe(includeSubpages ?? false);
@@ -46,7 +49,7 @@ describe('target scope across JSON and AI boundaries', () => {
   it.each([null, 'true', 1, {}, []])(
     'rejects an invalid scope value %j at every boundary',
     (includeSubpages) => {
-      const workflow = { ...defaultWorkflow, includeSubpages } as unknown as Workflow;
+      const workflow = { ...exampleWorkflow, includeSubpages } as unknown as Workflow;
       expect(isWorkflow(workflow)).toBe(false);
       for (const protocol of [frontend, server])
         expect(() =>
@@ -65,7 +68,7 @@ describe('target scope across JSON and AI boundaries', () => {
     },
   );
   it('includes scope in AI stale-response fingerprints, with old workflows equivalent to false', () => {
-    const old = { ...defaultWorkflow };
+    const old = { ...exampleWorkflow };
     delete old.includeSubpages;
     expect(frontend.workflowFingerprint(old)).toBe(
       frontend.workflowFingerprint({ ...old, includeSubpages: false }),
@@ -75,14 +78,14 @@ describe('target scope across JSON and AI boundaries', () => {
     );
   });
   it('requires an explicit base for relative exports outside a browser', () => {
-    const workflow = { ...defaultWorkflow, websiteUrl: '/products' };
+    const workflow = { ...exampleWorkflow, websiteUrl: '/products' };
     expect(() => exportWorkflow(workflow)).toThrow(/baseUrl/);
     expect(exportWorkflow(workflow, { baseUrl: 'https://example.com/editor' })).toContain(
       'https://example.com/products',
     );
-    expect(() => exportWorkflow(defaultWorkflow)).toThrow(/Configure your website URL/);
+    expect(() => exportWorkflow(exampleWorkflow)).toThrow(/Configure your website URL/);
     expect(() =>
-      exportWorkflow(defaultWorkflow, { baseUrl: 'https://editor.example.com' }),
+      exportWorkflow(exampleWorkflow, { baseUrl: 'https://editor.example.com' }),
     ).toThrow(/preview only/);
     expect(() =>
       exportWorkflow({ ...workflow, websiteUrl: 'https://external.example/demo-site.html' }),

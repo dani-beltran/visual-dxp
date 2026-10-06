@@ -2,6 +2,20 @@
 
 A Next.js App Router application and embeddable React 19 workflow editor powered by React Flow. Build website experiences visually, pick elements inside an iframe, test the journey, and export a standalone JavaScript file.
 
+## First workflow and interactive tutorial
+
+Fresh sessions start with an empty canvas named **Untitled workflow** (localized in the demo), with no website target. Valid saved workflows still take precedence over an explicit `initialWorkflow`; missing or invalid saved data falls back to that input, then to the blank default. Existing Welcome Journey workflows are never migrated or cleared. Welcome Journey remains in Presets.
+
+In the demo, the tutorial starts on page load unless it was completed or dismissed. Open **Canvas Help → Start interactive tutorial** to resume or replay it. The introduction and workflow naming are separate steps; any nonempty name different from the default is accepted. The optional guide uses the real editor to build **page load → 1000 ms delay → Popover**, retaining the catalog's default HTML. It tests on `/demo-site.html`, confirms the actual preview run, then introduces AI chat, Canvas Help, export and Presets. No API credentials, AI request, download, website installation or preset application is required.
+
+Tutorial guidance uses floating popovers anchored to highlighted controls, with a bottom-right fallback when no control is available. Placement shares the workflow runtime’s positioning logic and follows scrolling and resizing.
+
+Exit keeps your work. An active tutorial resumes automatically after reload, with a recovery choice if the associated workflow has changed. Completed tutorials and tutorials closed with Exit or Cancel stay closed until you launch them again. Progress is stored separately at `visual-dxp-workflow-v1:tutorial:v1`; recovery checks the associated workflow and required node IDs. Starting on a nonempty canvas or replaying asks before resetting it and offers JSON export first. Reset is undoable; cancel leaves the workflow intact. Storage failures leave the guide usable in memory.
+
+Embedded builders do not enable the tutorial by default. Opt in with `tutorial={{ websiteUrl: '/demo-site.html' }}` and serve the bundled practice page at that path. Without application header controls, the guide offers a workflow-name field and a Test workflow action. AI and Presets steps appear only when those editor capabilities are supplied; export discovery needs the optional `tutorial.host` adapter. Hosts can provide `storageKey` for a distinct progress scope; otherwise the key derives from `persistenceKey`, or progress stays in memory when neither is supplied. Host controls use `data-tutorial="name"`, `"test"`, and `"export"` for highlights; the host adapter supplies a shared DOM `root` and its export dialog container so guidance stays within its focus context.
+
+Connect nodes by dragging from an output socket to an input socket. Back revisits tutorial guidance without undoing edits.
+
 ## Common DXP presets
 
 Import `commonDXPPresets` from `visual-dxp` and pass it as `<VisualDXPBuilder presets={commonDXPPresets} />` to enable Blank followed by fourteen editable examples, ordered from basic help to segmented onboarding. The demo opts in explicitly; builders without presets still have no Presets tab. See the [preset reference and setup guide](docs/common-dxp-presets.md) for every scenario, selectors, HTTP placeholders, CSS, and runtime limits.
@@ -107,7 +121,8 @@ The builder owns the toolbar, canvas, inspector, activity view, footer, element 
 | -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `i18n` | Optional `{ locale, direction, messages }`. The host supplies languages and translations; missing messages fall back to English. See [Internationalization](docs/i18n.md). |
 | `presets`            | Optional `readonly WorkflowPreset[]`. A nonempty array enables Presets; omitted or empty hides the tab and panel. |
-| `initialWorkflow`    | Initial workflow; defaults to the included welcome journey. Changes after mounting do not replace editor state; use a React `key` to open another workflow.       |
+| `tutorial` | Optional tutorial configuration: a host-served practice `websiteUrl`, optional scoped `storageKey`, and optional host controls. Omitted disables the entry and guide. |
+| `initialWorkflow`    | Initial workflow; defaults to a localized, empty workflow with no website URL. Changes after mounting do not replace editor state; use a React `key` to open another workflow.       |
 | `onChange`           | Receives the initial or restored workflow and all subsequent edits as a JSON-serializable `Workflow` object. Use it for persistence or your own export dialog.                                                 |
 | `onReady`            | Receives a `VisualDXPBuilderApi` with `getWorkflow()`, `configureWebsite(options?)`, `testWorkflow()`, `renameWorkflow(name)`, `fitView()`, and `flushActivity()`. Receives `null` on cleanup; use a stable callback such as a state setter.                                                                                     |
 | `persistenceKey`     | Optional localStorage key. A valid saved workflow takes precedence over `initialWorkflow`. Omit to disable browser persistence.                                   |
@@ -211,7 +226,7 @@ The palette derives hover colors, borders, backgrounds, shadows, and canvas colo
 
 Call `builder.testWorkflow()` from your own button to open the built-in preview. Use `exportWorkflow(workflow)` to generate JavaScript in your host. For JSON, call `validateExportTarget(workflow)` first, then serialize the workflow with its returned absolute URL and `includeSubpages: workflow.includeSubpages ?? false`. Export UI and the `onExport` callback now belong to the demo `App`, not `VisualDXPBuilder`. `renameWorkflow(name)` participates in undo/redo and activity; `flushActivity()` publishes pending edits when a host input loses focus.
 
-The default journey points to `/demo-site.html`. To use it in another application, copy `dist/demo-site.html` to the application's public assets, or provide your own `initialWorkflow.websiteUrl`.
+The default workflow has no website target. The demo tutorial uses `/demo-site.html`; to offer it in another application, copy `dist/demo-site.html` to the application's public assets and opt into the tutorial. Otherwise configure your own target through the editor or `initialWorkflow.websiteUrl`.
 
 ## URL targeting and export requirements
 

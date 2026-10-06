@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ConnectionPreview } from '../lib/connections';
 import { useBuilderI18n } from '../lib/i18nContext';
 import { PREVIEW_PROTOCOL, previewBridgeSource } from '../lib/previewBridge';
-import type { RunLog, Workflow } from '../lib/types';
+import type { PreviewExecutionEvent, RunLog, Workflow } from '../lib/types';
 
 /** An opaque sandbox origin cannot access the builder's DOM, cookies or localStorage. */
 export function IsolatedPreview({
@@ -17,7 +17,9 @@ export function IsolatedPreview({
   onConnectionPreview,
   onError,
   onClose,
+  onExecution,
 }: {
+  onExecution?: (event: PreviewExecutionEvent) => void;
   url: string;
   searchParams?: string;
   workflow: Workflow;
@@ -37,8 +39,8 @@ export function IsolatedPreview({
   const runId = useRef('');
   const channel = useRef('');
   const reconnect = useRef<() => void>(() => {});
-  const callbacks = useRef({ onReady, onLog, onConnectionPreview, onError, onClose });
-  callbacks.current = { onReady, onLog, onConnectionPreview, onError, onClose };
+  const callbacks = useRef({ onReady, onLog, onConnectionPreview, onError, onClose, onExecution });
+  callbacks.current = { onReady, onLog, onConnectionPreview, onError, onClose, onExecution };
   const current = useRef(workflow);
   current.current = workflow;
   const demo = url.split(/[?#]/, 1)[0] === '/demo-site.html';
@@ -114,7 +116,7 @@ export function IsolatedPreview({
         callbacks.current.onReady(false);
       }
       if (data.type === 'close') callbacks.current.onClose();
-      if (data.type === 'error')
+      if (data.type === 'error' && runId.current && data.runId === runId.current)
         callbacks.current.onError(t('isolatedPreview.theIsolatedPreviewCouldNotRunThisWorkflow'));
       if (data.type === 'connection-preview' && runId.current && data.runId === runId.current) {
         const sample = data.preview;
@@ -139,7 +141,7 @@ export function IsolatedPreview({
           /* Ignore malformed or oversized execution samples. */
         }
       }
-      if (data.type === 'log') {
+      if (data.type === 'log' && runId.current && data.runId === runId.current) {
         const log = data.log as RunLog;
         if (
           !log ||
@@ -150,7 +152,7 @@ export function IsolatedPreview({
         )
           return;
         // Take known fields only; iframe messages are untrusted data.
-        callbacks.current.onLog?.({
+        const safeLog: RunLog = {
           nodeId: log.nodeId,
           label:
             current.current.nodes.find((node) => node.id === log.nodeId)?.data.label ??
@@ -158,7 +160,9 @@ export function IsolatedPreview({
           status: log.status,
           message: log.message,
           timestamp: Date.now(),
-        });
+        };
+        callbacks.current.onExecution?.({ type: 'log', runId: runId.current, log: safeLog });
+        callbacks.current.onLog?.(safeLog);
       }
     };
     window.addEventListener('message', receive);
@@ -174,8 +178,10 @@ export function IsolatedPreview({
   useEffect(() => {
     if (!ready) return;
     runId.current = running ? crypto.randomUUID() : '';
+    if (running) callbacks.current.onExecution?.({ type: 'start', runId: runId.current });
     send(running ? 'run' : 'stop', running ? { workflow, runId: runId.current, searchParams } : {});
     return () => {
+      callbacks.current.onExecution?.({ type: 'stop', runId: runId.current });
       runId.current = '';
       send('stop');
     };
