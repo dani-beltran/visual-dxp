@@ -399,3 +399,73 @@ it.each([new Error('offline'), { ...pass, summary: 'private-test-key' }])(
     expect(ready).not.toHaveBeenCalled();
   },
 );
+
+it('reviews positioned insertion and runs layout again after a structural semantic repair', async () => {
+  const request = input();
+  request.messages[0].content = 'Insert a delay, then connect the final step to Other.';
+  request.workflow.nodes.push(
+    ...[
+      ['wait', 300, 0],
+      ['end', 600, 0],
+      ['other', 2000, 500],
+    ].map(([id, x, y]) => ({
+      id: String(id),
+      type: 'workflow' as const,
+      position: { x: Number(x), y: Number(y) },
+      data: { kind: 'delay' as const, label: String(id), config: { duration: 10 } },
+    })),
+  );
+  request.workflow.edges = [
+    { id: 'e0', source: 'start', target: 'wait' },
+    { id: 'e1', source: 'wait', target: 'end' },
+  ];
+  const reviews = setup(
+    [
+      result('', [['insert_node', { connectionId: 'e0', kind: 'delay' }]]),
+      result('Done'),
+      result('', [['update_connection', { id: 'e1', source: 'other' }]]),
+      result('Repaired'),
+    ],
+    [{ ...pass, findings: [{ ...finding, category: 'implementation' }] }, pass],
+  );
+  const ready = vi.fn();
+  const response = await runLocalAgent(
+    request,
+    new AbortController().signal,
+    config,
+    vi.fn(),
+    undefined,
+    ready,
+  );
+  const first = reviews[0].draft as AIChatRequest['workflow'];
+  const second = reviews[1].draft as AIChatRequest['workflow'];
+  expect(first.nodes.find((node) => node.id === 'end')?.position.x).toBe(900);
+  expect(second.nodes.find((node) => node.id === 'end')?.position.x).toBe(2300);
+  expect(response.operations).toContainEqual({
+    type: 'update_node',
+    id: 'end',
+    position: { x: 2300, y: 0 },
+  });
+  expect(ready).toHaveBeenCalledOnce();
+});
+
+it('blocks review and commitment when the final structural layout violates an explicit position', async () => {
+  const request = input();
+  request.workflow.nodes.push({
+    id: 'wait',
+    type: 'workflow',
+    position: { x: 10, y: 0 },
+    data: { kind: 'delay', label: 'Wait', config: { duration: 10 } },
+  });
+  const reviews = setup([
+    result('', [['update_node', { id: 'wait', position: { x: 10, y: 0 } }]]),
+    result('', [['add_connection', { source: 'start', target: 'wait' }]]),
+    result('Done'),
+  ]);
+  const ready = vi.fn();
+  await expect(
+    runLocalAgent(request, new AbortController().signal, config, vi.fn(), undefined, ready),
+  ).rejects.toThrow();
+  expect(reviews).toHaveLength(0);
+  expect(ready).not.toHaveBeenCalled();
+});

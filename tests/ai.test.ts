@@ -512,20 +512,21 @@ describe('AI protocol boundaries', () => {
     ).toThrow(/last chat/);
   });
 
-  it('ignores selection, dimensions, status, and config insertion order in fingerprints', () => {
+  it('ignores transient state but tracks layout geometry in fingerprints', () => {
     const original = workflow();
     original.nodes[1].data.config = { duration: 1000, selector: '#x' };
     const modified = structuredClone(original);
     Object.assign(modified.nodes[1], {
       selected: true,
       dragging: true,
-      measured: { width: 200, height: 100 },
-      width: 200,
     });
     modified.nodes[1].data.status = 'success';
     modified.nodes[1].data.config = { selector: '#x', duration: 1000 };
     modified.edges[0].selected = true;
     expect(workflowFingerprint(modified)).toBe(workflowFingerprint(original));
+    modified.nodes[1].measured = { width: 200, height: 100 };
+    expect(workflowFingerprint(modified)).not.toBe(workflowFingerprint(original));
+    delete modified.nodes[1].measured;
     modified.nodes[1].position.x += 1;
     expect(workflowFingerprint(modified)).not.toBe(workflowFingerprint(original));
   });
@@ -654,7 +655,7 @@ describe('AI HTTP client', () => {
     const pending = requestAIChat({ endpoint: '/api/ai/chat' }, request());
     deadline.abort(new DOMException('Deadline exceeded', 'TimeoutError'));
     await expect(pending).rejects.toThrow('The AI assistant took too long to respond. Try again.');
-    expect(timeout).toHaveBeenCalledWith(240000);
+    expect(timeout).toHaveBeenCalledWith(480000);
   });
 
   it('keeps the timeout active while reading the response body', async () => {

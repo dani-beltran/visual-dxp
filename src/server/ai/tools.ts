@@ -8,6 +8,7 @@ import type { WorkflowOperation } from './workflow/ai';
 import { applyWorkflowOperations } from './workflow/ai';
 import { catalog } from './workflow/catalog';
 import { dataTools } from './workflow/data';
+import { insertionPosition, layoutOperations } from './workflow/layout';
 import type { Workflow, WorkflowNode } from './workflow/types';
 
 const shortText = z.string().max(200);
@@ -315,14 +316,46 @@ export function createWorkflowTools(
   let draft = structuredClone(workflow);
   const operations: WorkflowOperation[] = [];
 
-  function mutate(operation: WorkflowOperation) {
+  const pinned = new Set<string>();
+  const pendingLayout = new Set<string>();
+  function structuralSeeds(changes: WorkflowOperation[]) {
+    return changes.flatMap((change) => {
+      if (change.type === 'add_node') return [change.node.id];
+      if (change.type === 'add_edge') return [change.edge.target];
+      if (
+        change.type === 'update_edge' &&
+        (change.source !== undefined ||
+          change.target !== undefined ||
+          change.sourceHandle !== undefined)
+      ) {
+        return [change.target ?? draft.edges.find((edge) => edge.id === change.id)?.target ?? ''];
+      }
+      return [];
+    });
+  }
+  function stage(changes: WorkflowOperation[]) {
+    if (operations.length + changes.length > 100)
+      throw new Error('A request can make at most 100 changes, including layout.');
+    const next = applyWorkflowOperations(draft, changes);
+    draft = next;
+    operations.push(...changes);
+  }
+  function finalizeLayout() {
+    const moves = layoutOperations(draft, pendingLayout, pinned);
+    stage(moves);
+    pendingLayout.clear();
+  }
+
+  function mutate(operation: WorkflowOperation, explicitPosition = false) {
     try {
       const next = applyWorkflowOperations(draft, [operation]);
       const changed = semanticJSON(next) !== semanticJSON(draft);
       if (changed) {
-        if (operations.length >= 100) throw new Error('A request can make at most 100 changes.');
-        draft = next;
-        operations.push(operation);
+        stage([operation]);
+        for (const id of structuralSeeds([operation])) pendingLayout.add(id);
+      }
+      if (explicitPosition && (operation.type === 'add_node' || operation.type === 'update_node')) {
+        pinned.add(operation.type === 'add_node' ? operation.node.id : operation.id);
       }
       const state =
         operation.type === 'add_node' || operation.type === 'update_node'
@@ -427,7 +460,7 @@ export function createWorkflowTools(
             config: { ...applicableAIConfigDefaults(kind, entry.config, patch), ...patch },
           },
         };
-        return mutate({ type: 'add_node', node });
+        return mutate({ type: 'add_node', node }, location !== undefined);
       },
       {
         name: 'add_node',
@@ -455,7 +488,97 @@ export function createWorkflowTools(
         }),
       },
     ),
-    defineTool((patch) => mutate({ type: 'update_node', ...patch }), {
+    defineTool(
+      ({
+        connectionId,
+        kind,
+        label,
+        description,
+        config: patch,
+        position: location,
+        sourceHandle,
+      }) => {
+        try {
+          const connection = draft.edges.find((edge) => edge.id === connectionId);
+          if (!connection) throw new Error('The connection to insert into does not exist.');
+          const source = draft.nodes.find((node) => node.id === connection.source)!;
+          const target = draft.nodes.find((node) => node.id === connection.target)!;
+          const entry = catalog.find((item) => item.kind === kind)!;
+          const node: WorkflowNode = {
+            id: `${kind}-${randomUUID()}`,
+            type: 'workflow',
+            position: location ?? insertionPosition(draft, source, target),
+            ...(source.parentId ? { parentId: source.parentId } : {}),
+            data: {
+              kind,
+              label: label ?? entry.label,
+              ...(description === undefined ? {} : { description }),
+              config: { ...applicableAIConfigDefaults(kind, entry.config, patch), ...patch },
+            },
+          };
+          const changes: WorkflowOperation[] = [
+            { type: 'add_node', node },
+            // Retaining the original edge preserves branch labels, data, and canvas metadata.
+            { type: 'update_edge', id: connection.id, target: node.id },
+            {
+              type: 'add_edge',
+              edge: {
+                id: `edge-${randomUUID()}`,
+                source: node.id,
+                target: target.id,
+                type: 'smoothstep',
+                ...(sourceHandle === undefined ? {} : { sourceHandle }),
+              },
+            },
+          ];
+          const candidate = applyWorkflowOperations(draft, changes);
+          const locks = new Set([...pinned, source.id, ...(location ? [node.id] : [])]);
+          const moves = layoutOperations(candidate, new Set([node.id]), locks);
+          stage([...changes, ...moves]);
+          pendingLayout.add(node.id);
+          pinned.add(source.id);
+          if (location) pinned.add(node.id);
+          return JSON.stringify({
+            ok: true,
+            changed: true,
+            node: draft.nodes.find((item) => item.id === node.id),
+            operations: [...changes, ...moves],
+          });
+        } catch (error) {
+          return JSON.stringify({
+            ok: false,
+            error: error instanceof Error ? error.message : 'Invalid insertion.',
+            ...(error instanceof RecoverableToolError ? { code: error.code, retryable: true } : {}),
+          });
+        }
+      },
+      {
+        name: 'insert_node',
+        description:
+          'Atomically insert a configured node into an existing connection. Keeps the predecessor fixed and preserves its branch handle and connection metadata. Automatically places the new node and shifts only affected downstream nodes when needed. Inherits the predecessor frame; insufficient space fails without changes. Omit position unless the user explicitly specifies it (frame-relative). sourceHandle is the NEW node output leading to the old successor, required for fork/loop/experiment.',
+        schema: z.object({
+          connectionId: id,
+          kind: z.enum([
+            'http',
+            'transform',
+            'dom',
+            'cookie',
+            'delay',
+            'experiment',
+            'track-event',
+            'fork',
+            'loop',
+            'popover',
+          ]),
+          label: shortText.optional(),
+          description: z.string().max(2000).optional(),
+          config: config.optional(),
+          position: position.optional(),
+          sourceHandle: z.enum(['true', 'false', 'body', 'done', 'a', 'b']).nullable().optional(),
+        }),
+      },
+    ),
+    defineTool((patch) => mutate({ type: 'update_node', ...patch }, patch.position !== undefined), {
       name: 'update_node',
       description:
         'Patch label, description, position or configuration of an existing node. Send only fields supported by the resulting configuration. Omitted fields are preserved unless a setting changes which fields apply; then inactive fields are removed. Include any fields required by the resulting configuration. Returns changed and the resulting node. changed:false stages nothing; repeating that call will not help. Replacing noteText without noteMarks clears formatting; provide noteMarks to retain or revise it.',
@@ -532,6 +655,7 @@ export function createWorkflowTools(
         });
       }
     },
+    finalizeLayout,
     getOperations: () => structuredClone(operations),
     getWorkflow: () => structuredClone(draft),
   };

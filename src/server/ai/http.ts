@@ -29,7 +29,7 @@ import {
 } from './workflow/ai';
 
 const maxBodyBytes = 1024 * 1024;
-export const CHAT_TIMEOUT_MS = 180_000;
+export const CHAT_TIMEOUT_MS = 360_000;
 const tooLarge = () =>
   new AIServiceError(413, 'The workflow and conversation exceed the 1 MB request limit.');
 type ChatHandler = (
