@@ -35,14 +35,15 @@
   gap: 12px;
   flex-wrap: wrap;
 }
-.dxp-tutorial-heading > span {
-  width: 100%;
+.dxp-tutorial-heading {
+  display: grid;
+  grid-template-columns: 1fr auto;
 }
 .dxp-tutorial-heading h2 {
   font-size: 15px;
   font-weight: 600;
   margin: 0;
-  flex: 1;
+  grid-column: 1 / -1;
 }
 .dxp-tutorial-heading > span,
 .dxp-tutorial-actions > span {

@@ -107,12 +107,12 @@ export function TutorialPanel({
               total: c.sequence.length,
             })}
           </span>
-          <h2 ref={heading} tabIndex={-1} id={`${id}-title`}>
-            {title}
-          </h2>
           <button type="button" className="dxp-button" onClick={c.exit}>
             {t('tutorial.exit')}
           </button>
+          <h2 ref={heading} tabIndex={-1} id={`${id}-title`}>
+            {title}
+          </h2>
         </div>
         <div className="dxp-tutorial-content">
           {auxiliaryOpen && (
