@@ -90,8 +90,11 @@ async function selectNode(id: string) {
 }
 async function launch() {
   await click('Canvas help');
+  expect(el('.dxp-canvas-help-tutorial').previousElementSibling?.textContent).toContain(
+    'Use variables',
+  );
   expect(
-    el('.dxp-canvas-help-shortcuts').compareDocumentPosition(button('Start interactive tutorial')) &
+    button('Start interactive tutorial').compareDocumentPosition(el('.dxp-canvas-help-shortcuts')) &
       Node.DOCUMENT_POSITION_FOLLOWING,
   ).toBeTruthy();
   await click('Start interactive tutorial');

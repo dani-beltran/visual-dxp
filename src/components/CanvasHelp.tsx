@@ -176,6 +176,13 @@ export function CanvasHelp({
                 </div>
               </div>
             ))}
+            {onTutorial && (
+              <div className="dxp-canvas-help-tutorial">
+                <button type="button" className="dxp-button" onClick={onTutorial}>
+                  {tutorialLabel}
+                </button>
+              </div>
+            )}
             <dl className="dxp-canvas-help-shortcuts">
               <div>
                 <dt>{t('common.undo')}</dt>
@@ -196,11 +203,6 @@ export function CanvasHelp({
                 </dd>
               </div>
             </dl>
-            {onTutorial && (
-              <button type="button" className="dxp-button" onClick={onTutorial}>
-                {tutorialLabel}
-              </button>
-            )}
           </section>
         </section>
       )}
