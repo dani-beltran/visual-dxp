@@ -314,7 +314,9 @@ export function createWorkflowTools(
   brandingProfile?: BrandingProfile,
 ) {
   let draft = structuredClone(workflow);
-  const operations: WorkflowOperation[] = [];
+  let operations: WorkflowOperation[] = [];
+  const edits: WorkflowOperation[] = [];
+  const automaticInsertions = new Map<string, { source: string; target: string }>();
 
   const pinned = new Set<string>();
   const pendingLayout = new Set<string>();
@@ -333,23 +335,50 @@ export function createWorkflowTools(
       return [];
     });
   }
-  function stage(changes: WorkflowOperation[]) {
-    if (operations.length + changes.length > 100)
+  function stage(changes: WorkflowOperation[], automatic: WorkflowOperation[] = []) {
+    if (operations.length + changes.length + automatic.length > 100)
       throw new Error('A request can make at most 100 changes, including layout.');
-    const next = applyWorkflowOperations(draft, changes);
+    const next = applyWorkflowOperations(draft, [...changes, ...automatic]);
     draft = next;
-    operations.push(...changes);
+    edits.push(...changes);
+    operations.push(...changes, ...automatic);
   }
   function finalizeLayout() {
-    const moves = layoutOperations(draft, pendingLayout, pinned);
-    stage(moves);
-    pendingLayout.clear();
+    // Rebuild from user/graph edits, never from provisional automatic moves.
+    // Keep seeds across review attempts: a repair can remove an old obstacle.
+    const placements: WorkflowOperation[] = [];
+    let candidate = applyWorkflowOperations(workflow, edits);
+    for (const [id, insertion] of automaticInsertions) {
+      const node = candidate.nodes.find((item) => item.id === id);
+      const source = candidate.nodes.find((item) => item.id === insertion.source);
+      const target = candidate.nodes.find((item) => item.id === insertion.target);
+      if (!node || !source || !target || pinned.has(id)) continue;
+      const geometry = { ...candidate, nodes: candidate.nodes.filter((item) => item.id !== id) };
+      const position = insertionPosition(geometry, source, target);
+      if (semanticJSON(position) !== semanticJSON(node.position)) {
+        const placement: WorkflowOperation = { type: 'update_node', id, position };
+        placements.push(placement);
+        candidate = applyWorkflowOperations(candidate, [placement]);
+      }
+    }
+    const moves = layoutOperations(candidate, pendingLayout, pinned);
+    const batch = [...edits, ...placements, ...moves];
+    const next = applyWorkflowOperations(workflow, batch);
+    // Publish only after the complete replacement batch validates.
+    operations = batch;
+    draft = next;
   }
 
   function mutate(operation: WorkflowOperation, explicitPosition = false) {
     try {
       const next = applyWorkflowOperations(draft, [operation]);
-      const changed = semanticJSON(next) !== semanticJSON(draft);
+      const intent = explicitPosition ? applyWorkflowOperations(workflow, edits) : undefined;
+      const changed =
+        semanticJSON(next) !== semanticJSON(draft) ||
+        (operation.type === 'update_node' &&
+          explicitPosition &&
+          semanticJSON(intent?.nodes.find((node) => node.id === operation.id)?.position) !==
+            semanticJSON(operation.position));
       if (changed) {
         stage([operation]);
         for (const id of structuralSeeds([operation])) pendingLayout.add(id);
@@ -465,7 +494,7 @@ export function createWorkflowTools(
       {
         name: 'add_node',
         description:
-          'Create a configured node using applicable catalog defaults. Send only fields supported by the resulting configuration. Returns changed and the resulting node plus operation with its generated ID; use that ID to connect executable nodes. Notes cannot be connected. Does not create connections.',
+          'Create a standalone configured node using applicable catalog defaults. To insert into an existing connection, call insert_node directly instead; it creates the node itself. Do not call add_node before insert_node. Send only fields supported by the resulting configuration. Returns changed and the resulting node plus operation with its generated ID; use that ID to connect executable nodes. Notes cannot be connected. Does not create connections.',
         schema: z.object({
           kind: z.enum([
             'trigger',
@@ -534,9 +563,9 @@ export function createWorkflowTools(
           const candidate = applyWorkflowOperations(draft, changes);
           const locks = new Set([...pinned, source.id, ...(location ? [node.id] : [])]);
           const moves = layoutOperations(candidate, new Set([node.id]), locks);
-          stage([...changes, ...moves]);
+          stage(changes, moves);
           pendingLayout.add(node.id);
-          pinned.add(source.id);
+          if (!location) automaticInsertions.set(node.id, { source: source.id, target: target.id });
           if (location) pinned.add(node.id);
           return JSON.stringify({
             ok: true,
@@ -555,7 +584,7 @@ export function createWorkflowTools(
       {
         name: 'insert_node',
         description:
-          'Atomically insert a configured node into an existing connection. Keeps the predecessor fixed and preserves its branch handle and connection metadata. Automatically places the new node and shifts only affected downstream nodes when needed. Inherits the predecessor frame; insufficient space fails without changes. Omit position unless the user explicitly specifies it (frame-relative). sourceHandle is the NEW node output leading to the old successor, required for fork/loop/experiment.',
+          'Create a NEW configured node and atomically insert it into an existing connection in one call. Do not call add_node first: insert_node creates the node itself and does not accept an existing node ID. Keeps the predecessor fixed and preserves its branch handle and connection metadata. Automatically places the new node and shifts only affected downstream nodes when needed. Inherits the predecessor frame; insufficient space fails without changes. Omit position unless the user explicitly specifies it (frame-relative). sourceHandle is the NEW node output leading to the old successor, required for fork/loop/experiment.',
         schema: z.object({
           connectionId: id,
           kind: z.enum([

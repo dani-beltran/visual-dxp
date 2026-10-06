@@ -289,3 +289,95 @@ it('produces identical geometry independently of node/edge array ordering', () =
   const placed = applyWorkflowOperations(workflow, layoutOperations(workflow, seeds));
   expect(layoutOperations(placed, seeds)).toEqual([]);
 });
+
+it('reclaims provisional spacing after a temporary duplicate is removed', () => {
+  const workflow = graph([0, 300, 620]);
+  const tools = createWorkflowTools(workflow, []);
+  const duplicate = JSON.parse(
+    tools.invokePrivate('add_node', { kind: 'delay', config: { duration: 3000 } }),
+  ).node;
+  const inserted = JSON.parse(
+    tools.invokePrivate('insert_node', {
+      connectionId: 'e1',
+      kind: 'delay',
+      config: { duration: 3000 },
+    }),
+  ).node;
+  const provisional = at(tools.getWorkflow(), '2').x;
+  tools.finalizeLayout(); // First semantic review still sees the duplicate.
+  tools.invokePrivate('remove_node', { id: duplicate.id });
+  tools.finalizeLayout(); // Semantic repair removes the temporary obstacle.
+  expect(at(tools.getWorkflow(), '2').x).toBe(900);
+  expect(at(tools.getWorkflow(), '2').x).toBeLessThan(provisional);
+  expect(at(tools.getWorkflow(), inserted.id).x).toBe(600);
+  expect(at(tools.getWorkflow(), '0')).toEqual(at(workflow, '0'));
+  expect(at(tools.getWorkflow(), '1')).toEqual(at(workflow, '1'));
+  expect(applyClient(workflow, tools.getOperations())).toEqual(tools.getWorkflow());
+  const batch = tools.getOperations();
+  tools.finalizeLayout();
+  expect(tools.getOperations()).toEqual(batch);
+});
+
+it('retains an explicit position that matches a provisional automatic move', () => {
+  const workflow = graph([0, 300, 620]);
+  const tools = createWorkflowTools(workflow, []);
+  const duplicate = JSON.parse(tools.invokePrivate('add_node', { kind: 'delay' })).node;
+  tools.invokePrivate('insert_node', { connectionId: 'e1', kind: 'delay' });
+  const position = at(tools.getWorkflow(), '2');
+  tools.invokePrivate('update_node', { id: '2', position });
+  tools.invokePrivate('remove_node', { id: duplicate.id });
+  tools.finalizeLayout();
+  expect(at(tools.getWorkflow(), '2')).toEqual(position);
+});
+
+it('restores original spacing when an insertion is undone within the draft', () => {
+  const workflow = graph();
+  const { tools, result } = insert(workflow);
+  tools.invokePrivate('remove_node', { id: result.node.id });
+  tools.invokePrivate('add_connection', { source: '0', target: '1' });
+  tools.finalizeLayout();
+  expect(tools.getWorkflow().nodes).toEqual(workflow.nodes);
+});
+
+it('explains that insertion creates its own node in both creation tools', () => {
+  const tools = createWorkflowTools(graph(), []);
+  for (const name of ['add_node', 'insert_node']) {
+    const description = tools.definitions.find((tool) => tool.name === name)?.description;
+    expect(description).toContain('creates the node itself');
+  }
+});
+
+it('reclaims temporary spacing inside a frame while preserving membership and unrelated gaps', () => {
+  const workflow = graph([0, 300, 620]);
+  workflow.nodes.forEach((node) => {
+    node.parentId = 'frame';
+    node.position.y = 60;
+  });
+  workflow.nodes.unshift({
+    ...node('frame', 100, 200),
+    width: 2200,
+    height: 500,
+    data: { kind: 'frame', label: 'Frame', config: {} },
+  });
+  workflow.nodes.push(node('unrelated', 5000, 1000));
+  const tools = createWorkflowTools(workflow, []);
+  const duplicate = JSON.parse(
+    tools.invokePrivate('add_node', { kind: 'delay', position: { x: 1020, y: 260 } }),
+  ).node;
+  // A temporary canvas obstacle overlaps the frame but retains its own membership.
+  tools.invokePrivate('insert_node', { connectionId: 'e1', kind: 'delay' });
+  tools.invokePrivate('remove_node', { id: duplicate.id });
+  tools.finalizeLayout();
+  expect(at(tools.getWorkflow(), '2')).toEqual({ x: 900, y: 60 });
+  expect(tools.getWorkflow().nodes.find((node) => node.id === '2')?.parentId).toBe('frame');
+  expect(at(tools.getWorkflow(), 'unrelated')).toEqual(at(workflow, 'unrelated'));
+});
+
+it('preserves baseline spacing after deleting an unrelated node', () => {
+  const workflow = graph([0, 1500]);
+  workflow.nodes.push(node('temporary', 4000));
+  const tools = createWorkflowTools(workflow, []);
+  tools.invokePrivate('remove_node', { id: 'temporary' });
+  tools.finalizeLayout();
+  expect(at(tools.getWorkflow(), '1').x).toBe(1500);
+});
