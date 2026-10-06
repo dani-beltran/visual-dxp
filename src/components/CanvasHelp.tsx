@@ -15,7 +15,11 @@ import { useBuilderI18n } from '../lib/i18nContext';
 export function CanvasHelp({
   open: controlledOpen,
   onOpenChange,
+  onTutorial,
+  tutorialLabel,
 }: {
+  onTutorial?: () => void;
+  tutorialLabel?: string;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
 } = {}) {
@@ -124,6 +128,7 @@ export function CanvasHelp({
       }}
     >
       <button
+        data-tutorial="help"
         ref={button}
         type="button"
         className={`dxp-canvas-help-button ${open ? 'active' : ''}`}
@@ -162,6 +167,11 @@ export function CanvasHelp({
             tabIndex={0}
             aria-label={t('canvasHelp.canvasInstructions')}
           >
+            {onTutorial && (
+              <button type="button" className="dxp-button" onClick={onTutorial}>
+                {tutorialLabel}
+              </button>
+            )}
             {instructions.map(({ icon: Icon, title, text }) => (
               <div className="dxp-canvas-help-step" key={title}>
                 <Icon size={17} aria-hidden="true" />

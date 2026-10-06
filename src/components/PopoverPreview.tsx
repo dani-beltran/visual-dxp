@@ -1,5 +1,5 @@
 import { Globe2, LoaderCircle, RotateCcw, X } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { type ReactNode, useEffect, useMemo, useState } from 'react';
 import { useBuilderI18n } from '../lib/i18nContext';
 import type { StepConfig, Workflow, WorkflowNode } from '../lib/types';
 import { useDialogFocus } from '../lib/useDialogFocus';
@@ -10,7 +10,9 @@ export function PopoverPreview({
   node,
   websiteUrl,
   onClose,
+  guidance,
 }: {
+  guidance?: ReactNode;
   node: WorkflowNode;
   websiteUrl: string;
   onClose: () => void;
@@ -112,6 +114,7 @@ export function PopoverPreview({
           {error}
         </p>
       )}
+      {guidance}
       <div className="dxp-popover-preview-website">
         {!ready && !error && (
           <div className="dxp-popover-preview-loading" role="status">

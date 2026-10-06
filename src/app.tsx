@@ -9,9 +9,10 @@ import {
   type VisualDXPBuilderProps,
 } from './components/VisualDXPBuilder';
 import { createActivityStore } from './lib/activity';
-import { defaultWorkflow } from './lib/catalog';
+import { download } from './lib/download';
 import { exportWorkflow, validateWorkflow } from './lib/export';
 import { createBuilderTranslator, formatBuilderError } from './lib/i18n';
+import { restoreWorkflow } from './lib/initialWorkflow';
 import { validateExportTarget } from './lib/targeting';
 import type { Workflow } from './lib/types';
 import { useDialogFocus } from './lib/useDialogFocus';
@@ -24,16 +25,9 @@ export interface AppProps extends Omit<VisualDXPBuilderProps, 'onReady'> {
   onExport?: (script: string, workflow: Workflow) => void;
 }
 
-function download(name: string, content: string, type: string) {
-  const url = URL.createObjectURL(new Blob([content], { type }));
-  const anchor = document.createElement('a');
-  anchor.href = url;
-  anchor.download = name;
-  anchor.click();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
 export function App({
-  initialWorkflow = defaultWorkflow,
+  initialWorkflow,
+  tutorial,
   onChange,
   onExport,
   className = '',
@@ -78,9 +72,17 @@ export function App({
   const copy = appMessages[selectedLanguage === 'es' ? 'es' : 'en'];
   const [localActivityStore] = useState(() => createActivityStore());
   const store = activityStore ?? localActivityStore;
-  const [workflow, setWorkflow] = useState(initialWorkflow);
+  const [workflow, setWorkflow] = useState(() =>
+    restoreWorkflow(initialWorkflow, builderProps.persistenceKey, t),
+  );
   const [builder, setBuilder] = useState<VisualDXPBuilderApi | null>(null);
   const [exportOpen, setExportOpen] = useState(false);
+  const [tutorialRoot, setTutorialRoot] = useState<HTMLDivElement | null>(null);
+  const [exportContainer, setExportContainer] = useState<HTMLDivElement | null>(null);
+  const [tutorialExport, setTutorialExport] = useState(false);
+  const [tutorialExportAccess, setTutorialExportAccess] = useState<'inspect' | 'backup' | null>(
+    null,
+  );
   const [exportTab, setExportTab] = useState<'javascript' | 'json'>('javascript');
   const [toast, setToast] = useState('');
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
@@ -142,6 +144,7 @@ export function App({
   const code = useMemo(() => {
     if (exportTab === 'javascript') return script;
     try {
+      if (tutorialExport) return JSON.stringify(workflow, null, 2);
       const target = validateExportTarget(workflow);
       return JSON.stringify(
         {
@@ -155,7 +158,7 @@ export function App({
     } catch {
       return copy.configureWebsite;
     }
-  }, [exportTab, script, workflow, copy.configureWebsite]);
+  }, [exportTab, script, workflow, copy.configureWebsite, tutorialExport]);
   function requireExportTarget(next: Workflow): boolean {
     try {
       validateExportTarget(next);
@@ -174,6 +177,13 @@ export function App({
     }
   }
   function openExport() {
+    if (tutorialExportAccess) {
+      setTutorialExport(true);
+      setExportTab(tutorialExportAccess === 'backup' ? 'json' : 'javascript');
+      setExportOpen(true);
+      return;
+    }
+    setTutorialExport(false);
     if (!builder) return;
     const next = builder.getWorkflow();
     if (!requireExportTarget(next)) return;
@@ -183,6 +193,8 @@ export function App({
   function prepareExport() {
     if (!builder) return;
     const next = builder.getWorkflow();
+    if (tutorialExport && exportTab === 'json')
+      return { workflow: next, content: JSON.stringify(next, null, 2) };
     if (!requireExportTarget(next)) return;
     try {
       const target = validateExportTarget(next);
@@ -224,6 +236,7 @@ export function App({
   }
   return (
     <div
+      ref={tutorial ? setTutorialRoot : undefined}
       className={`dxp-app ${className}`}
       style={style}
       data-dxp-theme={theme}
@@ -252,6 +265,7 @@ export function App({
         </header>
         <section className="dxp-workflow-bar" aria-label={copy.workflowActions}>
           <input
+            data-tutorial="name"
             className="dxp-workflow-name"
             aria-label={copy.workflowName}
             title={copy.workflowName}
@@ -266,19 +280,46 @@ export function App({
             <button
               type="button"
               className="dxp-button"
+              data-tutorial="test"
               onClick={() => {
                 builder?.testWorkflow();
               }}
             >
               <Play size={14} /> {copy.testWorkflow}
             </button>
-            <button type="button" className="dxp-button dxp-button-primary" onClick={openExport}>
+            <button
+              type="button"
+              data-tutorial="export"
+              className="dxp-button dxp-button-primary"
+              onClick={openExport}
+            >
               <Code2 size={16} /> {copy.exportWorkflow} <ArrowUpRight size={14} />
             </button>
           </div>
         </section>
         <VisualDXPBuilder
           {...builderProps}
+          tutorial={
+            tutorial
+              ? {
+                  ...tutorial,
+                  host: {
+                    root: tutorialRoot,
+                    nameControl: true,
+                    testControl: true,
+                    exportContainer,
+                    exportOpen,
+                    onExportAccessChange: setTutorialExportAccess,
+                    openExport: (backup) => {
+                      setTutorialExport(true);
+                      setExportTab(backup ? 'json' : 'javascript');
+                      setExportOpen(true);
+                    },
+                    closeExport: () => setExportOpen(false),
+                  },
+                }
+              : undefined
+          }
           i18n={builderI18n}
           presets={presets}
           initialWorkflow={initialWorkflow}
@@ -328,6 +369,7 @@ export function App({
                 <X size={20} />
               </button>
             </div>
+            <div ref={setExportContainer} />
             <p className="dxp-modal-description">{copy.exportDescription}</p>
             <div className="dxp-export-tabs">
               <button
@@ -345,7 +387,11 @@ export function App({
                 <FileJson size={15} /> {copy.workflowJson}
               </button>
               <span />
-              <button type="button" onClick={copyCode}>
+              <button
+                type="button"
+                onClick={copyCode}
+                disabled={tutorialExport && exportTab === 'javascript'}
+              >
                 <Copy size={14} /> {copy.copy}
               </button>
             </div>
@@ -368,7 +414,7 @@ export function App({
               <button
                 type="button"
                 className="dxp-button dxp-button-primary"
-                disabled={exportTab === 'javascript' && issues.length > 0}
+                disabled={exportTab === 'javascript' && (issues.length > 0 || tutorialExport)}
                 onClick={exportFile}
               >
                 <ArrowDownToLine size={16} /> {copy.download}{' '}

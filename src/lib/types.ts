@@ -189,3 +189,10 @@ export interface ValidationIssue {
   nodeId?: string;
   message: string;
 }
+
+/** Run-scoped events emitted only by the active isolated preview. */
+export interface PreviewExecutionEvent {
+  type: 'start' | 'log' | 'error' | 'stop';
+  runId: string;
+  log?: RunLog;
+}

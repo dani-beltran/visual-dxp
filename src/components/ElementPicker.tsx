@@ -9,7 +9,7 @@ import {
   RefreshCw,
   X,
 } from 'lucide-react';
-import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { type ReactNode, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useBuilderI18n } from '../lib/i18nContext';
 import type { PickedElement, PickerSession } from '../lib/picker';
 import { normalizeWebsiteUrl, PICKER_PROTOCOL } from '../lib/picker';
@@ -17,6 +17,8 @@ import { WebsiteSetup } from './WebsiteSetup';
 import '../styles/picker.css';
 
 export interface ElementPickerProps {
+  /** Optional host guidance inside the dialog focus context. */
+  guidance?: ReactNode;
   url: string;
   initialSelector?: string;
   onSelect: (selector: string) => void;
@@ -30,6 +32,7 @@ export function ElementPicker({
   initialSelector = '',
   onSelect,
   onClose,
+  guidance,
 }: ElementPickerProps) {
   const { t } = useBuilderI18n();
   const headingId = useId();
@@ -262,7 +265,7 @@ export function ElementPicker({
           if (event.key === 'Tab') {
             const focusable = Array.from(
               dialogRef.current?.querySelectorAll<HTMLElement>(
-                'button:not(:disabled), input, summary, a[href], iframe',
+                'button:not(:disabled), input, select, textarea, summary, a[href], iframe, [tabindex="0"]',
               ) || [],
             );
             const first = focusable[0];
@@ -306,6 +309,7 @@ export function ElementPicker({
             </button>
           </div>
         </header>
+        {guidance}
         <div className="dxp-picker-address">
           <Globe2 size={16} aria-hidden="true" />
           <span className="dxp-picker-url" title={url || '/demo-site.html'}>

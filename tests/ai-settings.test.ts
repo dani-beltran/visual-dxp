@@ -9,7 +9,10 @@ import {
   resolveAIEndpoint,
 } from '../src/lib/aiCredentials';
 import { AI_SETTINGS_STORAGE_KEY, AISettingsStore } from '../src/lib/aiSettings';
-import { defaultWorkflow } from '../src/lib/catalog';
+import { welcomeJourneyPreset } from '../src/presets/welcome-journey';
+
+const exampleWorkflow = welcomeJourneyPreset.workflow;
+
 import { exportWorkflow } from '../src/lib/export';
 
 const apiKey = 'sk-test-browser-private';
@@ -18,7 +21,7 @@ const passphrase = 'correct horse battery staple';
 const endpoint = 'https://ai.example.test/api/ai/chat';
 const request = {
   messages: [{ role: 'user' as const, content: 'Explain this workflow' }],
-  workflow: defaultWorkflow,
+  workflow: exampleWorkflow,
   selectedNodeIds: [],
 };
 beforeEach(() => {
@@ -165,8 +168,8 @@ describe('encrypted browser settings', () => {
     const store = new AISettingsStore();
     await store.save(apiKey, model, passphrase, endpoint);
     for (const output of [
-      JSON.stringify(defaultWorkflow),
-      exportWorkflow({ ...defaultWorkflow, websiteUrl: 'https://example.com/' }),
+      JSON.stringify(exampleWorkflow),
+      exportWorkflow({ ...exampleWorkflow, websiteUrl: 'https://example.com/' }),
     ]) {
       expect(output).not.toContain(apiKey);
       expect(output).not.toContain(AI_SETTINGS_STORAGE_KEY);

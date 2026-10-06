@@ -46,7 +46,7 @@ export function installPreviewBridge(
         window,
         analyticsMode: 'simulate',
         searchParams: typeof data.searchParams === 'string' ? data.searchParams : undefined,
-        onLog: (log) => send('log', { log }),
+        onLog: (log) => send('log', { log, runId: data.runId }),
         onConnectionPreview: (edgeId, preview) => {
           // Bound transport and keep samples out of saved workflow/log objects.
           if (JSON.stringify(preview).length <= 32768)
@@ -55,7 +55,7 @@ export function installPreviewBridge(
       });
       runtime.start();
     } catch {
-      send('error');
+      send('error', { runId: data.runId });
     }
   });
   window.addEventListener('pagehide', () => {

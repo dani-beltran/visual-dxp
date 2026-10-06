@@ -46,6 +46,7 @@ import {
   useState,
   useSyncExternalStore,
 } from 'react';
+import { createPortal } from 'react-dom';
 import {
   type ActivityAction,
   type ActivityEntry,
@@ -68,14 +69,16 @@ import {
 } from '../lib/aiCredentials';
 import { AISettingsStore } from '../lib/aiSettings';
 import { readBrandingProfile } from '../lib/branding';
-import { createNode, defaultWorkflow, getCatalog } from '../lib/catalog';
+import { createEmptyWorkflow, createNode, getCatalog } from '../lib/catalog';
 import type { ConnectionPreview } from '../lib/connections';
+import { download } from '../lib/download';
 import { validateWorkflow } from '../lib/export';
 import { getFlowLabels } from '../lib/flowLabels';
 import { duplicateNode, framesFirst, groupNodes, nodeSize, removeNodes } from '../lib/frames';
 import type { BuilderI18n } from '../lib/i18n';
 import { formatBuilderError } from '../lib/i18n';
 import { BuilderI18nProvider, useBuilderI18n } from '../lib/i18nContext';
+import { restoreWorkflow } from '../lib/initialWorkflow';
 import { getNodeDataFlow } from '../lib/nodeData';
 import { NoteEditingContext } from '../lib/noteEditing';
 import { NoteSelectionProvider, useNoteSelection } from '../lib/noteSelection';
@@ -93,6 +96,9 @@ import type {
   WorkflowPreset,
 } from '../lib/types';
 import { useDialogFocus } from '../lib/useDialogFocus';
+import type { TutorialOptions } from '../tutorial/model';
+import { TutorialPanel } from '../tutorial/TutorialPanel';
+import { useTutorial } from '../tutorial/useTutorial';
 import { ActivityPanel } from './ActivityPanel';
 import { AISettings } from './AISettings';
 import { AnalyticsSettings } from './AnalyticsSettings';
@@ -102,6 +108,7 @@ import { EdgeInspector } from './EdgeInspector';
 import { ElementPicker } from './ElementPicker';
 import { InfoBox } from './InfoBox';
 import { MultiNodeInspector } from './MultiNodeInspector';
+import { NodeConnections } from './NodeConnections';
 import { NodeInspector } from './NodeInspector';
 import { NodeLibrary } from './NodeLibrary';
 import { PopoverPreview } from './PopoverPreview';
@@ -122,6 +129,8 @@ const edgeOptions = {
   labelBgBorderRadius: 4,
 };
 export interface WebsiteConfigurationOptions {
+  /** Prefill an explicitly opened dialog; only Save commits this suggestion. */
+  suggestedUrl?: string;
   /** Require a production target before saving, then resume the host's export flow. */
   requireExportable?: boolean;
   onSave?: (workflow: Workflow) => void;
@@ -144,6 +153,8 @@ export interface VisualDXPBuilderProps {
   /** Host-supplied translations; omitted messages fall back to English. */
   i18n?: BuilderI18n;
   initialWorkflow?: Workflow;
+  /** Optional, explicitly launched tutorial. Hosts supply the practice website. */
+  tutorial?: TutorialOptions;
   /** Optional configurations shown in Presets. Applying replaces the graph as one undoable edit. */
   presets?: readonly WorkflowPreset[];
   /** Receives the initial/restored workflow and every edit as a JSON-serializable object. */
@@ -184,7 +195,8 @@ export function VisualDXPBuilder(props: VisualDXPBuilderProps) {
   );
 }
 function Builder({
-  initialWorkflow = defaultWorkflow,
+  initialWorkflow,
+  tutorial,
   presets,
   onChange,
   onReady,
@@ -262,16 +274,9 @@ function Builder({
   useEffect(() => {
     if (!showAISettings && view === 'settings') setView('canvas');
   }, [showAISettings, view]);
-  const [workflow, setWorkflow] = useState<Workflow>(() => {
-    if (persistenceKey)
-      try {
-        const saved = JSON.parse(localStorage.getItem(persistenceKey) || 'null');
-        if (isWorkflow(saved)) return copyWorkflow(saved);
-      } catch {
-        /* Start fresh if storage is unavailable. */
-      }
-    return copyWorkflow(initialWorkflow);
-  });
+  const [workflow, setWorkflow] = useState<Workflow>(() =>
+    restoreWorkflow(initialWorkflow, persistenceKey, t),
+  );
   const current = useRef(workflow);
   current.current = workflow;
   const history = useRef<{ past: HistoryEntry[]; future: HistoryEntry[] }>({
@@ -347,6 +352,18 @@ function Builder({
   const toggleChat = useCallback((open: boolean) => setCanvasAssistant(open ? 'chat' : null), []);
   const toggleHelp = useCallback((open: boolean) => setCanvasAssistant(open ? 'help' : null), []);
   const [modal, setModal] = useState<'preview' | 'popover-preview' | 'website' | null>(null);
+  const tutorialScope = useRef<HTMLDivElement>(null);
+  const tutorialController = useTutorial({
+    options: tutorial,
+    persistenceKey,
+    workflow,
+    selectedId,
+    assistant: canvasAssistant,
+    view,
+    previewOpen: modal === 'preview',
+    aiAvailable: aiEnabled,
+    presetsAvailable: showPresets,
+  });
   const [picking, setPicking] = useState(false);
   const [toast, setToast] = useState('');
   const [saved, setSaved] = useState(true);
@@ -364,7 +381,7 @@ function Builder({
   const websiteOptions = useRef<WebsiteConfigurationOptions>({});
   const configureWebsite = useCallback((options: WebsiteConfigurationOptions = {}) => {
     websiteOptions.current = options;
-    setWebsiteDraft(websiteUrlInputValue(current.current.websiteUrl ?? ''));
+    setWebsiteDraft(websiteUrlInputValue(options.suggestedUrl ?? current.current.websiteUrl ?? ''));
     setIncludeSubpagesDraft(current.current.includeSubpages ?? false);
     setWebsiteError('');
     setModal('website');
@@ -400,9 +417,8 @@ function Builder({
       setBackgroundConnection(undefined);
     }
   }, [workflow.websiteUrl]);
-  const backgroundConnectionUrl = backgroundConnection?.target === workflow.websiteUrl
-    ? backgroundConnection.url
-    : undefined;
+  const backgroundConnectionUrl =
+    backgroundConnection?.target === workflow.websiteUrl ? backgroundConnection.url : undefined;
   const modalRef = useDialogFocus(modal === 'website');
   const changeCallback = useRef(onChange);
   changeCallback.current = onChange;
@@ -767,6 +783,7 @@ function Builder({
   }, [closeWebsite, setSelectedId]);
   const onNodesChange = useCallback(
     (changes: NodeChange<WorkflowNode>[]) => {
+      // React Flow's Enter/Space selection opens the same inspector as a pointer click.
       const selections = changes.filter((change) => change.type === 'select');
       if (shiftSelection.current) {
         for (const change of selections) {
@@ -781,6 +798,7 @@ function Builder({
           }
           return [...next];
         });
+        if (selections.some((change) => change.selected)) setSelectedEdgeId(null);
       }
       // React Flow reports connected-edge and node removals separately. Handle both in onDelete.
       const meaningful = changes.filter((c) => c.type !== 'select' && c.type !== 'remove');
@@ -951,6 +969,7 @@ function Builder({
           })
         : { x: 200, y: 200 });
     const node = createNode(kind, point);
+    tutorialController.created(node);
     node.data.label = t(`nodes.${kind}.label`);
     commit(
       (w) => ({
@@ -1185,8 +1204,63 @@ function Builder({
     }
     return { message: response.message, changeCount: changed ? response.operations.length : 0 };
   }
+  const tutorialPanel =
+    tutorial && tutorialController.active ? (
+      <TutorialPanel
+        controller={tutorialController}
+        options={tutorial}
+        workflow={workflow}
+        scope={tutorial.host?.root ?? tutorialScope.current}
+        selectedId={selectedId}
+        previewOpen={modal === 'preview'}
+        auxiliaryOpen={modal === 'popover-preview' || picking}
+        aiUnavailable={aiConfigurationError || aiSettingsState.status !== 'unlocked'}
+        presets={presets}
+        onReset={() => {
+          setPicking(false);
+          tutorial.host?.closeExport();
+          const next = createEmptyWorkflow(t);
+          commit(
+            () => next,
+            activityAction('activity.presetApplied', { name: t('tutorial.entry') }),
+          );
+          setSelectedId(null);
+          setSelectedEdgeId(null);
+          setCanvasAssistant(null);
+          changeView('canvas');
+          tutorialController.begin(next);
+        }}
+        onRename={api.renameWorkflow}
+        onWebsite={() => configureWebsite({ suggestedUrl: tutorial.websiteUrl })}
+        onSelect={(id) => {
+          setPicking(false);
+          changeView('canvas');
+          setSelectedId(id);
+          setSelectedEdgeId(null);
+        }}
+        onTest={api.testWorkflow}
+        onClosePreview={() => setModal(null)}
+        onEditor={() => {
+          setPicking(false);
+          tutorial.host?.closeExport();
+          changeView('canvas');
+          setCanvasAssistant(null);
+        }}
+        onBackup={() => {
+          if (tutorial.host) tutorial.host.openExport(true);
+          else
+            download('workflow.json', JSON.stringify(current.current, null, 2), 'application/json');
+        }}
+      />
+    ) : null;
   return (
-    <div lang={locale} dir={direction} className={`dxp-builder ${className}`} style={style}>
+    <div
+      ref={tutorialScope}
+      lang={locale}
+      dir={direction}
+      className={`dxp-builder ${className}`}
+      style={style}
+    >
       <div className="dxp-toolbar">
         <div
           className="dxp-view-tabs"
@@ -1232,6 +1306,7 @@ function Builder({
             <button
               type="button"
               role="tab"
+              data-tutorial="presets"
               id={`${viewId}-presets-tab`}
               aria-selected={view === 'presets'}
               aria-controls={`${viewId}-presets-panel`}
@@ -1294,6 +1369,7 @@ function Builder({
         <button
           type="button"
           className="dxp-website-button"
+          data-tutorial="website"
           aria-label={t('builder.changeTargetWebsite')}
           onClick={() => configureWebsite()}
         >
@@ -1325,6 +1401,9 @@ function Builder({
           <Redo2 size={16} />
         </button>
       </div>
+      {tutorial?.host?.exportContainer
+        ? createPortal(tutorialPanel, tutorial.host.exportContainer)
+        : !modal && !picking && tutorialPanel}
       <div
         className="dxp-work-area"
         role="tabpanel"
@@ -1518,7 +1597,29 @@ function Builder({
                       onSend={sendAIMessage}
                     />
                   )}
-                  <CanvasHelp open={canvasAssistant === 'help'} onOpenChange={toggleHelp} />
+                  <CanvasHelp
+                    open={canvasAssistant === 'help'}
+                    onOpenChange={toggleHelp}
+                    tutorialLabel={
+                      tutorial
+                        ? t(
+                            tutorialController.record?.status === 'completed'
+                              ? 'tutorial.replay'
+                              : tutorialController.record
+                                ? 'tutorial.resume'
+                                : 'tutorial.entry',
+                          )
+                        : undefined
+                    }
+                    onTutorial={
+                      tutorial
+                        ? () => {
+                            setCanvasAssistant(null);
+                            tutorialController.start();
+                          }
+                        : undefined
+                    }
+                  />
                 </div>
               </Panel>
               {workflow.nodes.length === 0 && (
@@ -1557,6 +1658,14 @@ function Builder({
         ) : selected ? (
           <NodeInspector
             node={selected}
+            connections={
+              <NodeConnections
+                key={selected.id}
+                node={selected}
+                nodes={workflow.nodes}
+                onConnect={onConnect}
+              />
+            }
             analytics={workflow.analytics}
             analyticsTabId={`${viewId}-analytics-tab`}
             onOpenAnalytics={() => {
@@ -1651,30 +1760,28 @@ function Builder({
           {t('canvas.nodeCount', { count: workflow.nodes.length })} <i />{' '}
           {t('canvas.connectionCount', { count: workflow.edges.length })}
         </span>
-          <span>
-            <a
-              className="dxp-footer-link"
-              href="https://github.com/dani-beltran"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <span className="dxp-footer-label">
+        <span>
+          <a
+            className="dxp-footer-link"
+            href="https://github.com/dani-beltran"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <span className="dxp-footer-label">
               {t('builder.createdWithLoveByDanielJLBeltran')}
-              </span>
-            </a>
-            <a
-              className="dxp-footer-link"
-              href="https://reactflow.dev"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <span className="dxp-footer-label">
-              {t('builder.reactFlowAttribution')} 
-              </span>
-            </a>
-            <span className="dxp-footer-shortcut">
-              <Command size={11} /> {t('builder.zToUndo')}
             </span>
+          </a>
+          <a
+            className="dxp-footer-link"
+            href="https://reactflow.dev"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <span className="dxp-footer-label">{t('builder.reactFlowAttribution')}</span>
+          </a>
+          <span className="dxp-footer-shortcut">
+            <Command size={11} /> {t('builder.zToUndo')}
+          </span>
         </span>
       </footer>
       <input
@@ -1699,6 +1806,7 @@ function Builder({
       )}
       {picking && selected && (
         <ElementPicker
+          guidance={tutorialPanel}
           url={workflow.websiteUrl}
           initialSelector={
             selected.data.kind === 'experiment'
@@ -1721,6 +1829,8 @@ function Builder({
       {modal === 'preview' && (
         <Preview
           workflow={workflow}
+          guidance={tutorialPanel}
+          onExecution={tutorialController.execution}
           onClose={() => setModal(null)}
           onPreviewStart={() => setConnectionPreviews({})}
           onConnectionPreview={(id, preview) =>
@@ -1731,13 +1841,18 @@ function Builder({
       )}
       {modal === 'popover-preview' && selected?.data.kind === 'popover' && (
         <PopoverPreview
+          guidance={tutorialPanel}
           node={selected}
           websiteUrl={workflow.websiteUrl}
           onClose={() => setModal(null)}
         />
       )}
       {modal !== 'website' && backgroundConnectionUrl && (
-        <WebsiteConnectionCheck key={backgroundConnectionUrl} url={backgroundConnectionUrl} silent />
+        <WebsiteConnectionCheck
+          key={backgroundConnectionUrl}
+          url={backgroundConnectionUrl}
+          silent
+        />
       )}
       {modal === 'website' && (
         // biome-ignore lint/a11y/useKeyWithClickEvents: The close button and Escape key dismiss this dialog for keyboard users.
@@ -1766,6 +1881,7 @@ function Builder({
                 <X size={20} />
               </button>
             </div>
+            {tutorialPanel}
             <div className="dxp-website-settings">
               <p>{t('builder.thisExperienceWillRunOnlyOnThePageAtThisUrl')}</p>
               {websiteOptions.current.requireExportable && (

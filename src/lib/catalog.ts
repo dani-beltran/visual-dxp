@@ -13,7 +13,7 @@ import {
   StickyNote,
   Timer,
 } from 'lucide-react';
-import { welcomeJourneyPreset } from '../presets/welcome-journey';
+import { blankPreset } from '../presets/blank';
 import { dataTools } from './data';
 import { FRAME_HEIGHT, FRAME_WIDTH } from './frames';
 import { type BuilderTranslator, translateEnglish } from './i18n';
@@ -167,8 +167,11 @@ export function createNode(kind: NodeKind, position = { x: 200, y: 200 }): Workf
     data: { kind, label: entry.label, config: structuredClone(entry.config) },
   };
 }
-/** The initial workflow is also available in the bundled preset collection. */
-export const defaultWorkflow: Workflow = welcomeJourneyPreset.workflow;
+/** Fresh instances have no website target or graph content. */
+export function createEmptyWorkflow(t: BuilderTranslator = translateEnglish): Workflow {
+  return { ...structuredClone(blankPreset.workflow), name: t('tutorial.untitled') };
+}
+export const defaultWorkflow: Workflow = createEmptyWorkflow();
 /** A summary is presentation text; configuration values are never rewritten. */
 export function stepSummary(
   kind: NodeKind,

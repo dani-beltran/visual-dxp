@@ -1,7 +1,9 @@
+import { tutorialEnglish } from '../tutorial/en';
 import { aiEditFailures } from './aiErrors';
 
 /** English defaults and the public translation contract. Keys remain stable when copy changes. */
 export const englishMessages = {
+  ...tutorialEnglish,
   'analytics.payload': 'Payload (JSON)',
   'analytics.payloadHint':
     'Optional JSON object of event parameters. Do not include personal information.',
@@ -636,7 +638,7 @@ export const englishMessages = {
   'popoverPreview.popoverPreviewWebsite': 'Popover preview website',
   'presetsPanel.workflowPresets': 'Workflow presets',
   'presetsPanel.applyingAPresetReplacesAllCurrentNodesAndConnectionsYourWorkflowName':
-    'Applying a preset replaces all current nodes and connections. Your workflow name, target website, and subpage settings stay the same. You can undo this change.',
+    'Applying a preset replaces all current nodes and connections and updates the workflow name. Your target website and subpage settings stay the same. You can undo this change.',
   'presetsPanel.setupInstructions': 'Setup instructions',
   'presetsPanel.applyPresetName': ({ name }: { name: string }) => `Apply preset: ${name}`,
   'presetsPanel.applyPreset': 'Apply preset',

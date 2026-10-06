@@ -1,7 +1,9 @@
+import { tutorialSpanish } from '../../tutorial/es';
 import type { BuilderMessages } from '../../lib/i18n';
 
 /** Complete Spanish builder catalog supplied by the demo app. */
 export const spanishMessages = {
+  ...tutorialSpanish,
   'analytics.payload': 'Carga útil (JSON)',
   'analytics.payloadHint':
     'Objeto JSON opcional de parámetros del evento. No incluyas información personal.',
@@ -605,7 +607,7 @@ export const spanishMessages = {
   'popoverPreview.popoverPreviewWebsite': 'Sitio web de vista previa de la ventana emergente',
   'presetsPanel.workflowPresets': 'Plantillas de flujos de trabajo',
   'presetsPanel.applyingAPresetReplacesAllCurrentNodesAndConnectionsYourWorkflowName':
-    'Aplicar una plantilla reemplaza todos los nodos y conexiones actuales. El nombre del flujo de trabajo, el sitio web de destino y la configuración de subpáginas se mantienen. Puedes deshacer este cambio.',
+    'Aplicar una plantilla reemplaza el nombre del flujo de trabajo, los nodos y las conexiones actuales. El sitio web de destino y la configuración de subpáginas se mantienen. Puedes deshacer este cambio.',
   'presetsPanel.setupInstructions': 'Instrucciones de configuración',
   'presetsPanel.applyPreset': 'Aplicar plantilla',
   'preview.previewWorkflow': 'Vista previa del flujo de trabajo',
