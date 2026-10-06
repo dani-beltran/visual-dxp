@@ -15,6 +15,7 @@ export const tutorialSpanish = {
   'tutorial.keepEditing': 'Seguir editando',
   'tutorial.ready': 'Listo para continuar',
   'tutorial.pending': 'Completa la instrucción para continuar',
+  'tutorial.pendingShort': 'Completa este paso',
   'tutorial.intro.title': 'Crea tu primera experiencia digital.',
   'tutorial.intro.body': 'Pulsa Continuar para empezar.',
   'tutorial.name.title': 'Pon nombre a tu flujo',

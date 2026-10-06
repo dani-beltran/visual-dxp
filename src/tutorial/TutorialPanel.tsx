@@ -290,7 +290,7 @@ export function TutorialPanel({
           <div className="dxp-tutorial-actions">
             <span role="status" aria-live="polite">
               {c.ready ? '✓ ' : ''}
-              {c.ready ? t('tutorial.ready') : null}
+              {t(c.ready ? 'tutorial.ready' : 'tutorial.pendingShort')}
             </span>
             <button
               type="button"

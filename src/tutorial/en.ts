@@ -15,6 +15,7 @@ export const tutorialEnglish = {
   'tutorial.keepEditing': 'Keep editing',
   'tutorial.ready': 'Ready to continue',
   'tutorial.pending': 'Complete the instruction to continue',
+  'tutorial.pendingShort': 'Complete this step',
   'tutorial.intro.title': 'Build your first digital experience.',
   'tutorial.intro.body': 'Select Continue to begin.',
   'tutorial.name.title': 'Name your workflow',
