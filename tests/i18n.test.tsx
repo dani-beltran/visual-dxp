@@ -13,6 +13,7 @@ import {
   type VisualDXPBuilderApi,
   type Workflow,
 } from '../src';
+import { detectBrowserLanguage } from '../src/app/locales/browserLanguage';
 import { spanishMessages } from '../src/app/locales/es';
 import { ActivityPanel } from '../src/components/ActivityPanel/ActivityPanel';
 import { App } from '../src/components/App/App';
@@ -227,7 +228,10 @@ describe('host-owned builder localization', () => {
 });
 
 describe('demo language selector', () => {
-  beforeEach(() => localStorage.removeItem('visual-dxp-language'));
+  beforeEach(() => {
+    localStorage.removeItem('visual-dxp-language');
+    vi.spyOn(navigator, 'languages', 'get').mockReturnValue(['en-US']);
+  });
   afterEach(() => {
     vi.restoreAllMocks();
     localStorage.removeItem('visual-dxp-language');
@@ -241,6 +245,53 @@ describe('demo language selector', () => {
       select.dispatchEvent(new Event('change', { bubbles: true }));
     });
   }
+
+  it.each([
+    [['es-MX', 'en-US'], 'es'],
+    [['fr-FR', 'ES-es'], 'es'],
+    [['en-GB', 'es-ES'], 'en'],
+    [['fr-FR', 'de-DE'], 'en'],
+  ])('selects the first supported browser language from %j', async (languages, expected) => {
+    vi.spyOn(navigator, 'languages', 'get').mockReturnValue(languages);
+    await act(async () => root.render(<App initialWorkflow={workflow} />));
+    expect(host.querySelector<HTMLSelectElement>('.dxp-language-selector select')?.value).toBe(
+      expected,
+    );
+    expect(host.querySelector('.dxp-builder')?.getAttribute('lang')).toBe(
+      expected === 'es' ? 'es-ES' : 'en',
+    );
+    expect(
+      host.querySelector(`[title="${expected === 'es' ? 'Acercar' : 'Zoom in'}"]`),
+    ).not.toBeNull();
+    expect(localStorage.getItem('visual-dxp-language')).toBeNull();
+  });
+
+  it('uses the primary browser language when the preferred list is empty and handles no browser', () => {
+    vi.spyOn(navigator, 'languages', 'get').mockReturnValue([]);
+    vi.spyOn(navigator, 'language', 'get').mockReturnValue('es-AR');
+    expect(detectBrowserLanguage()).toBe('es');
+    vi.stubGlobal('navigator', undefined);
+    expect(detectBrowserLanguage()).toBe('en');
+  });
+
+  it('prioritizes saved choices and host locales over browser detection', async () => {
+    vi.spyOn(navigator, 'languages', 'get').mockReturnValue(['es-MX']);
+    await act(async () => root.render(<App initialWorkflow={workflow} i18n={{ locale: 'en' }} />));
+    expect(host.querySelector('.dxp-builder')?.getAttribute('lang')).toBe('en');
+    await act(async () => root.render(null));
+    localStorage.setItem('visual-dxp-language', 'en');
+    await act(async () => root.render(<App initialWorkflow={workflow} i18n={{ locale: 'es' }} />));
+    expect(host.querySelector('.dxp-builder')?.getAttribute('lang')).toBe('en');
+  });
+
+  it('detects the browser language when storage is unavailable', async () => {
+    vi.spyOn(navigator, 'languages', 'get').mockReturnValue(['es-MX']);
+    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+      throw new Error('Storage blocked');
+    });
+    await act(async () => root.render(<App initialWorkflow={workflow} />));
+    expect(host.querySelector('[title="Acercar"]')).not.toBeNull();
+  });
 
   it('switches the shell, builder and export validation without resetting edits or undo history', async () => {
     const onChange = vi.fn();
