@@ -3,14 +3,29 @@ import type { StepConfig } from './types';
 /** Keep this self-contained: it is also serialized into exported workflow scripts. */
 export function getDateRange(config: StepConfig): [string, string] {
   if (
+    config.conditionTimeZone === 'offset' &&
+    (typeof config.conditionTimeZoneOffset !== 'number' ||
+      !Number.isFinite(config.conditionTimeZoneOffset) ||
+      config.conditionTimeZoneOffset < -12 ||
+      config.conditionTimeZoneOffset > 14 ||
+      !Number.isInteger(config.conditionTimeZoneOffset))
+  )
+    throw new Error('Enter a whole-hour UTC offset from -12 to +14.');
+  if (
     config.conditionTimeZone !== undefined &&
     config.conditionTimeZone !== 'local' &&
-    config.conditionTimeZone !== 'utc'
+    config.conditionTimeZone !== 'utc' &&
+    config.conditionTimeZone !== 'offset'
   )
-    throw Object.assign(new Error('Choose visitor local time or UTC for the date range.'), {
-      messageKey: 'errors.dateRange.chooseVisitorLocalTimeOrUtcForTheDateRange',
-      messageParams: {},
-    });
+    throw Object.assign(
+      new Error(
+        'Choose visitor local time or UTC, or enter a fixed UTC offset, for the date range.',
+      ),
+      {
+        messageKey: 'errors.dateRange.chooseVisitorLocalTimeOrUtcForTheDateRange',
+        messageParams: {},
+      },
+    );
   const date = (value: string | undefined, label: string): string => {
     if (
       typeof value === 'string' &&

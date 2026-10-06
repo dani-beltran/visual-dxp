@@ -645,3 +645,68 @@ it.each([0, 1, 2, 3, 4, 5, 6])('checks weekday %s using the configured clock', a
     }),
   ).toBe('yes');
 });
+
+it.each([
+  ['2026-10-04T12:00:00Z', 14, '2026-10-05', 1, '02:00'],
+  ['2026-10-05T05:00:00Z', -12, '2026-10-04', 0, '17:00'],
+  ['2026-12-31T20:00:00Z', 5, '2027-01-01', 5, '01:00'],
+  ['2026-10-05T00:00:00Z', -3, '2026-10-04', 0, '21:00'],
+  ['2026-10-05T00:00:00Z', 0, '2026-10-05', 1, '00:00'],
+] as const)(
+  'uses offset %s / %s across calendar boundaries in runtime and exports',
+  async (instant, offset, date, day, time) => {
+    vi.setSystemTime(new Date(instant));
+    vi.spyOn(document, 'readyState', 'get').mockReturnValue('complete');
+    for (const config of [
+      { conditionType: 'weekdays', conditionWeekdays: [day] },
+      { conditionType: 'date-range', conditionStartDate: date, conditionEndDate: date },
+      { conditionType: 'time-of-day', conditionStartTime: time, conditionEndTime: time },
+    ] as StepConfig[]) {
+      const settings: StepConfig = {
+        ...config,
+        conditionTimeZone: 'offset',
+        conditionTimeZoneOffset: offset,
+      };
+      expect(await run(settings)).toBe('yes');
+      document.querySelector('#result')!.textContent = 'waiting';
+      new Function('window', 'document', exportWorkflow(graph(settings)))(window, document);
+      await exportWindow.visualDXP?.run();
+      expect(document.querySelector('#result')?.textContent).toBe('yes');
+      exportWindow.visualDXP?.destroy();
+      expect(isWorkflow(graph(settings))).toBe(true);
+      const response = parseAIChatResponse({
+        message: 'Updated',
+        operations: [{ type: 'update_node', id: 'condition', config: settings }],
+      });
+      expect(
+        applyWorkflowOperations(graph({ condition: '#result' }), response.operations).nodes[1].data
+          .config,
+      ).toMatchObject(settings);
+    }
+  },
+);
+
+it.each([undefined, null, '5', NaN, Infinity, -12.25, 14.25, 5.1, 5.5, 5.75])(
+  'rejects invalid fixed UTC offset %s',
+  (offset) => {
+    for (const config of [
+      { conditionType: 'weekdays', conditionWeekdays: [1] },
+      {
+        conditionType: 'date-range',
+        conditionStartDate: '2026-10-05',
+        conditionEndDate: '2026-10-05',
+      },
+      { conditionType: 'time-of-day', conditionStartTime: '09:00', conditionEndTime: '17:00' },
+    ]) {
+      expect(() =>
+        exportWorkflow(
+          graph({
+            ...config,
+            conditionTimeZone: 'offset',
+            conditionTimeZoneOffset: offset,
+          } as StepConfig),
+        ),
+      ).toThrow();
+    }
+  },
+);

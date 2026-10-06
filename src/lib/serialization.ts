@@ -57,6 +57,7 @@ const strings = [
   'noteColor',
 ];
 const numbers = [
+  'conditionTimeZoneOffset',
   'experimentSplit',
   'cookieDays',
   'duration',

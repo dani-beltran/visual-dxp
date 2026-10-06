@@ -1,3 +1,4 @@
+import { conditionTimeZoneLabel } from '../../lib/conditionTimeZone';
 import { weekdays } from '../../lib/weekdays';
 import '../../styles/base.css';
 import '../../styles/shared.css';
@@ -658,13 +659,13 @@ export function NodeInspector({
             )}
             {conditionType === 'date-range' && (
               <InfoBox>
-                {t('nodeInspector.dateRangeHelp', { zone: config.conditionTimeZone || 'local' })}
+                {t('nodeInspector.dateRangeHelp', { zone: conditionTimeZoneLabel(config) })}
               </InfoBox>
             )}
             {conditionType === 'weekdays' && <InfoBox>{t('nodeInspector.weekdaysHelp')}</InfoBox>}
             {conditionType === 'time-of-day' && (
               <InfoBox>
-                {t('nodeInspector.timeRangeHelp', { zone: config.conditionTimeZone || 'local' })}
+                {t('nodeInspector.timeRangeHelp', { zone: conditionTimeZoneLabel(config) })}
               </InfoBox>
             )}
             {variableCondition && (
@@ -743,10 +744,17 @@ export function NodeInspector({
               >
                 <Select
                   id={id('condition-time-zone')}
-                  value={config.conditionTimeZone ?? 'local'}
+                  value={
+                    config.conditionTimeZone === 'utc'
+                      ? 'offset'
+                      : (config.conditionTimeZone ?? 'local')
+                  }
                   onChange={(event) =>
                     update({
                       conditionTimeZone: event.target.value as StepConfig['conditionTimeZone'],
+                      ...(event.target.value === 'offset'
+                        ? { conditionTimeZoneOffset: config.conditionTimeZoneOffset ?? 0 }
+                        : {}),
                     })
                   }
                 >
@@ -755,10 +763,40 @@ export function NodeInspector({
                       ? t('nodeInspector.visitorLocalDate')
                       : t('nodeInspector.visitorLocalTime')}
                   </option>
-                  <option value="utc">{t('nodeInspector.utc')}</option>
+                  <option value="offset">{t('nodeInspector.fixedTimeZone')}</option>
                 </Select>
               </Field>
             )}
+            {['date-range', 'time-of-day', 'weekdays'].includes(conditionType) &&
+              (config.conditionTimeZone === 'offset' || config.conditionTimeZone === 'utc') && (
+                <>
+                  <Field
+                    label={t('nodeInspector.utcOffset')}
+                    htmlFor={id('condition-time-zone-offset')}
+                    hint={t('nodeInspector.utcOffsetHelp')}
+                  >
+                    <input
+                      id={id('condition-time-zone-offset')}
+                      type="number"
+                      min={-12}
+                      max={14}
+                      step={1}
+                      value={
+                        config.conditionTimeZone === 'utc'
+                          ? 0
+                          : (config.conditionTimeZoneOffset ?? '')
+                      }
+                      onChange={(event) =>
+                        update({
+                          conditionTimeZone: 'offset',
+                          conditionTimeZoneOffset:
+                            event.target.value === '' ? undefined : event.target.valueAsNumber,
+                        })
+                      }
+                    />
+                  </Field>
+                </>
+              )}
             {conditionType === 'date-range' && (
               <>
                 <Field label={t('nodeInspector.startDate')} htmlFor={id('condition-start-date')}>

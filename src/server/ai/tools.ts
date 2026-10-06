@@ -253,10 +253,19 @@ const config = z.object({
       'Required for time-of-day: inclusive end minute in HH:MM format. Earlier than start crosses midnight; equal times match only that minute.',
     )
     .optional(),
-  conditionTimeZone: z
-    .enum(['local', 'utc'])
+  conditionTimeZoneOffset: z
+    .number()
+    .min(-12)
+    .max(14)
+    .int()
     .describe(
-      "Time zone for weekdays, date-range and time-of-day conditions: local uses the visitor's local clock (default); utc uses UTC.",
+      'Required for conditionTimeZone offset: whole hours from UTC, -12 to +14. No daylight saving adjustment.',
+    )
+    .optional(),
+  conditionTimeZone: z
+    .enum(['local', 'utc', 'offset'])
+    .describe(
+      "Time zone for weekdays, date-range and time-of-day conditions: local uses the visitor's local clock (default); utc uses UTC; offset uses conditionTimeZoneOffset as fixed hours from UTC.",
     )
     .optional(),
   iterations: z.number().int().min(1).max(1000).optional(),

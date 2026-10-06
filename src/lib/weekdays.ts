@@ -12,6 +12,15 @@ export const weekdays = [
 
 /** Self-contained for standalone workflow exports. */
 export function getWeekdays(config: StepConfig): number[] {
+  if (
+    config.conditionTimeZone === 'offset' &&
+    (typeof config.conditionTimeZoneOffset !== 'number' ||
+      !Number.isFinite(config.conditionTimeZoneOffset) ||
+      config.conditionTimeZoneOffset < -12 ||
+      config.conditionTimeZoneOffset > 14 ||
+      !Number.isInteger(config.conditionTimeZoneOffset))
+  )
+    throw new Error('Enter a whole-hour UTC offset from -12 to +14.');
   const days = config.conditionWeekdays;
   if (
     !Array.isArray(days) ||
@@ -22,8 +31,9 @@ export function getWeekdays(config: StepConfig): number[] {
   if (
     config.conditionTimeZone !== undefined &&
     config.conditionTimeZone !== 'local' &&
-    config.conditionTimeZone !== 'utc'
+    config.conditionTimeZone !== 'utc' &&
+    config.conditionTimeZone !== 'offset'
   )
-    throw new Error('Choose visitor local time or UTC for weekdays.');
+    throw new Error('Choose visitor local time or UTC, or enter a fixed UTC offset, for weekdays.');
   return days;
 }

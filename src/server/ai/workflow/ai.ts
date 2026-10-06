@@ -110,6 +110,7 @@ const configStrings = [
   'noteColor',
 ] as const;
 const configNumbers = [
+  'conditionTimeZoneOffset',
   'experimentSplit',
   'cookieDays',
   'duration',

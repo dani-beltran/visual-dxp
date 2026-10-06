@@ -512,7 +512,10 @@ export const englishMessages = {
   'weekday.saturday': 'Saturday',
   'weekday.sunday': 'Sunday',
   'summary.weekdays': ({ days, zone }: { days: string; zone: string }) =>
-    `${days} · ${zone === 'utc' ? 'UTC' : 'Visitor local'}`,
+    `${days} · ${zone.startsWith('UTC') ? zone : zone === 'utc' ? 'UTC' : 'Visitor local'}`,
+  'nodeInspector.fixedTimeZone': 'Specific time zone (UTC offset)',
+  'nodeInspector.utcOffset': 'UTC offset (hours)',
+  'nodeInspector.utcOffsetHelp': 'From −12 to +14. No daylight saving adjustment.',
   'nodeInspector.timeOfDay': 'Time of day',
   'nodeInspector.urlSearchParameter': 'URL search parameter',
   'nodeInspector.cookies': 'Cookies',
@@ -862,13 +865,13 @@ export const englishMessages = {
   'errors.cookies.theEncodedCookieAndItsSettingsMustFitWithin4':
     'The encoded cookie and its settings must fit within 4,096 bytes.',
   'errors.dateRange.chooseVisitorLocalTimeOrUtcForTheDateRange':
-    'Choose visitor local time or UTC for the date range.',
+    'Choose visitor local time or UTC, or enter a fixed UTC offset, for the date range.',
   'errors.dateRange.chooseAValidLabelDateYyyyMmDd': ({ label }: { label: string }) =>
     `Choose a valid ${label} date (YYYY-MM-DD).`,
   'errors.dateRange.endDateMustBeOnOrAfterTheStartDate':
     'End date must be on or after the start date.',
   'errors.timeRange.chooseVisitorLocalTimeOrUtcForTheTimeOf':
-    'Choose visitor local time or UTC for the time of day.',
+    'Choose visitor local time or UTC, or enter a fixed UTC offset, for the time of day.',
   'errors.timeRange.chooseAValidLabelTimeHhMmFrom0000': ({ label }: { label: string }) =>
     `Choose a valid ${label} time (HH:MM, from 00:00 to 23:59).`,
   'errors.data.dataPathMustBeText': 'Data path must be text.',
@@ -1283,9 +1286,9 @@ export const englishMessages = {
     `${path} · ${operator.toLowerCase()}${value ? ` ${value}` : ''}`,
   'summary.dataLabel': 'Data',
   'summary.time': ({ start, end, zone }: { start: string; end: string; zone: string }) =>
-    `Time ${start}–${end} · ${zone === 'utc' ? 'UTC' : 'Visitor local'}`,
+    `Time ${start}–${end} · ${zone.startsWith('UTC') ? zone : zone === 'utc' ? 'UTC' : 'Visitor local'}`,
   'summary.date': ({ start, end, zone }: { start: string; end: string; zone: string }) =>
-    `Within ${start} to ${end} · ${zone === 'utc' ? 'UTC' : 'Visitor local'}`,
+    `Within ${start} to ${end} · ${zone.startsWith('UTC') ? zone : zone === 'utc' ? 'UTC' : 'Visitor local'}`,
   'summary.selector': ({ selector }: { selector: string }) => `${selector} exists on the page`,
   'summary.chooseSelector': 'Choose a selector',
   'summary.device': ({ value }: { value: string }) => `Device is ${value}`,
@@ -1312,9 +1315,9 @@ export const englishMessages = {
   'nodeInspector.annotationOutputs': ({ kind }: { kind: string }) =>
     `No outputs. ${kind === 'note' ? 'Notes' : 'Frames'} organize the canvas and do not run workflow steps.`,
   'nodeInspector.dateRangeHelp': ({ zone }: { zone: string }) =>
-    `True when the current date is within this range. Both dates are included, using ${zone === 'utc' ? 'UTC' : 'the visitor’s local time zone'}.`,
+    `True when the current date is within this range. Both dates are included, using ${zone.startsWith('UTC') ? zone : zone === 'utc' ? 'UTC' : 'the visitor’s local time zone'}.`,
   'nodeInspector.timeRangeHelp': ({ zone }: { zone: string }) =>
-    `Checks the current time using ${zone === 'utc' ? 'UTC' : 'the visitor’s local time zone'}. Both selected minutes are included. An earlier end time crosses midnight. Equal times match that one minute.`,
+    `Checks the current time using ${zone.startsWith('UTC') ? zone : zone === 'utc' ? 'UTC' : 'the visitor’s local time zone'}. Both selected minutes are included. An earlier end time crosses midnight. Equal times match that one minute.`,
   'canvasChat.editsApplied': ({ count }: { count: number }) =>
     `${count} ${count === 1 ? 'edit' : 'edits'} applied · Undo on the canvas`,
   'canvasChat.unavailable': 'Unable to reach the AI assistant.',
