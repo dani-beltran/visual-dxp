@@ -30,7 +30,7 @@ export function AISettings({
   const id = useId();
   const [error, setError] = useState('');
   const viewed = state.viewedProvider;
-  const label = AI_PROVIDER_LABELS[state.activeProvider];
+  const label = state.activeProvider ? AI_PROVIDER_LABELS[state.activeProvider] : null;
   function view(provider: AIProvider) {
     try {
       store.view(provider);
@@ -53,7 +53,10 @@ export function AISettings({
         </>
       )}
       <p role="status">
-        <strong>{t('aiSettings.activeProvider', { label })}</strong> ·{' '}
+        <strong>
+          {label ? t('aiSettings.activeProvider', { label }) : t('aiSettings.noActiveProvider')}
+        </strong>{' '}
+        ·{' '}
         {state.status === 'locked'
           ? t('aiSettings.lockedUnlockToUseAi')
           : state.status === 'unavailable'

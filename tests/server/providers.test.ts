@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
+import { requestAIChat } from '../../src/lib/ai';
 import type { AIProvider, BrowserAIOverride } from '../../src/lib/aiCredentials';
 import {
   AI_BASE_URL_HEADER,
@@ -10,8 +11,12 @@ import {
   OPENAI_OVERRIDE_HEADER,
 } from '../../src/lib/aiCredentials';
 import { respondToAIChat, runLocalAgent } from '../../src/server/ai/agent';
-import { handleChat } from '../../src/server/ai/http';
-import { allowedLocalBaseURL, resolveProviderConfiguration } from '../../src/server/ai/providers';
+import { handleChat, handleHealth } from '../../src/server/ai/http';
+import {
+  allowedLocalBaseURL,
+  resolveProviderConfiguration,
+  serverDefaultProvider,
+} from '../../src/server/ai/providers';
 
 const input = {
   messages: [{ role: 'user' as const, content: 'Add a note' }],
@@ -104,6 +109,13 @@ function upstream(provider: AIProvider, tool?: string, args: unknown = {}) {
 let now = Date.now();
 beforeEach(() => {
   vi.stubEnv('LANGGRAPH_API_URL', '');
+  vi.stubEnv('OPENAI_API_KEY', '');
+  vi.stubEnv('OPENAI_MODEL', '');
+  vi.stubEnv('ANTHROPIC_API_KEY', '');
+  vi.stubEnv('ANTHROPIC_MODEL', '');
+  vi.stubEnv('LOCAL_LLM_BASE_URL', '');
+  vi.stubEnv('LOCAL_LLM_MODEL', '');
+  vi.stubEnv('LOCAL_LLM_API_KEY', '');
   now += 60001;
   vi.spyOn(Date, 'now').mockReturnValue(now);
 });
@@ -115,6 +127,10 @@ afterEach(() => {
 it.each(['openai', 'claude', 'local'] as const)(
   'routes %s through real SDK serialization and stages workflow edits atomically',
   async (provider) => {
+    vi.stubEnv('LOCAL_LLM_BASE_URL', 'https://server-model.test/v1');
+    vi.stubEnv('LOCAL_LLM_MODEL', 'server-model');
+    vi.stubEnv('LOCAL_LLM_API_KEY', 'server-local-secret');
+    vi.stubEnv('LANGGRAPH_API_URL', 'https://deployment.test');
     let step = 0;
     const fetcher = vi.fn(async (url: unknown, init: RequestInit) => {
       expect(String(url)).toBe(
@@ -259,10 +275,9 @@ it('preserves the OpenAI-only remote contract and routes browser overrides direc
   vi.stubEnv('LANGGRAPH_API_URL', 'https://deployment.test');
   const fetcher = vi.fn().mockResolvedValue(upstream('claude'));
   vi.stubGlobal('fetch', fetcher);
-  for (const provider of ['claude', 'local'] as const)
-    await expect(
-      respondToAIChat(input, new AbortController().signal, { provider, source: 'server' }),
-    ).rejects.toMatchObject({ status: 409 });
+  await expect(
+    respondToAIChat(input, new AbortController().signal, { provider: 'claude', source: 'server' }),
+  ).rejects.toMatchObject({ status: 409 });
   expect(fetcher).not.toHaveBeenCalled();
   await respondToAIChat(input, new AbortController().signal, config('claude'));
   expect(String(fetcher.mock.calls[0][0])).toBe('https://api.anthropic.com/v1/messages');
@@ -433,6 +448,201 @@ it('accepts remote server defaults without an allowlist', () => {
     model: 'local-model',
   });
   expect(allowedLocalBaseURL('http://169.254.169.254/v1')).toBe('http://169.254.169.254/v1');
+});
+
+it.each([
+  { key: '', deployment: '', localURL: '', expected: 'claude' },
+  { key: '   ', deployment: '   ', localURL: '', expected: 'claude' },
+  { key: 'openai-server-key', deployment: '', localURL: '', expected: 'openai' },
+  { key: '', deployment: 'https://deployment.test', localURL: '', expected: 'openai' },
+  {
+    key: 'openai-server-key',
+    deployment: 'https://deployment.test',
+    localURL: baseURL,
+    expected: 'local',
+  },
+])(
+  'selects server defaults by configuration priority: %j',
+  ({ key, deployment, localURL, expected }) => {
+    vi.stubEnv('OPENAI_API_KEY', key);
+    // A model name alone does not configure OpenAI.
+    vi.stubEnv('OPENAI_MODEL', 'gpt-6-luna');
+    vi.stubEnv('LANGGRAPH_API_URL', deployment);
+    vi.stubEnv('LOCAL_LLM_BASE_URL', localURL);
+    vi.stubEnv('ANTHROPIC_API_KEY', 'anthropic-server-key');
+    vi.stubEnv('ANTHROPIC_MODEL', 'claude-server-model');
+    expect(serverDefaultProvider()).toBe(expected);
+  },
+);
+
+it.each([undefined, 'openai', 'claude', 'local'] as const)(
+  'uses Claude environment defaults unless browser settings select %s',
+  async (provider) => {
+    vi.stubEnv('OPENAI_MODEL', 'gpt-6-luna');
+    vi.stubEnv('ANTHROPIC_API_KEY', ' anthropic-server-key ');
+    vi.stubEnv('ANTHROPIC_MODEL', ' claude-server-model ');
+    const endpoint = 'https://builder.test/api/ai/chat';
+    let step = 0;
+    const fetcher = vi.fn(
+      async (url: string | URL | Request, init?: RequestInit): Promise<Response> => {
+        if (String(url) === endpoint) return handleChat(new Request(endpoint, init));
+        const selected = provider ?? 'claude';
+        expect(String(url)).toBe(
+          selected === 'openai'
+            ? 'https://api.openai.com/v1/responses'
+            : selected === 'claude'
+              ? 'https://api.anthropic.com/v1/messages'
+              : `${baseURL}/chat/completions`,
+        );
+        expect(JSON.parse(String(init?.body)).model).toBe(
+          provider ? `${provider}-model` : 'claude-server-model',
+        );
+        expect(
+          new Headers(init?.headers).get(selected === 'claude' ? 'x-api-key' : 'authorization'),
+        ).toBe(
+          provider
+            ? selected === 'claude'
+              ? `${provider}-private-key`
+              : `Bearer ${provider}-private-key`
+            : 'anthropic-server-key',
+        );
+        return upstream(
+          selected,
+          selected === 'local' && step++ === 0 ? 'read_workflow' : undefined,
+        );
+      },
+    );
+    vi.stubGlobal('fetch', fetcher);
+    expect(await handleHealth().json()).toEqual({ configured: true, mode: 'local' });
+    expect(
+      await requestAIChat({ endpoint }, input, undefined, provider ? config(provider) : undefined),
+    ).toEqual({ message: 'Done.', operations: [] });
+    expect(fetcher).toHaveBeenCalledTimes(provider === 'local' ? 3 : 2);
+  },
+);
+
+it.each([
+  ['', 'claude-model'],
+  ['anthropic-server-key', ''],
+  ['anthropic-server-key', 'invalid model'],
+])('reports incomplete Claude defaults as unconfigured: %s %s', async (key, model) => {
+  vi.stubEnv('ANTHROPIC_API_KEY', key);
+  vi.stubEnv('ANTHROPIC_MODEL', model);
+  const fetcher = vi.fn();
+  vi.stubGlobal('fetch', fetcher);
+  expect(await handleHealth().json()).toEqual({ configured: false, mode: 'local' });
+  await expect(respondToAIChat(input, new AbortController().signal)).rejects.toMatchObject({
+    status: 503,
+    code: 'provider_unconfigured',
+  });
+  expect(fetcher).not.toHaveBeenCalled();
+});
+
+it.each([
+  { streaming: false, deployment: '', apiKey: '' },
+  { streaming: true, deployment: '', apiKey: 'server-local-secret' },
+  { streaming: false, deployment: 'https://deployment.test', apiKey: 'server-local-secret' },
+  { streaming: true, deployment: 'https://deployment.test', apiKey: '' },
+])(
+  'uses the local environment configuration from the default chat client: %j',
+  async ({ streaming, deployment, apiKey }) => {
+    vi.stubEnv('OPENAI_API_KEY', 'cloud-secret-key');
+    vi.stubEnv('LANGGRAPH_API_URL', deployment);
+    vi.stubEnv('LOCAL_LLM_BASE_URL', ' http://localhost:11434/v1/ ');
+    vi.stubEnv('LOCAL_LLM_MODEL', ' org/server-model:tag ');
+    vi.stubEnv('LOCAL_LLM_API_KEY', apiKey);
+    const endpoint = 'https://builder.test/api/ai/chat';
+    let step = 0;
+    const fetcher = vi.fn(
+      async (url: string | URL | Request, init?: RequestInit): Promise<Response> => {
+        if (String(url) === endpoint) {
+          expect(new Headers(init?.headers).has(AI_PROVIDER_HEADER)).toBe(false);
+          return handleChat(new Request(endpoint, init));
+        }
+        expect(String(url)).toBe(`${baseURL}/chat/completions`);
+        expect(new Headers(init?.headers).get('authorization')).toBe(
+          apiKey ? `Bearer ${apiKey}` : null,
+        );
+        expect(JSON.parse(String(init?.body)).model).toBe('org/server-model:tag');
+        const tool = step === 0 ? 'read_workflow' : step === 1 ? 'add_node' : undefined;
+        step++;
+        const response = upstream(
+          'local',
+          tool,
+          tool === 'add_node' ? { kind: 'note', config: { noteText: 'Hello' } } : {},
+        );
+        if (!streaming) return response;
+        const payload = await response.json();
+        const { message, finish_reason } = payload.choices[0];
+        if (message.tool_calls) message.tool_calls[0].index = 0;
+        const chunk = (delta: unknown, finishReason: string | null) =>
+          JSON.stringify({
+            ...payload,
+            object: 'chat.completion.chunk',
+            choices: [{ index: 0, delta, finish_reason: finishReason }],
+          });
+        return new Response(
+          `data: ${chunk(message, null)}\n\ndata: ${chunk({}, finish_reason)}\n\ndata: [DONE]\n\n`,
+          {
+            headers: { 'Content-Type': 'text/event-stream' },
+          },
+        );
+      },
+    );
+    vi.stubGlobal('fetch', fetcher);
+    expect(await handleHealth().json()).toEqual({ configured: true, mode: 'local' });
+    const chunks: string[] = [];
+    const result = await requestAIChat(
+      { endpoint },
+      input,
+      undefined,
+      undefined,
+      streaming ? (text) => chunks.push(text) : undefined,
+    );
+    expect(result).toMatchObject({
+      message: 'Done.',
+      operations: [
+        { type: 'add_node', node: { data: { kind: 'note', config: { noteText: 'Hello' } } } },
+      ],
+    });
+    if (streaming) expect(chunks.join('')).toBe('Done.');
+    expect(step).toBe(3);
+    expect(fetcher).toHaveBeenCalledTimes(4);
+  },
+);
+
+it.each([
+  [baseURL, ''],
+  ['', 'local-model'],
+  ['file:///tmp/model', 'local-model'],
+  [baseURL, 'invalid model'],
+])(
+  'rejects incomplete or invalid local defaults without falling back: %s %s',
+  async (url, model) => {
+    vi.stubEnv('LOCAL_LLM_BASE_URL', url);
+    vi.stubEnv('LOCAL_LLM_MODEL', model);
+    vi.stubEnv('OPENAI_API_KEY', 'cloud-secret-key');
+    vi.stubEnv('LANGGRAPH_API_URL', 'https://deployment.test');
+    const fetcher = vi.fn();
+    vi.stubGlobal('fetch', fetcher);
+    expect(await handleHealth().json()).toEqual({ configured: false, mode: 'local' });
+    await expect(respondToAIChat(input, new AbortController().signal)).rejects.toBeInstanceOf(
+      Error,
+    );
+    expect(fetcher).not.toHaveBeenCalled();
+  },
+);
+
+it('preserves legacy browser OpenAI settings when a local environment default is configured', () => {
+  vi.stubEnv('LOCAL_LLM_BASE_URL', baseURL);
+  vi.stubEnv('LOCAL_LLM_MODEL', 'server-model');
+  const { provider: _provider, ...legacy } = config('openai');
+  expect(resolveProviderConfiguration(legacy)).toMatchObject({
+    provider: 'openai',
+    source: 'browser',
+    apiKey: legacy.apiKey,
+    model: legacy.model,
+  });
 });
 
 it.each([

@@ -1587,7 +1587,11 @@ function Builder({
                       open={canvasAssistant === 'chat'}
                       onOpenChange={toggleChat}
                       configured={aiEnabled}
-                      activeProvider={AI_PROVIDER_LABELS[aiSettingsState.activeProvider]}
+                      activeProvider={
+                        aiSettingsState.activeProvider
+                          ? AI_PROVIDER_LABELS[aiSettingsState.activeProvider]
+                          : undefined
+                      }
                       locked={aiSettingsState.status === 'locked'}
                       configurationError={aiConfigurationError}
                       selectedLabel={selected?.data.label}

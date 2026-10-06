@@ -84,10 +84,18 @@ export function allowedLocalBaseURL(value: string): string {
   }
 }
 
+/** Browser settings win; server defaults prefer local, then OpenAI, then Claude. */
+export function serverDefaultProvider(): AIProvider {
+  if (process.env.LOCAL_LLM_BASE_URL?.trim() || process.env.LOCAL_LLM_MODEL?.trim()) return 'local';
+  if (process.env.OPENAI_API_KEY?.trim() || process.env.LANGGRAPH_API_URL?.trim()) return 'openai';
+  if (process.env.ANTHROPIC_API_KEY?.trim() || process.env.ANTHROPIC_MODEL?.trim()) return 'claude';
+  return 'openai';
+}
+
 export function resolveProviderConfiguration(
   input?: AIRequestConfiguration,
 ): ProviderConfiguration {
-  const provider = input?.provider ?? 'openai';
+  const provider = input?.provider ?? (input ? 'openai' : serverDefaultProvider());
   if (!isAIProvider(provider)) throw new AIServiceError(400, 'Unsupported AI provider.');
   if (input && isBrowserConfiguration(input)) {
     if (!validBrowserConfiguration(input))
@@ -132,7 +140,7 @@ export function resolveProviderConfiguration(
     model,
     baseURL:
       provider === 'local'
-        ? allowedLocalBaseURL(process.env.LOCAL_LLM_BASE_URL ?? '')
+        ? allowedLocalBaseURL(process.env.LOCAL_LLM_BASE_URL?.trim() ?? '')
         : provider === 'openai'
           ? 'https://api.openai.com/v1'
           : 'https://api.anthropic.com/v1',

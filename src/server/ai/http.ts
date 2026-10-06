@@ -19,6 +19,7 @@ import { safeTextEmitter } from '../../lib/aiStream';
 import { identifiers, withWorkflow } from '../observability';
 import { aiRateLimitKey, allowAIRequest } from './access';
 import { AIServiceError, respondToAIChat } from './agent';
+import { resolveProviderConfiguration, serverDefaultProvider } from './providers';
 import {
   type AIChatRequest,
   type AIChatResponse,
@@ -117,6 +118,16 @@ async function readJSON(request: Request, signal: AbortSignal): Promise<unknown>
 }
 
 export function handleHealth(): Response {
+  if (serverDefaultProvider() !== 'openai') {
+    let configured = false;
+    try {
+      resolveProviderConfiguration();
+      configured = true;
+    } catch {
+      // Report configuration validity without exposing server settings or credentials.
+    }
+    return json(200, { configured, mode: 'local' });
+  }
   const deployment = Boolean(process.env.LANGGRAPH_API_URL?.trim());
   return json(200, {
     configured: deployment || Boolean(process.env.OPENAI_API_KEY?.trim()),
@@ -154,8 +165,9 @@ export async function handleChat(
     generic ||
     request.headers.has(OPENAI_OVERRIDE_HEADER) ||
     request.headers.has(AI_BASE_URL_HEADER);
-  let override: AIRequestConfiguration | undefined =
-    provider === 'openai' ? undefined : { provider, source: 'server' };
+  let override: AIRequestConfiguration | undefined = request.headers.has(AI_PROVIDER_HEADER)
+    ? { provider, source: 'server' }
+    : undefined;
   if (hasOverride) {
     const apiKey = request.headers.get(legacy ? OPENAI_KEY_HEADER : AI_KEY_HEADER) ?? '';
     const model = request.headers.get(legacy ? OPENAI_MODEL_HEADER : AI_MODEL_HEADER) ?? '';

@@ -894,7 +894,7 @@ export async function requestAIChat(
         messageParams: {},
       },
     );
-  headers.set(AI_PROVIDER_HEADER, provider);
+  if (configuration) headers.set(AI_PROVIDER_HEADER, provider);
   if (override) {
     if (override.apiKey && (body.includes(override.apiKey) || url.href.includes(override.apiKey)))
       throw Object.assign(

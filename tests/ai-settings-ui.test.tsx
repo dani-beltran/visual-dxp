@@ -176,7 +176,7 @@ it('updates the chat status when damaged browser settings are removed', async ()
   await click(button('Remove browser settings'));
   expect(host.querySelector('.dxp-ai-status.ready')).not.toBeNull();
   expect(host.querySelector('[aria-label="AI settings"]')?.textContent).toContain(
-    'Active provider: OpenAI',
+    'No active provider',
   );
 });
 
@@ -188,13 +188,14 @@ it('uses accessible provider tabs without activating them and restores the viewe
     ...host.querySelectorAll<HTMLButtonElement>('[aria-label="AI providers"] [role="tab"]'),
   ];
   const first = providerTabs()[0];
-  expect(first.textContent).toContain('Active');
+  expect(host.querySelector('.dxp-ai-active-badge')).toBeNull();
+  expect(host.textContent).toContain('No active provider');
   await act(async () =>
     first.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true })),
   );
   expect(document.activeElement).toBe(providerTabs()[1]);
   expect(providerTabs()[1].getAttribute('aria-selected')).toBe('true');
-  expect(providerTabs()[0].textContent).toContain('Active');
+  expect(host.querySelector('.dxp-ai-active-badge')).toBeNull();
   const panel = document.getElementById(providerTabs()[1].getAttribute('aria-controls')!)!;
   expect(panel.hidden).toBe(false);
   expect(panel.getAttribute('aria-labelledby')).toBe(providerTabs()[1].id);
@@ -202,12 +203,12 @@ it('uses accessible provider tabs without activating them and restores the viewe
     providerTabs()[1].dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true })),
   );
   expect(document.activeElement).toBe(providerTabs()[2]);
-  expect(store.getSnapshot().activeProvider).toBe('openai');
+  expect(store.getSnapshot().activeProvider).toBeNull();
   const restored = new AISettingsStore();
   restored.refresh();
   expect(restored.getSnapshot()).toMatchObject({
     viewedProvider: 'local',
-    activeProvider: 'openai',
+    activeProvider: null,
   });
 });
 it('saves and activates local settings without a key, and unsaved fields never affect requests', async () => {

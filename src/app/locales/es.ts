@@ -1,5 +1,5 @@
-import { tutorialSpanish } from '../../tutorial/es';
 import type { BuilderMessages } from '../../lib/i18n';
+import { tutorialSpanish } from '../../tutorial/es';
 
 /** Complete Spanish builder catalog supplied by the demo app. */
 export const spanishMessages = {
@@ -114,8 +114,7 @@ export const spanishMessages = {
     'Elige un nombre de evento personalizado que no esté reservado por Google Analytics o Visual DXP.',
   'analytics.invalidIdentity':
     'El ID del flujo y la versión para informes deben contener de 1 a 100 caracteres.',
-  'analytics.outputHint':
-    'Continúa al siguiente paso, aunque la analítica no esté disponible.',
+  'analytics.outputHint': 'Continúa al siguiente paso, aunque la analítica no esté disponible.',
   'analytics.milestoneHint':
     'Este nodo necesita una integración de analítica para enviar eventos. Configura una integración en la pestaña Analítica.',
   'analytics.customDisabledHint':
@@ -1256,6 +1255,9 @@ export const spanishMessages = {
   'summary.popover': ({ contentType, position }) =>
     `${contentType === 'iframe' ? 'Página incrustada' : 'HTML personalizado'} · ${spanishPositions[position] ?? position}`,
   'aiSettings.activeProvider': ({ label }) => `Proveedor activo: ${label}`,
+  'aiSettings.noActiveProvider': 'Ningún proveedor activo',
+  'canvasChat.checkAiConfiguration':
+    'Revisa la configuración del servidor o guarda un proveedor en Configuración de IA.',
   'aiSettings.apiKeyLabel': ({ provider, optional }) =>
     `Clave de API de ${provider}${optional ? ' (opcional)' : ''}`,
   'aiSettings.modelLabel': ({ provider }) => `ID de modelo de ${provider}`,
