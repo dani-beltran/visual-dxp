@@ -26,6 +26,7 @@ import { createWorkflowTools } from './tools';
 import { hasToolText, isTextualWorkflowFinish, toolTextEmitter } from './toolText';
 import type { AIChatRequest, AIChatResponse } from './workflow/ai';
 import { applyWorkflowOperations, parseAIChatResponse } from './workflow/ai';
+import { catalog } from './workflow/catalog';
 
 export { AIServiceError } from './errors';
 
@@ -50,6 +51,15 @@ function resolvesFailedCall(
 ): boolean {
   if (!failed || typeof failed !== 'object') return true;
   if (!corrected || typeof corrected !== 'object') return false;
+  // A different supported node kind cannot repair a failed creation. Unknown
+  // kinds may still be corrected after a schema error.
+  if (
+    name === 'add_node' &&
+    'kind' in failed &&
+    catalog.some((entry) => entry.kind === failed.kind) &&
+    (!('kind' in corrected) || corrected.kind !== failed.kind)
+  )
+    return false;
   for (const field of ['id', 'source', 'target'] as const) {
     const value = (failed as Record<string, unknown>)[field];
     if (

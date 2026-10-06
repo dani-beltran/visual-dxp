@@ -535,8 +535,17 @@ export function applyWorkflowOperations(workflow: Workflow, value: unknown): Wor
           !previousIssues.has(JSON.stringify(issue)),
       )
     : undefined;
-  if (introduced)
-    throw new Error(`The proposed changes are incomplete or invalid: ${introduced.message}`);
+  if (introduced) {
+    const message = `The proposed changes are incomplete or invalid: ${introduced.message}`;
+    // Shape and graph checks above remain fatal. A newly introduced node
+    // configuration issue can be repaired without committing the failed edit.
+    if (introduced.nodeId)
+      throw new RecoverableToolError(
+        'invalid_configuration',
+        `${message} Correct the node configuration and resubmit the failed call.`,
+      );
+    throw new Error(message);
+  }
   return result;
 }
 

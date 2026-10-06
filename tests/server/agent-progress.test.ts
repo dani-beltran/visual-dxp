@@ -225,6 +225,172 @@ describe.each([false, true])('agent progress (streaming: %s)', (streaming) => {
       ?.messages?.flatMap((message) => (message.role === 'tool' ? message.content : []));
   }
 
+  const missingDevice: Call = ['add_node', { kind: 'fork', config: { conditionType: 'device' } }];
+  const mobileDevice: Call = [
+    'add_node',
+    { kind: 'fork', config: { conditionType: 'device', conditionValue: 'mobile' } },
+  ];
+
+  it('repairs the mobile workflow from the logs, preserving the trigger and resubmitting skipped edits', async () => {
+    const input = request();
+    input.messages = [
+      { role: 'user', content: 'On #shop-now click, if mobile, set h1 to Vamos amigo!' },
+    ];
+    input.workflow.nodes = [];
+    input.workflow.edges = [];
+    input.selectedNodeIds = [];
+    const before = structuredClone(input);
+    const heading: Call = [
+      'add_node',
+      { kind: 'dom', config: { selector: 'h1', action: 'text', value: 'Vamos amigo!' } },
+    ];
+    let triggerId = '';
+    const invocations = provider(
+      [
+        read,
+        ['add_node', { kind: 'trigger', config: { event: 'click', selector: '#shop-now' } }],
+        [missingDevice, heading],
+        () => {
+          expect(toolkit.getWorkflow().nodes).toHaveLength(1);
+          triggerId = toolkit.getWorkflow().nodes[0].id;
+          const results = outputs(invocations()) ?? [];
+          const failure = results.find(
+            (result) => result.type === 'tool-result' && result.toolCallId === 'unique-2',
+          );
+          expect(failure).toMatchObject({
+            output: { value: expect.stringContaining('config.conditionValue') },
+          });
+          expect(failure).toMatchObject({
+            output: { value: expect.stringContaining('"retryable":true') },
+          });
+          expect(results).toContainEqual(
+            expect.objectContaining({
+              toolCallId: 'unique-2-1',
+              output: { type: 'text', value: expect.stringContaining('skipped_after_failure') },
+            }),
+          );
+          return [mobileDevice, heading];
+        },
+        () => {
+          const [trigger, fork, dom] = toolkit.getWorkflow().nodes;
+          expect(trigger.id).toBe(triggerId);
+          return [
+            ['add_connection', { source: trigger.id, target: fork.id }],
+            ['add_connection', { source: fork.id, target: dom.id, sourceHandle: 'true' }],
+          ];
+        },
+        ...(streaming ? [['finish_workflow', {}] as Call] : []),
+      ],
+      streaming,
+      'Created the mobile workflow.',
+    );
+    const ready = streaming ? vi.fn() : undefined;
+    const response = await runLocalAgent(
+      input,
+      new AbortController().signal,
+      {
+        ...config,
+        provider: 'local',
+        baseURL: 'http://127.0.0.1:5050/v1',
+      },
+      emit(),
+      undefined,
+      ready,
+    );
+    expect(response.operations).toHaveLength(5);
+    const workflow = applyClient(input.workflow, response.operations);
+    expect(workflow).toEqual(toolkit.getWorkflow());
+    expect(workflow.nodes.map((node) => node.data.kind)).toEqual(['trigger', 'fork', 'dom']);
+    expect(workflow.nodes[1].data.config).toEqual({
+      conditionType: 'device',
+      conditionValue: 'mobile',
+    });
+    expect(workflow.nodes[2].data.config.value).toBe('Vamos amigo!');
+    expect(workflow.edges).toHaveLength(2);
+    if (ready) expect(ready).toHaveBeenCalledTimes(1);
+    expect(input).toEqual(before);
+  });
+
+  it('uses the shared correction budget for semantic, schema and connection errors', async () => {
+    const input = request();
+    const before = structuredClone(input);
+    const invocations = provider(
+      [
+        read,
+        edit,
+        missingDevice,
+        read,
+        mobileDevice,
+        ['update_node', { id: 'offer', config: { width: 'wide' } }],
+        ['update_node', { id: 'offer', config: { width: 400 } }],
+        invalidConnection,
+      ],
+      streaming,
+    );
+    await expect(
+      runLocalAgent(input, new AbortController().signal, config, emit()),
+    ).rejects.toMatchObject({
+      code: 'invalid_workflow_edit',
+    });
+    expect(invocations()).toHaveLength(8);
+    expect(input).toEqual(before);
+  });
+
+  it('stops after two unsuccessful semantic corrections without applying a partial workflow', async () => {
+    const input = request();
+    const before = structuredClone(input);
+    const invocations = provider(
+      [read, edit, missingDevice, missingDevice, missingDevice],
+      streaming,
+    );
+    await expect(
+      runLocalAgent(input, new AbortController().signal, config, emit()),
+    ).rejects.toMatchObject({
+      code: 'invalid_workflow_edit',
+    });
+    expect(invocations()).toHaveLength(5);
+    expect(input).toEqual(before);
+  });
+
+  it('does not accept a label-only update as a repair of missing semantic configuration', async () => {
+    const input = request();
+    const before = structuredClone(input);
+    provider(
+      [
+        read,
+        edit,
+        ['update_node', { id: 'offer', config: { contentType: 'iframe' } }],
+        ['update_node', { id: 'offer', label: 'Iframe' }],
+      ],
+      streaming,
+    );
+    await expect(
+      runLocalAgent(input, new AbortController().signal, config, emit()),
+    ).rejects.toMatchObject({
+      code: 'invalid_workflow_edit',
+    });
+    expect(input).toEqual(before);
+  });
+
+  it('does not let an unrelated node creation resolve a failed mobile condition', async () => {
+    const input = request();
+    const before = structuredClone(input);
+    provider(
+      [
+        read,
+        missingDevice,
+        ['add_node', { kind: 'dom', config: { selector: 'h1', value: 'Vamos amigo!' } }],
+      ],
+      streaming,
+    );
+    await expect(
+      runLocalAgent(input, new AbortController().signal, config, emit()),
+    ).rejects.toMatchObject({
+      code: 'invalid_workflow_edit',
+    });
+    expect(input).toEqual(before);
+  });
+
   it('corrects a connection without recreating successful nodes or changing generated IDs', async () => {
     const input = request();
     input.workflow.nodes = [];
