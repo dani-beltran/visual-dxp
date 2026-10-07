@@ -34,6 +34,7 @@ import {
   shutdownTelemetry,
   telemetry,
 } from '../../src/server/observability/sdk';
+import { workflowReadResponse } from './read-workflow-fixture';
 
 const input = {
   messages: [{ role: 'user' as const, content: 'Explain this workflow' }],
@@ -210,7 +211,13 @@ it('runs a failed workflow without exporting provider error bodies or authorizat
 
 it('disables content while retaining operational spans and logs', async () => {
   vi.stubEnv('CAPTURE_LLM_CONTENT', 'false');
-  vi.stubGlobal('fetch', vi.fn().mockResolvedValue(response()));
+  vi.stubGlobal(
+    'fetch',
+    vi
+      .fn()
+      .mockResolvedValueOnce(workflowReadResponse())
+      .mockImplementation(() => response()),
+  );
   await runLocalAgent(input, new AbortController().signal);
   await flushTelemetry();
   expect(bodies().some((body) => body.record_id)).toBe(false);
@@ -289,6 +296,7 @@ it.each(['complete', 'disconnect', 'abort'] as const)(
       'fetch',
       vi
         .fn()
+        .mockResolvedValueOnce(workflowReadResponse(true))
         .mockResolvedValue(
           new Response(stream, { headers: { 'Content-Type': 'text/event-stream' } }),
         ),
@@ -321,7 +329,7 @@ it.each(['complete', 'disconnect', 'abort'] as const)(
     // Let the stream consume the delta before testing interruption; text is held for review.
     await new Promise((resolve) => setTimeout(resolve, 10));
     expect(chunks).toEqual([]);
-    expect(bodies().filter((b) => b.event_type === 'llm.output')).toHaveLength(0);
+    expect(bodies().filter((b) => b.event_type === 'llm.output')).toHaveLength(1);
     if (mode === 'complete')
       send({
         type: 'response.completed',
@@ -336,13 +344,16 @@ it.each(['complete', 'disconnect', 'abort'] as const)(
     await settled;
     expect(chunks).toEqual(mode === 'complete' ? ['Ready.'] : []);
     await flushTelemetry();
-    const output = bodies().find((b) => b.event_type === 'llm.output');
+    const output = bodies()
+      .filter((b) => b.event_type === 'llm.output')
+      .at(-1);
     expect(output?.content_json).toContain('Hello 🌍');
     expect(output?.partial).toBe(mode !== 'complete');
     expect(
-      spans.getFinishedSpans().find((s) => s.name === 'chat openai')?.attributes[
-        'gen_ai.response.time_to_first_token'
-      ],
+      spans
+        .getFinishedSpans()
+        .filter((s) => s.name === 'chat openai')
+        .at(-1)?.attributes['gen_ai.response.time_to_first_token'],
     ).toEqual(expect.any(Number));
   },
 );
@@ -364,11 +375,17 @@ it('propagates proxy context into the LangGraph entrypoint without duplicating g
   await runRemoteAgent(input, new AbortController().signal);
   const carrier = envelope?.config.configurable.dxpTelemetry as Record<string, string>;
   expect(carrier.traceparent).toBe(headers?.traceparent);
-  vi.stubGlobal('fetch', vi.fn().mockResolvedValue(response()));
+  vi.stubGlobal(
+    'fetch',
+    vi
+      .fn()
+      .mockResolvedValueOnce(workflowReadResponse())
+      .mockImplementation(() => response()),
+  );
   await graph.invoke({ request: input }, { configurable: { dxpTelemetry: carrier } });
   await flushTelemetry();
   expect(new Set(spans.getFinishedSpans().map((s) => s.spanContext().traceId)).size).toBe(1);
-  expect(spans.getFinishedSpans().filter((s) => s.name === 'chat openai')).toHaveLength(1);
+  expect(spans.getFinishedSpans().filter((s) => s.name === 'chat openai')).toHaveLength(2);
   expect(new Set(bodies().map((b) => b.workflow_run_id)).size).toBe(1);
 });
 
@@ -391,7 +408,13 @@ it('keeps successful execution intact when exporters or flushing fail', async ()
   vi.spyOn(logs, 'export').mockImplementation((_records, callback) => callback({ code: 1 }));
   vi.spyOn(spans, 'export').mockImplementation((_records, callback) => callback({ code: 1 }));
   vi.spyOn(telemetry().metrics, 'forceFlush').mockRejectedValue(new Error('export unavailable'));
-  vi.stubGlobal('fetch', vi.fn().mockResolvedValue(response()));
+  vi.stubGlobal(
+    'fetch',
+    vi
+      .fn()
+      .mockResolvedValueOnce(workflowReadResponse())
+      .mockImplementation(() => response()),
+  );
   await expect(runLocalAgent(input, new AbortController().signal)).resolves.toMatchObject({
     message: 'Ready.',
   });

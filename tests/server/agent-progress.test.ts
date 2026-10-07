@@ -6,9 +6,11 @@ import {
   requestAIChat,
 } from '../../src/lib/ai';
 import { AIServiceError, runLocalAgent } from '../../src/server/ai/agent';
+import { graph } from '../../src/server/ai/graph';
 import { CHAT_TIMEOUT_MS, handleChat } from '../../src/server/ai/http';
+import { reviewWorkflow } from '../../src/server/ai/review';
 import * as workflowTools from '../../src/server/ai/tools';
-import type { AIChatRequest } from '../../src/server/ai/workflow/ai';
+import type { AIChatRequest, AIChatResponse } from '../../src/server/ai/workflow/ai';
 
 vi.mock('ai', async (original) => ({
   ...(await original<typeof import('ai')>()),
@@ -72,6 +74,7 @@ const createTools = workflowTools.createWorkflowTools;
 
 beforeEach(() => {
   vi.spyOn(console, 'debug').mockImplementation(() => {});
+  vi.mocked(reviewWorkflow).mockClear();
   vi.mocked(generateText).mockReset();
   vi.mocked(streamText).mockReset();
   vi.spyOn(workflowTools, 'createWorkflowTools').mockImplementation((...args) => {
@@ -497,6 +500,7 @@ describe.each([false, true])('agent progress (streaming: %s)', (streaming) => {
   it('pairs every call with a result and skips dependent calls until the next response', async () => {
     const invocations = provider(
       [
+        read,
         [
           read,
           edit,
@@ -518,10 +522,10 @@ describe.each([false, true])('agent progress (streaming: %s)', (streaming) => {
     const response = await runLocalAgent(request(), new AbortController().signal, config, emit());
     expect(response.operations).toHaveLength(2);
     const results = outputs(invocations()) ?? [];
-    expect(results).toHaveLength(7);
+    expect(results).toHaveLength(8);
     for (const index of [3, 4, 5]) {
-      expect(results[index]).toMatchObject({
-        toolCallId: `unique-0-${index}`,
+      expect(results[index + 1]).toMatchObject({
+        toolCallId: `unique-1-${index}`,
         output: { type: 'text', value: expect.stringContaining('skipped_after_failure') },
       });
     }
@@ -530,6 +534,7 @@ describe.each([false, true])('agent progress (streaming: %s)', (streaming) => {
   it('corrects schema and configuration errors using their repair hints', async () => {
     const invocations = provider(
       [
+        read,
         ['update_node', { id: 'start', config: { scrollDirectionChanges: 'four' } }],
         ['update_node', { id: 'start', config: { ...scroll, iterations: 3 } }],
         edit,
@@ -539,10 +544,10 @@ describe.each([false, true])('agent progress (streaming: %s)', (streaming) => {
     const response = await runLocalAgent(request(), new AbortController().signal, config, emit());
     expect(response.operations).toHaveLength(1);
     const results = outputs(invocations()) ?? [];
-    expect(results[0]).toMatchObject({
+    expect(results[1]).toMatchObject({
       output: { value: expect.stringContaining('config.scrollDirectionChanges') },
     });
-    expect(results[1]).toMatchObject({
+    expect(results[2]).toMatchObject({
       output: { value: expect.stringContaining('Send only fields supported') },
     });
   });
@@ -566,6 +571,7 @@ describe.each([false, true])('agent progress (streaming: %s)', (streaming) => {
   it('does not treat an empty configuration patch as resolving a failed edit', async () => {
     provider(
       [
+        read,
         ['update_node', { id: 'start', config: { iterations: 3 } }],
         ['update_node', { id: 'start', config: {} }],
       ],
@@ -884,10 +890,7 @@ describe.each([false, true])('agent progress (streaming: %s)', (streaming) => {
 
 it('commits a reviewed batch without another editor generation', async () => {
   const calls = provider(
-    [
-      ['update_node', { id: 'offer', label: 'Updated offer' }],
-      ['finish_workflow', {}],
-    ],
+    [read, ['update_node', { id: 'offer', label: 'Updated offer' }], ['finish_workflow', {}]],
     true,
   );
   const ready = vi.fn();
@@ -902,12 +905,13 @@ it('commits a reviewed batch without another editor generation', async () => {
   expect(ready).toHaveBeenCalledTimes(1);
   expect(ready.mock.calls[0][0].operations).toEqual(result.operations);
   expect(result.operations).toHaveLength(1);
-  expect(calls()).toHaveLength(2);
+  expect(calls()).toHaveLength(3);
 });
 
 it('does not commit while a failed edit remains unresolved', async () => {
   provider(
     [
+      read,
       ['update_node', { id: 'start', config: { event: 'not-an-event' } }],
       ['finish_workflow', {}],
     ],
@@ -925,7 +929,7 @@ it.each(['first', 'last'])(
   async (position) => {
     const edit: Call = ['update_node', { id: 'offer', label: 'Updated offer' }];
     const finish: Call = ['finish_workflow', {}];
-    provider([position === 'first' ? [finish, edit] : [edit, finish]], true);
+    provider([read, position === 'first' ? [finish, edit] : [edit, finish]], true);
     const ready = vi.fn();
     const result = await runLocalAgent(
       request(),
@@ -944,6 +948,7 @@ it.each(['first', 'last'])(
 it('keeps the batch private when an edit after finish_workflow fails, then permits correction', async () => {
   provider(
     [
+      read,
       [
         ['finish_workflow', {}],
         ['update_node', { id: 'start', config: { event: 'not-an-event' } }],
@@ -1088,3 +1093,222 @@ vi.mock('../../src/server/ai/review', async (original) => ({
     question: '',
   })),
 }));
+
+describe.each(['openai', 'claude', 'local'] as const)('required read: %s', (selected) => {
+  const selectedConfig = {
+    ...config,
+    provider: selected,
+    ...(selected === 'local' ? { baseURL: 'http://127.0.0.1:11434/v1' } : {}),
+  };
+  describe.each([false, true])('streaming: %s', (streaming) => {
+    const emit = () => (streaming ? vi.fn() : undefined);
+    it('unlocks edits only after the actual read and preserves review/atomic commitment', async () => {
+      const calls = provider([read, edit], streaming);
+      const input = request();
+      const before = structuredClone(input);
+      const response = await runLocalAgent(
+        input,
+        new AbortController().signal,
+        selectedConfig,
+        emit(),
+      );
+      expect(Object.keys(calls()[0][0]?.tools ?? {})).toEqual(['read_workflow']);
+      expect(calls()[0][0]?.toolChoice).toBe('required');
+      expect(calls()[1][0]?.tools).toHaveProperty('update_node');
+      expect(calls()[1][0]?.toolChoice).toBe('auto');
+      expect(response.operations).toHaveLength(1);
+      expect(reviewWorkflow).toHaveBeenCalledOnce();
+      expect(input).toEqual(before);
+      expect(calls()).toHaveLength(3);
+    });
+
+    it.each([
+      ['text completion', []],
+      ['finish tool', [['finish_workflow', {}]]],
+      ['mutation only', [edit]],
+      ['catalog only', [['read_node_catalog', {}]]],
+      ['read then mutation', [[read, edit]]],
+      ['mutation then read', [[edit, read]]],
+      ['read and finish', [[read, ['finish_workflow', {}]]]],
+      ['duplicate reads', [[read, read]]],
+    ] as [string, (Call | Call[])[]][])(
+      'rejects %s before any tool executes',
+      async (_name, turns) => {
+        const calls = provider(turns, streaming);
+        const ready = vi.fn();
+        let invoke!: ReturnType<typeof vi.spyOn>;
+        vi.spyOn(workflowTools, 'createWorkflowTools').mockImplementation((...args) => {
+          toolkit = createTools(...args);
+          invoke = vi.spyOn(toolkit, 'invokePrivate');
+          return toolkit;
+        });
+        await expect(
+          runLocalAgent(
+            request(),
+            new AbortController().signal,
+            selectedConfig,
+            emit(),
+            undefined,
+            streaming ? ready : undefined,
+          ),
+        ).rejects.toMatchObject({ status: 422 });
+        expect(invoke).not.toHaveBeenCalled();
+        expect(toolkit.getOperations()).toEqual([]);
+        expect(ready).not.toHaveBeenCalled();
+        expect(reviewWorkflow).not.toHaveBeenCalled();
+        expect(calls()).toHaveLength(1);
+      },
+    );
+
+    it.each(['text', 'finish', 'edit'] as const)(
+      'does not unlock %s after malformed read arguments',
+      async (next) => {
+        const calls = provider(
+          [
+            ['read_workflow', null],
+            ...(next === 'text'
+              ? []
+              : [next === 'edit' ? edit : (['finish_workflow', {}] as Call)]),
+          ],
+          streaming,
+        );
+        const ready = vi.fn();
+        await expect(
+          runLocalAgent(
+            request(),
+            new AbortController().signal,
+            selectedConfig,
+            emit(),
+            undefined,
+            streaming ? ready : undefined,
+          ),
+        ).rejects.toMatchObject({ status: 422 });
+        for (const [options] of calls()) {
+          expect(Object.keys(options?.tools ?? {})).toEqual(['read_workflow']);
+          expect(options?.toolChoice).toBe('required');
+        }
+        expect(toolkit.getOperations()).toEqual([]);
+        expect(ready).not.toHaveBeenCalled();
+        expect(reviewWorkflow).not.toHaveBeenCalled();
+      },
+    );
+
+    it.each(['{}', '{"ok":true}', '{"ok":false}', '{"workflow":{}}', 'null', 'not JSON', 'throw'])(
+      'rejects failed or malformed read output %s',
+      async (output) => {
+        const calls = provider(
+          [
+            () => {
+              vi.spyOn(toolkit, 'invokePrivate').mockImplementation(() => {
+                if (output === 'throw') throw new Error('Read failed');
+                return output;
+              });
+              return read;
+            },
+            edit,
+          ],
+          streaming,
+        );
+        await expect(
+          runLocalAgent(request(), new AbortController().signal, selectedConfig, emit()),
+        ).rejects.toMatchObject({ status: 422 });
+        expect(calls()).toHaveLength(1);
+        expect(toolkit.getOperations()).toEqual([]);
+        expect(reviewWorkflow).not.toHaveBeenCalled();
+      },
+    );
+
+    it('allows a corrected read within the existing argument repair budget', async () => {
+      const calls = provider([['read_workflow', null], read, edit], streaming);
+      const response = await runLocalAgent(
+        request(),
+        new AbortController().signal,
+        selectedConfig,
+        emit(),
+      );
+      expect(calls()[1][0]?.toolChoice).toBe('required');
+      expect(calls()[2][0]?.toolChoice).toBe('auto');
+      expect(response.operations).toHaveLength(1);
+    });
+
+    it('bounds repeated malformed reads without enabling edits', async () => {
+      const calls = provider(
+        Array.from({ length: 3 }, (): Call => ['read_workflow', null]),
+        streaming,
+      );
+      await expect(
+        runLocalAgent(request(), new AbortController().signal, selectedConfig, emit()),
+      ).rejects.toMatchObject({ code: 'invalid_workflow_edit' });
+      expect(calls()).toHaveLength(3);
+      expect(toolkit.getOperations()).toEqual([]);
+      expect(reviewWorkflow).not.toHaveBeenCalled();
+    });
+
+    it('rejects the textual finish marker before reading', async () => {
+      provider([], streaming, '<tool_call><function=finish_workflow></function></tool_call>');
+      const ready = vi.fn();
+      await expect(
+        runLocalAgent(
+          request(),
+          new AbortController().signal,
+          selectedConfig,
+          emit(),
+          undefined,
+          streaming ? ready : undefined,
+        ),
+      ).rejects.toMatchObject({ status: 422 });
+      expect(ready).not.toHaveBeenCalled();
+      expect(reviewWorkflow).not.toHaveBeenCalled();
+    });
+  });
+});
+
+describe.each([false, true])('LangGraph required read (streaming: %s)', (streaming) => {
+  it.each(['success', 'text', 'mixed', 'failed'] as const)(
+    'enforces the shared gate for %s',
+    async (scenario) => {
+      vi.stubEnv('OPENAI_API_KEY', 'test-key');
+      vi.stubEnv('LOCAL_LLM_BASE_URL', '');
+      vi.stubEnv('LOCAL_LLM_MODEL', '');
+      const calls = provider(
+        scenario === 'success'
+          ? [read, edit]
+          : scenario === 'mixed'
+            ? [[read, edit]]
+            : scenario === 'failed'
+              ? [['read_workflow', null], edit]
+              : [],
+        streaming,
+      );
+      const ready: unknown[] = [];
+      const run = async () => {
+        if (!streaming) return (await graph.invoke({ request: request() })).response;
+        let response: AIChatResponse | undefined;
+        const events = await graph.stream(
+          { request: request() },
+          {
+            streamMode: ['custom', 'values'],
+            configurable: { streamAIText: true },
+          },
+        );
+        for await (const [mode, value] of events) {
+          if (mode === 'custom' && value.type === 'workflow-ready') ready.push(value.response);
+          if (mode === 'values' && value.response) response = value.response;
+        }
+        return response;
+      };
+      if (scenario === 'success') {
+        expect((await run())?.operations).toHaveLength(1);
+        expect(reviewWorkflow).toHaveBeenCalledOnce();
+        expect(ready).toHaveLength(streaming ? 1 : 0);
+      } else {
+        await expect(run()).rejects.toMatchObject({ status: 422 });
+        expect(toolkit.getOperations()).toEqual([]);
+        expect(ready).toEqual([]);
+        expect(reviewWorkflow).not.toHaveBeenCalled();
+      }
+      expect(Object.keys(calls()[0][0]?.tools ?? {})).toEqual(['read_workflow']);
+      expect(calls()[0][0]?.toolChoice).toBe('required');
+    },
+  );
+});

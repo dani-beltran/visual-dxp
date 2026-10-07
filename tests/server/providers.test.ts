@@ -149,10 +149,12 @@ it.each(['openai', 'claude', 'local'] as const)(
         provider === 'claude' ? 'claude-private-key' : `Bearer ${provider}-private-key`,
       );
       expect(body.model).toBe(`${provider}-model`);
-      if (provider === 'local' && step === 0) {
+      if (step === 0) {
         expect(body.tools).toHaveLength(1);
-        expect(body.tools[0].function.name).toBe('read_workflow');
-        expect(body.tool_choice).toBe('required');
+        expect(provider === 'local' ? body.tools[0].function.name : body.tools[0].name).toBe(
+          'read_workflow',
+        );
+        expect(body.tool_choice).toEqual(provider === 'claude' ? { type: 'any' } : 'required');
       } else {
         expect(body.tools.length).toBeGreaterThan(5);
         if (provider === 'local') expect(body.tool_choice).toBe('auto');
@@ -273,7 +275,10 @@ it('keeps cloud destinations fixed', async () => {
 });
 it('preserves the OpenAI-only remote contract and routes browser overrides directly', async () => {
   vi.stubEnv('LANGGRAPH_API_URL', 'https://deployment.test');
-  const fetcher = vi.fn().mockResolvedValue(upstream('claude'));
+  const fetcher = vi
+    .fn()
+    .mockResolvedValueOnce(upstream('claude', 'read_workflow'))
+    .mockResolvedValue(upstream('claude'));
   vi.stubGlobal('fetch', fetcher);
   await expect(
     respondToAIChat(input, new AbortController().signal, { provider: 'claude', source: 'server' }),
@@ -289,12 +294,13 @@ it('uses same-provider server defaults, including optional local authentication'
   vi.stubEnv('LOCAL_LLM_MODEL', 'server-local');
   vi.stubEnv('LOCAL_LLM_API_KEY', '');
   let localStep = 0;
+  let claudeStep = 0;
   vi.stubGlobal(
     'fetch',
     vi.fn(async (url, init: RequestInit) => {
       if (String(url).includes('anthropic')) {
         expect(new Headers(init.headers).get('x-api-key')).toBe('anthropic-server-key');
-        return upstream('claude');
+        return claudeStep++ === 0 ? upstream('claude', 'read_workflow') : upstream('claude');
       }
       expect(new Headers(init.headers).has('authorization')).toBe(false);
       return localStep++ === 0 ? upstream('local', 'read_workflow') : upstream('local');
@@ -373,8 +379,8 @@ it('isolates concurrent OpenAI, Claude and local requests even when server crede
   vi.stubEnv('LANGSMITH_TRACING', 'true');
   vi.stubEnv('LANGSMITH_API_KEY', 'server-tracing-secret');
   const logs = [vi.spyOn(console, 'log'), vi.spyOn(console, 'warn'), vi.spyOn(console, 'error')];
-  let localStep = 0;
   const destinations: string[] = [];
+  const readProviders = new Set<string>();
   vi.stubGlobal(
     'fetch',
     vi.fn(async (url, init: RequestInit) => {
@@ -390,9 +396,9 @@ it('isolates concurrent OpenAI, Claude and local requests even when server crede
       );
       expect(JSON.parse(String(init.body)).model).toBe(`${provider}-model`);
       await new Promise((resolve) => setTimeout(resolve, 1));
-      return provider === 'local' && localStep++ === 0
-        ? upstream(provider, 'read_workflow')
-        : upstream(provider);
+      const first = !readProviders.has(provider);
+      readProviders.add(provider);
+      return first ? upstream(provider, 'read_workflow') : upstream(provider);
     }),
   );
   const results = await Promise.all(
@@ -401,7 +407,7 @@ it('isolates concurrent OpenAI, Claude and local requests even when server crede
     ),
   );
   expect(results.every((result) => result.message === 'Done.')).toBe(true);
-  expect(destinations).toHaveLength(4);
+  expect(destinations).toHaveLength(6);
   expect(destinations.every((url) => /api.openai.com|api.anthropic.com|127.0.0.1/.test(url))).toBe(
     true,
   );
@@ -506,10 +512,7 @@ it.each([undefined, 'openai', 'claude', 'local'] as const)(
               : `Bearer ${provider}-private-key`
             : 'anthropic-server-key',
         );
-        return upstream(
-          selected,
-          selected === 'local' && step++ === 0 ? 'read_workflow' : undefined,
-        );
+        return upstream(selected, step++ === 0 ? 'read_workflow' : undefined);
       },
     );
     vi.stubGlobal('fetch', fetcher);
@@ -517,7 +520,7 @@ it.each([undefined, 'openai', 'claude', 'local'] as const)(
     expect(
       await requestAIChat({ endpoint }, input, undefined, provider ? config(provider) : undefined),
     ).toEqual({ message: 'Done.', operations: [] });
-    expect(fetcher).toHaveBeenCalledTimes(provider === 'local' ? 3 : 2);
+    expect(fetcher).toHaveBeenCalledTimes(3);
   },
 );
 
@@ -667,13 +670,13 @@ it.each([
       if (expected) expect(body.include).toContain('reasoning.encrypted_content');
     }
     if (provider === 'claude') expect(body.max_tokens).toBe(8192);
-    return upstream(provider, provider === 'local' && step++ === 0 ? 'read_workflow' : undefined);
+    return upstream(provider, step++ === 0 ? 'read_workflow' : undefined);
   });
   vi.stubGlobal('fetch', fetcher);
   await expect(
     runLocalAgent(input, new AbortController().signal, { ...config(provider), model }),
   ).resolves.toMatchObject({ message: 'Done.', operations: [] });
-  expect(fetcher).toHaveBeenCalledTimes(provider === 'local' ? 2 : 1);
+  expect(fetcher).toHaveBeenCalledTimes(2);
 });
 
 // Provider/tool-loop tests isolate the independent semantic review call.
