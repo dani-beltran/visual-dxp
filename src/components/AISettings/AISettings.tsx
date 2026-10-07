@@ -327,16 +327,7 @@ function ProviderForm({
           </>
         )}
         <div className="dxp-ai-settings-actions">
-          <button
-            type="submit"
-            className="dxp-button dxp-button-primary"
-            disabled={
-              busy ||
-              (state.status === 'locked'
-                ? !passphrase
-                : !model || (provider !== 'local' && !apiKey) || (!!apiKey && !passphrase))
-            }
-          >
+          <button type="submit" className="dxp-button dxp-button-primary" disabled={busy}>
             {state.status === 'locked'
               ? t('aiSettings.unlockBrowserSettings')
               : t('aiSettings.saveAndActivate')}
@@ -384,6 +375,12 @@ function ProviderForm({
             </button>
           )}
         </div>
+        {(error || state.error) && (
+          <p className="dxp-error" role="alert">
+            {error || stateError}
+          </p>
+        )}
+        {notice && <p role="status">{notice}</p>}
       </form>
       {!compact && (
         <>
@@ -407,12 +404,6 @@ function ProviderForm({
           </button>
         </div>
       )}
-      {(error || state.error) && (
-        <p className="dxp-error" role="alert">
-          {error || stateError}
-        </p>
-      )}
-      {notice && <p role="status">{notice}</p>}
     </>
   );
 }
