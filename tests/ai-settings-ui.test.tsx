@@ -227,10 +227,9 @@ it('saves and activates local settings without a key, and unsaved fields never a
   await input('Self-Hosted API base URL', 'https://models.example.com/v1');
   await input('Self-Hosted model ID', 'local-model');
   expect(store.forRequest('https://ai.test/chat', new AbortController())).toBeUndefined();
-  await act(async () =>
-    host
-      .querySelector('form')!
-      .dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })),
+  await click(button('Save and activate'));
+  expect(host.querySelector('form [role="status"]')?.textContent).toContain(
+    'Self-Hosted saved and activated',
   );
   expect(store.getSnapshot().activeProvider).toBe('local');
   await input('Self-Hosted model ID', 'unsaved-model');
@@ -286,3 +285,37 @@ it('keeps the previous provider after a failed save and activates saved credenti
     apiKey: 'sk-openai-private',
   });
 });
+
+it.each([
+  {
+    model: '',
+    baseURL: 'http://localhost:11434/v1',
+    apiKey: '',
+    error: 'Enter a valid API key and model ID.',
+  },
+  { model: 'local-model', baseURL: '', apiKey: '', error: 'Enter an HTTP(S) API base URL' },
+  {
+    model: 'local-model',
+    baseURL: 'http://localhost:11434/v1',
+    apiKey: 'local-test-key',
+    error: 'Use a passphrase with at least 12 characters.',
+  },
+])(
+  'shows a validation error when saving incomplete self-hosted settings: $error',
+  async ({ model, baseURL, apiKey, error }) => {
+    const store = new AISettingsStore();
+    store.refresh();
+    await act(async () =>
+      root.render(<AISettings store={store} endpoint="https://ai.test/chat" />),
+    );
+    await click(tab('Self-Hosted')!);
+    await input('Self-Hosted API base URL', baseURL);
+    await input('Self-Hosted model ID', model);
+    if (apiKey) await input('Self-Hosted API key (optional)', apiKey);
+    expect(button('Save and activate').disabled).toBe(false);
+    await click(button('Save and activate'));
+    expect(host.querySelector('form [role="alert"]')?.textContent).toContain(error);
+    expect(store.getSnapshot().activeProvider).toBeNull();
+    expect(button('Save and activate').disabled).toBe(false);
+  },
+);
