@@ -130,6 +130,7 @@ async function executeLocalAgent(
         'Submit the complete draft for technical and semantic review. Call after all requested edits are finished. Review may require implementation repairs before commitment.',
       inputSchema: jsonSchema({ type: 'object', properties: {}, additionalProperties: false }),
     };
+  let workflowRead = false;
   let ready: AIChatResponse | undefined;
   let semanticRepairs = 0;
   const messages: ModelMessage[] = request.messages.map(({ role, content }) => ({ role, content }));
@@ -147,6 +148,7 @@ async function executeLocalAgent(
       }),
     });
   const commitWorkflow = async () => {
+    if (!workflowRead) throw new Error('Workflow must be read before completion.');
     toolkit.finalizeLayout();
     const operations = toolkit.getOperations();
     const draft = applyWorkflowOperations(request.workflow, operations);
@@ -207,7 +209,7 @@ async function executeLocalAgent(
     for (let turn = 0; turn < 40; turn++) {
       const completed = await withStep(`turn-${turn}`, async () => {
         signal.throwIfAborted();
-        const requireWorkflowRead = config.provider === 'local' && turn === 0;
+        const requireWorkflowRead = !workflowRead;
         const options = {
           model,
           system:
@@ -220,8 +222,7 @@ async function executeLocalAgent(
           abortSignal: signal,
           maxRetries: 0,
           telemetry: { isEnabled: false, recordInputs: false, recordOutputs: false },
-          // Some local servers reject named tool choices. Offering only the read tool
-          // with required selection preserves the mandatory first workflow read.
+          // Require a read for every provider; avoid named choices unsupported by some servers.
           toolChoice: requireWorkflowRead ? ('required' as const) : ('auto' as const),
           ...providerGenerationOptions(config),
         };
@@ -313,12 +314,9 @@ async function executeLocalAgent(
         if (!['stop', 'tool-calls'].includes(result.finishReason))
           throw new Error('Incomplete provider response.');
         const calls = result.toolCalls;
-        if (
-          config.provider === 'local' &&
-          turn === 0 &&
-          !calls.some((call) => call.toolName === 'read_workflow')
-        )
-          throw new Error('Self-Hosted model did not honor required tool choice.');
+        // Validate the entire response before invoking anything, including the read.
+        if (requireWorkflowRead && (calls.length !== 1 || calls[0].toolName !== 'read_workflow'))
+          throw new Error('Provider must return only the required workflow read.');
         if (!calls.length) {
           if (result.finishReason !== 'stop') throw new Error('Incomplete provider response.');
           if (unresolvedCalls.length) {
@@ -405,6 +403,16 @@ async function executeLocalAgent(
                 });
                 skipRemainingCalls = true;
                 return value;
+              }
+              if (requireWorkflowRead) {
+                // The read tool returns workflow data, not a mutation's ok envelope.
+                // Only its actual successful result can unlock editing and completion.
+                if (
+                  !result?.workflow ||
+                  semanticJSON(result.workflow) !== semanticJSON(toolkit.getWorkflow())
+                )
+                  throw new Error('Workflow read did not return the current workflow.');
+                workflowRead = true;
               }
               unresolvedCalls = unresolvedCalls.filter(
                 (failed) =>

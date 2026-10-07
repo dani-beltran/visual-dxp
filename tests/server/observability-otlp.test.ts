@@ -4,6 +4,7 @@ import { expect, it, vi } from 'vitest';
 import { runLocalAgent } from '../../src/server/ai/agent';
 import { withWorkflow } from '../../src/server/observability';
 import { flushTelemetry, shutdownTelemetry } from '../../src/server/observability/sdk';
+import { workflowReadResponse } from './read-workflow-fixture';
 
 it('exports real OTLP JSON to a local receiver and survives a failed receiver', async () => {
   const received: { path: string; body: string; authorization: string | undefined }[] = [];
@@ -51,26 +52,28 @@ it('exports real OTLP JSON to a local receiver and survives a failed receiver', 
       edges: [],
     },
   };
-  const fetcher = vi.fn().mockImplementation(() =>
-    Promise.resolve(
-      Response.json({
-        id: 'resp-1',
-        object: 'response',
-        created_at: 1,
-        status: 'completed',
-        model: 'fixture-model',
-        output: [
-          {
-            type: 'message',
-            id: 'msg-1',
-            role: 'assistant',
+  const fetcher = vi.fn().mockImplementation((_url, init) =>
+    JSON.parse(String(init.body)).tool_choice === 'required'
+      ? Promise.resolve(workflowReadResponse())
+      : Promise.resolve(
+          Response.json({
+            id: 'resp-1',
+            object: 'response',
+            created_at: 1,
             status: 'completed',
-            content: [{ type: 'output_text', text: 'Ready.', annotations: [] }],
-          },
-        ],
-        usage: { input_tokens: 1, output_tokens: 1, total_tokens: 2 },
-      }),
-    ),
+            model: 'fixture-model',
+            output: [
+              {
+                type: 'message',
+                id: 'msg-1',
+                role: 'assistant',
+                status: 'completed',
+                content: [{ type: 'output_text', text: 'Ready.', annotations: [] }],
+              },
+            ],
+            usage: { input_tokens: 1, output_tokens: 1, total_tokens: 2 },
+          }),
+        ),
   );
   vi.stubGlobal('fetch', fetcher);
   try {

@@ -4,6 +4,7 @@ import { safeTextEmitter } from '../../src/lib/aiStream';
 import { runLocalAgent, runRemoteAgent } from '../../src/server/ai/agent';
 import { graph } from '../../src/server/ai/graph';
 import { handleChat } from '../../src/server/ai/http';
+import { workflowReadResponse } from './read-workflow-fixture';
 
 const input = {
   messages: [{ role: 'user' as const, content: 'Explain this workflow' }],
@@ -164,6 +165,7 @@ it.each([false, true])(
       'fetch',
       vi
         .fn()
+        .mockResolvedValueOnce(workflowReadResponse(true))
         .mockResolvedValue(
           new Response(source.body, { headers: { 'Content-Type': 'text/event-stream' } }),
         ),

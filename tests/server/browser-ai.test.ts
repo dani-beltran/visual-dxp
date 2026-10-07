@@ -9,6 +9,7 @@ import { allowAIRequest } from '../../src/server/ai/access';
 import { AIServiceError, respondToAIChat } from '../../src/server/ai/agent';
 import { handleChat } from '../../src/server/ai/http';
 import type { AIChatRequest } from '../../src/server/ai/workflow/ai';
+import { workflowReadResponse } from './read-workflow-fixture';
 
 const input: AIChatRequest = {
   messages: [{ role: 'user', content: 'Explain' }],
@@ -101,6 +102,7 @@ describe('request-scoped browser AI', () => {
       expect(String(init.body)).not.toContain('user-key');
       expect(String(init.body)).not.toContain('server-key');
       await new Promise((resolve) => setTimeout(resolve, 5));
+      if (body.tool_choice === 'required') return workflowReadResponse();
       return response(
         body.model,
         JSON.stringify(body.input).includes('You are a read-only workflow reviewer.'),
@@ -127,6 +129,8 @@ describe('request-scoped browser AI', () => {
       'https://api.openai.com/v1/responses',
       'https://api.openai.com/v1/responses',
       'https://api.openai.com/v1/responses',
+      'https://api.openai.com/v1/responses',
+      'https://api.openai.com/v1/responses',
     ]);
     expect(JSON.stringify(outcomes)).not.toContain('user-key');
     expect(JSON.stringify(logs.map((log) => log.mock.calls))).not.toContain('user-key');
@@ -140,6 +144,7 @@ describe('request-scoped browser AI', () => {
       const body = JSON.parse(String(init.body));
       expect(body.model).toBe('server-model');
       expect(new Headers(init.headers).get('authorization')).toBe('Bearer server-key');
+      if (body.tool_choice === 'required') return workflowReadResponse();
       return response(
         body.model,
         JSON.stringify(body.input).includes('You are a read-only workflow reviewer.'),

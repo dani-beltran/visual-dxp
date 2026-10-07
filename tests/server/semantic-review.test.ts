@@ -57,6 +57,9 @@ function result(text = '', calls: [string, unknown][] = []) {
   };
 }
 function setup(turns: ReturnType<typeof result>[], reviews: unknown[] = [pass]) {
+  // Every editing/review scenario first reads the authoritative canvas.
+  if (turns[0]?.toolCalls[0]?.toolName !== 'read_workflow')
+    turns.unshift(result('', [['read_workflow', {}]]));
   const reviewInputs: Record<string, unknown>[] = [];
   vi.mocked(generateText).mockImplementation(async (options) => {
     if (String(options.system).startsWith('You are a read-only workflow reviewer.')) {
