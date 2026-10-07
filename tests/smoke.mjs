@@ -78,7 +78,13 @@ async function startNext(remoteUrl) {
     {
       env: {
         ...process.env,
+        // Keep developer .env files from selecting a real provider for this fixture.
         OPENAI_API_KEY: '',
+        ANTHROPIC_API_KEY: '',
+        ANTHROPIC_MODEL: '',
+        LOCAL_LLM_API_KEY: '',
+        LOCAL_LLM_BASE_URL: '',
+        LOCAL_LLM_MODEL: '',
         LANGGRAPH_API_URL: remoteUrl,
         LANGGRAPH_ASSISTANT_ID: 'workflow_editor',
         LANGSMITH_API_KEY: 'smoke-only-placeholder',
