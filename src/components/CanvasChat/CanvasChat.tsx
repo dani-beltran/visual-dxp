@@ -417,16 +417,22 @@ export function CanvasChat({
               />
               {busy ? (
                 <button
+                  key="stop"
                   type="button"
                   className="dxp-ai-send"
                   aria-label={t('canvasChat.stopGenerating')}
                   title={t('canvasChat.stopGenerating')}
-                  onClick={() => request.current?.abort()}
+                  onClick={(event) => {
+                    // Cancellation can restore Send before the click's default action runs.
+                    event.preventDefault();
+                    request.current?.abort();
+                  }}
                 >
-                  <Square size={13} fill="currentColor" aria-hidden="true" />
+                  <Square size={17} fill="currentColor" aria-hidden="true" />
                 </button>
               ) : (
                 <button
+                  key="send"
                   type="submit"
                   className="dxp-ai-send"
                   aria-label={t('canvasChat.sendMessage')}
