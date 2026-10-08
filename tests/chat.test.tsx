@@ -393,7 +393,7 @@ describe('canvas AI chat', () => {
     expect(host.textContent).toContain('Added.');
   });
 
-  it('allows stopping an active request and restores the draft after cancellation', async () => {
+  it('stops without submitting the restored draft and allows an explicit retry', async () => {
     let signal!: AbortSignal;
     const onSend = vi.fn<CanvasChatProps['onSend']>((_messages, requestSignal) => {
       signal = requestSignal;
@@ -410,11 +410,30 @@ describe('canvas AI chat', () => {
     expect(composer().disabled).toBe(true);
     expect(button('Start a new conversation').disabled).toBe(true);
     expect(signal.aborted).toBe(false);
-    await click(button('Stop generating'));
+    const stop = button('Stop generating');
+    const submit = vi.fn();
+    const form = stop.form;
+    if (!form) throw new Error('Stop should be inside the composer form');
+    form.addEventListener('submit', submit);
+    const stopClick = new MouseEvent('click', { bubbles: true, cancelable: true });
+    await act(async () => {
+      stop.dispatchEvent(stopClick);
+    });
+    expect(stopClick.defaultPrevented).toBe(true);
+    expect(submit).not.toHaveBeenCalled();
     expect(signal.aborted).toBe(true);
     expect(host.querySelector('[role="alert"]')?.textContent).toContain('Stopped.');
     expect(composer().value).toBe('Add ten steps');
     expect(composer().disabled).toBe(false);
+    expect(onSend).toHaveBeenCalledOnce();
+    expect(host.querySelectorAll('.dxp-ai-message-user')).toHaveLength(1);
+    expect(stop.isConnected).toBe(false);
+    expect(stop.type).toBe('button');
+    await click(button('Send message'));
+    expect(onSend).toHaveBeenCalledTimes(2);
+    expect(onSend.mock.calls[1][0]).toEqual([{ role: 'user', content: 'Add ten steps' }]);
+    expect(signal.aborted).toBe(false);
+    await click(button('Stop generating'));
   });
 
   it('keeps a pending request while closed and shows its result after reopening', async () => {
