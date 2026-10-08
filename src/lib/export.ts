@@ -144,6 +144,7 @@ export function validateWorkflow(
       'action',
       'value',
       'attribute',
+      'imageAlt',
       'analyticsEventName',
       'analyticsPayload',
       'experimentKey',
@@ -259,9 +260,16 @@ export function validateWorkflow(
           selector(config.selector, node.id, t('validation.chooseAnElementToUpdate'));
         if (
           config.action &&
-          !['text', 'html', 'add-class', 'remove-class', 'hide', 'show', 'attribute'].includes(
-            config.action,
-          )
+          ![
+            'text',
+            'html',
+            'add-class',
+            'remove-class',
+            'hide',
+            'show',
+            'attribute',
+            'replace-image',
+          ].includes(config.action)
         )
           add(t('validation.chooseASupportedElementAction'), node.id);
         if (config.action === 'attribute' && !config.attribute?.trim())

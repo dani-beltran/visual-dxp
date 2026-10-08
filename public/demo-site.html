@@ -134,19 +134,8 @@
       .hero-art {
         position: relative;
         min-height: 325px;
-        background: #eae5da;
         border-radius: 2px;
         overflow: hidden;
-      }
-      .hero-art:before {
-        content: '';
-        position: absolute;
-        right: -40px;
-        top: 0;
-        width: 65%;
-        height: 100%;
-        background: #e3ddd0;
-        transform: skew(-20deg);
       }
       .art-caption {
         position: absolute;
@@ -159,7 +148,8 @@
         color: #92907c;
         letter-spacing: 0.3px;
       }
-      .hero-art svg {
+      .hero-art img {
+        object-fit: fill;
         position: absolute;
         width: 100%;
         height: 100%;
@@ -221,18 +211,12 @@
         position: relative;
         display: grid;
         place-items: center;
-        background: #eae7de;
         overflow: hidden;
       }
-      .product-image svg {
-        width: 75%;
-        height: 85%;
-      }
-      .product:nth-child(2) .product-image {
-        background: #e5e8df;
-      }
-      .product:nth-child(3) .product-image {
-        background: #ece4d8;
+      .product-image img {
+        object-fit: fill;
+        width: 100%;
+        height: 100%;
       }
       .product-badge {
         position: absolute;
@@ -561,61 +545,11 @@
             <svg viewBox="0 0 18 18" aria-hidden="true"><path d="M2 9h13m-5-5 5 5-5 5" /></svg>
           </button>
         </div>
-        <div
-          class="hero-art"
-          role="img"
-          aria-label="Sculptural ceramic vase and cup in soft natural light"
-        >
-          <svg viewBox="0 0 400 380" aria-hidden="true">
-            <defs>
-              <linearGradient id="vase" x1="0" x2="1">
-                <stop stop-color="#a8a490" />
-                <stop offset=".4" stop-color="#d0cbb5" />
-                <stop offset=".72" stop-color="#c5bea6" />
-                <stop offset="1" stop-color="#a39c83" />
-              </linearGradient>
-              <linearGradient id="cup" x1="0" x2="1">
-                <stop stop-color="#b89e83" />
-                <stop offset=".5" stop-color="#dec6a6" />
-                <stop offset="1" stop-color="#c4a886" />
-              </linearGradient>
-              <filter id="blur"><feGaussianBlur stdDeviation="9" /></filter>
-            </defs>
-            <ellipse
-              cx="216"
-              cy="307"
-              rx="128"
-              ry="16"
-              fill="#ada589"
-              opacity=".28"
-              filter="url(#blur)"
-            />
-            <path
-              d="M132 123c0-11 8-17 20-17h54c11 0 19 7 19 17l-5 39c3 27 34 49 34 91 0 28-19 50-69 50s-70-22-70-50c0-43 29-64 31-91l-14-39Z"
-              fill="url(#vase)"
-            />
-            <ellipse cx="178" cy="111" rx="38" ry="9" fill="#ada791" />
-            <ellipse cx="178" cy="111" rx="27" ry="5" fill="#817f6a" />
-            <path
-              d="M173 111c12-34 24-62 46-87M175 98c-5-29-12-44-27-60M199 53c21 4 32-1 43-10"
-              stroke="#778065"
-              stroke-width="2.4"
-              fill="none"
-            />
-            <path
-              d="M188 80c-2-21-12-31-21-34-3 17 7 32 21 34M204 49c2-18 12-29 21-33 1 18-7 30-21 33M160 58c-19-4-29-16-30-30 19 3 28 14 30 30M219 51c14-13 29-13 40-6-12 13-27 15-40 6"
-              fill="#879176"
-            />
-            <path
-              d="M279 238h13c26 0 28 43 3 43h-11"
-              fill="none"
-              stroke="#c7ac8d"
-              stroke-width="12"
-            />
-            <path d="M240 226h49l-4 61c-1 13-10 19-22 19s-22-7-23-20l-4-54Z" fill="url(#cup)" />
-            <ellipse cx="262" cy="228" rx="27" ry="8" fill="#dcc5a8" />
-            <ellipse cx="262" cy="228" rx="20" ry="4" fill="#a48d73" />
-          </svg>
+        <div class="hero-art">
+          <img
+            src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9IiNlYWU1ZGEiLz48c3ZnIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIHZpZXdCb3g9IjAgMCA0MDAgMzgwIiBwcmVzZXJ2ZUFzcGVjdFJhdGlvPSJub25lIj48cGF0aCBkPSJNMjQ5IDBINTA5TDM3MSAzODBIMTExWiIgZmlsbD0iI2UzZGRkMCIvPjwvc3ZnPjxzdmcgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgdmlld0JveD0iMCAwIDQwMCAzODAiPgogICAgICAgICAgICA8ZGVmcz4KICAgICAgICAgICAgICA8bGluZWFyR3JhZGllbnQgaWQ9InZhc2UiIHgxPSIwIiB4Mj0iMSI+CiAgICAgICAgICAgICAgICA8c3RvcCBzdG9wLWNvbG9yPSIjYThhNDkwIiAvPgogICAgICAgICAgICAgICAgPHN0b3Agb2Zmc2V0PSIuNCIgc3RvcC1jb2xvcj0iI2QwY2JiNSIgLz4KICAgICAgICAgICAgICAgIDxzdG9wIG9mZnNldD0iLjcyIiBzdG9wLWNvbG9yPSIjYzViZWE2IiAvPgogICAgICAgICAgICAgICAgPHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjYTM5YzgzIiAvPgogICAgICAgICAgICAgIDwvbGluZWFyR3JhZGllbnQ+CiAgICAgICAgICAgICAgPGxpbmVhckdyYWRpZW50IGlkPSJjdXAiIHgxPSIwIiB4Mj0iMSI+CiAgICAgICAgICAgICAgICA8c3RvcCBzdG9wLWNvbG9yPSIjYjg5ZTgzIiAvPgogICAgICAgICAgICAgICAgPHN0b3Agb2Zmc2V0PSIuNSIgc3RvcC1jb2xvcj0iI2RlYzZhNiIgLz4KICAgICAgICAgICAgICAgIDxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iI2M0YTg4NiIgLz4KICAgICAgICAgICAgICA8L2xpbmVhckdyYWRpZW50PgogICAgICAgICAgICAgIDxmaWx0ZXIgaWQ9ImJsdXIiPjxmZUdhdXNzaWFuQmx1ciBzdGREZXZpYXRpb249IjkiIC8+PC9maWx0ZXI+CiAgICAgICAgICAgIDwvZGVmcz4KICAgICAgICAgICAgPGVsbGlwc2UKICAgICAgICAgICAgICBjeD0iMjE2IgogICAgICAgICAgICAgIGN5PSIzMDciCiAgICAgICAgICAgICAgcng9IjEyOCIKICAgICAgICAgICAgICByeT0iMTYiCiAgICAgICAgICAgICAgZmlsbD0iI2FkYTU4OSIKICAgICAgICAgICAgICBvcGFjaXR5PSIuMjgiCiAgICAgICAgICAgICAgZmlsdGVyPSJ1cmwoI2JsdXIpIgogICAgICAgICAgICAvPgogICAgICAgICAgICA8cGF0aAogICAgICAgICAgICAgIGQ9Ik0xMzIgMTIzYzAtMTEgOC0xNyAyMC0xN2g1NGMxMSAwIDE5IDcgMTkgMTdsLTUgMzljMyAyNyAzNCA0OSAzNCA5MSAwIDI4LTE5IDUwLTY5IDUwcy03MC0yMi03MC01MGMwLTQzIDI5LTY0IDMxLTkxbC0xNC0zOVoiCiAgICAgICAgICAgICAgZmlsbD0idXJsKCN2YXNlKSIKICAgICAgICAgICAgLz4KICAgICAgICAgICAgPGVsbGlwc2UgY3g9IjE3OCIgY3k9IjExMSIgcng9IjM4IiByeT0iOSIgZmlsbD0iI2FkYTc5MSIgLz4KICAgICAgICAgICAgPGVsbGlwc2UgY3g9IjE3OCIgY3k9IjExMSIgcng9IjI3IiByeT0iNSIgZmlsbD0iIzgxN2Y2YSIgLz4KICAgICAgICAgICAgPHBhdGgKICAgICAgICAgICAgICBkPSJNMTczIDExMWMxMi0zNCAyNC02MiA0Ni04N00xNzUgOThjLTUtMjktMTItNDQtMjctNjBNMTk5IDUzYzIxIDQgMzItMSA0My0xMCIKICAgICAgICAgICAgICBzdHJva2U9IiM3NzgwNjUiCiAgICAgICAgICAgICAgc3Ryb2tlLXdpZHRoPSIyLjQiCiAgICAgICAgICAgICAgZmlsbD0ibm9uZSIKICAgICAgICAgICAgLz4KICAgICAgICAgICAgPHBhdGgKICAgICAgICAgICAgICBkPSJNMTg4IDgwYy0yLTIxLTEyLTMxLTIxLTM0LTMgMTcgNyAzMiAyMSAzNE0yMDQgNDljMi0xOCAxMi0yOSAyMS0zMyAxIDE4LTcgMzAtMjEgMzNNMTYwIDU4Yy0xOS00LTI5LTE2LTMwLTMwIDE5IDMgMjggMTQgMzAgMzBNMjE5IDUxYzE0LTEzIDI5LTEzIDQwLTYtMTIgMTMtMjcgMTUtNDAgNiIKICAgICAgICAgICAgICBmaWxsPSIjODc5MTc2IgogICAgICAgICAgICAvPgogICAgICAgICAgICA8cGF0aAogICAgICAgICAgICAgIGQ9Ik0yNzkgMjM4aDEzYzI2IDAgMjggNDMgMyA0M2gtMTEiCiAgICAgICAgICAgICAgZmlsbD0ibm9uZSIKICAgICAgICAgICAgICBzdHJva2U9IiNjN2FjOGQiCiAgICAgICAgICAgICAgc3Ryb2tlLXdpZHRoPSIxMiIKICAgICAgICAgICAgLz4KICAgICAgICAgICAgPHBhdGggZD0iTTI0MCAyMjZoNDlsLTQgNjFjLTEgMTMtMTAgMTktMjIgMTlzLTIyLTctMjMtMjBsLTQtNTRaIiBmaWxsPSJ1cmwoI2N1cCkiIC8+CiAgICAgICAgICAgIDxlbGxpcHNlIGN4PSIyNjIiIGN5PSIyMjgiIHJ4PSIyNyIgcnk9IjgiIGZpbGw9IiNkY2M1YTgiIC8+CiAgICAgICAgICAgIDxlbGxpcHNlIGN4PSIyNjIiIGN5PSIyMjgiIHJ4PSIyMCIgcnk9IjQiIGZpbGw9IiNhNDhkNzMiIC8+CiAgICAgICAgICA8L3N2Zz48L3N2Zz4="
+            alt="Sculptural ceramic vase and cup in soft natural light"
+          />
           <div class="art-caption"><span>THE EVERYDAY COLLECTION</span><span>01 / 03</span></div>
         </div>
       </section>
@@ -647,22 +581,11 @@
         <div class="products">
           <article class="product" data-testid="stoneware-vase">
             <div class="product-image">
-              <span class="product-badge">THE EVERYDAY EDIT</span
-              ><svg viewBox="0 0 180 180" aria-label="Stoneware vase">
-                <ellipse cx="90" cy="158" rx="43" ry="7" fill="#b5ad992e" />
-                <path
-                  d="M73 28h34l-4 36c0 13 24 34 24 57 0 26-13 35-37 35s-38-10-38-35c0-23 24-44 24-57Z"
-                  fill="#bcb9a3"
-                />
-                <ellipse cx="90" cy="28" rx="17" ry="5" fill="#a09f88" />
-                <path
-                  d="M64 121c-1-21 23-45 21-83"
-                  stroke="#d2cfbc"
-                  stroke-width="9"
-                  opacity=".4"
-                  fill="none"
-                />
-              </svg>
+              <span class="product-badge">THE EVERYDAY EDIT</span>
+              <img
+                src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9IiNlYWU3ZGUiLz48c3ZnIHg9IjEyLjUlIiB5PSI3LjUlIiB3aWR0aD0iNzUlIiBoZWlnaHQ9Ijg1JSIgdmlld0JveD0iMCAwIDE4MCAxODAiPgogICAgICAgICAgICAgICAgPGVsbGlwc2UgY3g9IjkwIiBjeT0iMTU4IiByeD0iNDMiIHJ5PSI3IiBmaWxsPSIjYjVhZDk5MmUiIC8+CiAgICAgICAgICAgICAgICA8cGF0aAogICAgICAgICAgICAgICAgICBkPSJNNzMgMjhoMzRsLTQgMzZjMCAxMyAyNCAzNCAyNCA1NyAwIDI2LTEzIDM1LTM3IDM1cy0zOC0xMC0zOC0zNWMwLTIzIDI0LTQ0IDI0LTU3WiIKICAgICAgICAgICAgICAgICAgZmlsbD0iI2JjYjlhMyIKICAgICAgICAgICAgICAgIC8+CiAgICAgICAgICAgICAgICA8ZWxsaXBzZSBjeD0iOTAiIGN5PSIyOCIgcng9IjE3IiByeT0iNSIgZmlsbD0iI2EwOWY4OCIgLz4KICAgICAgICAgICAgICAgIDxwYXRoCiAgICAgICAgICAgICAgICAgIGQ9Ik02NCAxMjFjLTEtMjEgMjMtNDUgMjEtODMiCiAgICAgICAgICAgICAgICAgIHN0cm9rZT0iI2QyY2ZiYyIKICAgICAgICAgICAgICAgICAgc3Ryb2tlLXdpZHRoPSI5IgogICAgICAgICAgICAgICAgICBvcGFjaXR5PSIuNCIKICAgICAgICAgICAgICAgICAgZmlsbD0ibm9uZSIKICAgICAgICAgICAgICAgIC8+CiAgICAgICAgICAgICAgPC9zdmc+PC9zdmc+"
+                alt="Stoneware vase"
+              />
             </div>
             <div class="product-info">
               <div>
@@ -674,20 +597,10 @@
           </article>
           <article class="product" data-testid="linen-throw">
             <div class="product-image">
-              <svg viewBox="0 0 180 180" aria-label="Linen throw">
-                <path d="m31 53 108-12 19 94-108 16Z" fill="#abb39a" />
-                <path d="m31 53 108-12 4 20L35 75Z" fill="#c1c7b0" />
-                <path
-                  d="m36 80 108-12m-104 28 108-12M43 112l108-12M47 128l108-12"
-                  stroke="#ccd1c0"
-                  stroke-width="1"
-                />
-                <path
-                  d="m53 150-2 9m11-10-2 9m11-10-2 9m11-10-2 9m11-10-2 9m11-10-2 9m11-10-2 9m11-10-2 9m11-10-2 9m11-10-2 9"
-                  stroke="#abb39a"
-                  stroke-width="2"
-                />
-              </svg>
+              <img
+                src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9IiNlNWU4ZGYiLz48c3ZnIHg9IjEyLjUlIiB5PSI3LjUlIiB3aWR0aD0iNzUlIiBoZWlnaHQ9Ijg1JSIgdmlld0JveD0iMCAwIDE4MCAxODAiPgogICAgICAgICAgICAgICAgPHBhdGggZD0ibTMxIDUzIDEwOC0xMiAxOSA5NC0xMDggMTZaIiBmaWxsPSIjYWJiMzlhIiAvPgogICAgICAgICAgICAgICAgPHBhdGggZD0ibTMxIDUzIDEwOC0xMiA0IDIwTDM1IDc1WiIgZmlsbD0iI2MxYzdiMCIgLz4KICAgICAgICAgICAgICAgIDxwYXRoCiAgICAgICAgICAgICAgICAgIGQ9Im0zNiA4MCAxMDgtMTJtLTEwNCAyOCAxMDgtMTJNNDMgMTEybDEwOC0xMk00NyAxMjhsMTA4LTEyIgogICAgICAgICAgICAgICAgICBzdHJva2U9IiNjY2QxYzAiCiAgICAgICAgICAgICAgICAgIHN0cm9rZS13aWR0aD0iMSIKICAgICAgICAgICAgICAgIC8+CiAgICAgICAgICAgICAgICA8cGF0aAogICAgICAgICAgICAgICAgICBkPSJtNTMgMTUwLTIgOW0xMS0xMC0yIDltMTEtMTAtMiA5bTExLTEwLTIgOW0xMS0xMC0yIDltMTEtMTAtMiA5bTExLTEwLTIgOW0xMS0xMC0yIDltMTEtMTAtMiA5bTExLTEwLTIgOSIKICAgICAgICAgICAgICAgICAgc3Ryb2tlPSIjYWJiMzlhIgogICAgICAgICAgICAgICAgICBzdHJva2Utd2lkdGg9IjIiCiAgICAgICAgICAgICAgICAvPgogICAgICAgICAgICAgIDwvc3ZnPjwvc3ZnPg=="
+                alt="Linen throw"
+              />
             </div>
             <div class="product-info">
               <div>
@@ -699,25 +612,10 @@
           </article>
           <article class="product" data-testid="ceramic-cup">
             <div class="product-image">
-              <svg viewBox="0 0 180 180" aria-label="Ceramic cup">
-                <ellipse cx="87" cy="150" rx="49" ry="7" fill="#a58e6b21" />
-                <path
-                  d="M120 65h11c28 0 28 49 3 49h-10"
-                  fill="none"
-                  stroke="#b79d7d"
-                  stroke-width="12"
-                />
-                <path d="M47 55h79l-5 76c-1 14-15 20-35 20s-32-9-33-23Z" fill="#cfb999" />
-                <path
-                  d="m58 66 4 62c1 10 8 13 16 13"
-                  stroke="#dfccb2"
-                  stroke-width="9"
-                  fill="none"
-                  opacity=".45"
-                />
-                <ellipse cx="87" cy="56" rx="40" ry="12" fill="#dfcab0" />
-                <ellipse cx="87" cy="56" rx="31" ry="7" fill="#ae9373" />
-              </svg>
+              <img
+                src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9IiNlY2U0ZDgiLz48c3ZnIHg9IjEyLjUlIiB5PSI3LjUlIiB3aWR0aD0iNzUlIiBoZWlnaHQ9Ijg1JSIgdmlld0JveD0iMCAwIDE4MCAxODAiPgogICAgICAgICAgICAgICAgPGVsbGlwc2UgY3g9Ijg3IiBjeT0iMTUwIiByeD0iNDkiIHJ5PSI3IiBmaWxsPSIjYTU4ZTZiMjEiIC8+CiAgICAgICAgICAgICAgICA8cGF0aAogICAgICAgICAgICAgICAgICBkPSJNMTIwIDY1aDExYzI4IDAgMjggNDkgMyA0OWgtMTAiCiAgICAgICAgICAgICAgICAgIGZpbGw9Im5vbmUiCiAgICAgICAgICAgICAgICAgIHN0cm9rZT0iI2I3OWQ3ZCIKICAgICAgICAgICAgICAgICAgc3Ryb2tlLXdpZHRoPSIxMiIKICAgICAgICAgICAgICAgIC8+CiAgICAgICAgICAgICAgICA8cGF0aCBkPSJNNDcgNTVoNzlsLTUgNzZjLTEgMTQtMTUgMjAtMzUgMjBzLTMyLTktMzMtMjNaIiBmaWxsPSIjY2ZiOTk5IiAvPgogICAgICAgICAgICAgICAgPHBhdGgKICAgICAgICAgICAgICAgICAgZD0ibTU4IDY2IDQgNjJjMSAxMCA4IDEzIDE2IDEzIgogICAgICAgICAgICAgICAgICBzdHJva2U9IiNkZmNjYjIiCiAgICAgICAgICAgICAgICAgIHN0cm9rZS13aWR0aD0iOSIKICAgICAgICAgICAgICAgICAgZmlsbD0ibm9uZSIKICAgICAgICAgICAgICAgICAgb3BhY2l0eT0iLjQ1IgogICAgICAgICAgICAgICAgLz4KICAgICAgICAgICAgICAgIDxlbGxpcHNlIGN4PSI4NyIgY3k9IjU2IiByeD0iNDAiIHJ5PSIxMiIgZmlsbD0iI2RmY2FiMCIgLz4KICAgICAgICAgICAgICAgIDxlbGxpcHNlIGN4PSI4NyIgY3k9IjU2IiByeD0iMzEiIHJ5PSI3IiBmaWxsPSIjYWU5MzczIiAvPgogICAgICAgICAgICAgIDwvc3ZnPjwvc3ZnPg=="
+                alt="Ceramic cup"
+              />
             </div>
             <div class="product-info">
               <div>

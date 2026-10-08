@@ -421,6 +421,7 @@ export function NodeInspector({
                 onChange={(event) => update({ action: event.target.value as StepConfig['action'] })}
               >
                 <option value="text">{t('nodeInspector.changeText')}</option>
+                <option value="replace-image">{t('nodeInspector.replaceImage')}</option>
                 <option value="html">{t('nodeInspector.replaceHtml')}</option>
                 <option value="add-class">{t('nodeInspector.addCssClass')}</option>
                 <option value="remove-class">{t('nodeInspector.removeCssClass')}</option>
@@ -443,13 +444,15 @@ export function NodeInspector({
             {!['hide', 'show'].includes(config.action ?? 'text') && (
               <Field
                 label={
-                  config.action === 'html'
-                    ? t('nodeInspector.htmlContent')
-                    : ['add-class', 'remove-class'].includes(config.action ?? '')
-                      ? t('nodeInspector.cssClassNames')
-                      : config.action === 'attribute'
-                        ? t('nodeInspector.attributeValue')
-                        : t('nodeInspector.newText')
+                  config.action === 'replace-image'
+                    ? t('nodeInspector.imageUrl')
+                    : config.action === 'html'
+                      ? t('nodeInspector.htmlContent')
+                      : ['add-class', 'remove-class'].includes(config.action ?? '')
+                        ? t('nodeInspector.cssClassNames')
+                        : config.action === 'attribute'
+                          ? t('nodeInspector.attributeValue')
+                          : t('nodeInspector.newText')
                 }
                 htmlFor={id('value')}
                 hint={
@@ -458,20 +461,58 @@ export function NodeInspector({
                     : undefined
                 }
               >
-                <textarea
-                  id={id('value')}
-                  className={config.action === 'html' ? 'dxp-inspector-code' : ''}
-                  rows={config.action === 'html' ? 5 : 3}
-                  value={config.value ?? ''}
-                  placeholder={
-                    config.action === 'html'
-                      ? '<p>Hello {{name}}</p>'
-                      : t('nodeInspector.enterAValue')
-                  }
-                  onChange={(event) => update({ value: event.target.value })}
-                  spellCheck={config.action !== 'html'}
-                />
+                {config.action === 'replace-image' ? (
+                  <input
+                    id={id('value')}
+                    value={config.value ?? ''}
+                    placeholder="https://example.com/image.jpg"
+                    onChange={(event) => update({ value: event.target.value })}
+                    spellCheck={false}
+                  />
+                ) : (
+                  <textarea
+                    id={id('value')}
+                    className={config.action === 'html' ? 'dxp-inspector-code' : ''}
+                    rows={config.action === 'html' ? 5 : 3}
+                    value={config.value ?? ''}
+                    placeholder={
+                      config.action === 'html'
+                        ? '<p>Hello {{name}}</p>'
+                        : t('nodeInspector.enterAValue')
+                    }
+                    onChange={(event) => update({ value: event.target.value })}
+                    spellCheck={config.action !== 'html'}
+                  />
+                )}
               </Field>
+            )}
+            {config.action === 'replace-image' && (
+              <>
+                <Field
+                  label={t('nodeInspector.imageAlt')}
+                  htmlFor={id('image-alt')}
+                  hint={t('nodeInspector.imageAltHint')}
+                >
+                  <input
+                    id={id('image-alt')}
+                    value={config.imageAlt ?? ''}
+                    placeholder={t('nodeInspector.keepExistingAlt')}
+                    onChange={(event) => update({ imageAlt: event.target.value || undefined })}
+                  />
+                </Field>
+                {config.value &&
+                !dataTools.hasVariables(config.value) &&
+                /^https?:\/\//i.test(config.value.trim()) ? (
+                  <img
+                    className="dxp-inspector-image-preview"
+                    src={config.value.trim()}
+                    alt={t('nodeInspector.imagePreview')}
+                    referrerPolicy="no-referrer"
+                  />
+                ) : (
+                  <p className="dxp-inspector-hint">{t('nodeInspector.imagePreviewHint')}</p>
+                )}
+              </>
             )}
             {dataError && (
               <p role="alert" className="dxp-inspector-hint">

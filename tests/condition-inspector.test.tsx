@@ -318,6 +318,17 @@ it('edits and validates templated content without a toggle or variable explanati
     await change('Action', action);
     expect(field(label).value).toBe('Hello {{name}}!');
   }
+  await change('Action', 'replace-image');
+  await change('Image URL', 'https://example.com/new.jpg');
+  expect(host.querySelector('img')?.getAttribute('src')).toBe('https://example.com/new.jpg');
+  await change('Alt text (optional)', 'Photo of {{name}}');
+  expect(current.imageAlt).toBe('Photo of {{name}}');
+  await change('Alt text (optional)', '');
+  expect(current.imageAlt).toBeUndefined();
+  await change('Image URL', '{{imageUrl}}');
+  expect(host.querySelector('img')).toBeNull();
+  await change('Image URL', 'javascript:alert(1)');
+  expect(host.querySelector('[role="alert"]')?.textContent).toContain('HTTP(S)');
   await change('Action', 'hide');
   expect(host.querySelector('textarea')).toBeNull();
   expect(host.querySelector('.dxp-inspector-incoming-data')).toBeNull();
