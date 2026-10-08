@@ -232,6 +232,15 @@ export function createExecution(
                 ? dataTools.interpolate(config.attribute ?? '', variables, undefined, true)
                 : '';
             const targets = selectorElements(selector);
+            const imageAlt =
+              config.action === 'replace-image' && config.imageAlt !== undefined
+                ? dataTools.interpolate(config.imageAlt, variables)
+                : undefined;
+            if (
+              config.action === 'replace-image' &&
+              targets.some((element) => element.localName !== 'img')
+            )
+              throw new Error('Replace image requires an img element.');
             for (const element of targets) {
               switch (config.action ?? 'text') {
                 case 'text':
@@ -254,6 +263,19 @@ export function createExecution(
                   (element as HTMLElement).style.removeProperty('display');
                   if (win.getComputedStyle(element).display === 'none')
                     (element as HTMLElement).style.display = 'block';
+                  break;
+                }
+                case 'replace-image': {
+                  element.removeAttribute('srcset');
+                  element.removeAttribute('sizes');
+                  const picture = element.parentElement;
+                  if (picture?.localName === 'picture') {
+                    for (const source of Array.from(picture.children)) {
+                      if (source.localName === 'source') source.removeAttribute('srcset');
+                    }
+                  }
+                  element.setAttribute('src', value);
+                  if (imageAlt !== undefined) element.setAttribute('alt', imageAlt);
                   break;
                 }
                 case 'attribute':

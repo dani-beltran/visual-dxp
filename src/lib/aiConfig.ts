@@ -72,6 +72,7 @@ const configPolicies: Record<NodeKind, ConfigPolicy> = {
           hide: {},
           show: {},
           attribute: { fields: ['value', 'attribute'] },
+          'replace-image': { fields: ['value', 'imageAlt'] },
         },
       },
     ],

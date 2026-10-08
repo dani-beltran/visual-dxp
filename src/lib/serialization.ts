@@ -29,6 +29,7 @@ const strings = [
   'action',
   'value',
   'attribute',
+  'imageAlt',
   'analyticsEventName',
   'analyticsPayload',
   'experimentKey',

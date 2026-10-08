@@ -464,6 +464,15 @@ export const englishMessages = {
   'nodeInspector.theApiMustAllowRequestsFromYourWebsiteThroughCors':
     'The API must allow requests from your website through CORS.',
   'nodeInspector.action': 'Action',
+  'nodeInspector.replaceImage': 'Replace image',
+  'nodeInspector.imageUrl': 'Image URL',
+  'nodeInspector.imageAlt': 'Alt text (optional)',
+  'nodeInspector.imageAltHint':
+    'Leave blank to preserve the current description. Supports {{variables}}.',
+  'nodeInspector.keepExistingAlt': 'Keep existing alt text',
+  'nodeInspector.imagePreview': 'Replacement image preview',
+  'nodeInspector.imagePreviewHint':
+    'Use a full HTTP(S) URL for a preview. Relative URLs and variables resolve on the target page.',
   'nodeInspector.changeText': 'Change text',
   'nodeInspector.replaceHtml': 'Replace HTML',
   'nodeInspector.addCssClass': 'Add CSS class',
@@ -1280,7 +1289,7 @@ export const englishMessages = {
     incoming: boolean;
     path: string;
   }) =>
-    `${action === 'text' ? 'Change text' : action} · ${element}${incoming ? ` · Incoming data${path ? `: ${path}` : ''}` : ''}`,
+    `${action === 'text' ? 'Change text' : action === 'replace-image' ? 'Replace image' : action} · ${element}${incoming ? ` · Incoming data${path ? `: ${path}` : ''}` : ''}`,
   'summary.cookie': ({ name, value, days }: { name: string; value: string; days: number }) =>
     `${name} = ${value} · ${days ? `${days} days` : 'Session'}`,
   'summary.chooseCookie': 'Choose a cookie name',

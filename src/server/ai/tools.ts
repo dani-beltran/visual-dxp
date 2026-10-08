@@ -139,7 +139,16 @@ const config = z.object({
     )
     .optional(),
   action: z
-    .enum(['text', 'html', 'add-class', 'remove-class', 'hide', 'show', 'attribute'])
+    .enum([
+      'text',
+      'html',
+      'add-class',
+      'remove-class',
+      'hide',
+      'show',
+      'attribute',
+      'replace-image',
+    ])
     .optional(),
   value: text
     .describe(
@@ -147,6 +156,11 @@ const config = z.object({
     )
     .optional(),
   attribute: text.describe('Attribute name for Update element; supports {{variables}}.').optional(),
+  imageAlt: text
+    .describe(
+      'Optional replacement image alt text; supports {{variables}}. Omit to preserve existing alt; empty clears it.',
+    )
+    .optional(),
   cookieName: text
     .describe(
       'Cookie name on the current host; supports {{name}}, nested paths, and {{$}} from incoming data. Missing/null name variables stop the step. The resolved name must have no spaces or cookie separators.',

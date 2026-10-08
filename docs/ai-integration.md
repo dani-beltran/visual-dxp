@@ -70,7 +70,7 @@ The policies cover these dependencies:
 | --- | --- | --- |
 | Trigger | Event | Element selector and event settings |
 | HTTP request | Method | Body, except for GET/HEAD |
-| Update element | Action | Value, except for hide/show; attribute name for attribute actions |
+| Update element | Action | Value, except for hide/show; attribute name for attribute actions; image URL in value and optional imageAlt for replace-image |
 | Condition | Condition type and data operator | Selector, comparison value/key, date/time range and time zone as applicable |
 | Popover | Content type and placement | HTML content or iframe URL; selector for anchored placement |
 | Experiment | Analytics platform and delivery method | Analytics configuration for GA4; measurement ID for Google tag delivery |

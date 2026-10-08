@@ -436,6 +436,15 @@ export const spanishMessages = {
   'nodeInspector.theApiMustAllowRequestsFromYourWebsiteThroughCors':
     'La API debe permitir solicitudes desde tu sitio web mediante CORS.',
   'nodeInspector.action': 'Acción',
+  'nodeInspector.replaceImage': 'Reemplazar imagen',
+  'nodeInspector.imageUrl': 'URL de la imagen',
+  'nodeInspector.imageAlt': 'Texto alternativo (opcional)',
+  'nodeInspector.imageAltHint':
+    'Déjalo vacío para conservar la descripción actual. Admite {{variables}}.',
+  'nodeInspector.keepExistingAlt': 'Conservar el texto alternativo actual',
+  'nodeInspector.imagePreview': 'Vista previa de la imagen de reemplazo',
+  'nodeInspector.imagePreviewHint':
+    'Usa una URL HTTP(S) completa para ver la vista previa. Las URL relativas y las variables se resuelven en la página de destino.',
   'nodeInspector.changeText': 'Cambiar texto',
   'nodeInspector.replaceHtml': 'Reemplazar HTML',
   'nodeInspector.addCssClass': 'Añadir clase CSS',
@@ -1316,6 +1325,7 @@ const spanishEvents: Record<string, string> = {
   change: 'Cambiar',
 };
 const spanishActions: Record<string, string> = {
+  'replace-image': 'Reemplazar imagen',
   text: 'Cambiar texto',
   html: 'Reemplazar HTML',
   'add-class': 'Añadir clase CSS',

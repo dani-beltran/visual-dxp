@@ -69,10 +69,19 @@ export interface StepConfig extends DataTransformConfig {
   headers?: string;
   /** Raw request body; accepts {{path}} variables from incoming data (except GET/HEAD). */
   body?: string;
-  action?: 'text' | 'html' | 'add-class' | 'remove-class' | 'hide' | 'show' | 'attribute';
+  action?:
+    | 'text'
+    | 'html'
+    | 'add-class'
+    | 'remove-class'
+    | 'hide'
+    | 'show'
+    | 'attribute'
+    | 'replace-image';
   /** Update element content supports {{name}}, nested paths, and {{$}} for the whole input. */
   value?: string;
   attribute?: string;
+  imageAlt?: string;
   /** Cookie name on the current host; supports {{variables}} from incoming data. */
   cookieName?: string;
   /** Cookie value; supports {{variables}} and {{$}}. Encoded when written; may be empty. */

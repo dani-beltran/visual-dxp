@@ -29,7 +29,14 @@ describe('workflow import boundary', () => {
     ).toBe(true);
   });
   it('rejects malformed node config types before the UI renders them', () => {
-    for (const config of [null, [], { url: 42 }, { width: 'wide' }, { duration: Infinity }])
+    for (const config of [
+      null,
+      [],
+      { url: 42 },
+      { imageAlt: 42 },
+      { width: 'wide' },
+      { duration: Infinity },
+    ])
       expect(
         isWorkflow({
           ...valid,

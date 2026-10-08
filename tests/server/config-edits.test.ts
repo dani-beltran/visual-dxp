@@ -112,6 +112,25 @@ const cases: {
     after: { method: 'PATCH', url: 'https://example.test', body: 'payload' },
   },
   {
+    name: 'attribute action to image replacement',
+    kind: 'dom',
+    before: { selector: '#hero', action: 'attribute', attribute: 'src', value: '/old.jpg' },
+    patch: { action: 'replace-image', value: '/new.jpg', imageAlt: 'New image' },
+    after: { selector: '#hero', action: 'replace-image', value: '/new.jpg', imageAlt: 'New image' },
+  },
+  {
+    name: 'image replacement to text removes alt',
+    kind: 'dom',
+    before: {
+      selector: '#hero',
+      action: 'replace-image',
+      value: '/new.jpg',
+      imageAlt: 'New image',
+    },
+    patch: { action: 'text', value: 'Hello' },
+    after: { selector: '#hero', action: 'text', value: 'Hello' },
+  },
+  {
     name: 'attribute action to hide',
     kind: 'dom',
     before: { selector: '#cta', action: 'attribute', attribute: 'title', value: 'Offer' },

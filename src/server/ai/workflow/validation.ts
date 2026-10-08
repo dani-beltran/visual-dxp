@@ -121,6 +121,7 @@ export function validateWorkflow(workflow: Workflow): ValidationIssue[] {
       'action',
       'value',
       'attribute',
+      'imageAlt',
       'analyticsEventName',
       'analyticsPayload',
       'experimentKey',
@@ -236,9 +237,16 @@ export function validateWorkflow(workflow: Workflow): ValidationIssue[] {
           selector(config.selector, node.id, 'Choose an element to update.');
         if (
           config.action &&
-          !['text', 'html', 'add-class', 'remove-class', 'hide', 'show', 'attribute'].includes(
-            config.action,
-          )
+          ![
+            'text',
+            'html',
+            'add-class',
+            'remove-class',
+            'hide',
+            'show',
+            'attribute',
+            'replace-image',
+          ].includes(config.action)
         )
           add('Choose a supported element action.', node.id);
         if (config.action === 'attribute' && !config.attribute?.trim())

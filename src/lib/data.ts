@@ -18,6 +18,7 @@ interface RequestConfig {
 interface ElementValueConfig {
   selector?: string;
   attribute?: string;
+  imageAlt?: string;
   action?: string;
   value?: string;
 }
@@ -232,6 +233,7 @@ export function createDataTools() {
     return (
       hasVariables(config.selector) ||
       (config.action === 'attribute' && hasVariables(config.attribute)) ||
+      (config.action === 'replace-image' && hasVariables(config.imageAlt)) ||
       (hasElementValue(config) && hasVariables(config.value))
     );
   }
@@ -239,6 +241,10 @@ export function createDataTools() {
   function validateElementValue(config: ElementValueConfig): void {
     validateTemplate(config.selector);
     if (config.action === 'attribute') validateTemplate(config.attribute);
+    if (config.action === 'replace-image') {
+      validateTemplate(config.imageAlt);
+      if (!hasVariables(config.value)) validateImageUrl(config.value ?? '');
+    }
     if (!hasElementValue(config)) return;
     validateTemplate(config.value);
   }
@@ -290,10 +296,24 @@ export function createDataTools() {
     });
   }
 
+  function validateImageUrl(value: string): void {
+    if (!value.trim()) throw new Error('Enter an image URL.');
+    let url: URL;
+    try {
+      url = new URL(value, 'https://example.invalid/');
+    } catch {
+      throw new Error('Enter a valid image URL.');
+    }
+    if (!['http:', 'https:'].includes(url.protocol))
+      throw new Error('Use an HTTP(S) or relative image URL.');
+  }
+
   function elementValue(config: ElementValueConfig, input: DataSelection): string {
     validateElementValue(config);
     if (!hasElementValue(config)) return '';
-    return interpolate(config.value ?? '', input, config.action);
+    const value = interpolate(config.value ?? '', input, config.action);
+    if (config.action === 'replace-image') validateImageUrl(value);
+    return value;
   }
 
   function parseResponse(body: string): DataSelection {

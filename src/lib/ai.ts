@@ -115,6 +115,7 @@ const configStrings = [
   'action',
   'value',
   'attribute',
+  'imageAlt',
   'analyticsEventName',
   'analyticsPayload',
   'experimentKey',

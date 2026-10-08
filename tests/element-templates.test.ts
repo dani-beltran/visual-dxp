@@ -187,3 +187,97 @@ it('rejects missing selector variables before mutating any element', async () =>
   await expect(runtime.run()).rejects.toThrow('Variable “missing” is missing');
   expect(document.querySelector('#target')?.textContent).toBe('unchanged');
 });
+
+it.each(['direct', 'exported'] as const)(
+  'replaces responsive images, preserves layout and forwards data (%s)',
+  async (mode) => {
+    for (const imageAlt of [undefined, 'Photo of {{name}}', '']) {
+      document.body.innerHTML =
+        '<button id="run"></button><picture><source srcset="wide.jpg" media="(min-width: 600px)"><img id="target" src="old.jpg" srcset="old@2x.jpg 2x" sizes="50vw" alt="Original" width="320" height="200" class="hero" style="object-fit: cover"></picture><p id="forward"></p>';
+      const payload = { customer: { image: '/new.jpg', name: 'Ada' } };
+      const fetcher = vi
+        .spyOn(globalThis, 'fetch')
+        .mockImplementation(async () => new Response(JSON.stringify(payload)));
+      const workflow = graph({
+        selector: '#target',
+        action: 'replace-image',
+        value: '{{image}}',
+        imageAlt,
+      });
+      expect(validateWorkflow(workflow)).toEqual([]);
+      expect(serverValidate(workflow as Parameters<typeof serverValidate>[0])).toEqual([]);
+      let runtime: ReturnType<typeof createRuntime>;
+      if (mode === 'direct') runtime = createRuntime(workflow, { fetch: fetcher });
+      else {
+        new Function('window', 'document', exportWorkflow(workflow))(window, document);
+        const exported = (window as Window & { visualDXP?: ReturnType<typeof createRuntime> })
+          .visualDXP;
+        if (!exported) throw new Error('Missing exported runtime');
+        runtime = exported;
+      }
+      runtimes.push(runtime);
+      const target = document.querySelector<HTMLImageElement>('#target')!;
+      await runtime.run();
+      expect(document.querySelector('#target')).toBe(target);
+      expect(target.getAttribute('src')).toBe('/new.jpg');
+      expect(target.hasAttribute('srcset')).toBe(false);
+      expect(target.hasAttribute('sizes')).toBe(false);
+      expect(document.querySelector('source')?.hasAttribute('srcset')).toBe(false);
+      expect(target.alt).toBe(
+        imageAlt === undefined ? 'Original' : imageAlt === '' ? '' : 'Photo of Ada',
+      );
+      expect([target.width, target.height, target.className, target.style.objectFit]).toEqual([
+        320,
+        200,
+        'hero',
+        'cover',
+      ]);
+      expect(JSON.parse(document.querySelector('#forward')!.textContent!)).toEqual(
+        payload.customer,
+      );
+      runtime.destroy();
+    }
+  },
+);
+
+it.each([dataTools, serverData])('validates image URLs and alt templates', (data) => {
+  for (const value of ['', 'javascript:alert(1)', 'data:text/html,test', 'https://']) {
+    expect(() => data.validateElementValue({ action: 'replace-image', value })).toThrow();
+  }
+  for (const value of [
+    'https://example.com/photo.jpg',
+    '/photo.jpg',
+    '../photo.jpg',
+    '{{image}}',
+  ]) {
+    expect(() => data.validateElementValue({ action: 'replace-image', value })).not.toThrow();
+  }
+  expect(() => data.elementValue({ action: 'replace-image', value: '{{missing}}' }, input)).toThrow(
+    'image URL',
+  );
+  expect(() =>
+    data.validateElementValue({
+      action: 'replace-image',
+      value: '/photo.jpg',
+      imageAlt: '{{broken',
+    }),
+  ).toThrow('matching braces');
+  expect(
+    data.usesIncomingValue({ action: 'replace-image', value: '/photo.jpg', imageAlt: '{{name}}' }),
+  ).toBe(true);
+  expect(data.usesIncomingValue({ action: 'text', imageAlt: '{{name}}' })).toBe(false);
+});
+
+it('rejects mixed non-image targets before replacing any image', async () => {
+  document.body.innerHTML =
+    '<button id="run"></button><img class="target" src="old.jpg"><div class="target"></div>';
+  const runtime = createRuntime(
+    graph({ selector: '.target', action: 'replace-image', value: '/new.jpg' }),
+    {
+      fetch: vi.fn<typeof fetch>().mockResolvedValue(new Response('{"customer":{}}')),
+    },
+  );
+  runtimes.push(runtime);
+  await expect(runtime.run()).rejects.toThrow('img element');
+  expect(document.querySelector('img')?.getAttribute('src')).toBe('old.jpg');
+});
