@@ -25,6 +25,7 @@
     "./bridge": "./dist/bridge.js"
   },
   "scripts": {
+    "logs:chats": "node scripts/export-chats.mjs",
     "build:bridge": "vite build --config vite.bridge.config.ts",
     "predev": "npm run build:bridge",
     "prebuild": "npm run build:bridge",

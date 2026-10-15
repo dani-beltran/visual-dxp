@@ -108,6 +108,90 @@ In **Tempo → Trace to logs**, select Loki, use a custom query, allow a ±1-min
 
 Use the custom query instead of requiring a span-ID match to see the entire conversation. If Grafana's provisioned sources are read-only, clone them as described in the official docs and select the clones in the dashboard. [Trace to logs and derived fields](https://grafana.com/docs/grafana/latest/datasources/tempo/configure-tempo-data-source/configure-trace-to-logs/).
 
+## Export conversations from the console
+
+Run the exporter from the project root. It requires Node >=22.12 and no running application server.
+Configure these private values in `.env.local` or your shell:
+
+```dotenv
+LOKI_URL=https://your-loki-query-host
+LOKI_USERNAME=your-loki-instance-id
+LOKI_READ_TOKEN=your-logs-read-token
+# Optional: defaults to OTEL_SERVICE_NAME, then visual-dxp.
+LOKI_SERVICE_NAME=visual-dxp
+```
+
+Use the exact Loki base query URL and Loki instance ID from your Cloud stack, rather than the OTLP
+gateway, Grafana UI URL, or Loki push URL. The token needs a stack-scoped `logs:read` policy;
+the ingestion token documented above only has write permissions. Credentials stay in environment
+variables and are never printed. Shell environment values take precedence over `.env.local`, which
+takes precedence over `.env`. [Cloud Logs query authentication](https://grafana.com/docs/grafana-cloud/send-data/logs/authenticate-to-query-logs/).
+
+```sh
+# One pass: runs completed successfully or with errors in the last seven days.
+npm run logs:chats
+
+# Override the rolling lookback in whole days.
+npm run logs:chats -- --days 14
+
+# Repeat the lookback query every 60 seconds after each pass; Ctrl+C stops polling.
+npm run logs:chats -- --days 7 --watch --interval 60
+
+# Run exporter fixture tests, without cloud credentials or model calls.
+npx vitest run tests/scripts/export-chats.test.ts
+```
+
+Each pass fixes its completion time window at startup and processes the newest runs first.
+`workflow.completed` and `workflow.remote.completed` events with `status=success|error` identify runs;
+root completion status takes precedence over remote status. There is no separate workflow error
+event, and runs without a completion event (for example, after a crash) are not discovered.
+The service selector includes the configured name and its `-agent` counterpart.
+
+Output files are plain UTF-8 text under the project root:
+
+```text
+logs/chats/YYYY-MM-DD/successful/<workflow_run_id>.txt
+logs/chats/YYYY-MM-DD/failed/<workflow_run_id>.txt
+```
+
+The folder date uses the run's completion date in **Europe/Madrid**; timestamps inside the file use
+UTC. `Reviewed: ` appears directly below `Completed:`, initially blank for a human to fill in.
+Subsequent exports preserve the value of that line. Files are replaced atomically when content
+changes; unchanged exports leave the file untouched. Generated chats are ignored by Git.
+If a delayed root completion changes the status or completion date, the exporter finds the existing
+file by run ID, carries its review marker to the new path, and removes obsolete copies only after
+the replacement has been saved.
+
+Private JSON snapshots in `logs/chats/.state/<workflow_run_id>.json` retain previously retrieved
+events and content chunks. Later passes merge these with newly retrieved logs, so missing or expired
+records do not erase saved conversations and complementary chunk deliveries can repair a record.
+Keep `.state` with the text archive; its files contain the same private conversation data and use
+owner-only file permissions. When upgrading a text-only archive, the original text is retained
+verbatim in a labelled previous-export appendix because its raw chunks cannot be recovered.
+
+Files include run metadata, ordered system/user/assistant messages, model-call boundaries, tool
+arguments/results, and available error events. Input history intentionally repeats on each model
+call. Chunk groups are checked for missing indices, conflicting metadata/payloads, truncation, and
+partial/interrupted output. Available fragments of damaged records are labelled explicitly rather
+than parsed as complete JSON. No content records produces an explicit notice: capture may have
+been disabled, delivery may have failed, or the data may have expired. A complete reconstruction
+only confirms that the retrieved records were assembled; telemetry cannot prove that no entire
+records were lost.
+
+Queries use `/loki/api/v1/query_range`, one-day windows, and recursive splitting when a window reaches
+the 1,000-line request limit. If one nanosecond itself saturates that limit, the exporter fails that
+query explicitly instead of silently dropping entries. Each run's query extends backwards by its
+recorded duration plus 60 seconds, including starts before the lookback boundary; missing duration
+falls back to an additional lookback period. HTTP 429/5xx responses and network failures receive up
+to three attempts. Missing chunks or absent content trigger one delayed refetch, and watch mode
+fetches runs again on subsequent passes to repair late delivery.
+
+The console reports discovered, written, unchanged, incomplete, and failed counts. An incomplete
+conversation is still saved; an export failure increments `failed` and leaves any previous file
+intact. A one-pass run exits nonzero for export/query failures. In watch mode, the process keeps
+polling and its exit status reflects the latest pass. Queries cannot recover data outside your
+stack's retention period, even when `--days` requests a longer range.
+
 ## Capture, limits and delivery
 
 - `CAPTURE_LLM_CONTENT` defaults to false and accepts exactly `true` to enable. Capture is independent of sampling: logs may refer to a sampled-out or undelivered Tempo trace. `OTEL_TRACES_SAMPLER_ARG=1` is the demo default; e.g. `0.1` samples 10% of locally rooted traces. Valid incoming parent sampling decisions are respected, including an unsampled parent.
