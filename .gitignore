@@ -12,6 +12,9 @@ logs/chats/
 next-env.d.ts
 public/bridge.js
 
+# logs
+logs
+
 # local env files
 .env
 .env.*
