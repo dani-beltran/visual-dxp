@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'vitest';
@@ -135,21 +135,118 @@ test('writes Madrid completion folders for both statuses, preserves review, and 
   try {
     const records = reconstruct(chunks({ role: 'user', content: 'Hello' }));
     for (const status of ['success', 'error']) {
+      const archive = join(output, status);
       const destination = join(
-        output,
+        archive,
         '2026-10-16',
         status === 'error' ? 'failed' : 'successful',
         `${id}.txt`,
       );
-      assert.equal(await saveConversation(output, run(status), [], records), 'written');
+      assert.equal(await saveConversation(archive, run(status), [], records), 'written');
       const text = await readFile(destination, 'utf8');
       assert.match(text, /Completed: .*\nReviewed: \n/);
       await writeFile(destination, text.replace('Reviewed: ', 'Reviewed: 2026-10-17'));
-      assert.equal(await saveConversation(output, run(status), [], records), 'unchanged');
+      assert.equal(await saveConversation(archive, run(status), [], records), 'unchanged');
       const updated = reconstruct(chunks({ role: 'user', content: 'Updated' }));
-      await saveConversation(output, run(status), [], updated);
+      await saveConversation(archive, run(status), [], updated);
       assert.match(await readFile(destination, 'utf8'), /Reviewed: 2026-10-17\n/);
     }
+  } finally {
+    await rm(output, { recursive: true, force: true });
+  }
+});
+
+test('migrates a delayed root completion across status and date while preserving review', async () => {
+  const output = await mkdtemp(join(tmpdir(), 'dxp-chat-migrate-'));
+  try {
+    const remote = entry(
+      { ...completion().body, event_type: 'workflow.remote.completed' },
+      ns('2026-10-15T21:59:59Z'),
+      'visual-dxp-agent',
+    );
+    const root = completion('error');
+    const records = reconstruct(chunks('Original conversation'));
+    await saveConversation(output, discoverRuns([remote])[0], [], records);
+    const oldPath = join(output, '2026-10-15', 'successful', `${id}.txt`);
+    await writeFile(
+      oldPath,
+      (await readFile(oldPath, 'utf8')).replace('Reviewed: ', 'Reviewed: checked by reviewer'),
+    );
+    // The root arrives in a later poll, with no content remaining in this retrieval.
+    const rootRun = discoverRuns([remote, root])[0];
+    assert.equal(await saveConversation(output, rootRun, [root], []), 'written');
+    const destination = join(output, '2026-10-16', 'failed', `${id}.txt`);
+    const text = await readFile(destination, 'utf8');
+    assert.match(text, /Status: error/);
+    assert.match(text, /Reviewed: checked by reviewer\n/);
+    assert.match(text, /Original conversation/);
+    await assert.rejects(readFile(oldPath), { code: 'ENOENT' });
+    assert.equal(await saveConversation(output, rootRun, [root], []), 'unchanged');
+  } finally {
+    await rm(output, { recursive: true, force: true });
+  }
+});
+
+test('retains missing records and chunks across partial and empty reruns, and adds late records', async () => {
+  const output = await mkdtemp(join(tmpdir(), 'dxp-chat-retain-'));
+  try {
+    const first = chunks('Original prompt', 0, 'first');
+    const second = chunks('Original answer', 1, 'second');
+    const late = chunks('Late tool result', 2, 'late');
+    const save = (entries: ReturnType<typeof chunks>) =>
+      saveConversation(output, run(), entries, reconstruct(entries));
+    await save([...first, ...second]);
+    await save([second[1], ...late]);
+    const destination = join(output, '2026-10-16', 'successful', `${id}.txt`);
+    const text = await readFile(destination, 'utf8');
+    assert.match(text, /Original prompt/);
+    assert.match(text, /Original answer/);
+    assert.match(text, /Late tool result/);
+    assert.doesNotMatch(text, /missing chunks/);
+    assert.equal(await save([]), 'unchanged');
+    assert.equal(await readFile(destination, 'utf8'), text);
+  } finally {
+    await rm(output, { recursive: true, force: true });
+  }
+});
+
+test('repairs complementary chunk retrievals across passes', async () => {
+  const output = await mkdtemp(join(tmpdir(), 'dxp-chat-repair-'));
+  try {
+    const parts = chunks('Complete after two passes');
+    await saveConversation(output, run(), [parts[0]], reconstruct([parts[0]]));
+    await saveConversation(output, run(), [parts[1]], reconstruct([parts[1]]));
+    const text = await readFile(join(output, '2026-10-16', 'successful', `${id}.txt`), 'utf8');
+    assert.match(text, /Complete after two passes/);
+    assert.match(text, /Content: complete/);
+    assert.doesNotMatch(text, /missing chunks/);
+  } finally {
+    await rm(output, { recursive: true, force: true });
+  }
+});
+
+test('preserves text-only exports from before snapshots during migration', async () => {
+  const output = await mkdtemp(join(tmpdir(), 'dxp-chat-legacy-'));
+  try {
+    const previous = renderConversation(
+      run(),
+      [],
+      reconstruct(chunks('Legacy conversation')),
+      'done',
+    );
+    // Create an archive using the original text-only exporter layout.
+    const folder = join(output, '2026-10-15', 'successful');
+    await mkdir(folder, { recursive: true });
+    const oldPath = join(folder, `${id}.txt`);
+    await writeFile(oldPath, previous);
+    await saveConversation(output, run('error'), [], []);
+    const destination = join(output, '2026-10-16', 'failed', `${id}.txt`);
+    const text = await readFile(destination, 'utf8');
+    assert.match(text, /^Run: .*\nStatus: error/);
+    assert.match(text, /Reviewed: done/);
+    assert.ok(text.includes(previous));
+    await assert.rejects(readFile(oldPath), { code: 'ENOENT' });
+    assert.equal(await saveConversation(output, run('error'), [], []), 'unchanged');
   } finally {
     await rm(output, { recursive: true, force: true });
   }

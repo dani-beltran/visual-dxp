@@ -158,6 +158,16 @@ The folder date uses the run's completion date in **Europe/Madrid**; timestamps 
 UTC. `Reviewed: ` appears directly below `Completed:`, initially blank for a human to fill in.
 Subsequent exports preserve the value of that line. Files are replaced atomically when content
 changes; unchanged exports leave the file untouched. Generated chats are ignored by Git.
+If a delayed root completion changes the status or completion date, the exporter finds the existing
+file by run ID, carries its review marker to the new path, and removes obsolete copies only after
+the replacement has been saved.
+
+Private JSON snapshots in `logs/chats/.state/<workflow_run_id>.json` retain previously retrieved
+events and content chunks. Later passes merge these with newly retrieved logs, so missing or expired
+records do not erase saved conversations and complementary chunk deliveries can repair a record.
+Keep `.state` with the text archive; its files contain the same private conversation data and use
+owner-only file permissions. When upgrading a text-only archive, the original text is retained
+verbatim in a labelled previous-export appendix because its raw chunks cannot be recovered.
 
 Files include run metadata, ordered system/user/assistant messages, model-call boundaries, tool
 arguments/results, and available error events. Input history intentionally repeats on each model

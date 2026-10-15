@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
+import { mkdir, readdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -234,7 +234,7 @@ export function reconstruct(entries) {
           warnings.add('invalid assembled JSON');
         }
       }
-      return { ...first, value, raw, warnings: [...warnings] };
+      return { ...first, value, raw, warnings: [...warnings], chunks };
     })
     .sort((a, b) => {
       const sequence = Number(a.body.sequence) - Number(b.body.sequence);
@@ -312,6 +312,26 @@ export function renderConversation(run, entries, records, reviewed = '') {
   return `${lines.join('\n')}\n`;
 }
 
+async function atomicWrite(filename, text) {
+  await mkdir(dirname(filename), { recursive: true });
+  const temporary = `${filename}.${randomUUID()}.tmp`;
+  try {
+    await writeFile(temporary, text, { encoding: 'utf8', mode: 0o600, flag: 'wx' });
+    await rename(temporary, filename);
+  } finally {
+    await rm(temporary, { force: true });
+  }
+}
+
+async function readOptional(filename) {
+  try {
+    return await readFile(filename, 'utf8');
+  } catch (error) {
+    if (error.code !== 'ENOENT') throw error;
+    return '';
+  }
+}
+
 export async function saveConversation(output, run, entries, records) {
   if (!UUID.test(run.body.workflow_run_id)) throw new Error('Invalid workflow_run_id');
   const date = new Intl.DateTimeFormat('en-CA', {
@@ -322,24 +342,60 @@ export async function saveConversation(output, run, entries, records) {
   }).format(new Date(timestamp(run.time)));
   const folder = join(output, date, run.body.status === 'error' ? 'failed' : 'successful');
   const filename = join(folder, `${run.body.workflow_run_id}.txt`);
-  let previous = '';
+  let folders;
   try {
-    previous = await readFile(filename, 'utf8');
+    folders = await readdir(output, { withFileTypes: true });
   } catch (error) {
     if (error.code !== 'ENOENT') throw error;
+    folders = [];
   }
-  const reviewed = previous.match(/^Reviewed:([^\r\n]*)/m)?.[1].replace(/^ /, '') || '';
-  const text = renderConversation(run, entries, records, reviewed);
-  if (text === previous) return 'unchanged';
-  await mkdir(folder, { recursive: true });
-  const temporary = `${filename}.${randomUUID()}.tmp`;
-  try {
-    await writeFile(temporary, text, { encoding: 'utf8', mode: 0o600, flag: 'wx' });
-    await rename(temporary, filename);
-  } finally {
-    await rm(temporary, { force: true });
+  const candidates = new Set([filename]);
+  for (const item of folders) {
+    if (!item.isDirectory() || !/^\d{4}-\d{2}-\d{2}$/.test(item.name)) continue;
+    for (const status of ['successful', 'failed']) {
+      candidates.add(join(output, item.name, status, `${run.body.workflow_run_id}.txt`));
+    }
   }
-  return 'written';
+  const previousFiles = [];
+  for (const path of candidates) {
+    const text = await readOptional(path);
+    if (text) previousFiles.push({ path, text });
+  }
+  const reviewed =
+    previousFiles
+      .map(({ text }) => text.match(/^Reviewed:([^\r\n]*)/m)?.[1].replace(/^ /, '') || '')
+      .find(Boolean) || '';
+
+  // Retain raw chunks so retention or a partial response cannot erase an earlier capture.
+  const snapshot = join(output, '.state', `${run.body.workflow_run_id}.json`);
+  const saved = await readOptional(snapshot);
+  const prior = saved ? JSON.parse(saved) : { entries: [], legacy: '' };
+  // Older versions only wrote text; keep that capture verbatim during the first upgrade.
+  const legacy = saved ? prior.legacy : previousFiles.map((file) => file.text).join('\n');
+  const merged = new Map();
+  const current = [...entries, ...records.flatMap((record) => record.chunks)];
+  const chunkKey = (entry) =>
+    CONTENT_EVENTS.has(entry.body.event_type)
+      ? JSON.stringify([entry.body.record_id, entry.body.chunk_index])
+      : undefined;
+  const retrieved = new Set(current.map(chunkKey).filter(Boolean));
+  for (const entry of prior.entries) {
+    if (!retrieved.has(chunkKey(entry))) merged.set(JSON.stringify(entry), entry);
+  }
+  // Keep conflicting copies within a response so reconstruction still warns about them.
+  for (const entry of current) merged.set(JSON.stringify(entry), entry);
+  const retained = [...merged.values()];
+  const text =
+    renderConversation(run, retained, reconstruct(retained), reviewed) +
+    (legacy ? `\nPREVIOUS EXPORT (saved before chunk snapshots were available)\n${legacy}` : '');
+  const state = JSON.stringify({ entries: retained, legacy });
+  if (state !== saved) await atomicWrite(snapshot, state);
+  const changed = text !== previousFiles.find((file) => file.path === filename)?.text;
+  if (changed) await atomicWrite(filename, text);
+  // Only remove obsolete copies after the canonical export has been saved successfully.
+  const obsolete = previousFiles.filter((file) => file.path !== filename);
+  for (const file of obsolete) await rm(file.path);
+  return changed || obsolete.length ? 'written' : 'unchanged';
 }
 
 export async function exportChats({
