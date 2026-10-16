@@ -38,7 +38,7 @@ export function createProxyPreviewTransport(endpoint = '/api/preview/sessions'):
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'omit',
+        credentials: 'same-origin',
         redirect: 'error',
         cache: 'no-store',
         signal: AbortSignal.any([signal, AbortSignal.timeout(15_000)]),

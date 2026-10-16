@@ -6,7 +6,11 @@ import { ElementPicker } from '../src/components/ElementPicker/ElementPicker';
 import { IsolatedPreview } from '../src/components/IsolatedPreview/IsolatedPreview';
 import { WebsiteConnectionCheck } from '../src/components/WebsiteConnectionCheck/WebsiteConnectionCheck';
 import { createEmptyWorkflow } from '../src/lib/catalog';
-import { type PreviewTransport, PreviewTransportProvider } from '../src/lib/previewTransport';
+import {
+  createProxyPreviewTransport,
+  type PreviewTransport,
+  PreviewTransportProvider,
+} from '../src/lib/previewTransport';
 
 let root: Root;
 let host: HTMLDivElement;
@@ -29,6 +33,27 @@ afterEach(async () => {
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
   vi.useRealTimers();
+});
+
+it('creates proxy sessions with same-origin editor credentials', async () => {
+  const fetcher = vi.fn().mockResolvedValue(Response.json({ url: proxy }));
+  vi.stubGlobal('fetch', fetcher);
+  const controller = new AbortController();
+
+  await expect(
+    createProxyPreviewTransport().resolve(target, { signal: controller.signal }),
+  ).resolves.toBe(proxy);
+
+  expect(fetcher).toHaveBeenCalledWith(
+    '/api/preview/sessions',
+    expect.objectContaining({
+      method: 'POST',
+      credentials: 'same-origin',
+      redirect: 'error',
+      cache: 'no-store',
+      body: JSON.stringify({ url: target }),
+    }),
+  );
 });
 
 it('routes picker, preview and connection check through one transport while retaining real target URLs', async () => {
