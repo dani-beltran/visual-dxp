@@ -12,6 +12,8 @@ export interface RuntimeOptions {
   analyticsMode?: 'live' | 'simulate';
   /** Optional query string for testing conditions without changing the page location. */
   searchParams?: string;
+  /** Original document base for HTTP steps in a proxied preview. */
+  baseUrl?: string;
   signal?: AbortSignal;
   /** Maximum executed steps for one trigger invocation. Defaults to 10,000. */
   maxSteps?: number;

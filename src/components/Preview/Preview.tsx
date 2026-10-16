@@ -17,6 +17,7 @@ import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import type { ConnectionPreview } from '../../lib/connections';
 import { validateWorkflow } from '../../lib/export';
 import { useBuilderI18n } from '../../lib/i18nContext';
+import { usePreviewTransport } from '../../lib/previewTransport';
 import type { PreviewExecutionEvent, RunLog, Workflow } from '../../lib/types';
 import { useDialogFocus } from '../../lib/useDialogFocus';
 import { IsolatedPreview } from '../IsolatedPreview/IsolatedPreview';
@@ -48,6 +49,7 @@ export function Preview({
   onLog: (log: RunLog) => void;
 }) {
   const { t } = useBuilderI18n();
+  const transport = usePreviewTransport();
   const searchParamsId = useId();
   const [searchParams, setSearchParams] = useState(() => websiteSearch(workflow.websiteUrl));
   useEffect(() => {
@@ -251,9 +253,11 @@ export function Preview({
             )}
             <p className="dxp-log-note">
               <ExternalLink size={13} />{' '}
-              {t(
-                'preview.externalWebsitesNeedThePreviewBridgeConfiguredForThisBuilderOriginPreviews',
-              )}
+              {transport
+                ? t('websiteSetup.proxyLimitations')
+                : t(
+                    'preview.externalWebsitesNeedThePreviewBridgeConfiguredForThisBuilderOriginPreviews',
+                  )}
             </p>
           </aside>
         </div>

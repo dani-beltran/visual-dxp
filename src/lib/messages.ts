@@ -778,6 +778,13 @@ export const englishMessages = {
   'websiteConnectionCheck.couldnTConnectToYourWebsiteCompleteTheSetupBelow':
     'Couldn’t connect to your website. Complete the setup below.',
   'websiteSetup.connectYourWebsite': 'Connect your website',
+  'websiteSetup.proxyTitle': 'Public website preview',
+  'websiteSetup.proxyInstructions':
+    'The preview proxy connects public pages and adds the selection bridge automatically. Reload to reconnect if the session has expired.',
+  'websiteSetup.proxyLimitations':
+    'Public previews have no login session. Cookies, storage, forms, and some dynamic website features are unavailable.',
+  'isolatedPreview.proxyUnavailable':
+    'The proxied website did not connect. Reload to renew the preview session. Some website scripts may not work in an isolated public preview.',
   'websiteSetup.copied': 'Copied',
   'websiteSetup.copyScript': 'Copy script',
   'isolatedPreview.bridgeUnavailable':

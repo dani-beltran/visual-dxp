@@ -15,10 +15,12 @@ import { type ReactNode, useEffect, useId, useMemo, useRef, useState } from 'rea
 import { useBuilderI18n } from '../../lib/i18nContext';
 import type { PickedElement, PickerSession } from '../../lib/picker';
 import { normalizeWebsiteUrl, PICKER_PROTOCOL } from '../../lib/picker';
+import { type PreviewTransport, usePreviewUrl } from '../../lib/previewTransport';
 import { WebsiteSetup } from '../WebsiteSetup/WebsiteSetup';
 import './ElementPicker.css';
 
 export interface ElementPickerProps {
+  previewTransport?: PreviewTransport;
   /** Optional host guidance inside the dialog focus context. */
   guidance?: ReactNode;
   url: string;
@@ -35,6 +37,7 @@ export function ElementPicker({
   onSelect,
   onClose,
   guidance,
+  previewTransport,
 }: ElementPickerProps) {
   const { t } = useBuilderI18n();
   const headingId = useId();
@@ -54,6 +57,7 @@ export function ElementPicker({
   }, [url]);
   const [demoHtml, setDemoHtml] = useState<string>();
   const [reload, setReload] = useState(0);
+  const preview = usePreviewUrl(frameUrl, previewTransport, reload);
   const isDemo = frameUrl === new URL('/demo-site.html', window.location.origin).href;
   // biome-ignore lint/correctness/useExhaustiveDependencies: Retrying the demo must also retry a failed HTML fetch.
   useEffect(() => {
@@ -87,6 +91,11 @@ export function ElementPicker({
   const [selectorHint, setSelectorHint] = useState('');
   const unavailable = status === 'unavailable';
 
+  // A new target must be able to reconnect after the previous target failed.
+  useEffect(() => {
+    setStatus(frameUrl ? 'loading' : 'unavailable');
+  }, [frameUrl]);
+
   useEffect(() => {
     const prior = document.activeElement as HTMLElement | null;
     dialogRef.current?.querySelector<HTMLInputElement>('input')?.focus();
@@ -96,10 +105,11 @@ export function ElementPicker({
   // biome-ignore lint/correctness/useExhaustiveDependencies: Reload replaces the iframe even when its URL stays unchanged, so its picker session must reconnect.
   useEffect(() => {
     if (unavailable) return;
-    if (!frameUrl) {
+    if (!frameUrl || preview.error) {
       setStatus('unavailable');
       return;
     }
+    if (!preview.url) return;
     const origin = '*';
     let channel = crypto.randomUUID();
     channelRef.current = channel;
@@ -197,7 +207,7 @@ export function ElementPicker({
       window.clearTimeout(timeout);
       if (initRef.current === reconnect) initRef.current = () => undefined;
     };
-  }, [frameUrl, reload, unavailable]);
+  }, [frameUrl, preview.url, preview.error, reload, unavailable]);
 
   const updateSelector = (value: string) => {
     setSelector(value);
@@ -238,10 +248,11 @@ export function ElementPicker({
     <div className={`dxp-picker-help${unavailable ? ' dxp-picker-help-unavailable' : ''}`}>
       {unavailable && (
         <p role="status">
-          {t('elementPicker.thisWebsiteCouldnTConnectToThePickerCheckTheSetupBelow')}
+          {preview.error ||
+            t('elementPicker.thisWebsiteCouldnTConnectToThePickerCheckTheSetupBelow')}
         </p>
       )}
-      <WebsiteSetup />
+      <WebsiteSetup proxied={preview.proxied} />
     </div>
   );
 
@@ -356,11 +367,11 @@ export function ElementPicker({
         <div className="dxp-picker-frame-wrap">
           {unavailable ? (
             setup
-          ) : frameUrl ? (
+          ) : frameUrl && preview.url ? (
             <iframe
               key={`${frameUrl}-${reload}`}
               ref={frameRef}
-              src={isDemo ? undefined : frameUrl}
+              src={isDemo ? undefined : preview.url}
               srcDoc={isDemo ? demoHtml : undefined}
               title={t('elementPicker.websiteElementSelectionPreview')}
               className="dxp-picker-frame"

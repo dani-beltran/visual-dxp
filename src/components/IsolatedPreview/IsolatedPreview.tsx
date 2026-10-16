@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ConnectionPreview } from '../../lib/connections';
 import { useBuilderI18n } from '../../lib/i18nContext';
 import { PREVIEW_PROTOCOL, previewBridgeSource } from '../../lib/previewBridge';
+import { usePreviewUrl } from '../../lib/previewTransport';
 import type { PreviewExecutionEvent, RunLog, Workflow } from '../../lib/types';
 import './IsolatedPreview.css';
 
@@ -47,6 +48,7 @@ export function IsolatedPreview({
   const current = useRef(workflow);
   current.current = workflow;
   const demo = url.split(/[?#]/, 1)[0] === '/demo-site.html';
+  const preview = usePreviewUrl(url);
   const send = useCallback((type: string, extra: Record<string, unknown> = {}) => {
     // Opaque origins require '*'; only credential-free workflow commands go here.
     frame.current?.contentWindow?.postMessage(
@@ -76,7 +78,13 @@ export function IsolatedPreview({
       retry = window.setInterval(() => send('init'), 1000);
       timeout = window.setTimeout(() => {
         clearConnectionTimers();
-        callbacks.current.onError(t('isolatedPreview.bridgeUnavailable'));
+        callbacks.current.onError(
+          t(
+            preview.proxied
+              ? 'isolatedPreview.proxyUnavailable'
+              : 'isolatedPreview.bridgeUnavailable',
+          ),
+        );
       }, 8000);
       send('init');
     };
@@ -169,14 +177,15 @@ export function IsolatedPreview({
       }
     };
     window.addEventListener('message', receive);
-    connect();
+    if (demo || preview.url) connect();
+    if (preview.error) callbacks.current.onError(preview.error);
     return () => {
       controller.abort();
       clearConnectionTimers();
       reconnect.current = () => {};
       window.removeEventListener('message', receive);
     };
-  }, [url, demo, send]);
+  }, [url, demo, preview.url, preview.error, send]);
   // biome-ignore lint/correctness/useExhaustiveDependencies: revision explicitly restarts an unchanged workflow.
   useEffect(() => {
     if (!ready) return;
@@ -189,10 +198,10 @@ export function IsolatedPreview({
       send('stop');
     };
   }, [ready, running, workflow, revision, searchParams, send]);
-  return (
+  return !demo && !preview.url ? null : (
     <iframe
       ref={frame}
-      src={demo ? undefined : url}
+      src={demo ? undefined : preview.url}
       srcDoc={demo ? html : undefined}
       sandbox="allow-scripts"
       referrerPolicy="no-referrer"

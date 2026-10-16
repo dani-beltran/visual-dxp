@@ -3,10 +3,12 @@ import '../../styles/shared.css';
 import { Check, Copy } from 'lucide-react';
 import { useEffect, useId, useState } from 'react';
 import { useBuilderI18n } from '../../lib/i18nContext';
+import { usePreviewTransport } from '../../lib/previewTransport';
 import './WebsiteSetup.css';
 
-export function WebsiteSetup() {
+export function WebsiteSetup({ proxied = false }: { proxied?: boolean } = {}) {
   const { t } = useBuilderI18n();
+  const transport = usePreviewTransport();
   const headingId = useId();
   const [copyStatus, setCopyStatus] = useState<'idle' | 'copied' | 'error'>('idle');
   const editorOrigin =
@@ -27,6 +29,15 @@ export function WebsiteSetup() {
       setCopyStatus('error');
     }
   }
+
+  if (transport || proxied)
+    return (
+      <section className="dxp-website-setup" aria-labelledby={headingId}>
+        <h3 id={headingId}>{t('websiteSetup.proxyTitle')}</h3>
+        <p>{t('websiteSetup.proxyInstructions')}</p>
+        <p>{t('websiteSetup.proxyLimitations')}</p>
+      </section>
+    );
 
   return (
     <section className="dxp-website-setup" aria-labelledby={headingId}>

@@ -31,7 +31,7 @@ cp .env.example .env.local
 npm run dev
 ```
 
-Open http://127.0.0.1:3000. The page and AI API run in the same Next.js process; no sibling backend process is needed. The included demo website supports the element picker and live workflow testing without additional setup. The demo saves workflow changes and activity history in local browser storage and restores them when the page reloads. Its Activity tab starts empty until you make changes.
+Open http://localhost:3000 (the default `PREVIEW_EDITOR_ORIGIN`). The page, AI API, and public preview proxy run in the same Next.js process; no sibling backend process is needed. The included demo website supports the element picker and live workflow testing without additional setup. The demo saves workflow changes and activity history in local browser storage and restores them when the page reloads. Its Activity tab starts empty until you make changes.
 
 ```sh
 npm test             # Frontend, integrated backend, and mocked Route Handler tests
@@ -452,7 +452,9 @@ The integrated chat route works without app login in development and production.
 
 Trigger events, Update element, and anchored Popover nodes expose **Select on website**. Enter a URL, hover to highlight elements, click to retain the selection, and choose **Use element**. You can also enter a CSS selector manually.
 
-The builder uses opaque sandbox origins for all untrusted previews, including same-origin URLs. It never accesses their DOM directly. For external websites, include the bridge hosted by your editor:
+The Next.js application routes public external websites through a signed preview proxy for picking, workflow and popover previews, and website connection/branding checks. The proxy replaces upstream framing restrictions, rewrites HTML/CSS resource URLs and redirects, and injects the bridge automatically. Configure `PREVIEW_EDITOR_ORIGIN` (default `http://localhost:3000`) and a separate `PREVIEW_PROXY_ORIGIN` (default `http://127.0.0.1:3000`). Every environment requires an explicit `PREVIEW_PROXY_SECRET` of at least 32 random characters, shared across app instances. See [public preview proxy setup, deployment, and manual testing](docs/preview-proxy.md).
+
+The builder uses opaque sandbox origins for all untrusted previews, including same-origin URLs. It never accesses their DOM directly. The reusable React library defaults to direct connections; supply `previewTransport={createProxyPreviewTransport('/api/preview/sessions')}` to use your host's proxy. For a direct external connection, include the bridge hosted by your editor:
 
 ```html
 <script src="https://your-editor.example/bridge.js" data-parent-origin="https://your-editor.example"></script>
@@ -464,7 +466,7 @@ To verify installation, open the host website's browser console and filter for `
 
 On a direct visit with a valid `data-parent-origin`, the bridge also makes a same-origin `HEAD` request to check `X-Frame-Options` and enforced CSP `frame-ancestors` against the editor origin. Blocking policies produce a warning; failed requests and unsupported policy syntax produce an unable-to-verify warning. This is a diagnostic, not a guarantee: navigation responses can differ from `HEAD`, and additional ancestors or browser policies can prevent framing. A blocked iframe cannot execute the bridge, so the editor also logs connection failures with troubleshooting guidance.
 
-The target website must permit embedding via its `Content-Security-Policy: frame-ancestors` and `X-Frame-Options` settings. Neither a React component nor this bridge can override browser framing policy. Remote sites that you cannot configure still support manual CSS selector entry.
+For direct connections, the target website must permit embedding via its `Content-Security-Policy: frame-ancestors` and `X-Frame-Options` settings. Neither a React component nor this bridge can override browser framing policy. The server proxy changes only the preview response; it does not change the target website's headers. Manual CSS selector entry remains available.
 
 See [MDN: iframe contentDocument](https://developer.mozilla.org/en-US/docs/Web/API/HTMLIFrameElement/contentDocument) and [MDN: postMessage](https://developer.mozilla.org/en-US/docs/Web/API/Window/postMessage) for the browser model.
 

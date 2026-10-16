@@ -42,6 +42,26 @@ afterEach(() => {
 });
 
 describe('workflow runtime', () => {
+  it('resolves proxied-preview HTTP steps against the original upstream base', async () => {
+    const fetcher = vi
+      .fn()
+      .mockResolvedValue(new Response('{}', { headers: { 'Content-Type': 'application/json' } }));
+    const graph = workflow(
+      [
+        node('load', 'trigger', { event: 'page-load' }),
+        node('request', 'http', { url: '../api/products?limit=1', method: 'GET' }),
+      ],
+      [['load', 'request']],
+    );
+    const instance = runtime(graph, {
+      baseUrl: 'https://shop.example/catalog/item',
+      fetch: fetcher,
+    });
+    await instance.run('load');
+    expect(fetcher.mock.calls[0][0]).toBe('https://shop.example/api/products?limit=1');
+    expect(graph.websiteUrl).toBe(window.location.href);
+  });
+
   it.each(['note', 'frame'] as const)(
     'ignores connected %s annotations without logs, step budget usage, or following their outputs',
     async (kind) => {

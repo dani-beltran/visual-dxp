@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import { BRANDING_PROTOCOL, parseBrandingProfile, saveBrandingProfile } from '../../lib/branding';
 import { useBuilderI18n } from '../../lib/i18nContext';
 import { PICKER_PROTOCOL } from '../../lib/picker';
+import { usePreviewUrl } from '../../lib/previewTransport';
 import { WebsiteSetup } from '../WebsiteSetup/WebsiteSetup';
 import './WebsiteConnectionCheck.css';
 
@@ -18,6 +19,7 @@ export function WebsiteConnectionCheck({ url, silent = false }: { url: string; s
   const [readingBranding, setReadingBranding] = useState(false);
   const [storageUnavailable, setStorageUnavailable] = useState(false);
   const frameRef = useRef<HTMLIFrameElement>(null);
+  const preview = usePreviewUrl(started ? url : '');
 
   useEffect(() => {
     const debounce = window.setTimeout(() => setStarted(true), 500);
@@ -26,6 +28,11 @@ export function WebsiteConnectionCheck({ url, silent = false }: { url: string; s
 
   useEffect(() => {
     if (!started || status !== 'loading') return;
+    if (preview.error) {
+      setStatus('unavailable');
+      return;
+    }
+    if (!preview.url) return;
     const frame = frameRef.current;
     const target = frame?.contentWindow;
     let channel = crypto.randomUUID();
@@ -101,17 +108,17 @@ export function WebsiteConnectionCheck({ url, silent = false }: { url: string; s
       frame?.removeEventListener('error', failed);
       window.removeEventListener('message', receive);
     };
-  }, [started, status, url]);
+  }, [started, status, url, preview.url, preview.error]);
 
   return (
     <div
       className={silent ? undefined : 'dxp-website-connection'}
       style={silent ? { display: 'contents' } : undefined}
     >
-      {started && status === 'loading' && (
+      {started && status === 'loading' && preview.url && (
         <iframe
           ref={frameRef}
-          src={url}
+          src={preview.url}
           title={t('websiteConnectionCheck.websiteConnectionCheck')}
           sandbox="allow-scripts"
           referrerPolicy="no-referrer"
@@ -153,7 +160,8 @@ export function WebsiteConnectionCheck({ url, silent = false }: { url: string; s
             <div className="dxp-website-connection-error">
               <h3>{t('websiteConnectionCheck.connectionNeedsAttention')}</h3>
               <span>
-                {t('websiteConnectionCheck.couldnTConnectToYourWebsiteCompleteTheSetupBelow')}
+                {preview.error ||
+                  t('websiteConnectionCheck.couldnTConnectToYourWebsiteCompleteTheSetupBelow')}
               </span>
             </div>
           )}
