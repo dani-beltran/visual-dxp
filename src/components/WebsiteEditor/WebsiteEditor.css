@@ -154,3 +154,94 @@
   font-size: 12px;
   cursor: pointer;
 }
+
+/* Shared preview chrome follows the popover editor's layout. */
+.dxp-website-preview-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 24px;
+  border-bottom: 1px solid var(--dxp-line);
+  flex-shrink: 0;
+}
+.dxp-website-preview-heading {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  flex: 1;
+  min-width: 0;
+}
+.dxp-website-preview-heading .dxp-editor-heading {
+  min-width: 0;
+}
+.dxp-website-preview-heading p {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dxp-website-preview-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+  gap: 8px 20px;
+  padding: 11px 24px;
+  border-bottom: 1px solid var(--dxp-line);
+  background: var(--dxp-canvas);
+  color: var(--dxp-muted);
+  font-size: 11px;
+}
+.dxp-website-preview-url {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.dxp-website-preview-url > .dxp-status-dot {
+  width: 5px;
+  height: 5px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--dxp-primary-color);
+}
+.dxp-website-preview-devices {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-inline-start: auto;
+}
+.dxp-website-preview-divider {
+  display: block;
+  flex: none;
+  width: 1px;
+  height: 24px;
+  margin: 0 7px;
+  background: var(--dxp-line);
+}
+.dxp-website-preview-toolbar button:disabled {
+  cursor: default;
+  opacity: 0.38;
+}
+.dxp-website-preview-actions {
+  display: flex;
+  gap: 8px;
+}
+@media (max-width: 800px) {
+  .dxp-website-preview-divider {
+    margin: 0 4px;
+  }
+}
+@media (max-width: 600px) {
+  .dxp-website-preview-header {
+    padding: 14px 16px;
+    gap: 10px;
+  }
+  .dxp-website-preview-heading .dxp-editor-heading h2 {
+    font-size: 15px;
+  }
+  .dxp-website-preview-toolbar {
+    padding: 10px 16px;
+  }
+}
