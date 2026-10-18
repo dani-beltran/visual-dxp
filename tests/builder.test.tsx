@@ -123,7 +123,7 @@ describe('builder and host boundary', () => {
       root.render(<VisualDXPBuilder initialWorkflow={workflow} onChange={onChange} />),
     );
     await click(element(`[data-id="${condition.id}"]`));
-    await click(element('[aria-label="Pick an element from your website"]'));
+    await click(element('.dxp-inspector-pick'));
     expect(host.querySelector('.dxp-picker-backdrop-fullscreen')).not.toBeNull();
     const input = element<HTMLInputElement>('.dxp-picker-selector-field input');
     expect(input.value).toBe('#existing');

@@ -88,7 +88,9 @@ export function PopoverEditorPanel({
         <Field
           label={t('nodeInspector.anchorElement')}
           htmlFor={id('selector')}
-          hint={t('nodeInspector.useACssSelectorOrPickAnElementFromYourWebsite')}
+          hint={
+            picking ? undefined : t('nodeInspector.useACssSelectorOrPickAnElementFromYourWebsite')
+          }
         >
           <input
             id={id('selector')}

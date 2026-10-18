@@ -13,7 +13,6 @@ import {
   MousePointer2,
   Pencil,
   Repeat2,
-  ScanLine,
   StickyNote,
   Trash2,
   X,
@@ -140,14 +139,6 @@ export function NodeInspector({
           spellCheck={false}
           autoComplete="off"
         />
-        <button
-          type="button"
-          title={t('nodeInspector.pickAnElementFromYourWebsite')}
-          aria-label={t('nodeInspector.pickAnElementFromYourWebsite')}
-          onClick={onPickElement}
-        >
-          <ScanLine size={16} />
-        </button>
       </div>
       <button type="button" className="dxp-inspector-pick" onClick={onPickElement}>
         <MousePointer2 size={13} /> {t('nodeInspector.selectOnWebsite')} <span>↗</span>

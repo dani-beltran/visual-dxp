@@ -4,7 +4,6 @@ import {
   ArrowRight,
   Check,
   Command,
-  Globe2,
   MousePointer2,
   Paintbrush,
   Redo2,
@@ -574,46 +573,25 @@ export function ElementPicker({
         </header>
         {guidance}
         <div className="dxp-picker-toolbar">
-          {editing ? (
-            <span className="dxp-page-editor-target" title={url || '/demo-site.html'}>
-              <span className="dxp-status-dot" aria-hidden="true" />
-              <span className="dxp-picker-url">{url || '/demo-site.html'}</span>
-            </span>
-          ) : (
-            <div className="dxp-picker-address">
-              <Globe2 size={16} aria-hidden="true" />
-              <span className="dxp-picker-url" title={url || '/demo-site.html'}>
-                {url || '/demo-site.html'}
-              </span>
-              <button
-                type="button"
-                className="dxp-picker-load"
-                title={t('preview.reloadWebsite')}
-                aria-label={t('preview.reloadWebsite')}
-                onClick={() => {
-                  setStatus('loading');
-                  setReload((value) => value + 1);
-                }}
-              >
-                <RefreshCw size={14} />
-              </button>
-            </div>
-          )}
+          <span className="dxp-page-editor-target" title={url || '/demo-site.html'}>
+            <span className="dxp-status-dot" aria-hidden="true" />
+            <span className="dxp-picker-url">{url || '/demo-site.html'}</span>
+          </span>
           <PreviewDeviceToggle device={device} onChange={setDevice} />
+          <button
+            type="button"
+            className="dxp-button dxp-page-editor-refresh"
+            title={t('preview.reloadWebsite')}
+            aria-label={t('preview.reloadWebsite')}
+            onClick={() => {
+              setStatus('loading');
+              setReload((value) => value + 1);
+            }}
+          >
+            <RefreshCw size={14} />
+          </button>
           {editing && (
             <>
-              <button
-                type="button"
-                className="dxp-button dxp-page-editor-refresh"
-                title={t('preview.reloadWebsite')}
-                aria-label={t('preview.reloadWebsite')}
-                onClick={() => {
-                  setStatus('loading');
-                  setReload((value) => value + 1);
-                }}
-              >
-                <RefreshCw size={14} />
-              </button>
               <span className="dxp-toolbar-divider" aria-hidden="true" />
               <div className="dxp-page-editor-history">
                 <button
