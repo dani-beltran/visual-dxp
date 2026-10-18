@@ -122,6 +122,23 @@ async function clickButton(name: string) {
 }
 
 describe('fullscreen popover preview', () => {
+  it('previews and saves a grouped popover without changing its canvas membership', async () => {
+    const node = { ...popover(), parentId: 'canvas-frame' };
+    const original = structuredClone(node);
+    const onSave = vi.fn();
+    await renderPreview(node, vi.fn(), '/demo-site.html', onSave);
+    const { doc } = await loadWebsite();
+
+    expect(host.querySelector('[role="alert"]')).toBeNull();
+    expect(panel(doc)).not.toBeNull();
+    await editField('width', '640');
+    expect(panel(doc).style.width).toBe('640px');
+    expect(button('Save changes').disabled).toBe(false);
+    await clickButton('Save changes');
+    expect(onSave).toHaveBeenCalledExactlyOnceWith({ ...node.data.config, width: 640 });
+    expect(node).toEqual(original);
+  });
+
   it('plays the selected animation when entering fullscreen', async () => {
     await renderPreview(popover({ popoverAnimation: 'bounce' }));
     const frame = websiteFrame();

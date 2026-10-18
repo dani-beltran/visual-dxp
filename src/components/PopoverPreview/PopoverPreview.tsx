@@ -72,7 +72,13 @@ export function PopoverPreview({
           position: { x: 0, y: 0 },
           data: { kind: 'trigger', label: 'Preview', config: { event: 'page-load' } },
         },
-        { ...node, data: { ...node.data, config } },
+        // Canvas grouping belongs to the full workflow, not this isolated preview.
+        {
+          id: node.id,
+          type: node.type,
+          position: { x: 0, y: 0 },
+          data: { ...node.data, config },
+        },
       ],
       edges: [{ id: 'preview-edge', source: `${node.id}-preview-trigger`, target: node.id }],
     }),
