@@ -120,7 +120,7 @@ describe('website element selection', () => {
     expect(host.querySelector('.dxp-picker-backdrop-fullscreen')).not.toBeNull();
     expect(host.querySelector('[aria-label="Enter fullscreen"]')).toBeNull();
     expect(host.querySelector('[aria-label="Exit fullscreen"]')).toBeNull();
-    const toolbar = host.querySelector('.dxp-picker-toolbar')!;
+    const toolbar = host.querySelector('.dxp-website-preview-toolbar')!;
     expect(toolbar.textContent).toContain('https://preview.test');
     expect(toolbar.querySelector('[aria-label="Reload website"]')).not.toBeNull();
     expect(toolbar.textContent).not.toMatch(/Selection mode|Hover to inspect|Website setup/);

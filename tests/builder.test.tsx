@@ -106,7 +106,7 @@ describe('builder and host boundary', () => {
     expect(element<HTMLInputElement>('.dxp-popover-editor-panel input[type="number"]').value).toBe(
       '640',
     );
-    await click(element('.dxp-popover-preview-header button[aria-label="Cancel"]'));
+    await click(element('.dxp-website-preview-header button[aria-label="Cancel"]'));
     await click(button('Undo'));
     expect(latest.nodes[0].data.config).toEqual(node.data.config);
     expect(workflow.nodes[0]).toEqual(node);
