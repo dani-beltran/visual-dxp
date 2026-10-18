@@ -26,6 +26,7 @@ import { type DataTransformation, dataTransformTools } from './dataTransform';
 import { validateWorkflow } from './export';
 import { framesFirst, removeNodes } from './frames';
 import { isNoteMarks } from './noteText';
+import { isPageChange } from './pageChanges';
 import type { NodeKind, StepConfig, Workflow, WorkflowEdge, WorkflowNode } from './types';
 
 export interface AIChatMessage {
@@ -225,6 +226,17 @@ function position(value: unknown): WorkflowNode['position'] {
 function config(value: unknown, complete = false): StepConfig {
   const input = record(value, 'Step configuration');
   const output: Record<string, unknown> = {};
+  if (input.changes !== undefined) {
+    if (!Array.isArray(input.changes) || !input.changes.every(isPageChange))
+      throw new Error('Page changes must contain valid element edits.');
+    output.changes = structuredClone(input.changes);
+  }
+  if (input.textPath !== undefined) {
+    if (!isPageChange({ selector: '', textPath: input.textPath }))
+      throw new Error('Text paths must contain nonnegative child-node indices.');
+    output.textPath = structuredClone(input.textPath);
+  }
+
   for (const key of configStrings) {
     if (own(input, key) && input[key] !== undefined)
       output[key] = text(input[key], 'Step configuration text', 20000, true);

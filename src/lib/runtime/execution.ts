@@ -4,6 +4,7 @@ import type { createDataTools, DataSelection } from '../data';
 import type { createDataTransformTools } from '../dataTransform';
 import type { getDateRange } from '../dateRange';
 import type { createExperimentTools } from '../experiment';
+import type { applyPageChange } from '../pageChanges';
 import type { placePopover } from '../popoverPosition';
 import type { getTimeRange } from '../timeRange';
 import type { Workflow } from '../types';
@@ -16,6 +17,7 @@ import type { WorkflowRuntime } from './types';
 import type { createWorkflowAnalytics } from './workflow-analytics';
 
 interface ExecutionModules {
+  applyPageChange: typeof applyPageChange;
   createAnalyticsTools: typeof createAnalyticsTools;
   createWorkflowAnalytics: typeof createWorkflowAnalytics;
   createExperimentTools: typeof createExperimentTools;
@@ -36,6 +38,7 @@ export function createExecution(
   workflow: Workflow,
   context: RuntimeContext,
   {
+    applyPageChange,
     createAnalyticsTools,
     createWorkflowAnalytics,
     createExperimentTools,
@@ -219,72 +222,25 @@ export function createExecution(
             break;
           }
           case 'dom': {
-            const variables = input;
-            const value = dataTools.elementValue(config, variables);
-            const selector = dataTools.interpolate(
-              config.selector ?? '',
-              variables,
-              undefined,
-              true,
-            );
-            const attribute =
-              config.action === 'attribute'
-                ? dataTools.interpolate(config.attribute ?? '', variables, undefined, true)
-                : '';
-            const targets = selectorElements(selector);
-            const imageAlt =
-              config.action === 'replace-image' && config.imageAlt !== undefined
-                ? dataTools.interpolate(config.imageAlt, variables)
-                : undefined;
-            if (
-              config.action === 'replace-image' &&
-              targets.some((element) => element.localName !== 'img')
-            )
-              throw new Error('Replace image requires an img element.');
-            for (const element of targets) {
-              switch (config.action ?? 'text') {
-                case 'text':
-                  element.textContent = value;
-                  break;
-                case 'html':
-                  element.innerHTML = value;
-                  break;
-                case 'add-class':
-                  element.classList.add(...value.split(/\s+/).filter(Boolean));
-                  break;
-                case 'remove-class':
-                  element.classList.remove(...value.split(/\s+/).filter(Boolean));
-                  break;
-                case 'hide':
-                  (element as HTMLElement).style.display = 'none';
-                  break;
-                case 'show': {
-                  element.removeAttribute('hidden');
-                  (element as HTMLElement).style.removeProperty('display');
-                  if (win.getComputedStyle(element).display === 'none')
-                    (element as HTMLElement).style.display = 'block';
-                  break;
-                }
-                case 'replace-image': {
-                  element.removeAttribute('srcset');
-                  element.removeAttribute('sizes');
-                  const picture = element.parentElement;
-                  if (picture?.localName === 'picture') {
-                    for (const source of Array.from(picture.children)) {
-                      if (source.localName === 'source') source.removeAttribute('srcset');
-                    }
-                  }
-                  element.setAttribute('src', value);
-                  if (imageAlt !== undefined) element.setAttribute('alt', imageAlt);
-                  break;
-                }
-                case 'attribute':
-                  if (!attribute.trim()) throw new Error('Enter an attribute name.');
-                  element.setAttribute(attribute, value);
-                  break;
-                default:
-                  throw new Error('Unknown element action.');
-              }
+            for (const config of node.data.config.changes ?? [node.data.config]) {
+              const value = dataTools.elementValue(config, input);
+              const selector = dataTools.interpolate(config.selector ?? '', input, undefined, true);
+              const attribute =
+                config.action === 'attribute'
+                  ? dataTools.interpolate(config.attribute ?? '', input, undefined, true)
+                  : undefined;
+              const imageAlt =
+                config.action === 'replace-image' && config.imageAlt !== undefined
+                  ? dataTools.interpolate(config.imageAlt, input)
+                  : undefined;
+              const targets = selectorElements(selector);
+              if (
+                config.action === 'replace-image' &&
+                targets.some((element) => element.localName !== 'img')
+              )
+                throw new Error('Replace image requires an img element.');
+              for (const element of targets)
+                applyPageChange(element, { ...config, selector, value, attribute, imageAlt });
             }
             break;
           }

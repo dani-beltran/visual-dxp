@@ -276,71 +276,46 @@ it('edits HTTP request templates without response selection fields', async () =>
   expect(host.querySelector('[role="alert"]')?.textContent).toContain('Invalid data path');
 });
 
-it('edits and validates templated content without a toggle or variable explanations', async () => {
-  function ElementInspector() {
-    const [config, setConfig] = useState<StepConfig>({
-      selector: '#result',
-      action: 'text',
-      value: 'Manual text',
-    });
-    current = config;
-    return (
+it('summarizes page customizations and opens the page editor', async () => {
+  const open = vi.fn();
+  await act(async () =>
+    root.render(
       <NodeInspector
         node={{
-          id: 'element',
+          id: 'page',
           type: 'workflow',
           position: { x: 0, y: 0 },
-          data: { kind: 'dom', label: 'Update element', config },
+          data: {
+            kind: 'dom',
+            label: 'Customize Page',
+            config: {
+              changes: [
+                { selector: '#title', action: 'text', value: 'Hello {{name}}' },
+                {
+                  selector: '#photo',
+                  action: 'replace-image',
+                  value: 'https://example.com/new.jpg',
+                  imageAlt: '',
+                },
+              ],
+            },
+          },
         }}
-        onChange={(patch) => setConfig(patch.config!)}
+        onChange={() => {}}
         onClose={() => {}}
-        onPickElement={() => {}}
+        onPickElement={open}
         onDelete={() => {}}
         onDuplicate={() => {}}
         onPreviewContent={() => {}}
-      />
-    );
-  }
-  await act(async () => root.render(<ElementInspector />));
-  expect(() => field('Use incoming data')).toThrow('Missing field');
-  expect(field('New text').value).toBe('Manual text');
-  expect(host.querySelector('.dxp-inspector-incoming-data')).toBeNull();
-  await change('New text', 'Hello {{name}}!');
-  expect(current.value).toBe('Hello {{name}}!');
-  expect(current).not.toHaveProperty('valueSource');
-  expect(field('New text').value).toBe('Hello {{name}}!');
-  for (const [action, label] of [
-    ['html', 'HTML content'],
-    ['add-class', 'CSS class names'],
-    ['remove-class', 'CSS class names'],
-    ['attribute', 'Attribute value'],
-  ]) {
-    await change('Action', action);
-    expect(field(label).value).toBe('Hello {{name}}!');
-  }
-  await change('Action', 'replace-image');
-  await change('Image URL', 'https://example.com/new.jpg');
-  expect(host.querySelector('img')?.getAttribute('src')).toBe('https://example.com/new.jpg');
-  await change('Alt text (optional)', 'Photo of {{name}}');
-  expect(current.imageAlt).toBe('Photo of {{name}}');
-  await change('Alt text (optional)', '');
-  expect(current.imageAlt).toBeUndefined();
-  await change('Image URL', '{{imageUrl}}');
-  expect(host.querySelector('img')).toBeNull();
-  await change('Image URL', 'javascript:alert(1)');
-  expect(host.querySelector('[role="alert"]')?.textContent).toContain('HTTP(S)');
-  await change('Action', 'hide');
+      />,
+    ),
+  );
+  expect(host.textContent).toContain('Customize Page');
+  expect(host.querySelectorAll('.dxp-page-change-group')).toHaveLength(2);
+  expect(host.textContent).toContain('Hello {{name}}');
   expect(host.querySelector('textarea')).toBeNull();
-  expect(host.querySelector('.dxp-inspector-incoming-data')).toBeNull();
-  await change('Target element', '#{{id}}');
-  await change('Action', 'show');
-  await change('Target element', '#result');
-  await change('Action', 'text');
-  await change('New text', 'Hello {{name');
-  expect(host.querySelector('[role="alert"]')?.textContent).toContain('matching braces');
-  await change('New text', 'Static again');
-  expect(host.querySelector('[role="alert"]')).toBeNull();
-  expect(host.querySelector('.dxp-inspector-incoming-data')).toBeNull();
+  await act(async () => host.querySelector<HTMLButtonElement>('.dxp-page-editor-open')!.click());
+  expect(open).toHaveBeenCalledOnce();
 });
 
 it('selects multiple weekdays, removes days and preserves selections when switching types', async () => {

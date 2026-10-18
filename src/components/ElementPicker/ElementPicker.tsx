@@ -11,13 +11,18 @@ import {
   RefreshCw,
   X,
 } from 'lucide-react';
-import { type ReactNode, useEffect, useId, useMemo, useRef, useState } from 'react';
+import { type ReactNode, useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useBuilderI18n } from '../../lib/i18nContext';
 import type { PickedElement, PickerSession } from '../../lib/picker';
 import { normalizeWebsiteUrl, PICKER_PROTOCOL } from '../../lib/picker';
 import { type PreviewTransport, usePreviewUrl } from '../../lib/previewTransport';
 import { WebsiteSetup } from '../WebsiteSetup/WebsiteSetup';
 import './ElementPicker.css';
+import { dataTools } from '../../lib/data';
+import { isElementDescription } from '../../lib/elementDescription';
+import { isPageChange, type PageChange, pageChangeKey } from '../../lib/pageChanges';
+import { normalizePageChangeUrls, type PageUrlContext } from '../../lib/pageUrls';
+import { PageEditorPanel } from './PageEditorPanel';
 
 export interface ElementPickerProps {
   previewTransport?: PreviewTransport;
@@ -25,6 +30,8 @@ export interface ElementPickerProps {
   guidance?: ReactNode;
   url: string;
   initialSelector?: string;
+  initialChanges?: PageChange[];
+  onSaveChanges?: (changes: PageChange[]) => void;
   onSelect: (selector: string) => void;
   onClose: () => void;
 }
@@ -38,9 +45,38 @@ export function ElementPicker({
   onClose,
   guidance,
   previewTransport,
+  initialChanges = [],
+  onSaveChanges,
 }: ElementPickerProps) {
   const { t } = useBuilderI18n();
+  const editing = !!onSaveChanges;
+  const [draft, setDraft] = useState<PageChange[]>(() => structuredClone(initialChanges));
+  const draftRef = useRef(draft);
+  const urlContextRef = useRef<PageUrlContext>({});
+  const selectedRef = useRef<PickedElement | null>(null);
+  const [history, setHistory] = useState<PageChange[][]>([]);
+  const [focusedChange, setFocusedChange] = useState<PageChange | null>(null);
+  const [discard, setDiscard] = useState(false);
+  const [editorReady, setEditorReady] = useState(false);
+  const [editorError, setEditorError] = useState('');
+  const requestClose = () => {
+    const operations = (changes: PageChange[]) =>
+      changes.map(({ element: _element, ...change }) =>
+        normalizePageChangeUrls(change, urlContextRef.current),
+      );
+    if (
+      editing &&
+      JSON.stringify(operations(draftRef.current)) !== JSON.stringify(operations(initialChanges))
+    )
+      setDiscard(true);
+    else onClose();
+  };
+  const requestCloseRef = useRef(requestClose);
+  requestCloseRef.current = requestClose;
+
   const headingId = useId();
+  const discardHeadingId = useId();
+  const discardDialogRef = useRef<HTMLDialogElement>(null);
   const selectorId = useId();
   const frameRef = useRef<HTMLIFrameElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -58,6 +94,14 @@ export function ElementPicker({
   const [demoHtml, setDemoHtml] = useState<string>();
   const [reload, setReload] = useState(0);
   const preview = usePreviewUrl(frameUrl, previewTransport, reload);
+  urlContextRef.current = { baseUrl: frameUrl };
+  if (preview.proxied && preview.url) {
+    try {
+      urlContextRef.current.proxyOrigin = new URL(preview.url, window.location.href).origin;
+    } catch {
+      /* Reported by the connection UI. */
+    }
+  }
   const isDemo = frameUrl === new URL('/demo-site.html', window.location.origin).href;
   // biome-ignore lint/correctness/useExhaustiveDependencies: Retrying the demo must also retry a failed HTML fetch.
   useEffect(() => {
@@ -87,9 +131,78 @@ export function ElementPicker({
   const [selected, setSelected] = useState<PickedElement | null>(null);
   const [status, setStatus] = useState<ConnectionStatus>('loading');
   const [showHelp, setShowHelp] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(editing);
   const [selectorHint, setSelectorHint] = useState('');
   const unavailable = status === 'unavailable';
+  const sendEditor = useCallback((type: string, values: Record<string, unknown> = {}) => {
+    frameRef.current?.contentWindow?.postMessage(
+      { protocol: PICKER_PROTOCOL, channel: channelRef.current, type, ...values },
+      '*',
+    );
+  }, []);
+  const replaceDraft = useCallback(
+    (changes: PageChange[], record = true) => {
+      const previous = draftRef.current;
+      if (record) setHistory((items) => [...items, previous]);
+      const normalized = changes.map((change) =>
+        normalizePageChangeUrls(change, urlContextRef.current),
+      );
+      draftRef.current = normalized;
+      setDraft(normalized);
+      sendEditor('set-changes', { changes: normalized });
+    },
+    [sendEditor],
+  );
+  const editChange = useCallback(
+    (change: PageChange) => {
+      const current = draftRef.current;
+      const index = current.findIndex(
+        (item) =>
+          pageChangeKey(item) === pageChangeKey(change) ||
+          (item.selector === change.selector &&
+            (item.action ?? 'text') === 'text' &&
+            change.action === 'text' &&
+            item.textPath === undefined),
+      );
+      const next = [...current];
+      const element =
+        current[index]?.element ??
+        change.element ??
+        (selectedRef.current?.selector === change.selector
+          ? selectedRef.current.description
+          : undefined);
+      const described = element ? { ...change, element } : change;
+      if (index < 0) next.push(described);
+      else next[index] = { ...current[index], ...described };
+      if (JSON.stringify(next) !== JSON.stringify(current)) replaceDraft(next);
+    },
+    [replaceDraft],
+  );
+  let draftError = '';
+  if (editing)
+    try {
+      dataTools.validateElementValue({ changes: draft });
+      for (const change of draft) {
+        if (!dataTools.hasVariables(change.selector)) document.querySelector(change.selector);
+        if (!change.selector.trim() || (change.action === 'attribute' && !change.attribute?.trim()))
+          throw new Error(t('pageEditor.invalidChange'));
+        if (
+          change.action === 'attribute' &&
+          change.attribute === 'href' &&
+          !dataTools.hasVariables(change.value)
+        ) {
+          const url = new URL(change.value ?? '', 'https://preview.invalid');
+          if (
+            !['http:', 'https:', 'mailto:', 'tel:'].includes(url.protocol) ||
+            url.username ||
+            url.password
+          )
+            throw new Error(t('pageEditor.invalidLink'));
+        }
+      }
+    } catch (error) {
+      draftError = (error as Error).message;
+    }
 
   // A new target must be able to reconnect after the previous target failed.
   useEffect(() => {
@@ -98,9 +211,22 @@ export function ElementPicker({
 
   useEffect(() => {
     const prior = document.activeElement as HTMLElement | null;
-    dialogRef.current?.querySelector<HTMLInputElement>('input')?.focus();
+    dialogRef.current?.querySelector<HTMLElement>('input,button')?.focus();
     return () => prior?.focus();
   }, []);
+
+  useEffect(() => {
+    if (!discard) return;
+    const dialog = discardDialogRef.current;
+    if (!dialog) return;
+    const prior = document.activeElement as HTMLElement | null;
+    dialog.showModal?.();
+    dialog.querySelector<HTMLButtonElement>('button')?.focus();
+    return () => {
+      dialog.close?.();
+      prior?.focus();
+    };
+  }, [discard]);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: Reload replaces the iframe even when its URL stays unchanged, so its picker session must reconnect.
   useEffect(() => {
@@ -124,7 +250,9 @@ export function ElementPicker({
     setSelected(null);
     setSelectorHint('');
     const pick = (element: PickedElement) => {
+      selectedRef.current = element;
       setSelected(element);
+      setFocusedChange((current) => (current?.selector === element.selector ? current : null));
       setSelector(element.selector);
       selectorRef.current = element.selector;
       setSelectorHint('');
@@ -133,7 +261,7 @@ export function ElementPicker({
       frameWindow?.postMessage({ protocol: PICKER_PROTOCOL, type, channel, ...extra }, origin);
     const initialize = () => {
       if (attached) return;
-      send('init', { selector: selectorRef.current });
+      send('init', { selector: selectorRef.current, editing, changes: draftRef.current });
     };
     const reconnect = () => {
       channel = crypto.randomUUID();
@@ -145,8 +273,10 @@ export function ElementPicker({
       sessionRef.current?.destroy();
       sessionRef.current = null;
       setStatus('loading');
+      setEditorReady(false);
       setHovered(null);
       setSelected(null);
+      selectedRef.current = null;
       setSelectorHint('');
       retry = window.setInterval(initialize, 1000);
       timeout = window.setTimeout(() => {
@@ -167,7 +297,9 @@ export function ElementPicker({
       typeof value === 'object' &&
       typeof (value as PickedElement).selector === 'string' &&
       typeof (value as PickedElement).tagName === 'string' &&
-      typeof (value as PickedElement).text === 'string';
+      typeof (value as PickedElement).text === 'string' &&
+      ((value as PickedElement).description === undefined ||
+        isElementDescription((value as PickedElement).description));
     const message = (event: MessageEvent) => {
       if (event.source !== frameWindow || event.origin !== 'null') return;
       const data = event.data;
@@ -176,10 +308,41 @@ export function ElementPicker({
         finished = true;
         attached = true;
         setStatus('bridge');
+        setEditorReady(data.editing === true);
+        if (editing && data.editing !== true) setEditorError(t('pageEditor.unsupportedBridge'));
+        else setEditorError('');
+        if (editing) {
+          const normalized = draftRef.current.map((change) =>
+            normalizePageChangeUrls(change, urlContextRef.current),
+          );
+          if (normalized.some((change, index) => change !== draftRef.current[index]))
+            replaceDraft(normalized, false);
+        }
       }
       if (data.type === 'hover' && (data.element === null || isElement(data.element)))
         setHovered(data.element);
       if (data.type === 'select' && isElement(data.element)) pick(data.element);
+      if (editing && data.type === 'page-descriptions' && Array.isArray(data.descriptions)) {
+        const descriptions = new Map<string, NonNullable<PageChange['element']>>();
+        for (const item of data.descriptions) {
+          if (item && typeof item.selector === 'string' && isElementDescription(item.element))
+            descriptions.set(item.selector, item.element);
+        }
+        const described = draftRef.current.map((change) =>
+          !change.element && descriptions.has(change.selector)
+            ? { ...change, element: descriptions.get(change.selector) }
+            : change,
+        );
+        if (described.some((change, index) => change !== draftRef.current[index])) {
+          draftRef.current = described;
+          setDraft(described);
+        }
+      }
+      if (editing && data.type === 'page-change' && isPageChange(data.change))
+        editChange(data.change);
+      if (editing && data.type === 'changes-result')
+        setEditorError(data.valid ? '' : t('pageEditor.previewError'));
+      if (editing && data.type === 'request-close') requestCloseRef.current();
       if (data.type === 'selector-result')
         setSelectorHint(
           data.found
@@ -207,7 +370,16 @@ export function ElementPicker({
       window.clearTimeout(timeout);
       if (initRef.current === reconnect) initRef.current = () => undefined;
     };
-  }, [frameUrl, preview.url, preview.error, reload, unavailable]);
+  }, [
+    frameUrl,
+    preview.url,
+    preview.error,
+    reload,
+    unavailable,
+    editing,
+    editChange,
+    replaceDraft,
+  ]);
 
   const updateSelector = (value: string) => {
     setSelector(value);
@@ -249,19 +421,23 @@ export function ElementPicker({
       {unavailable && (
         <p role="status">
           {preview.error ||
-            t('elementPicker.thisWebsiteCouldnTConnectToThePickerCheckTheSetupBelow')}
+            t(
+              editing
+                ? 'pageEditor.connectionError'
+                : 'elementPicker.thisWebsiteCouldnTConnectToThePickerCheckTheSetupBelow',
+            )}
         </p>
       )}
-      <WebsiteSetup proxied={preview.proxied} />
+      {!editing && <WebsiteSetup proxied={preview.proxied} />}
     </div>
   );
 
   return (
     // biome-ignore lint/a11y/noStaticElementInteractions: The backdrop offers pointer dismissal; dialog controls and Escape provide keyboard dismissal.
     <div
-      className={`dxp-picker-backdrop${isFullscreen ? ' dxp-picker-backdrop-fullscreen' : ''}`}
+      className={`dxp-picker-backdrop${editing || isFullscreen ? ' dxp-picker-backdrop-fullscreen' : ''}`}
       onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onClose();
+        if (event.target === event.currentTarget) requestClose();
       }}
     >
       <div
@@ -271,9 +447,13 @@ export function ElementPicker({
         aria-modal="true"
         aria-labelledby={headingId}
         onKeyDown={(event) => {
+          if (discard) {
+            event.stopPropagation();
+            return;
+          }
           if (event.key === 'Escape') {
             event.stopPropagation();
-            onClose();
+            requestClose();
           }
           if (event.key === 'Tab') {
             const focusable = Array.from(
@@ -299,24 +479,34 @@ export function ElementPicker({
             <MousePointer2 size={19} />
           </div>
           <div>
-            <h2 id={headingId}>{t('elementPicker.selectAnElement')}</h2>
-            <p>{t('elementPicker.pointClickAndConnectYourExperience')}</p>
+            <h2 id={headingId}>
+              {t(editing ? 'pageEditor.editPage' : 'elementPicker.selectAnElement')}
+            </h2>
+            <p>
+              {t(
+                editing
+                  ? 'pageEditor.description'
+                  : 'elementPicker.pointClickAndConnectYourExperience',
+              )}
+            </p>
           </div>
           <div className="dxp-picker-header-actions">
+            {!editing && (
+              <button
+                type="button"
+                className="dxp-picker-icon-button"
+                aria-label={t(isFullscreen ? 'common.exitFullscreen' : 'common.enterFullscreen')}
+                title={t(isFullscreen ? 'common.exitFullscreen' : 'common.enterFullscreen')}
+                onClick={() => setIsFullscreen((value) => !value)}
+              >
+                {isFullscreen ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
+              </button>
+            )}
             <button
               type="button"
               className="dxp-picker-icon-button"
-              aria-label={t(isFullscreen ? 'common.exitFullscreen' : 'common.enterFullscreen')}
-              title={t(isFullscreen ? 'common.exitFullscreen' : 'common.enterFullscreen')}
-              onClick={() => setIsFullscreen((value) => !value)}
-            >
-              {isFullscreen ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
-            </button>
-            <button
-              type="button"
-              className="dxp-picker-icon-button"
-              aria-label={t('elementPicker.closeElementPicker')}
-              onClick={onClose}
+              aria-label={t(editing ? 'common.cancel' : 'elementPicker.closeElementPicker')}
+              onClick={requestClose}
             >
               <X size={20} />
             </button>
@@ -345,7 +535,7 @@ export function ElementPicker({
           <span className={`dxp-picker-status dxp-picker-status-${status}`}>
             <i />
             {status === 'connected' || status === 'bridge'
-              ? t('elementPicker.selectionModeIsOn')
+              ? t(editing ? 'pageEditor.editMode' : 'elementPicker.selectionModeIsOn')
               : status === 'loading'
                 ? t('elementPicker.connectingToWebsite')
                 : t('elementPicker.connectionRequired')}
@@ -357,80 +547,165 @@ export function ElementPicker({
               t('elementPicker.hoverToInspectClickToSelect')
             )}
           </span>
-          {!unavailable && (
+          {!editing && !unavailable && (
             <button type="button" onClick={() => setShowHelp(!showHelp)} aria-expanded={showHelp}>
               <Info size={14} /> {t('elementPicker.websiteSetup')}
             </button>
           )}
         </div>
-        {showHelp && !unavailable && setup}
-        <div className="dxp-picker-frame-wrap">
-          {unavailable ? (
-            setup
-          ) : frameUrl && preview.url ? (
-            <iframe
-              key={`${frameUrl}-${reload}`}
-              ref={frameRef}
-              src={isDemo ? undefined : preview.url}
-              srcDoc={isDemo ? demoHtml : undefined}
-              title={t('elementPicker.websiteElementSelectionPreview')}
-              className="dxp-picker-frame"
-              onLoad={() => initRef.current()}
-              sandbox="allow-scripts"
-              referrerPolicy="no-referrer"
+        {!editing && showHelp && !unavailable && setup}
+        <div className={editing ? 'dxp-page-editor-layout' : 'dxp-picker-standard-layout'}>
+          <div className="dxp-picker-frame-wrap">
+            {unavailable ? (
+              setup
+            ) : frameUrl && preview.url ? (
+              <iframe
+                key={`${frameUrl}-${reload}`}
+                ref={frameRef}
+                src={isDemo ? undefined : preview.url}
+                srcDoc={isDemo ? demoHtml : undefined}
+                title={t('elementPicker.websiteElementSelectionPreview')}
+                className="dxp-picker-frame"
+                onLoad={() => initRef.current()}
+                sandbox="allow-scripts"
+                referrerPolicy="no-referrer"
+              />
+            ) : (
+              <div className="dxp-picker-empty">
+                {t('elementPicker.enterAWebsiteUrlToGetStarted')}
+              </div>
+            )}
+            {status === 'loading' && (
+              <div className="dxp-picker-connecting">
+                <span />
+                {t('elementPicker.connectingElementPicker')}
+              </div>
+            )}
+          </div>
+          {editing && (
+            <PageEditorPanel
+              urlContext={urlContextRef.current}
+              selected={selected}
+              changes={draft}
+              onEdit={editChange}
+              focusedChange={focusedChange}
+              onRemove={(index) =>
+                replaceDraft(draftRef.current.filter((_, current) => current !== index))
+              }
+              onSelect={(change) => {
+                setFocusedChange(change);
+                sendEditor('set-selector', { selector: change.selector });
+              }}
             />
-          ) : (
-            <div className="dxp-picker-empty">
-              {t('elementPicker.enterAWebsiteUrlToGetStarted')}
-            </div>
-          )}
-          {status === 'loading' && (
-            <div className="dxp-picker-connecting">
-              <span />
-              {t('elementPicker.connectingElementPicker')}
-            </div>
           )}
         </div>
-        <footer className="dxp-picker-footer">
-          <div className="dxp-picker-selector-field">
-            <label htmlFor={selectorId}>
-              {selected ? (
-                <>
-                  <Check size={13} /> {t('elementPicker.elementSelected')}
-                </>
-              ) : (
-                t('elementPicker.cssSelector')
-              )}
-            </label>
-            <input
-              id={selectorId}
-              value={selector}
-              onChange={(event) => updateSelector(event.target.value)}
-              placeholder={t('elementPicker.clickAnElementOrEnterACssSelector')}
-              spellCheck={false}
-              aria-invalid={!!selector && !isValid}
-            />
-            <span className="dxp-picker-selector-hint" aria-live="polite">
-              {selector && !isValid
-                ? t('elementPicker.enterAValidCssSelector')
-                : selectorHint ||
-                  (selected?.text
-                    ? `“${selected.text.slice(0, 65)}${selected.text.length > 65 ? '…' : ''}”`
-                    : t('elementPicker.yourSelectorWillBeSavedToThisStep'))}
-            </span>
-          </div>
-          <button type="button" className="dxp-picker-cancel" onClick={onClose}>
-            {t('common.cancel')}
-          </button>
-          <button
-            type="button"
-            className="dxp-picker-confirm"
-            disabled={!isValid}
-            onClick={() => onSelect(selector.trim())}
-          >
-            {t('elementPicker.useElement')} <ArrowRight size={15} />
-          </button>
-        </footer>
+        {editing ? (
+          <>
+            {(draftError || editorError) && (
+              <div className="dxp-page-editor-error" role="alert">
+                {draftError || editorError}
+              </div>
+            )}
+            <footer className="dxp-page-editor-footer">
+              <span>
+                {t('pageEditor.changeCount', {
+                  count: draft.length,
+                  elements: new Set(draft.map((change) => change.selector)).size,
+                })}
+              </span>
+              <button
+                type="button"
+                className="dxp-picker-cancel"
+                disabled={!history.length}
+                onClick={() => {
+                  const previous = history[history.length - 1];
+                  setHistory((items) => items.slice(0, -1));
+                  replaceDraft(previous, false);
+                }}
+              >
+                {t('pageEditor.undo')}
+              </button>
+              <button type="button" className="dxp-picker-cancel" onClick={requestClose}>
+                {t('common.cancel')}
+              </button>
+              <button
+                type="button"
+                className="dxp-picker-confirm"
+                disabled={!!draftError || !editorReady || status !== 'bridge'}
+                onClick={() => onSaveChanges?.(draftRef.current)}
+              >
+                {t('pageEditor.saveChanges')}
+              </button>
+            </footer>
+            {discard && (
+              <dialog
+                ref={discardDialogRef}
+                className="dxp-page-editor-discard"
+                aria-labelledby={discardHeadingId}
+                aria-modal="true"
+                onCancel={(event) => {
+                  event.preventDefault();
+                  setDiscard(false);
+                }}
+              >
+                <h2 id={discardHeadingId}>{t('pageEditor.cancelTitle')}</h2>
+                <div className="dxp-page-editor-discard-actions">
+                  <button
+                    type="button"
+                    className="dxp-picker-cancel"
+                    onClick={() => setDiscard(false)}
+                  >
+                    {t('pageEditor.keepEditing')}
+                  </button>
+                  <button type="button" className="dxp-picker-confirm" onClick={onClose}>
+                    {t('pageEditor.discard')}
+                  </button>
+                </div>
+              </dialog>
+            )}
+          </>
+        ) : (
+          <footer className="dxp-picker-footer">
+            <div className="dxp-picker-selector-field">
+              <label htmlFor={selectorId}>
+                {selected ? (
+                  <>
+                    <Check size={13} /> {t('elementPicker.elementSelected')}
+                  </>
+                ) : (
+                  t('elementPicker.cssSelector')
+                )}
+              </label>
+              <input
+                id={selectorId}
+                value={selector}
+                onChange={(event) => updateSelector(event.target.value)}
+                placeholder={t('elementPicker.clickAnElementOrEnterACssSelector')}
+                spellCheck={false}
+                aria-invalid={!!selector && !isValid}
+              />
+              <span className="dxp-picker-selector-hint" aria-live="polite">
+                {selector && !isValid
+                  ? t('elementPicker.enterAValidCssSelector')
+                  : selectorHint ||
+                    (selected?.text
+                      ? `“${selected.text.slice(0, 65)}${selected.text.length > 65 ? '…' : ''}”`
+                      : t('elementPicker.yourSelectorWillBeSavedToThisStep'))}
+              </span>
+            </div>
+            <button type="button" className="dxp-picker-cancel" onClick={onClose}>
+              {t('common.cancel')}
+            </button>
+            <button
+              type="button"
+              className="dxp-picker-confirm"
+              disabled={!isValid}
+              onClick={() => onSelect(selector.trim())}
+            >
+              {t('elementPicker.useElement')} <ArrowRight size={15} />
+            </button>
+          </footer>
+        )}
       </div>
     </div>
   );

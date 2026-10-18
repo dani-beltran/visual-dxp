@@ -238,7 +238,7 @@ describe('configuration dependencies across node kinds', () => {
       { conditionType: 'data', conditionOperator: 'matches', conditionValue: '[' },
       { conditionValue: '^hello' },
     ],
-    ['dom', { selector: 'h1' }, { action: 'attribute' }, { attribute: 'title' }],
+    ['dom', { selector: 'h1' }, { action: 'attribute' }, { selector: 'h1', attribute: 'title' }],
     ['popover', { content: 'Hello' }, { contentType: 'iframe' }, { url: 'https://example.com' }],
     ['popover', { content: 'Hello' }, { position: 'anchor' }, { selector: '#cta' }],
     [
@@ -437,7 +437,7 @@ describe('configuration dependencies across node kinds', () => {
   );
 
   it.each([
-    ['dom', { action: 'hide' }, ['value', 'attribute']],
+    ['dom', { action: 'hide', selector: '#shop-now' }, ['value', 'attribute', 'changes']],
     [
       'fork',
       { conditionType: 'data', conditionOperator: 'exists' },

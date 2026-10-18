@@ -31,6 +31,8 @@ export { createEmptyWorkflow, createNode, defaultWorkflow } from './lib/catalog'
 export type { ConnectionData, ConnectionPreview } from './lib/connections';
 export type { DataTransformation, DataTransformConfig, JsonValue } from './lib/dataTransform';
 export { dataTransformTools } from './lib/dataTransform';
+export type { ElementDescription } from './lib/elementDescription';
+export { describeElement, formatElementDescription } from './lib/elementDescription';
 export { exportWorkflow, validateWorkflow } from './lib/export';
 export type {
   BuilderI18n,
@@ -41,6 +43,7 @@ export type {
 export { createBuilderTranslator, formatBuilderError } from './lib/i18n';
 export { BuilderI18nProvider } from './lib/i18nContext';
 export { englishMessages } from './lib/messages';
+export type { PageChange } from './lib/pageChanges';
 export { installPickerBridge } from './lib/pickerBridge';
 export { installPreviewBridge } from './lib/previewBridge';
 export type { PreviewTransport } from './lib/previewTransport';

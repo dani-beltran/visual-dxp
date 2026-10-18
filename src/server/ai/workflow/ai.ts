@@ -4,6 +4,7 @@ import { RecoverableToolError } from '../../../lib/aiToolErrors';
 import { isAnalyticsSettings } from '../../../lib/analytics';
 import { type BrandingProfile, parseBrandingProfile } from '../../../lib/branding';
 import { type DataTransformation, dataTransformTools } from '../../../lib/dataTransform';
+import { isPageChange } from '../../../lib/pageChanges';
 import { parseNoteMarks } from './notes';
 import type { NodeKind, StepConfig, Workflow, WorkflowEdge, WorkflowNode } from './types';
 import { validateWorkflow } from './validation';
@@ -170,6 +171,17 @@ function position(value: unknown): WorkflowNode['position'] {
 function config(value: unknown): StepConfig {
   const input = record(value, 'Step configuration');
   const output: Record<string, unknown> = {};
+  if (input.changes !== undefined) {
+    if (!Array.isArray(input.changes) || !input.changes.every(isPageChange))
+      throw new Error('Page changes must contain valid element edits.');
+    output.changes = structuredClone(input.changes);
+  }
+  if (input.textPath !== undefined) {
+    if (!isPageChange({ selector: '', textPath: input.textPath }))
+      throw new Error('Text paths must contain nonnegative child-node indices.');
+    output.textPath = structuredClone(input.textPath);
+  }
+
   for (const key of configStrings) {
     if (own(input, key) && input[key] !== undefined)
       output[key] = text(input[key], 'Step configuration text', 20000, true);

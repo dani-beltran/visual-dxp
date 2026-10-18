@@ -1,3 +1,4 @@
+import { getPageChanges } from '../../lib/pageChanges';
 import '@xyflow/react/dist/style.css';
 import '../../styles/base.css';
 import '../../styles/shared.css';
@@ -1866,6 +1867,26 @@ function Builder({
             selected.data.kind === 'experiment'
               ? selected.data.config.experimentSelector
               : selected.data.config.selector
+          }
+          initialChanges={
+            selected.data.kind === 'dom' ? getPageChanges(selected.data.config) : undefined
+          }
+          onSaveChanges={
+            selected.data.kind === 'dom'
+              ? (changes) => {
+                  const {
+                    selector: _selector,
+                    action: _action,
+                    value: _value,
+                    attribute: _attribute,
+                    imageAlt: _imageAlt,
+                    textPath: _textPath,
+                    ...rest
+                  } = selected.data.config;
+                  patchNode({ config: { ...rest, changes } });
+                  setPicking(false);
+                }
+              : undefined
           }
           onClose={() => setPicking(false)}
           onSelect={(selector) => {

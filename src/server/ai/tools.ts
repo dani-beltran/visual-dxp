@@ -15,7 +15,43 @@ const shortText = z.string().max(200);
 const text = z.string().max(20000);
 const id = z.string().min(1).max(200);
 const position = z.object({ x: z.number().finite(), y: z.number().finite() });
+const pageChange = z.object({
+  element: z
+    .object({
+      kind: z.enum(['heading', 'image', 'link', 'button', 'field', 'text', 'element']),
+      name: z.string().max(200).optional(),
+      context: z.enum(['header', 'footer', 'navigation', 'main']).optional(),
+    })
+    .describe(
+      'Original element description for display. Preserve existing metadata; do not invent names from CSS selectors.',
+    )
+    .optional(),
+  selector: text,
+  action: z
+    .enum([
+      'text',
+      'html',
+      'add-class',
+      'remove-class',
+      'hide',
+      'show',
+      'attribute',
+      'replace-image',
+    ])
+    .optional(),
+  value: text.optional(),
+  attribute: text.optional(),
+  imageAlt: text.optional(),
+  textPath: z.array(z.number().int().nonnegative()).min(1).optional(),
+});
 const config = z.object({
+  changes: z
+    .array(pageChange)
+    .describe(
+      'Customize Page (kind dom): all page edits in execution order. Each entry targets a CSS selector with an action and value. Use this list for new page customizations; it replaces the historical single selector/action/value configuration.',
+    )
+    .optional(),
+  textPath: z.array(z.number().int().nonnegative()).min(1).optional(),
   analyticsPayload: text
     .describe(
       'Track event: optional JSON object of GA4 event parameters. Supports incoming-data variables, e.g. {"plan":"{{plan}}","value":{{price}}}.',
@@ -115,7 +151,7 @@ const config = z.object({
     .optional(),
   selector: text
     .describe(
-      'CSS selector for element triggers, Update element actions, or anchored popovers. Required and non-empty for popovers with position: anchor. Omit for page-wide triggers and non-anchored popovers. Update element actions, including hide/show, may interpolate {{variables}} here.',
+      'CSS selector for element triggers, Customize Page actions, or anchored popovers. Required and non-empty for popovers with position: anchor. Omit for page-wide triggers and non-anchored popovers. Customize Page actions, including hide/show, may interpolate {{variables}} here.',
     )
     .optional(),
   url: text
@@ -152,10 +188,10 @@ const config = z.object({
     .optional(),
   value: text
     .describe(
-      'Update element content; omit for hide/show. Mix literal text and incoming variables such as Hello {{name}}, {{user.name}}, or {{$}} for the whole incoming input.',
+      'Customize Page content; omit for hide/show. Mix literal text and incoming variables such as Hello {{name}}, {{user.name}}, or {{$}} for the whole incoming input.',
     )
     .optional(),
-  attribute: text.describe('Attribute name for Update element; supports {{variables}}.').optional(),
+  attribute: text.describe('Attribute name for Customize Page; supports {{variables}}.').optional(),
   imageAlt: text
     .describe(
       'Optional replacement image alt text; supports {{variables}}. Omit to preserve existing alt; empty clears it.',

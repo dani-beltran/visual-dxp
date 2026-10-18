@@ -13,7 +13,7 @@ export const spanishPresetMessages = {
   'headline-experiment.value-b': 'Diseño cuidado para tu forma de vivir.',
   'headline-experiment.setup': 'Configuración: Titulares y tráfico',
   'headline-experiment.instructions':
-    'Elige el título principal en ambos nodos Actualizar elemento y personaliza cada titular. Ajusta el reparto del Experimento para controlar el porcentaje asignado a A; el resto va a B. Solo se ejecuta la rama elegida. Cada navegador conserva su variante en futuras visitas si el almacenamiento local está disponible.',
+    'Elige el título principal en ambos nodos Personalizar página y personaliza cada titular. Ajusta el reparto del Experimento para controlar el porcentaje asignado a A; el resto va a B. Solo se ejecuta la rama elegida. Cada navegador conserva su variante en futuras visitas si el almacenamiento local está disponible.',
   'headline-experiment.testing': 'Configuración: Probar ambas variantes',
   'headline-experiment.testing-instructions':
     'Las asignaciones usan la clave dxp_headline_experiment en el almacenamiento local. Para probar A, establece el reparto en 100%; para B, en 0%. Usa una clave nueva en cada prueba y reinicia la vista previa. Restablece el 50% y una clave compartida antes de publicar. La analítica está desactivada; configura GA4 en el nodo Experimento para medir resultados.',

@@ -1,10 +1,19 @@
+import type { ElementDescription } from './elementDescription';
+
 /** A deliberately small, serializable protocol shared with bridge.js. */
 export const PICKER_PROTOCOL = 'visual-dxp:element-picker';
 
 export interface PickedElement {
+  description?: ElementDescription;
   selector: string;
   tagName: string;
   text: string;
+  textPath?: number[];
+  editableText?: boolean;
+  src?: string;
+  alt?: string;
+  href?: string;
+  linkTarget?: string;
 }
 
 export interface PickerSession {

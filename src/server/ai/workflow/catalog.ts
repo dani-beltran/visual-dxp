@@ -26,9 +26,9 @@ export const catalog: {
   },
   {
     kind: 'dom',
-    label: 'Update element',
+    label: 'Customize Page',
     description: nodeDescriptions.dom,
-    config: { selector: '#shop-now', action: 'text', value: 'Discover your next favorite' },
+    config: { changes: [] },
   },
   {
     kind: 'delay',

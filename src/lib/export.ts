@@ -6,6 +6,7 @@ import { getDateRange } from './dateRange';
 import { createExperimentTools } from './experiment';
 import { type BuilderTranslator, formatBuilderError, translateEnglish } from './i18n';
 import { isNoteMarks } from './noteText';
+import { getPageChanges, isPageChange } from './pageChanges';
 import { getRuntimeSource } from './runtime';
 import { type ExportOptions, matchesTargetUrl, validateExportTarget } from './targeting';
 import { getTimeRange } from './timeRange';
@@ -250,31 +251,41 @@ export function validateWorkflow(
           }
         }
         break;
-      case 'dom':
-        try {
-          dataTools.validateElementValue(config);
-        } catch (error) {
-          add((error as Error).message, node.id);
-        }
-        if (!dataTools.hasVariables(config.selector))
-          selector(config.selector, node.id, t('validation.chooseAnElementToUpdate'));
-        if (
-          config.action &&
-          ![
-            'text',
-            'html',
-            'add-class',
-            'remove-class',
-            'hide',
-            'show',
-            'attribute',
-            'replace-image',
-          ].includes(config.action)
-        )
-          add(t('validation.chooseASupportedElementAction'), node.id);
-        if (config.action === 'attribute' && !config.attribute?.trim())
-          add(t('validation.enterAnAttributeName'), node.id);
+      case 'dom': {
+        const changes = getPageChanges(config);
+        if (!Array.isArray(changes)) add(t('pageEditor.invalidChange'), node.id);
+        if (Array.isArray(changes))
+          for (const change of changes) {
+            if (!isPageChange(change)) {
+              add(t('pageEditor.invalidChange'), node.id);
+              continue;
+            }
+            try {
+              dataTools.validateElementValue(change);
+            } catch (error) {
+              add((error as Error).message, node.id);
+            }
+            if (!dataTools.hasVariables(change.selector))
+              selector(change.selector, node.id, t('validation.chooseAnElementToUpdate'));
+            if (
+              change.action &&
+              ![
+                'text',
+                'html',
+                'add-class',
+                'remove-class',
+                'hide',
+                'show',
+                'attribute',
+                'replace-image',
+              ].includes(change.action)
+            )
+              add(t('validation.chooseASupportedElementAction'), node.id);
+            if (change.action === 'attribute' && !change.attribute?.trim())
+              add(t('validation.enterAnAttributeName'), node.id);
+          }
         break;
+      }
       case 'delay':
         if (
           config.duration !== undefined &&
