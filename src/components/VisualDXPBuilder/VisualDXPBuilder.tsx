@@ -1918,6 +1918,11 @@ function Builder({
       )}
       {modal === 'popover-preview' && selected?.data.kind === 'popover' && (
         <PopoverPreview
+          key={selected.id}
+          onSave={(config) => {
+            patchNode({ config });
+            setModal(null);
+          }}
           guidance={tutorialPanel}
           node={selected}
           websiteUrl={workflow.websiteUrl}

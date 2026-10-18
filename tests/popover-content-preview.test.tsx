@@ -2,7 +2,6 @@
 import { act, StrictMode } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { NodeInspector } from '../src/components/NodeInspector/NodeInspector';
 import { PopoverContentPreview } from '../src/components/PopoverContentPreview/PopoverContentPreview';
 import { createNode } from '../src/lib/catalog';
 import { createRuntime } from '../src/lib/runtime/runtime';
@@ -28,19 +27,7 @@ afterEach(async () => {
 });
 
 async function preview(node: WorkflowNode) {
-  await act(async () =>
-    root.render(
-      <NodeInspector
-        node={node}
-        onChange={() => {}}
-        onClose={() => {}}
-        onPickElement={() => {}}
-        onDelete={() => {}}
-        onDuplicate={() => {}}
-        onPreviewContent={() => {}}
-      />,
-    ),
-  );
+  await act(async () => root.render(<PopoverContentPreview node={node} title="Content" />));
   const frame = host.querySelector('iframe')!;
   expect(frame.getAttribute('sandbox')).toBe('');
   return new DOMParser().parseFromString(frame.srcdoc, 'text/html');

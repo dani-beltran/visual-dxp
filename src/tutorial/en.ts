@@ -40,7 +40,7 @@ export const tutorialEnglish = {
     'Add a Delay and open its settings. Set Wait for to 1000 ms (1 second). This controls the wait before showing the popover.',
   'tutorial.popover.title': 'Add a popover',
   'tutorial.popover.body':
-    'Add Popover from the library and open its settings. A popover displays content over the website. Look at HTML content and Position; keep the default HTML content and all other settings unchanged for this exercise.',
+    'Add Popover from the library and open its settings. A popover displays content over the website. Choose Edit popover to open the fullscreen editor. Look at HTML content and Position in the sidebar, and try the Desktop and Mobile previews. Keep the default HTML content and all other settings unchanged for this exercise.',
   'tutorial.connect.title': 'Connect the workflow',
   'tutorial.connect.body':
     'Move the nodes apart on the canvas. Drag from the output circle on the right of Trigger to the input circle on the left of Delay, then connect Delay to Popover.',

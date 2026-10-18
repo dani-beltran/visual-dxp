@@ -184,7 +184,7 @@ it('builds and tests through the real editor, then visits every feature without 
   expect(popover.data.config.content).toBe(
     catalog.find((n) => n.kind === 'popover')!.config.content,
   );
-  await click('Open fullscreen content preview');
+  await click('Edit popover');
   expect(el('.dxp-popover-preview .dxp-tutorial')).toBeTruthy();
   expect(step()).toBe('Add a popover');
   await click('Return to editor');

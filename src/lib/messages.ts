@@ -587,7 +587,7 @@ export const englishMessages = {
   'nodeInspector.animationZoom': 'Zoom',
   'nodeInspector.animationBounce': 'Bounce',
   'nodeInspector.animationHint':
-    'Preview the animation in full screen. Direction follows the popover position.',
+    'Animations play in the preview. Direction follows the popover position.',
   'nodeInspector.position': 'Position',
   'nodeInspector.centerOfScreen': 'Center of screen',
   'nodeInspector.topLeft': 'Top left',
@@ -652,6 +652,18 @@ export const englishMessages = {
   'noteControls.customBackgroundColor': 'Custom background color',
   'noteControls.customColor': 'Custom color',
   'noteTextEditor.writeANote': 'Write a note…',
+  'popoverEditor.pickingHint':
+    'Click an element in the preview to use it as the anchor. Press Esc to cancel.',
+  'popoverEditor.pickingUnavailable':
+    'Element selection is unavailable on this website. Enter a CSS selector instead.',
+  'popoverEditor.editPopover': 'Edit popover',
+  'popoverEditor.description':
+    'Customize your popover’s content, appearance, and position, and preview it on your website.',
+  'popoverEditor.settings': 'Popover settings',
+  'popoverEditor.openHint': 'Edit content and appearance while previewing results.',
+  'popoverEditor.unsavedChanges': 'Unsaved popover changes',
+  'popoverEditor.previewHint': 'Preview changes on desktop or mobile before saving.',
+  'popoverEditor.cancelTitle': 'Discard unsaved popover changes?',
   'popoverPreview.centerOfScreen': 'Center of screen',
   'popoverPreview.topLeft': 'Top left',
   'popoverPreview.topRight': 'Top right',

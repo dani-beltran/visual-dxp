@@ -15,18 +15,19 @@
   border-bottom: 1px solid var(--dxp-line);
 }
 .dxp-popover-preview-heading {
+  display: flex;
+  align-items: center;
+  gap: 13px;
   flex: 1;
   min-width: 0;
 }
-.dxp-popover-preview-heading h2 {
-  margin-top: 5px;
+.dxp-popover-preview-heading .dxp-editor-heading {
+  min-width: 0;
+}
+.dxp-popover-preview-heading p {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-family: Manrope, sans-serif;
-  font-size: 18px;
-  font-weight: 550;
-  letter-spacing: -0.5px;
 }
 .dxp-popover-preview-header > button {
   flex-shrink: 0;
@@ -83,7 +84,7 @@
   }
 }
 @media (max-width: 600px) {
-  .dxp-popover-preview-heading h2 {
+  .dxp-popover-preview-heading .dxp-editor-heading h2 {
     font-size: 15px;
   }
 }
@@ -91,4 +92,76 @@
   .dxp-popover-preview-bar {
     padding: 10px 16px;
   }
+}
+
+.dxp-popover-preview-website {
+  background: var(--dxp-canvas);
+}
+.dxp-popover-preview-mobile > iframe {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(390px, calc(100% - 32px));
+  height: calc(100% - 32px);
+  max-height: 844px;
+  border-radius: 12px;
+  box-shadow:
+    0 0 0 1px var(--dxp-line),
+    0 8px 24px var(--dxp-shadow-strong);
+}
+.dxp-popover-preview-loading {
+  z-index: 1;
+}
+.dxp-popover-editor-panel h3 {
+  margin: 0 0 22px;
+  font-size: 15px;
+}
+.dxp-popover-editor-panel input,
+.dxp-popover-editor-panel textarea,
+.dxp-popover-editor-panel select {
+  width: 100%;
+  min-width: 0;
+  padding: 9px 10px;
+  border: 1px solid var(--dxp-line);
+  border-radius: 6px;
+  color: var(--dxp-text);
+  background: var(--dxp-surface);
+  font: inherit;
+  line-height: 1.55;
+}
+.dxp-popover-editor-panel textarea {
+  resize: vertical;
+  min-height: 140px;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+}
+.dxp-popover-editor-panel :is(input, textarea):focus {
+  outline: 2px solid var(--dxp-focus);
+  outline-offset: 1px;
+}
+.dxp-popover-preview-bar > span:first-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.dxp-popover-editor-history {
+  display: flex;
+  gap: 6px;
+}
+
+.dxp-popover-preview-devices {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-inline-start: auto;
+}
+.dxp-popover-preview-bar {
+  align-items: center;
+}
+.dxp-popover-preview-bar > .dxp-toolbar-divider {
+  display: block;
+  flex: none;
+  width: 1px;
+  height: 24px;
+  background: var(--dxp-line);
 }

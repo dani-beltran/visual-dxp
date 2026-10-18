@@ -40,7 +40,7 @@ export const tutorialSpanish = {
     'Añade una Espera y abre sus ajustes. Configura Esperar en 1000 ms (1 segundo). Esto controla la espera antes de mostrar la ventana emergente.',
   'tutorial.popover.title': 'Añade una ventana emergente',
   'tutorial.popover.body':
-    'Añade Ventana emergente desde la biblioteca y abre sus ajustes. Muestra contenido sobre el sitio web. Revisa Contenido HTML y Posición; conserva el HTML predeterminado y los demás ajustes para este ejercicio.',
+    'Añade Ventana emergente desde la biblioteca y abre sus ajustes. Muestra contenido sobre el sitio web. Elige Editar ventana emergente para abrir el editor a pantalla completa. Revisa Contenido HTML y Posición en la barra lateral y prueba las vistas de Escritorio y Móvil. Conserva el HTML predeterminado y los demás ajustes para este ejercicio.',
   'tutorial.connect.title': 'Conecta el flujo',
   'tutorial.connect.body':
     'Separa los nodos en el lienzo. Arrastra desde el círculo de salida a la derecha del Disparador hasta la entrada a la izquierda de Espera; después conecta Espera con Ventana emergente.',
