@@ -74,6 +74,14 @@ async function change(label: string, value: string) {
 it('edits each condition type with the corresponding fields and preserves legacy selectors', async () => {
   expect(field('Condition type').value).toBe('selector');
   expect(field('Element exists').value).toBe('#legacy');
+  expect(
+    [...host.querySelectorAll('label')].filter((label) => label.textContent === 'Element exists'),
+  ).toHaveLength(1);
+  expect(host.querySelector('details summary')?.textContent).toBe('How it works');
+  expect(host.querySelector('details')?.textContent).toContain(
+    'Checks whether an element matching the CSS selector exists',
+  );
+
   expect([...field('Condition type').querySelectorAll('option')]).toHaveLength(10);
   await change('Condition type', 'device');
   expect(field('Device is').value).toBe('desktop');

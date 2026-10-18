@@ -252,7 +252,9 @@ export function NodeInspector({
                 ))}
               </Select>
             </Field>
-            <InfoBox>{trigger?.hint ?? t('nodeInspector.chooseASupportedTriggerEvent')}</InfoBox>
+            <InfoBox summary={t('nodeInspector.howItWorks')}>
+              {trigger?.hint ?? t('nodeInspector.chooseASupportedTriggerEvent')}
+            </InfoBox>
             {trigger?.settings.map(({ key, label, defaultValue, min, max }) => (
               <Field key={key} label={label} htmlFor={id(key)}>
                 <NumberInput
@@ -478,10 +480,11 @@ export function NodeInspector({
             </Field>
             {conditionType === 'data' && (
               <>
-                <InfoBox>
+                <InfoBox summary={t('nodeInspector.howItWorks')}>
                   {t(
                     'nodeInspector.evaluatesDataReceivedThroughTheIncomingConnectionSuchAsAnHttpResponse',
-                  )}
+                  )}{' '}
+                  {dataHint(dataOperator, t)}
                 </InfoBox>
                 <Field label={t('nodeInspector.operator')} htmlFor={id('condition-operator')}>
                   <Select
@@ -510,7 +513,6 @@ export function NodeInspector({
                     />
                   </Field>
                 )}
-                <InfoBox>{dataHint(dataOperator, t)}</InfoBox>
                 {dataError && (
                   <p role="alert" className="dxp-inspector-hint">
                     {dataError}
@@ -518,38 +520,45 @@ export function NodeInspector({
                 )}
               </>
             )}
-            {conditionType === 'selector' &&
-              targetField(t('nodeInspector.elementExists'), false, 'condition')}
+            {conditionType === 'selector' && (
+              <InfoBox summary={t('nodeInspector.howItWorks')}>
+                {t('nodeInspector.elementExistsHelp')}
+              </InfoBox>
+            )}
             {conditionType === 'device' && (
-              <InfoBox>
+              <InfoBox summary={t('nodeInspector.howItWorks')}>
                 {t('nodeInspector.usesTheBrowserSDeviceInformationWithUserAgentDetectionAsA')}
               </InfoBox>
             )}
             {conditionType === 'language' && (
-              <InfoBox>
+              <InfoBox summary={t('nodeInspector.howItWorks')}>
                 {t('nodeInspector.checksThePrimaryBrowserLanguageUseEnForAnyEnglishVariantOr')}
               </InfoBox>
             )}
             {conditionType === 'referrer' && (
-              <InfoBox>
+              <InfoBox summary={t('nodeInspector.howItWorks')}>
                 {t(
                   'nodeInspector.matchesTheExactDomainIgnoringProtocolPortAndPathSubdomainsAreDistinct',
                 )}
               </InfoBox>
             )}
             {conditionType === 'date-range' && (
-              <InfoBox>
+              <InfoBox summary={t('nodeInspector.howItWorks')}>
                 {t('nodeInspector.dateRangeHelp', { zone: conditionTimeZoneLabel(config) })}
               </InfoBox>
             )}
-            {conditionType === 'weekdays' && <InfoBox>{t('nodeInspector.weekdaysHelp')}</InfoBox>}
+            {conditionType === 'weekdays' && (
+              <InfoBox summary={t('nodeInspector.howItWorks')}>
+                {t('nodeInspector.weekdaysHelp')}
+              </InfoBox>
+            )}
             {conditionType === 'time-of-day' && (
-              <InfoBox>
+              <InfoBox summary={t('nodeInspector.howItWorks')}>
                 {t('nodeInspector.timeRangeHelp', { zone: conditionTimeZoneLabel(config) })}
               </InfoBox>
             )}
             {variableCondition && (
-              <InfoBox>
+              <InfoBox summary={t('nodeInspector.howItWorks')}>
                 {conditionType === 'query-param'
                   ? t('nodeInspector.checksTheCurrentPageUrlAnyMatchingValueInARepeatedParameter')
                   : t(
@@ -558,18 +567,8 @@ export function NodeInspector({
                 {t('nodeInspector.exactCaseSensitiveMatchAnEmptyValueMatchesOnlyAPresentEmpty')}
               </InfoBox>
             )}
-            {conditionType === 'selector' && (
-              <Field label={t('nodeInspector.elementExists')} htmlFor={id('condition')}>
-                <input
-                  id={id('condition')}
-                  className="dxp-inspector-code"
-                  value={config.condition ?? ''}
-                  placeholder={t('nodeInspector.eGLoggedIn')}
-                  onChange={(event) => update({ condition: event.target.value })}
-                  spellCheck={false}
-                />
-              </Field>
-            )}
+            {conditionType === 'selector' &&
+              targetField(t('nodeInspector.elementExists'), false, 'condition')}
             {conditionType === 'device' && (
               <Field label={t('nodeInspector.deviceIs')} htmlFor={id('condition-value')}>
                 <Select

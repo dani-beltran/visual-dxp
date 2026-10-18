@@ -477,7 +477,10 @@ export const spanishMessages = {
   'nodeInspector.1000Milliseconds1SecondMaximum24Hours':
     '1.000 milisegundos = 1 segundo. Máximo 24 horas.',
   'nodeInspector.ms': 'ms',
+  'nodeInspector.howItWorks': 'Cómo funciona',
   'nodeInspector.conditionType': 'Tipo de condición',
+  'nodeInspector.elementExistsHelp':
+    'Comprueba si existe en la página un elemento que coincida con el selector CSS cuando se ejecuta este paso. Sigue la ruta verdadera si lo encuentra o la falsa si no. Introduce un selector o usa Seleccionar en el sitio web para elegir un elemento.',
   'nodeInspector.elementExists': 'Existe el elemento',
   'nodeInspector.incomingData': 'Datos de entrada',
   'nodeInspector.userDevice': 'Dispositivo del usuario',
