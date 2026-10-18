@@ -89,12 +89,30 @@
 .dxp-run-log {
   width: 244px;
   border-left: 1px solid var(--dxp-line);
-  overflow: auto;
+  overflow: hidden;
   flex-shrink: 0;
   background: var(--dxp-canvas);
+  display: flex;
+  flex-direction: column;
+}
+.dxp-run-log-content {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
   padding: 20px 17px;
   display: flex;
   flex-direction: column;
+}
+.dxp-run-log-content > * {
+  flex-shrink: 0;
+}
+.dxp-run-log-footer {
+  flex-shrink: 0;
+  padding: 12px 17px;
+  border-top: 1px solid var(--dxp-line);
+}
+.dxp-run-log-footer .dxp-button {
+  width: 100%;
 }
 .dxp-run-log h3 {
   font-size: 11px;
@@ -186,7 +204,12 @@
     height: 150px;
     border-left: 0;
     border-top: 1px solid var(--dxp-line);
+  }
+  .dxp-run-log-content {
     padding: 15px;
+  }
+  .dxp-run-log-footer {
+    padding: 10px 15px;
   }
 }
 @media (max-width: 800px) {

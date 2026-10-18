@@ -196,54 +196,61 @@ export function Preview({
             }}
           />
           <aside className="dxp-run-log" data-tutorial="log">
-            <h3>
-              {t('preview.executionLog')}{' '}
-              <span>{logs.filter((x) => x.status === 'success').length}</span>
-            </h3>
-            {!logs.length && (
-              <div className="dxp-log-empty">
-                <Play size={25} />
-                <p>
-                  {running
-                    ? t('preview.listeningForYourTriggers')
-                    : t('preview.yourJourneyStepByStep')}
-                </p>
-                <small>
-                  {running
-                    ? t('preview.interactWithTheWebsiteToTriggerYourWorkflow')
-                    : t('preview.runTheWorkflowToSeeEachActionHappenOnThePage')}
-                </small>
-              </div>
-            )}
-            {logs.map((log, i) => (
-              // biome-ignore lint/suspicious/noArrayIndexKey: Log entries only append during a run and render stateless rows; a new run clears the list.
-              <div className={`dxp-log-item ${log.status}`} key={i}>
-                {log.status === 'success' ? (
-                  <Check size={14} />
-                ) : log.status === 'error' ? (
-                  <CircleAlert size={14} />
-                ) : (
-                  <LoaderCircle size={14} />
-                )}
-                <div>
-                  <strong>{log.label}</strong>
-                  <p>{log.message}</p>
+            <div className="dxp-run-log-content">
+              <h3>
+                {t('preview.executionLog')}{' '}
+                <span>{logs.filter((x) => x.status === 'success').length}</span>
+              </h3>
+              {!logs.length && (
+                <div className="dxp-log-empty">
+                  <Play size={25} />
+                  <p>
+                    {running
+                      ? t('preview.listeningForYourTriggers')
+                      : t('preview.yourJourneyStepByStep')}
+                  </p>
+                  <small>
+                    {running
+                      ? t('preview.interactWithTheWebsiteToTriggerYourWorkflow')
+                      : t('preview.runTheWorkflowToSeeEachActionHappenOnThePage')}
+                  </small>
                 </div>
-              </div>
-            ))}
-            {error && (
-              <p className="dxp-error" role="alert">
-                {error}
-              </p>
-            )}
-            <p className="dxp-log-note">
-              <ExternalLink size={13} />{' '}
-              {transport
-                ? t('websiteSetup.proxyLimitations')
-                : t(
-                    'preview.externalWebsitesNeedThePreviewBridgeConfiguredForThisBuilderOriginPreviews',
+              )}
+              {logs.map((log, i) => (
+                // biome-ignore lint/suspicious/noArrayIndexKey: Log entries only append during a run and render stateless rows; a new run clears the list.
+                <div className={`dxp-log-item ${log.status}`} key={i}>
+                  {log.status === 'success' ? (
+                    <Check size={14} />
+                  ) : log.status === 'error' ? (
+                    <CircleAlert size={14} />
+                  ) : (
+                    <LoaderCircle size={14} />
                   )}
-            </p>
+                  <div>
+                    <strong>{log.label}</strong>
+                    <p>{log.message}</p>
+                  </div>
+                </div>
+              ))}
+              {error && (
+                <p className="dxp-error" role="alert">
+                  {error}
+                </p>
+              )}
+              <p className="dxp-log-note">
+                <ExternalLink size={13} />{' '}
+                {transport
+                  ? t('websiteSetup.proxyLimitations')
+                  : t(
+                      'preview.externalWebsitesNeedThePreviewBridgeConfiguredForThisBuilderOriginPreviews',
+                    )}
+              </p>
+            </div>
+            <footer className="dxp-run-log-footer">
+              <button type="button" className="dxp-button" onClick={onClose}>
+                {t('preview.closePreview')}
+              </button>
+            </footer>
           </aside>
         </div>
       </section>
