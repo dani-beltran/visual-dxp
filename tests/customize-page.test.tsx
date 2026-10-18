@@ -293,11 +293,11 @@ it('reopens saved changes, deduplicates edits, removes a change, undoes it, and 
   await input('Change text', 'Draft A');
   await input('Change text', 'Draft B');
   expect(host.querySelectorAll('.dxp-page-change-row')).toHaveLength(1);
-  await click('Undo last change');
+  await click('Undo');
   expect(doc.querySelector('#headline')?.textContent).toBe('Draft A');
   await click('Remove change');
   expect(doc.querySelector('#headline')?.textContent).toBe('Original heading');
-  await click('Undo last change');
+  await click('Undo');
   expect(doc.querySelector('#headline')?.textContent).toBe('Draft A');
   await click('Cancel');
   expect(close).not.toHaveBeenCalled();
@@ -318,6 +318,80 @@ it('reopens saved changes, deduplicates edits, removes a change, undoes it, and 
   expect(close).toHaveBeenCalledOnce();
   expect(save).not.toHaveBeenCalled();
   expect(changes[0].value).toBe('Saved heading');
+});
+
+it('keeps page undo and redo in the toolbar and handles shortcuts in the panel and preview', async () => {
+  const save = vi.fn();
+  await act(async () =>
+    root.render(
+      <ElementPicker
+        url="/demo-site.html"
+        onSelect={() => {}}
+        onSaveChanges={save}
+        onClose={() => {}}
+      />,
+    ),
+  );
+  const { doc, win } = await website(true);
+  const toggle = host.querySelector('.dxp-picker-device-toggle')!;
+  expect(toggle.nextElementSibling?.className).toBe('dxp-toolbar-divider');
+  expect(toggle.nextElementSibling?.nextElementSibling?.className).toBe('dxp-page-editor-history');
+  expect(toggle.nextElementSibling?.nextElementSibling?.textContent).toBe('UndoRedo');
+  expect(host.querySelector('.dxp-page-editor-footer button')?.textContent).toBe('Cancel');
+  expect(host.querySelector('.dxp-page-editor-footer .dxp-footer-shortcut')?.textContent).toBe(
+    ' Z to undo',
+  );
+  expect(button('Undo').disabled).toBe(true);
+  expect(button('Redo').disabled).toBe(true);
+  await act(async () => doc.querySelector<HTMLElement>('#headline')!.click());
+  await input('Change text', 'Draft A');
+  await input('Change text', 'Draft B');
+  const field = host.querySelector('textarea')!;
+  const parentShortcut = vi.fn();
+  window.addEventListener('keydown', parentShortcut);
+  try {
+    const shortcut = async (target: EventTarget, init: KeyboardEventInit, preview = false) => {
+      const event = preview
+        ? new (win as unknown as Window & typeof globalThis).KeyboardEvent('keydown', {
+            bubbles: true,
+            cancelable: true,
+            ...init,
+          })
+        : new KeyboardEvent('keydown', { bubbles: true, cancelable: true, ...init });
+      await act(async () => {
+        target.dispatchEvent(event);
+      });
+      expect(event.defaultPrevented).toBe(true);
+    };
+    await shortcut(field, { key: 'z', metaKey: true });
+    expect(doc.querySelector('#headline')?.textContent).toBe('Draft A');
+    expect(field.value).toBe('Draft A');
+    expect(button('Redo').disabled).toBe(false);
+    expect(parentShortcut).not.toHaveBeenCalled();
+    await shortcut(field, { key: 'Z', metaKey: true, shiftKey: true });
+    expect(doc.querySelector('#headline')?.textContent).toBe('Draft B');
+    expect(button('Redo').disabled).toBe(true);
+    await click('Undo');
+    expect(doc.querySelector('#headline')?.textContent).toBe('Draft A');
+    await click('Redo');
+    expect(doc.querySelector('#headline')?.textContent).toBe('Draft B');
+    await shortcut(doc.querySelector('visual-dxp-text')!, { key: 'z', ctrlKey: true }, true);
+    expect(doc.querySelector('#headline')?.textContent).toBe('Draft A');
+    await shortcut(doc.body, { key: 'y', ctrlKey: true }, true);
+    expect(doc.querySelector('#headline')?.textContent).toBe('Draft B');
+    await shortcut(doc.body, { key: 'z', ctrlKey: true }, true);
+    await shortcut(doc.body, { key: 'z', ctrlKey: true }, true);
+    expect(doc.querySelector('#headline')?.textContent).toBe('Original heading');
+    expect(button('Undo').disabled).toBe(true);
+    await shortcut(doc.body, { key: 'Z', ctrlKey: true, shiftKey: true }, true);
+    expect(doc.querySelector('#headline')?.textContent).toBe('Draft A');
+    await input('Change text', 'New branch');
+    expect(button('Redo').disabled).toBe(true);
+    await click('Save changes');
+    expect(save.mock.calls[0][0][0].value).toBe('New branch');
+  } finally {
+    window.removeEventListener('keydown', parentShortcut);
+  }
 });
 
 it('preserves a saved whole-element text replacement when editing and replaying it on nested markup', async () => {
