@@ -117,7 +117,7 @@ export function NodeInspector({
   const targetField = (
     label = t('nodeInspector.targetElement'),
     optional = false,
-    key: 'selector' | 'experimentSelector' = 'selector',
+    key: 'selector' | 'experimentSelector' | 'condition' = 'selector',
   ) => (
     <Field
       label={label}
@@ -133,7 +133,9 @@ export function NodeInspector({
           id={id(key)}
           className="dxp-inspector-code"
           value={config[key] ?? ''}
-          placeholder={t('nodeInspector.eGSignupButton')}
+          placeholder={t(
+            key === 'condition' ? 'nodeInspector.eGLoggedIn' : 'nodeInspector.eGSignupButton',
+          )}
           onChange={(event) => update({ [key]: event.target.value })}
           spellCheck={false}
           autoComplete="off"
@@ -525,9 +527,8 @@ export function NodeInspector({
                 )}
               </>
             )}
-            {conditionType === 'selector' && (
-              <InfoBox>{t('nodeInspector.trueWhenThisCssSelectorMatchesAnElement')}</InfoBox>
-            )}
+            {conditionType === 'selector' &&
+              targetField(t('nodeInspector.elementExists'), false, 'condition')}
             {conditionType === 'device' && (
               <InfoBox>
                 {t('nodeInspector.usesTheBrowserSDeviceInformationWithUserAgentDetectionAsA')}
