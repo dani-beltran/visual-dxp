@@ -117,6 +117,22 @@ describe('website element selection', () => {
         }),
       ),
     );
+    expect(host.querySelector('.dxp-picker-backdrop-fullscreen')).not.toBeNull();
+    expect(host.querySelector('[aria-label="Enter fullscreen"]')).toBeNull();
+    expect(host.querySelector('[aria-label="Exit fullscreen"]')).toBeNull();
+    const toolbar = host.querySelector('.dxp-picker-toolbar')!;
+    expect(toolbar.textContent).toContain('https://preview.test');
+    expect(toolbar.querySelector('[aria-label="Reload website"]')).not.toBeNull();
+    expect(toolbar.textContent).not.toMatch(/Selection mode|Hover to inspect|Website setup/);
+    const devices = Array.from(toolbar.querySelectorAll('button'));
+    const mobile = devices.find((button) => button.textContent === 'Mobile')!;
+    const desktop = devices.find((button) => button.textContent === 'Desktop')!;
+    await act(async () => mobile.click());
+    expect(mobile.getAttribute('aria-pressed')).toBe('true');
+    expect(host.querySelector('.dxp-picker-frame-wrap-mobile')).not.toBeNull();
+    await act(async () => desktop.click());
+    expect(desktop.getAttribute('aria-pressed')).toBe('true');
+    expect(host.querySelector('.dxp-picker-frame-wrap-mobile')).toBeNull();
     const preview = host.querySelector('iframe')!;
     const post = vi.spyOn(preview.contentWindow!, 'postMessage').mockImplementation(() => {});
     const access = vi.spyOn(preview, 'contentDocument', 'get');
@@ -135,19 +151,19 @@ describe('website element selection', () => {
         ),
       );
     await receive('https://preview.test', preview.contentWindow);
-    expect(host.textContent).toContain('Connecting to website');
+    expect(host.querySelector('.dxp-picker-connecting')).not.toBeNull();
     await receive('null', window);
-    expect(host.textContent).toContain('Connecting to website');
+    expect(host.querySelector('.dxp-picker-connecting')).not.toBeNull();
     await receive('null', preview.contentWindow, 'wrong');
-    expect(host.textContent).toContain('Connecting to website');
+    expect(host.querySelector('.dxp-picker-connecting')).not.toBeNull();
     await receive('null', preview.contentWindow);
-    expect(host.textContent).toContain('Selection mode is on');
+    expect(host.querySelector('.dxp-picker-connecting')).toBeNull();
     await act(async () => preview.dispatchEvent(new Event('load')));
     expect(post.mock.calls.at(-1)![0].channel).not.toBe(first.channel);
     await receive('null', preview.contentWindow);
-    expect(host.textContent).toContain('Connecting to website');
+    expect(host.querySelector('.dxp-picker-connecting')).not.toBeNull();
     await act(async () => vi.advanceTimersByTime(8000));
-    expect(host.textContent).toContain('Connection required');
+    expect(host.querySelector('.dxp-picker-help-unavailable')).not.toBeNull();
     await act(async () => root.unmount());
     expect(post.mock.calls.at(-1)![0].type).toBe('stop');
     host.remove();
@@ -203,7 +219,7 @@ describe('website element selection', () => {
             }),
           );
         });
-        expect(host.textContent).toContain('Selection mode is on');
+        expect(host.querySelector('.dxp-picker-connecting')).toBeNull();
         await act(async () => vi.advanceTimersByTime(8000));
         expect(host.querySelector('iframe')).toBe(retry);
       } finally {

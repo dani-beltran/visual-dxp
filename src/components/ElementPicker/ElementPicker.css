@@ -77,7 +77,9 @@
   background: var(--dxp-surface-muted);
 }
 .dxp-picker-address {
-  margin: 0 25px 18px;
+  margin: 0;
+  min-width: 0;
+  flex: 1;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -162,7 +164,9 @@
   font-size: 11px;
 }
 .dxp-picker-toolbar
-  button:where(:not(.dxp-editor-device-toggle button, .dxp-page-editor-history button)) {
+  button:where(
+    :not(.dxp-picker-load, .dxp-editor-device-toggle button, .dxp-page-editor-history button)
+  ) {
   margin-left: auto;
   display: flex;
   align-items: center;
@@ -394,7 +398,7 @@
 }
 @media (max-width: 650px) {
   .dxp-picker-address {
-    margin: 0 16px 16px;
+    margin: 0;
   }
 }
 @media (max-width: 650px) {
@@ -431,8 +435,8 @@
   }
 }
 @media (max-width: 650px) {
-  .dxp-picker-load svg {
-    display: none;
+  .dxp-picker-device-toggle button {
+    padding: 6px;
   }
 }
 @media (prefers-reduced-motion: reduce) {

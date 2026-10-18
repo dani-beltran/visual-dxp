@@ -1868,7 +1868,9 @@ function Builder({
           initialSelector={
             selected.data.kind === 'experiment'
               ? selected.data.config.experimentSelector
-              : selected.data.config.selector
+              : selected.data.kind === 'fork'
+                ? selected.data.config.condition
+                : selected.data.config.selector
           }
           initialChanges={
             selected.data.kind === 'dom' ? getPageChanges(selected.data.config) : undefined
@@ -1895,7 +1897,11 @@ function Builder({
             patchNode({
               config: {
                 ...selected.data.config,
-                [selected.data.kind === 'experiment' ? 'experimentSelector' : 'selector']: selector,
+                [selected.data.kind === 'experiment'
+                  ? 'experimentSelector'
+                  : selected.data.kind === 'fork'
+                    ? 'condition'
+                    : 'selector']: selector,
               },
             });
             setPicking(false);

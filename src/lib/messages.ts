@@ -506,7 +506,10 @@ export const englishMessages = {
   'nodeInspector.1000Milliseconds1SecondMaximum24Hours':
     '1,000 milliseconds = 1 second. Maximum 24 hours.',
   'nodeInspector.ms': 'ms',
+  'nodeInspector.howItWorks': 'How it works',
   'nodeInspector.conditionType': 'Condition type',
+  'nodeInspector.elementExistsHelp':
+    'Checks whether an element matching the CSS selector exists on the page when this step runs. Takes the true path if found, or the false path if not. Enter a selector or use Select on website to choose an element.',
   'nodeInspector.elementExists': 'Element exists',
   'nodeInspector.incomingData': 'Incoming data',
   'nodeInspector.userDevice': 'User device',

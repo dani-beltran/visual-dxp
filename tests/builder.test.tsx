@@ -112,6 +112,35 @@ describe('builder and host boundary', () => {
     expect(workflow.nodes[0]).toEqual(node);
   });
 
+  it('selects a website element into an element-exists condition', async () => {
+    const workflow = initialWorkflow();
+    workflow.websiteUrl = 'https://preview.test';
+    const condition = createNode('fork', { x: 0, y: 0 });
+    condition.data.config = { condition: '#existing', selector: '#untouched' };
+    workflow.nodes = [condition];
+    const onChange = vi.fn();
+    await act(async () =>
+      root.render(<VisualDXPBuilder initialWorkflow={workflow} onChange={onChange} />),
+    );
+    await click(element(`[data-id="${condition.id}"]`));
+    await click(element('.dxp-inspector-pick'));
+    expect(host.querySelector('.dxp-picker-backdrop-fullscreen')).not.toBeNull();
+    const input = element<HTMLInputElement>('.dxp-picker-selector-field input');
+    expect(input.value).toBe('#existing');
+    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
+    if (!setter) throw new Error('Missing input setter');
+    await act(async () => {
+      setter.call(input, '#chosen');
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await click(element('.dxp-picker-confirm'));
+    expect(host.querySelector('.dxp-picker-dialog')).toBeNull();
+    expect(onChange.mock.calls.at(-1)?.[0].nodes[0].data.config).toMatchObject({
+      condition: '#chosen',
+      selector: '#untouched',
+    });
+  });
+
   it('offers node actions for the right-clicked node and suppresses other canvas menus', async () => {
     const workflow = initialWorkflow();
     workflow.nodes = ['first', 'second'].map((id, index) => ({

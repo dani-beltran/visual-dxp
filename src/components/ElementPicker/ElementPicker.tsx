@@ -4,10 +4,6 @@ import {
   ArrowRight,
   Check,
   Command,
-  Globe2,
-  Info,
-  Maximize2,
-  Minimize2,
   MousePointer2,
   Paintbrush,
   Redo2,
@@ -143,11 +139,8 @@ export function ElementPicker({
     return () => controller.abort();
   }, [isDemo, reload]);
   const [selector, setSelector] = useState(initialSelector);
-  const [hovered, setHovered] = useState<PickedElement | null>(null);
   const [selected, setSelected] = useState<PickedElement | null>(null);
   const [status, setStatus] = useState<ConnectionStatus>('loading');
-  const [showHelp, setShowHelp] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(editing);
   const [selectorHint, setSelectorHint] = useState('');
   const unavailable = status === 'unavailable';
   const sendEditor = useCallback((type: string, values: Record<string, unknown> = {}) => {
@@ -307,7 +300,6 @@ export function ElementPicker({
     let retry: number | undefined;
     let timeout: number | undefined;
     setStatus('loading');
-    setHovered(null);
     setSelected(null);
     setSelectorHint('');
     const pick = (element: PickedElement) => {
@@ -335,7 +327,6 @@ export function ElementPicker({
       sessionRef.current = null;
       setStatus('loading');
       setEditorReady(false);
-      setHovered(null);
       setSelected(null);
       selectedRef.current = null;
       setSelectorHint('');
@@ -382,8 +373,6 @@ export function ElementPicker({
             replaceDraft(normalized, false);
         }
       }
-      if (data.type === 'hover' && (data.element === null || isElement(data.element)))
-        setHovered(data.element);
       if (data.type === 'select' && isElement(data.element)) pick(data.element);
       if (editing && data.type === 'page-descriptions' && Array.isArray(data.descriptions)) {
         const descriptions = new Map<string, NonNullable<PageChange['element']>>();
@@ -506,7 +495,7 @@ export function ElementPicker({
   return (
     // biome-ignore lint/a11y/noStaticElementInteractions: The backdrop offers pointer dismissal; dialog controls and Escape provide keyboard dismissal.
     <div
-      className={`dxp-picker-backdrop${editing || isFullscreen ? ' dxp-picker-backdrop-fullscreen' : ''}`}
+      className="dxp-picker-backdrop dxp-picker-backdrop-fullscreen"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) requestClose();
       }}
@@ -572,17 +561,6 @@ export function ElementPicker({
             </p>
           </div>
           <div className="dxp-picker-header-actions">
-            {!editing && (
-              <button
-                type="button"
-                className="dxp-picker-icon-button"
-                aria-label={t(isFullscreen ? 'common.exitFullscreen' : 'common.enterFullscreen')}
-                title={t(isFullscreen ? 'common.exitFullscreen' : 'common.enterFullscreen')}
-                onClick={() => setIsFullscreen((value) => !value)}
-              >
-                {isFullscreen ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
-              </button>
-            )}
             <button
               type="button"
               className="dxp-picker-icon-button"
@@ -594,71 +572,26 @@ export function ElementPicker({
           </div>
         </header>
         {guidance}
-        {!editing && (
-          <div className="dxp-picker-address">
-            <Globe2 size={16} aria-hidden="true" />
-            <span className="dxp-picker-url" title={url || '/demo-site.html'}>
-              {url || '/demo-site.html'}
-            </span>
-            <button
-              type="button"
-              className="dxp-picker-load"
-              title={t('preview.reloadWebsite')}
-              aria-label={t('preview.reloadWebsite')}
-              onClick={() => {
-                setStatus('loading');
-                setReload((value) => value + 1);
-              }}
-            >
-              <RefreshCw size={14} />
-            </button>
-          </div>
-        )}
         <div className="dxp-picker-toolbar">
-          {editing ? (
-            <span className="dxp-page-editor-target" title={url || '/demo-site.html'}>
-              <span className="dxp-status-dot" aria-hidden="true" />
-              <span className="dxp-picker-url">{url || '/demo-site.html'}</span>
-            </span>
-          ) : (
-            <>
-              <span className={`dxp-picker-status dxp-picker-status-${status}`}>
-                <i />
-                {status === 'connected' || status === 'bridge'
-                  ? t('elementPicker.selectionModeIsOn')
-                  : status === 'loading'
-                    ? t('elementPicker.connectingToWebsite')
-                    : t('elementPicker.connectionRequired')}
-              </span>
-              <span className="dxp-picker-hint">
-                {hovered ? (
-                  <code>{hovered.selector}</code>
-                ) : (
-                  t('elementPicker.hoverToInspectClickToSelect')
-                )}
-              </span>
-            </>
-          )}
-          {!editing && !unavailable && (
-            <button type="button" onClick={() => setShowHelp(!showHelp)} aria-expanded={showHelp}>
-              <Info size={14} /> {t('elementPicker.websiteSetup')}
-            </button>
-          )}
+          <span className="dxp-page-editor-target" title={url || '/demo-site.html'}>
+            <span className="dxp-status-dot" aria-hidden="true" />
+            <span className="dxp-picker-url">{url || '/demo-site.html'}</span>
+          </span>
+          <PreviewDeviceToggle device={device} onChange={setDevice} />
+          <button
+            type="button"
+            className="dxp-button dxp-page-editor-refresh"
+            title={t('preview.reloadWebsite')}
+            aria-label={t('preview.reloadWebsite')}
+            onClick={() => {
+              setStatus('loading');
+              setReload((value) => value + 1);
+            }}
+          >
+            <RefreshCw size={14} />
+          </button>
           {editing && (
             <>
-              <PreviewDeviceToggle device={device} onChange={setDevice} />
-              <button
-                type="button"
-                className="dxp-button dxp-page-editor-refresh"
-                title={t('preview.reloadWebsite')}
-                aria-label={t('preview.reloadWebsite')}
-                onClick={() => {
-                  setStatus('loading');
-                  setReload((value) => value + 1);
-                }}
-              >
-                <RefreshCw size={14} />
-              </button>
               <span className="dxp-toolbar-divider" aria-hidden="true" />
               <div className="dxp-page-editor-history">
                 <button
@@ -687,10 +620,9 @@ export function ElementPicker({
             </>
           )}
         </div>
-        {!editing && showHelp && !unavailable && setup}
         <div className={editing ? 'dxp-website-editor-layout' : 'dxp-picker-standard-layout'}>
           <div
-            className={`dxp-editor-viewport dxp-picker-frame-wrap${editing && device === 'mobile' ? ' dxp-picker-frame-wrap-mobile' : ''}`}
+            className={`dxp-editor-viewport dxp-picker-frame-wrap${device === 'mobile' ? ' dxp-picker-frame-wrap-mobile' : ''}`}
           >
             {unavailable ? (
               setup
