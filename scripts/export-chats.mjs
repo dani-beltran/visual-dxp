@@ -468,7 +468,7 @@ async function main() {
   const options = parseArgs(process.argv.slice(2));
   if (options.help) {
     console.log(
-      'Usage: npm run logs:chats -- [--days 7] [--watch] [--interval 60]\nExports to logs/chats/YYYY-MM-DD/{successful,failed}/<workflow_run_id>.txt',
+      'Usage: pnpm run logs:chats [--days 7] [--watch] [--interval 60]\nExports to logs/chats/YYYY-MM-DD/{successful,failed}/<workflow_run_id>.txt',
     );
     return;
   }
