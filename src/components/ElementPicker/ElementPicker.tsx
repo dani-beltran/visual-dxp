@@ -556,9 +556,8 @@ export function ElementPicker({
             </button>
           )}
           {editing && (
-            <div
+            <fieldset
               className="dxp-picker-device-toggle"
-              role="group"
               aria-label={t('pageEditor.previewDevice')}
             >
               {(['desktop', 'mobile'] as const).map((option) => {
@@ -575,7 +574,7 @@ export function ElementPicker({
                   </button>
                 );
               })}
-            </div>
+            </fieldset>
           )}
         </div>
         {!editing && showHelp && !unavailable && setup}
