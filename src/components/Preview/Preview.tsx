@@ -135,21 +135,6 @@ export function Preview({
               }}
             />
           </div>
-          <button
-            type="button"
-            className="dxp-button"
-            onClick={() => {
-              stop();
-              setReady(false);
-              setLogs([]);
-              setError('');
-              setKey((x) => x + 1);
-            }}
-            title={t('preview.reloadWebsite')}
-            aria-label={t('preview.reloadWebsite')}
-          >
-            <RotateCcw size={14} />
-          </button>
           <fieldset
             className="dxp-preview-device-toggle"
             aria-label={t('pageEditor.previewDevice')}
@@ -169,6 +154,21 @@ export function Preview({
               );
             })}
           </fieldset>
+          <button
+            type="button"
+            className="dxp-button"
+            onClick={() => {
+              stop();
+              setReady(false);
+              setLogs([]);
+              setError('');
+              setKey((x) => x + 1);
+            }}
+            title={t('preview.reloadWebsite')}
+            aria-label={t('preview.reloadWebsite')}
+          >
+            <RotateCcw size={14} />
+          </button>
           <span className="dxp-toolbar-divider" aria-hidden="true" />
           {running && (
             <button type="button" className="dxp-button" onClick={stop}>
