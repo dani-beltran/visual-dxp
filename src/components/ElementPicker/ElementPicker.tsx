@@ -64,6 +64,14 @@ export function ElementPicker({
     future: [],
   });
   const historyRef = useRef(history);
+  const changeIds = useRef(new WeakMap<PageChange, string>());
+  const getChangeId = useCallback((change: PageChange, previous?: PageChange) => {
+    const source = previous ?? change;
+    const id = changeIds.current.get(source) ?? crypto.randomUUID();
+    changeIds.current.set(source, id);
+    changeIds.current.set(change, id);
+    return id;
+  }, []);
   const [focusedChange, setFocusedChange] = useState<PageChange | null>(null);
   const [discard, setDiscard] = useState(false);
   const [device, setDevice] = useState<'desktop' | 'mobile'>('desktop');
@@ -157,14 +165,16 @@ export function ElementPicker({
         historyRef.current = { past: [...historyRef.current.past, previous], future: [] };
         setHistory(historyRef.current);
       }
-      const normalized = changes.map((change) =>
-        normalizePageChangeUrls(change, urlContextRef.current),
-      );
+      const normalized = changes.map((change) => {
+        const normalized = normalizePageChangeUrls(change, urlContextRef.current);
+        getChangeId(normalized, change);
+        return normalized;
+      });
       draftRef.current = normalized;
       setDraft(normalized);
       sendEditor('set-changes', { changes: normalized });
     },
-    [sendEditor],
+    [sendEditor, getChangeId],
   );
   const undo = useCallback(() => {
     const { past, future } = historyRef.current;
@@ -189,19 +199,25 @@ export function ElementPicker({
   const discardRef = useRef(discard);
   discardRef.current = discard;
   const editChange = useCallback(
-    (change: PageChange) => {
+    (change: PageChange, previousChange?: PageChange) => {
       const current = draftRef.current;
-      const index = current.findIndex(
-        (item) =>
-          pageChangeKey(item) === pageChangeKey(change) ||
-          (item.selector === change.selector &&
-            (item.action ?? 'text') === 'text' &&
-            change.action === 'text' &&
-            item.textPath === undefined),
-      );
+      const previousIndex = previousChange
+        ? current.findIndex((item) => pageChangeKey(item) === pageChangeKey(previousChange))
+        : -1;
+      const index =
+        previousIndex >= 0
+          ? previousIndex
+          : current.findIndex(
+              (item) =>
+                pageChangeKey(item) === pageChangeKey(change) ||
+                (item.selector === change.selector &&
+                  (item.action ?? 'text') === 'text' &&
+                  change.action === 'text' &&
+                  item.textPath === undefined),
+            );
       const next = [...current];
       const element =
-        current[index]?.element ??
+        (current[index]?.selector === change.selector ? current[index]?.element : undefined) ??
         change.element ??
         (selectedRef.current?.selector === change.selector
           ? selectedRef.current.description
@@ -211,6 +227,10 @@ export function ElementPicker({
       else {
         const previous = current[index];
         next[index] = { ...previous, ...described };
+        if (previousChange) {
+          for (const key of ['attribute', 'imageAlt', 'textPath', 'element'] as const)
+            if (!(key in described)) delete next[index][key];
+        }
         // A whole-element replacement creates the preview's text node; its path
         // does not necessarily identify a text node in the original website.
         if (
@@ -220,9 +240,19 @@ export function ElementPicker({
         )
           delete next[index].textPath;
       }
-      if (JSON.stringify(next) !== JSON.stringify(current)) replaceDraft(next);
+      const editedIndex = index < 0 ? next.length - 1 : index;
+      const edited = next[editedIndex];
+      const deduplicated = previousChange
+        ? next.filter(
+            (item, position) =>
+              position === editedIndex || pageChangeKey(item) !== pageChangeKey(change),
+          )
+        : next;
+      const id = getChangeId(edited, current[index]);
+      if (JSON.stringify(deduplicated) !== JSON.stringify(current)) replaceDraft(deduplicated);
+      return id;
     },
-    [replaceDraft],
+    [replaceDraft, getChangeId],
   );
   let draftError = '';
   if (editing)
@@ -358,9 +388,11 @@ export function ElementPicker({
         if (editing && data.editing !== true) setEditorError(t('pageEditor.unsupportedBridge'));
         else setEditorError('');
         if (editing) {
-          const normalized = draftRef.current.map((change) =>
-            normalizePageChangeUrls(change, urlContextRef.current),
-          );
+          const normalized = draftRef.current.map((change) => {
+            const normalized = normalizePageChangeUrls(change, urlContextRef.current);
+            getChangeId(normalized, change);
+            return normalized;
+          });
           if (normalized.some((change, index) => change !== draftRef.current[index]))
             replaceDraft(normalized, false);
         }
@@ -374,11 +406,14 @@ export function ElementPicker({
           if (item && typeof item.selector === 'string' && isElementDescription(item.element))
             descriptions.set(item.selector, item.element);
         }
-        const described = draftRef.current.map((change) =>
-          !change.element && descriptions.has(change.selector)
-            ? { ...change, element: descriptions.get(change.selector) }
-            : change,
-        );
+        const described = draftRef.current.map((change) => {
+          const described =
+            !change.element && descriptions.has(change.selector)
+              ? { ...change, element: descriptions.get(change.selector) }
+              : change;
+          getChangeId(described, change);
+          return described;
+        });
         if (described.some((change, index) => change !== draftRef.current[index])) {
           draftRef.current = described;
           setDraft(described);
@@ -429,6 +464,7 @@ export function ElementPicker({
     replaceDraft,
     undo,
     redo,
+    getChangeId,
   ]);
 
   const updateSelector = (value: string) => {
@@ -696,7 +732,13 @@ export function ElementPicker({
               selected={selected}
               changes={draft}
               onEdit={editChange}
-              focusedChange={focusedChange}
+              getChangeId={getChangeId}
+              focusedChange={
+                focusedChange
+                  ? (draft.find((change) => getChangeId(change) === getChangeId(focusedChange)) ??
+                    null)
+                  : null
+              }
               onRemove={(index) =>
                 replaceDraft(draftRef.current.filter((_, current) => current !== index))
               }

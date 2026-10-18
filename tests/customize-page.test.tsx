@@ -394,6 +394,177 @@ it('keeps page undo and redo in the toolbar and handles shortcuts in the panel a
   }
 });
 
+it('applies advanced edits immediately and restores their inputs and preview through undo and redo', async () => {
+  const save = vi.fn();
+  await act(async () =>
+    root.render(
+      <ElementPicker
+        url="/demo-site.html"
+        onSelect={() => {}}
+        onSaveChanges={save}
+        onClose={() => {}}
+      />,
+    ),
+  );
+  const { doc } = await website(true);
+  await act(async () => doc.querySelector<HTMLElement>('#headline')!.click());
+  await act(async () =>
+    host.querySelector<HTMLElement>('.dxp-page-editor-advanced summary')!.click(),
+  );
+  expect(host.querySelector('.dxp-page-editor-advanced button')).toBeNull();
+  const field = (suffix: string) =>
+    host.querySelector<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>(
+      `[id$="-${suffix}"]`,
+    )!;
+  const action = async (value: string) => {
+    await act(async () => {
+      field('action').value = value;
+      field('action').dispatchEvent(new Event('change', { bubbles: true }));
+    });
+  };
+  const headline = doc.querySelector<HTMLElement>('#headline')!;
+  const link = doc.querySelector<HTMLElement>('#cta')!;
+  await input('Valor', 'accent');
+  expect(headline.className).toBe('accent');
+  await click('Undo');
+  expect(headline.className).toBe('');
+  expect(field('value').value).toBe('');
+  await click('Redo');
+  expect(headline.className).toBe('accent');
+  expect(field('value').value).toBe('accent');
+  await input('Valor', 'featured');
+  expect(headline.className).toBe('featured');
+  expect(host.querySelectorAll('.dxp-page-change-row')).toHaveLength(1);
+  await click('Undo');
+  expect(headline.className).toBe('accent');
+  expect(field('value').value).toBe('accent');
+  await click('Redo');
+  expect(headline.className).toBe('featured');
+  expect(field('value').value).toBe('featured');
+  await action('attribute');
+  await input('Attribute name', 'title');
+  expect(headline.className).toBe('');
+  expect(headline.getAttribute('title')).toBe('featured');
+  await input('Attribute name', 'aria-label');
+  expect(headline.hasAttribute('title')).toBe(false);
+  expect(headline.getAttribute('aria-label')).toBe('featured');
+  expect(host.querySelectorAll('.dxp-page-change-row')).toHaveLength(1);
+  await click('Undo');
+  expect(field('attribute').value).toBe('title');
+  expect(headline.getAttribute('title')).toBe('featured');
+  expect(headline.hasAttribute('aria-label')).toBe(false);
+  await click('Redo');
+  expect(field('attribute').value).toBe('aria-label');
+  await input('CSS selector', '#cta');
+  expect(headline.hasAttribute('aria-label')).toBe(false);
+  expect(link.getAttribute('aria-label')).toBe('featured');
+  await click('Undo');
+  expect(field('selector').value).toBe('#headline');
+  expect(headline.getAttribute('aria-label')).toBe('featured');
+  expect(link.hasAttribute('aria-label')).toBe(false);
+  await click('Redo');
+  expect(field('selector').value).toBe('#cta');
+  await action('hide');
+  expect(link.style.display).toBe('none');
+  await click('Undo');
+  expect(field('action').value).toBe('attribute');
+  expect(link.style.display).toBe('');
+  await click('Redo');
+  expect(field('action').value).toBe('hide');
+  expect(link.style.display).toBe('none');
+  await action('show');
+  expect(link.style.display).toBe('');
+  await action('html');
+  await input('Valor', '<strong>Updated link</strong>');
+  expect(link.querySelector('strong')?.textContent).toBe('Updated link');
+  await click('Undo');
+  expect(field('value').value).toBe('featured');
+  expect(link.textContent).toBe('featured');
+  await click('Redo');
+  expect(field('value').value).toBe('<strong>Updated link</strong>');
+  await click('Save changes');
+  expect(save.mock.calls[0][0]).toEqual([
+    {
+      selector: '#cta',
+      action: 'html',
+      value: '<strong>Updated link</strong>',
+      element: { kind: 'link', name: 'Original link→' },
+    },
+  ]);
+});
+
+it('keeps incomplete advanced fields editable without recording invalid changes or applying on selection', async () => {
+  const save = vi.fn();
+  await act(async () =>
+    root.render(
+      <ElementPicker
+        url="/demo-site.html"
+        onSelect={() => {}}
+        onSaveChanges={save}
+        onClose={() => {}}
+        initialChanges={[
+          { selector: '#headline', action: 'attribute', attribute: 'title', value: 'Saved title' },
+        ]}
+      />,
+    ),
+  );
+  const { doc } = await website(true);
+  await click('Attribute “title” changed to “Saved title”');
+  expect(button('Undo').disabled).toBe(true);
+  await input('CSS selector', '[');
+  expect(host.querySelector<HTMLInputElement>('[id$="-selector"]')?.value).toBe('[');
+  expect(button('Undo').disabled).toBe(true);
+  await input('CSS selector', '#headline');
+  expect(button('Undo').disabled).toBe(true);
+  await input('Attribute name', '');
+  await input('Attribute name', 'bad name');
+  expect(button('Undo').disabled).toBe(true);
+  expect(doc.querySelector('#headline')?.getAttribute('title')).toBe('Saved title');
+  await input('Attribute name', 'data-label');
+  expect(doc.querySelector('#headline')?.hasAttribute('title')).toBe(false);
+  expect(doc.querySelector('#headline')?.getAttribute('data-label')).toBe('Saved title');
+  await click('Undo');
+  expect(host.querySelector<HTMLInputElement>('[id$="-attribute"]')?.value).toBe('title');
+  expect(doc.querySelector('#headline')?.getAttribute('title')).toBe('Saved title');
+  expect(button('Undo').disabled).toBe(true);
+});
+
+it('merges an advanced edit into an existing operation and restores both operations on undo', async () => {
+  await act(async () =>
+    root.render(
+      <ElementPicker
+        url="/demo-site.html"
+        onSelect={() => {}}
+        onSaveChanges={() => {}}
+        onClose={() => {}}
+        initialChanges={[
+          { selector: '#headline', action: 'attribute', attribute: 'title', value: 'First title' },
+          {
+            selector: '#headline',
+            action: 'attribute',
+            attribute: 'aria-label',
+            value: 'Second label',
+          },
+        ]}
+      />,
+    ),
+  );
+  const { doc } = await website(true);
+  await click('Attribute “title” changed to “First title”');
+  await input('Attribute name', 'aria-label');
+  expect(host.querySelectorAll('.dxp-page-change-row')).toHaveLength(1);
+  expect(host.querySelector<HTMLInputElement>('[id$="-attribute"]')?.value).toBe('aria-label');
+  expect(doc.querySelector('#headline')?.getAttribute('aria-label')).toBe('First title');
+  await click('Undo');
+  expect(host.querySelectorAll('.dxp-page-change-row')).toHaveLength(2);
+  expect(host.querySelector<HTMLInputElement>('[id$="-attribute"]')?.value).toBe('title');
+  expect(doc.querySelector('#headline')?.getAttribute('title')).toBe('First title');
+  expect(doc.querySelector('#headline')?.getAttribute('aria-label')).toBe('Second label');
+  await click('Redo');
+  expect(host.querySelectorAll('.dxp-page-change-row')).toHaveLength(1);
+  expect(host.querySelector<HTMLInputElement>('[id$="-attribute"]')?.value).toBe('aria-label');
+});
+
 it('preserves a saved whole-element text replacement when editing and replaying it on nested markup', async () => {
   const originalHtml = '<h1 id="headline"><em>Original</em> suffix</h1>';
   const save = vi.fn<(changes: PageChange[]) => void>();

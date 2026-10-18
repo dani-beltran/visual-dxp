@@ -1,14 +1,29 @@
 import { MousePointer2 } from 'lucide-react';
-import { useEffect, useId, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { dataTools } from '../../lib/data';
 import { formatElementDescription } from '../../lib/elementDescription';
 import { useBuilderI18n } from '../../lib/i18nContext';
-import type { PageChange } from '../../lib/pageChanges';
+import { type PageChange, pageChangeKey } from '../../lib/pageChanges';
 import { type PageUrlContext, websiteUrl } from '../../lib/pageUrls';
 import type { PickedElement } from '../../lib/picker';
 import { PageChangesSummary } from './PageChangesSummary';
 
 type AdvancedAction = Exclude<NonNullable<PageChange['action']>, 'text' | 'replace-image'>;
+type AdvancedFields = {
+  selector: string;
+  action: AdvancedAction;
+  attribute: string;
+  value: string;
+};
+
+function advancedFields(selector: string, change?: PageChange): AdvancedFields {
+  return {
+    selector: change?.selector ?? selector,
+    action: change && isAdvancedAction(change.action) ? change.action : 'add-class',
+    attribute: change?.attribute ?? '',
+    value: change?.value ?? '',
+  };
+}
 
 function isAdvancedAction(action: PageChange['action']): action is AdvancedAction {
   return action !== undefined && action !== 'text' && action !== 'replace-image';
@@ -18,6 +33,7 @@ export function PageEditorPanel({
   selected,
   changes,
   onEdit,
+  getChangeId = pageChangeKey,
   onRemove,
   onSelect,
   focusedChange,
@@ -25,7 +41,8 @@ export function PageEditorPanel({
 }: {
   selected: PickedElement | null;
   changes: PageChange[];
-  onEdit: (change: PageChange) => void;
+  onEdit: (change: PageChange, previous?: PageChange) => string | void;
+  getChangeId?: (change: PageChange) => string;
   onRemove: (index: number) => void;
   onSelect: (change: PageChange) => void;
   focusedChange: PageChange | null;
@@ -33,21 +50,66 @@ export function PageEditorPanel({
 }) {
   const { t } = useBuilderI18n();
   const prefix = useId();
-  const [action, setAction] = useState<AdvancedAction>('add-class');
-  const [attribute, setAttribute] = useState('');
-  const [value, setValue] = useState('');
-  const [manualSelector, setManualSelector] = useState('');
+  const [advanced, setAdvanced] = useState(() =>
+    advancedFields(
+      selected?.selector ?? '',
+      focusedChange && isAdvancedAction(focusedChange.action) ? focusedChange : undefined,
+    ),
+  );
+  const { selector: manualSelector, action, attribute, value } = advanced;
+  // Session identity survives selector/action renames and Undo/Redo without entering saved data.
+  const advancedId = useRef<string | null>(
+    focusedChange && isAdvancedAction(focusedChange.action) ? getChangeId(focusedChange) : null,
+  );
+  const prior = useRef({ selector: selected?.selector, focusedChange, changes });
   useEffect(() => {
-    setManualSelector(selected?.selector ?? '');
-  }, [selected?.selector]);
-  useEffect(() => {
-    if (!focusedChange) return;
-    const advanced = isAdvancedAction(focusedChange.action);
-    setAction(isAdvancedAction(focusedChange.action) ? focusedChange.action : 'add-class');
-    setAttribute(advanced ? (focusedChange.attribute ?? '') : '');
-    setValue(advanced ? (focusedChange.value ?? '') : '');
-    setManualSelector(focusedChange.selector);
-  }, [focusedChange]);
+    const previous = prior.current;
+    prior.current = { selector: selected?.selector, focusedChange, changes };
+    if (previous.selector !== selected?.selector || previous.focusedChange !== focusedChange) {
+      const change =
+        focusedChange && isAdvancedAction(focusedChange.action)
+          ? changes.find((item) => getChangeId(item) === getChangeId(focusedChange))
+          : undefined;
+      advancedId.current = change ? getChangeId(change) : null;
+      setAdvanced(advancedFields(selected?.selector ?? '', change));
+    } else if (previous.changes !== changes && advancedId.current !== null) {
+      const change = changes.find((item) => getChangeId(item) === advancedId.current);
+      setAdvanced(
+        advancedFields(
+          selected?.selector ?? '',
+          change && isAdvancedAction(change.action) ? change : undefined,
+        ),
+      );
+    }
+  }, [selected?.selector, focusedChange, changes, getChangeId]);
+  const updateAdvanced = (patch: Partial<AdvancedFields>) => {
+    const next = { ...advanced, ...patch };
+    setAdvanced(next);
+    const selector = next.selector.trim();
+    const attribute = next.attribute.trim();
+    if (!selector || (next.action === 'attribute' && !attribute)) return;
+    const change: PageChange = {
+      selector,
+      action: next.action,
+      value: next.value,
+      ...(next.action === 'attribute' ? { attribute } : {}),
+    };
+    try {
+      dataTools.validateElementValue(change);
+      if (!dataTools.hasVariables(selector)) document.querySelector(selector);
+      if (next.action === 'attribute' && !dataTools.hasVariables(attribute))
+        document.createElement('div').setAttribute(attribute, '');
+    } catch {
+      // Keep incomplete selectors, attribute names and templates editable until valid.
+      return;
+    }
+    const previous = changes.find((item) => getChangeId(item) === advancedId.current);
+    const result = onEdit(
+      change,
+      previous && isAdvancedAction(previous.action) ? previous : undefined,
+    );
+    advancedId.current = typeof result === 'string' ? result : getChangeId(change);
+  };
   const fieldValue = (action: PageChange['action'], fallback: string, attribute?: string) =>
     [...changes]
       .reverse()
@@ -183,7 +245,7 @@ export function PageEditorPanel({
             <input
               id={`${prefix}-selector`}
               value={manualSelector}
-              onChange={(event) => setManualSelector(event.target.value)}
+              onChange={(event) => updateAdvanced({ selector: event.target.value })}
             />
           </label>
           <label htmlFor={`${prefix}-action`}>
@@ -191,7 +253,7 @@ export function PageEditorPanel({
             <select
               id={`${prefix}-action`}
               value={action}
-              onChange={(event) => setAction(event.target.value as AdvancedAction)}
+              onChange={(event) => updateAdvanced({ action: event.target.value as AdvancedAction })}
             >
               <option value="html">{t('nodeInspector.replaceHtml')}</option>
               <option value="add-class">{t('nodeInspector.addCssClass')}</option>
@@ -207,7 +269,7 @@ export function PageEditorPanel({
               <input
                 id={`${prefix}-attribute`}
                 value={attribute}
-                onChange={(event) => setAttribute(event.target.value)}
+                onChange={(event) => updateAdvanced({ attribute: event.target.value })}
               />
             </label>
           )}
@@ -217,25 +279,10 @@ export function PageEditorPanel({
               <textarea
                 id={`${prefix}-value`}
                 value={value}
-                onChange={(event) => setValue(event.target.value)}
+                onChange={(event) => updateAdvanced({ value: event.target.value })}
               />
             </label>
           )}
-          <button
-            type="button"
-            className="dxp-picker-cancel"
-            disabled={!manualSelector.trim() || (action === 'attribute' && !attribute.trim())}
-            onClick={() =>
-              onEdit({
-                selector: manualSelector.trim(),
-                action,
-                value,
-                ...(action === 'attribute' ? { attribute } : {}),
-              })
-            }
-          >
-            {t('pageEditor.apply')}
-          </button>
         </details>
       )}
       <PageChangesSummary
