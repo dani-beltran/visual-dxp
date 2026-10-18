@@ -337,7 +337,9 @@ it('keeps page undo and redo in the toolbar and handles shortcuts in the panel a
   const refresh = toggle.nextElementSibling;
   expect(refresh?.classList.contains('dxp-page-editor-refresh')).toBe(true);
   expect(refresh?.nextElementSibling?.className).toBe('dxp-toolbar-divider');
-  expect(refresh?.nextElementSibling?.nextElementSibling?.className).toBe('dxp-page-editor-history');
+  expect(refresh?.nextElementSibling?.nextElementSibling?.className).toBe(
+    'dxp-page-editor-history',
+  );
   expect(refresh?.nextElementSibling?.nextElementSibling?.textContent).toBe('UndoRedo');
   expect(host.querySelector('.dxp-website-editor-footer button')?.textContent).toBe('Cancel');
   expect(host.querySelector('.dxp-website-editor-footer .dxp-footer-shortcut')?.textContent).toBe(
