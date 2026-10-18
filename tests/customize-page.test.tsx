@@ -8,7 +8,7 @@ import { Preview } from '../src/components/Preview/Preview';
 import { applyWorkflowOperations } from '../src/lib/ai';
 import { exportWorkflow, validateWorkflow } from '../src/lib/export';
 import { getNodeDataPorts } from '../src/lib/nodeData';
-import type { PageChange } from '../src/lib/pageChanges';
+import { applyPageChange, type PageChange } from '../src/lib/pageChanges';
 import { attachPageEditing } from '../src/lib/pageEditing';
 import { isWorkflow } from '../src/lib/serialization';
 import type { Workflow } from '../src/lib/types';
@@ -318,6 +318,73 @@ it('reopens saved changes, deduplicates edits, removes a change, undoes it, and 
   expect(close).toHaveBeenCalledOnce();
   expect(save).not.toHaveBeenCalled();
   expect(changes[0].value).toBe('Saved heading');
+});
+
+it('preserves a saved whole-element text replacement when editing and replaying it on nested markup', async () => {
+  const originalHtml = '<h1 id="headline"><em>Original</em> suffix</h1>';
+  const save = vi.fn<(changes: PageChange[]) => void>();
+  await act(async () =>
+    root.render(
+      <ElementPicker
+        url="/demo-site.html"
+        initialChanges={[{ selector: '#headline', action: 'text', value: 'Saved heading' }]}
+        onSelect={() => {}}
+        onSaveChanges={save}
+        onClose={() => {}}
+      />,
+    ),
+  );
+  const { doc } = await website(true, originalHtml);
+  expect(doc.querySelector('#headline')?.textContent).toBe('Saved heading');
+
+  await act(async () => doc.querySelector<HTMLElement>('#headline')!.click());
+  await input('Change text', 'Updated heading');
+  expect.soft(doc.querySelector('#headline')?.textContent).toBe('Updated heading');
+  await click('Save changes');
+  expect(save).toHaveBeenCalledOnce();
+  const changes = save.mock.calls[0][0];
+  expect(changes).toHaveLength(1);
+
+  // Replay the saved operation against the original website, not the flattened preview DOM.
+  const original = document.implementation.createHTMLDocument();
+  original.body.innerHTML = originalHtml;
+  const heading = original.querySelector('#headline')!;
+  expect.soft(() => applyPageChange(heading, changes[0])).not.toThrow();
+  expect(heading.textContent).toBe('Updated heading');
+});
+
+it('replays inline typing into an originally empty element after multiple preview updates', async () => {
+  const originalHtml = '<h1 id="headline"></h1>';
+  const save = vi.fn<(changes: PageChange[]) => void>();
+  await act(async () =>
+    root.render(
+      <ElementPicker
+        url="/demo-site.html"
+        onSelect={() => {}}
+        onSaveChanges={save}
+        onClose={() => {}}
+      />,
+    ),
+  );
+  const { doc } = await website(true, originalHtml);
+  await act(async () => doc.querySelector<HTMLElement>('#headline')!.click());
+  for (const value of ['H', 'Hi']) {
+    await act(async () => {
+      const inline = doc.querySelector('#headline [contenteditable]')!;
+      inline.textContent = value;
+      inline.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    expect(doc.querySelector('#headline')?.textContent).toBe(value);
+  }
+  await click('Save changes');
+  expect(save).toHaveBeenCalledOnce();
+  const changes = save.mock.calls[0][0];
+  expect(changes).toHaveLength(1);
+  const original = document.implementation.createHTMLDocument();
+  original.body.innerHTML = originalHtml;
+  const heading = original.querySelector('#headline')!;
+  expect(() => applyPageChange(heading, changes[0])).not.toThrow();
+  expect(heading.textContent).toBe('Hi');
 });
 
 it('restores original text nodes, image attributes, and picture sources when the editor closes', () => {

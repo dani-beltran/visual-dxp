@@ -176,7 +176,18 @@ export function ElementPicker({
           : undefined);
       const described = element ? { ...change, element } : change;
       if (index < 0) next.push(described);
-      else next[index] = { ...current[index], ...described };
+      else {
+        const previous = current[index];
+        next[index] = { ...previous, ...described };
+        // A whole-element replacement creates the preview's text node; its path
+        // does not necessarily identify a text node in the original website.
+        if (
+          (previous.action ?? 'text') === 'text' &&
+          (change.action ?? 'text') === 'text' &&
+          previous.textPath === undefined
+        )
+          delete next[index].textPath;
+      }
       if (JSON.stringify(next) !== JSON.stringify(current)) replaceDraft(next);
     },
     [replaceDraft],
