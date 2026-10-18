@@ -1414,21 +1414,23 @@ function Builder({
         <span className="dxp-toolbar-divider" />
         <button
           type="button"
-          className="dxp-icon-button"
+          className="dxp-icon-button dxp-history-button"
           onClick={undo}
           disabled={!history.current.past.length}
           title={t('builder.undoZ')}
         >
-          <Undo2 size={16} />
+          <Undo2 size={16} aria-hidden="true" />
+          {t('common.undo')}
         </button>
         <button
           type="button"
-          className="dxp-icon-button"
+          className="dxp-icon-button dxp-history-button"
           onClick={redo}
           disabled={!history.current.future.length}
           title={t('builder.redoZ')}
         >
-          <Redo2 size={16} />
+          <Redo2 size={16} aria-hidden="true" />
+          {t('common.redo')}
         </button>
       </div>
       {tutorial?.host?.exportContainer

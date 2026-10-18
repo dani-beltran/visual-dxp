@@ -55,6 +55,16 @@
   background: var(--dxp-primary-soft);
   margin: 0 7px;
 }
+.dxp-history-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  width: auto;
+  padding: 6px 9px;
+  font-size: 11px;
+  white-space: nowrap;
+}
 .dxp-save-state {
   color: var(--dxp-subtle);
   font-size: 9px;

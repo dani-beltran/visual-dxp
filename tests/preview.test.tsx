@@ -115,6 +115,29 @@ function successIds(onLog: ReturnType<typeof vi.fn<(log: RunLog) => void>>) {
 }
 
 describe('workflow website preview', () => {
+  it('switches preview devices without reloading the website or restarting an active workflow', async () => {
+    const onLog = await renderPreview(eventWorkflow({ event: 'page-load' }));
+    const { frame, doc } = await loadWebsite();
+    expect(button('Desktop').getAttribute('aria-pressed')).toBe('true');
+    expect(button('Mobile').getAttribute('aria-pressed')).toBe('false');
+    await clickButton('Run workflow');
+    expect(doc.querySelector('#result')?.textContent).toBe('Triggered');
+    const logCount = onLog.mock.calls.length;
+    const visibleLogs = host.querySelectorAll('.dxp-log-item').length;
+    await clickButton('Mobile');
+    expect(button('Mobile').getAttribute('aria-pressed')).toBe('true');
+    expect(button('Desktop').getAttribute('aria-pressed')).toBe('false');
+    expect(frame.parentElement?.classList.contains('dxp-preview-viewport-mobile')).toBe(true);
+    expect(websiteFrame()).toBe(frame);
+    expect(doc.querySelector('#result')?.textContent).toBe('Triggered');
+    expect(button('Restart workflow').disabled).toBe(false);
+    await clickButton('Desktop');
+    expect(frame.parentElement?.classList.contains('dxp-preview-viewport-mobile')).toBe(false);
+    expect(websiteFrame()).toBe(frame);
+    expect(onLog).toHaveBeenCalledTimes(logCount);
+    expect(host.querySelectorAll('.dxp-log-item')).toHaveLength(visibleLogs);
+  });
+
   it('tests query conditions with editable parameters without changing the saved workflow', async () => {
     const graph = workflow(
       [

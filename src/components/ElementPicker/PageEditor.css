@@ -38,16 +38,8 @@
   white-space: pre-wrap;
 }
 .dxp-page-editor-open {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
   width: 100%;
   padding: 11px;
-  border: 0;
-  border-radius: 7px;
-  color: #fff;
-  background: var(--dxp-primary-color);
   margin-bottom: 20px;
 }
 .dxp-page-editor-layout {
@@ -146,10 +138,35 @@
   gap: 5px;
   margin-bottom: 22px;
 }
-.dxp-page-editor-footer > span {
+.dxp-page-editor-footer > span:first-child {
   margin-inline-end: auto;
   color: var(--dxp-muted);
   font-size: 12px;
+}
+.dxp-page-editor-footer > .dxp-footer-shortcut {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  color: var(--dxp-muted);
+  font-size: 11px;
+}
+.dxp-page-editor-history {
+  display: flex;
+  flex-shrink: 0;
+  gap: 4px;
+}
+.dxp-page-editor-history button {
+  margin: 0;
+  padding: 6px 9px;
+  border-radius: 5px;
+}
+.dxp-page-editor-history button:hover:not(:disabled) {
+  color: var(--dxp-primary-color);
+  background: var(--dxp-surface);
+}
+.dxp-page-editor-history button:disabled {
+  opacity: 0.4;
+  cursor: default;
 }
 .dxp-page-editor-selection > span {
   font-size: 10px;
@@ -223,8 +240,12 @@
   .dxp-page-editor-footer {
     flex-wrap: wrap;
   }
-  .dxp-page-editor-footer > span {
+  .dxp-page-editor-footer > span:first-child {
     flex-basis: 100%;
+  }
+  .dxp-picker-toolbar:has(.dxp-page-editor-history) {
+    flex-wrap: wrap;
+    gap: 8px;
   }
 }
 @media (max-width: 480px) {

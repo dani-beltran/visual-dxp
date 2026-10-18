@@ -3,14 +3,17 @@ import '../../styles/shared.css';
 import {
   ArrowRight,
   Check,
+  Command,
   Globe2,
   Info,
   Maximize2,
   Minimize2,
   Monitor,
   MousePointer2,
+  Redo2,
   RefreshCw,
   Smartphone,
+  Undo2,
   X,
 } from 'lucide-react';
 import { type ReactNode, useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
@@ -56,7 +59,19 @@ export function ElementPicker({
   const draftRef = useRef(draft);
   const urlContextRef = useRef<PageUrlContext>({});
   const selectedRef = useRef<PickedElement | null>(null);
-  const [history, setHistory] = useState<PageChange[][]>([]);
+  const [history, setHistory] = useState<{ past: PageChange[][]; future: PageChange[][] }>({
+    past: [],
+    future: [],
+  });
+  const historyRef = useRef(history);
+  const changeIds = useRef(new WeakMap<PageChange, string>());
+  const getChangeId = useCallback((change: PageChange, previous?: PageChange) => {
+    const source = previous ?? change;
+    const id = changeIds.current.get(source) ?? crypto.randomUUID();
+    changeIds.current.set(source, id);
+    changeIds.current.set(change, id);
+    return id;
+  }, []);
   const [focusedChange, setFocusedChange] = useState<PageChange | null>(null);
   const [discard, setDiscard] = useState(false);
   const [device, setDevice] = useState<'desktop' | 'mobile'>('desktop');
@@ -146,30 +161,63 @@ export function ElementPicker({
   const replaceDraft = useCallback(
     (changes: PageChange[], record = true) => {
       const previous = draftRef.current;
-      if (record) setHistory((items) => [...items, previous]);
-      const normalized = changes.map((change) =>
-        normalizePageChangeUrls(change, urlContextRef.current),
-      );
+      if (record) {
+        historyRef.current = { past: [...historyRef.current.past, previous], future: [] };
+        setHistory(historyRef.current);
+      }
+      const normalized = changes.map((change) => {
+        const normalized = normalizePageChangeUrls(change, urlContextRef.current);
+        getChangeId(normalized, change);
+        return normalized;
+      });
       draftRef.current = normalized;
       setDraft(normalized);
       sendEditor('set-changes', { changes: normalized });
     },
-    [sendEditor],
+    [sendEditor, getChangeId],
   );
+  const undo = useCallback(() => {
+    const { past, future } = historyRef.current;
+    if (!past.length) return;
+    historyRef.current = {
+      past: past.slice(0, -1),
+      future: [...future, draftRef.current],
+    };
+    setHistory(historyRef.current);
+    replaceDraft(past[past.length - 1], false);
+  }, [replaceDraft]);
+  const redo = useCallback(() => {
+    const { past, future } = historyRef.current;
+    if (!future.length) return;
+    historyRef.current = {
+      past: [...past, draftRef.current],
+      future: future.slice(0, -1),
+    };
+    setHistory(historyRef.current);
+    replaceDraft(future[future.length - 1], false);
+  }, [replaceDraft]);
+  const discardRef = useRef(discard);
+  discardRef.current = discard;
   const editChange = useCallback(
-    (change: PageChange) => {
+    (change: PageChange, previousChange?: PageChange) => {
       const current = draftRef.current;
-      const index = current.findIndex(
-        (item) =>
-          pageChangeKey(item) === pageChangeKey(change) ||
-          (item.selector === change.selector &&
-            (item.action ?? 'text') === 'text' &&
-            change.action === 'text' &&
-            item.textPath === undefined),
-      );
+      const previousIndex = previousChange
+        ? current.findIndex((item) => pageChangeKey(item) === pageChangeKey(previousChange))
+        : -1;
+      const index =
+        previousIndex >= 0
+          ? previousIndex
+          : current.findIndex(
+              (item) =>
+                pageChangeKey(item) === pageChangeKey(change) ||
+                (item.selector === change.selector &&
+                  (item.action ?? 'text') === 'text' &&
+                  change.action === 'text' &&
+                  item.textPath === undefined),
+            );
       const next = [...current];
       const element =
-        current[index]?.element ??
+        (current[index]?.selector === change.selector ? current[index]?.element : undefined) ??
         change.element ??
         (selectedRef.current?.selector === change.selector
           ? selectedRef.current.description
@@ -179,6 +227,10 @@ export function ElementPicker({
       else {
         const previous = current[index];
         next[index] = { ...previous, ...described };
+        if (previousChange) {
+          for (const key of ['attribute', 'imageAlt', 'textPath', 'element'] as const)
+            if (!(key in described)) delete next[index][key];
+        }
         // A whole-element replacement creates the preview's text node; its path
         // does not necessarily identify a text node in the original website.
         if (
@@ -188,9 +240,19 @@ export function ElementPicker({
         )
           delete next[index].textPath;
       }
-      if (JSON.stringify(next) !== JSON.stringify(current)) replaceDraft(next);
+      const editedIndex = index < 0 ? next.length - 1 : index;
+      const edited = next[editedIndex];
+      const deduplicated = previousChange
+        ? next.filter(
+            (item, position) =>
+              position === editedIndex || pageChangeKey(item) !== pageChangeKey(change),
+          )
+        : next;
+      const id = getChangeId(edited, current[index]);
+      if (JSON.stringify(deduplicated) !== JSON.stringify(current)) replaceDraft(deduplicated);
+      return id;
     },
-    [replaceDraft],
+    [replaceDraft, getChangeId],
   );
   let draftError = '';
   if (editing)
@@ -326,9 +388,11 @@ export function ElementPicker({
         if (editing && data.editing !== true) setEditorError(t('pageEditor.unsupportedBridge'));
         else setEditorError('');
         if (editing) {
-          const normalized = draftRef.current.map((change) =>
-            normalizePageChangeUrls(change, urlContextRef.current),
-          );
+          const normalized = draftRef.current.map((change) => {
+            const normalized = normalizePageChangeUrls(change, urlContextRef.current);
+            getChangeId(normalized, change);
+            return normalized;
+          });
           if (normalized.some((change, index) => change !== draftRef.current[index]))
             replaceDraft(normalized, false);
         }
@@ -342,11 +406,14 @@ export function ElementPicker({
           if (item && typeof item.selector === 'string' && isElementDescription(item.element))
             descriptions.set(item.selector, item.element);
         }
-        const described = draftRef.current.map((change) =>
-          !change.element && descriptions.has(change.selector)
-            ? { ...change, element: descriptions.get(change.selector) }
-            : change,
-        );
+        const described = draftRef.current.map((change) => {
+          const described =
+            !change.element && descriptions.has(change.selector)
+              ? { ...change, element: descriptions.get(change.selector) }
+              : change;
+          getChangeId(described, change);
+          return described;
+        });
         if (described.some((change, index) => change !== draftRef.current[index])) {
           draftRef.current = described;
           setDraft(described);
@@ -357,6 +424,8 @@ export function ElementPicker({
       if (editing && data.type === 'changes-result')
         setEditorError(data.valid ? '' : t('pageEditor.previewError'));
       if (editing && data.type === 'request-close') requestCloseRef.current();
+      if (editing && !discardRef.current && data.type === 'request-undo') undo();
+      if (editing && !discardRef.current && data.type === 'request-redo') redo();
       if (data.type === 'selector-result')
         setSelectorHint(
           data.found
@@ -393,6 +462,9 @@ export function ElementPicker({
     editing,
     editChange,
     replaceDraft,
+    undo,
+    redo,
+    getChangeId,
   ]);
 
   const updateSelector = (value: string) => {
@@ -460,6 +532,16 @@ export function ElementPicker({
         role="dialog"
         aria-modal="true"
         aria-labelledby={headingId}
+        onKeyDownCapture={(event) => {
+          if (!editing || !(event.metaKey || event.ctrlKey) || event.altKey) return;
+          const key = event.key.toLowerCase();
+          if (key !== 'z' && !(event.ctrlKey && key === 'y')) return;
+          event.preventDefault();
+          event.stopPropagation();
+          if (discard) return;
+          if (event.shiftKey || key === 'y') redo();
+          else undo();
+        }}
         onKeyDown={(event) => {
           if (discard) {
             event.stopPropagation();
@@ -567,25 +649,50 @@ export function ElementPicker({
             </button>
           )}
           {editing && (
-            <fieldset
-              className="dxp-picker-device-toggle"
-              aria-label={t('pageEditor.previewDevice')}
-            >
-              {(['desktop', 'mobile'] as const).map((option) => {
-                const Icon = option === 'desktop' ? Monitor : Smartphone;
-                return (
-                  <button
-                    key={option}
-                    type="button"
-                    aria-pressed={device === option}
-                    onClick={() => setDevice(option)}
-                  >
-                    <Icon size={14} aria-hidden="true" />
-                    {t(option === 'desktop' ? 'nodeInspector.desktop' : 'nodeInspector.mobile')}
-                  </button>
-                );
-              })}
-            </fieldset>
+            <>
+              <fieldset
+                className="dxp-picker-device-toggle"
+                aria-label={t('pageEditor.previewDevice')}
+              >
+                {(['desktop', 'mobile'] as const).map((option) => {
+                  const Icon = option === 'desktop' ? Monitor : Smartphone;
+                  return (
+                    <button
+                      key={option}
+                      type="button"
+                      aria-pressed={device === option}
+                      onClick={() => setDevice(option)}
+                    >
+                      <Icon size={14} aria-hidden="true" />
+                      {t(option === 'desktop' ? 'nodeInspector.desktop' : 'nodeInspector.mobile')}
+                    </button>
+                  );
+                })}
+              </fieldset>
+              <span className="dxp-toolbar-divider" aria-hidden="true" />
+              <div className="dxp-page-editor-history">
+                <button
+                  type="button"
+                  onClick={undo}
+                  disabled={!history.past.length}
+                  title={t('builder.undoZ')}
+                  aria-keyshortcuts="Meta+Z Control+Z"
+                >
+                  <Undo2 size={14} aria-hidden="true" />
+                  {t('common.undo')}
+                </button>
+                <button
+                  type="button"
+                  onClick={redo}
+                  disabled={!history.future.length}
+                  title={t('builder.redoZ')}
+                  aria-keyshortcuts="Meta+Shift+Z Control+Shift+Z Control+Y"
+                >
+                  <Redo2 size={14} aria-hidden="true" />
+                  {t('common.redo')}
+                </button>
+              </div>
+            </>
           )}
         </div>
         {!editing && showHelp && !unavailable && setup}
@@ -625,7 +732,13 @@ export function ElementPicker({
               selected={selected}
               changes={draft}
               onEdit={editChange}
-              focusedChange={focusedChange}
+              getChangeId={getChangeId}
+              focusedChange={
+                focusedChange
+                  ? (draft.find((change) => getChangeId(change) === getChangeId(focusedChange)) ??
+                    null)
+                  : null
+              }
               onRemove={(index) =>
                 replaceDraft(draftRef.current.filter((_, current) => current !== index))
               }
@@ -650,18 +763,9 @@ export function ElementPicker({
                   elements: new Set(draft.map((change) => change.selector)).size,
                 })}
               </span>
-              <button
-                type="button"
-                className="dxp-picker-cancel"
-                disabled={!history.length}
-                onClick={() => {
-                  const previous = history[history.length - 1];
-                  setHistory((items) => items.slice(0, -1));
-                  replaceDraft(previous, false);
-                }}
-              >
-                {t('pageEditor.undo')}
-              </button>
+              <span className="dxp-footer-shortcut">
+                <Command size={11} aria-hidden="true" /> {t('builder.zToUndo')}
+              </span>
               <button type="button" className="dxp-picker-cancel" onClick={requestClose}>
                 {t('common.cancel')}
               </button>

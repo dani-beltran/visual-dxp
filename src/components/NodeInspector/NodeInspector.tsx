@@ -415,7 +415,11 @@ export function NodeInspector({
 
         {node.data.kind === 'dom' && (
           <>
-            <button type="button" className="dxp-page-editor-open" onClick={onPickElement}>
+            <button
+              type="button"
+              className="dxp-button dxp-button-primary dxp-page-editor-open"
+              onClick={onPickElement}
+            >
               <MousePointer2 size={15} />
               {t('pageEditor.editPage')}
             </button>

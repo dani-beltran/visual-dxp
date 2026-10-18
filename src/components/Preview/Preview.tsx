@@ -5,10 +5,10 @@ import {
   CircleAlert,
   ExternalLink,
   LoaderCircle,
-  Maximize2,
-  Minimize2,
+  Monitor,
   Play,
   RotateCcw,
+  Smartphone,
   Square,
   X,
 } from 'lucide-react';
@@ -57,7 +57,7 @@ export function Preview({
   }, [workflow.websiteUrl]);
   const modalRef = useDialogFocus(true);
   const [ready, setReady] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [device, setDevice] = useState<'desktop' | 'mobile'>('desktop');
   const [running, setRunning] = useState(false);
   const [logs, setLogs] = useState<RunLog[]>([]);
   const [error, setError] = useState('');
@@ -87,10 +87,7 @@ export function Preview({
   return (
     // biome-ignore lint/a11y/useKeyWithClickEvents: The close button and the builder's Escape handler provide keyboard dismissal.
     // biome-ignore lint/a11y/noStaticElementInteractions: Only the backdrop uses clicks to dismiss the dialog.
-    <div
-      className={`dxp-modal-backdrop${isFullscreen ? ' dxp-preview-backdrop-fullscreen' : ''}`}
-      onClick={onClose}
-    >
+    <div className="dxp-modal-backdrop dxp-preview-backdrop-fullscreen" onClick={onClose}>
       {/* biome-ignore lint/a11y/useKeyWithClickEvents: This handler only prevents dialog clicks from reaching the backdrop. */}
       <section
         ref={modalRef}
@@ -106,15 +103,6 @@ export function Preview({
             <h2>{t('preview.seeYourJourneyInAction')}</h2>
           </div>
           <div className="dxp-preview-header-actions">
-            <button
-              type="button"
-              className="dxp-icon-button"
-              aria-label={t(isFullscreen ? 'common.exitFullscreen' : 'common.enterFullscreen')}
-              title={t(isFullscreen ? 'common.exitFullscreen' : 'common.enterFullscreen')}
-              onClick={() => setIsFullscreen((value) => !value)}
-            >
-              {isFullscreen ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
-            </button>
             <button
               type="button"
               className="dxp-icon-button"
@@ -162,6 +150,26 @@ export function Preview({
           >
             <RotateCcw size={14} />
           </button>
+          <fieldset
+            className="dxp-preview-device-toggle"
+            aria-label={t('pageEditor.previewDevice')}
+          >
+            {(['desktop', 'mobile'] as const).map((option) => {
+              const Icon = option === 'desktop' ? Monitor : Smartphone;
+              return (
+                <button
+                  key={option}
+                  type="button"
+                  aria-pressed={device === option}
+                  onClick={() => setDevice(option)}
+                >
+                  <Icon size={14} aria-hidden="true" />
+                  {t(option === 'desktop' ? 'nodeInspector.desktop' : 'nodeInspector.mobile')}
+                </button>
+              );
+            })}
+          </fieldset>
+          <span className="dxp-toolbar-divider" aria-hidden="true" />
           {running && (
             <button type="button" className="dxp-button" onClick={stop}>
               <Square size={14} /> {t('preview.stopWorkflow')}
@@ -180,85 +188,96 @@ export function Preview({
         </div>
         {guidance}
         <div className="dxp-preview-body">
-          <IsolatedPreview
-            key={`${workflow.websiteUrl}-${key}`}
-            url={workflow.websiteUrl}
-            searchParams={searchParams.trim()}
-            workflow={workflow}
-            running={running}
-            revision={revision}
-            title={t('preview.workflowPreviewWebsite')}
-            onReady={(value) => {
-              setReady(value);
-              if (!value) setRunning(false);
-            }}
-            onExecution={(event) => {
-              if (event.type === 'start') activeRun.current = event.runId;
-              if (event.type === 'stop' && activeRun.current === event.runId)
-                activeRun.current = '';
-              onExecution?.(event);
-            }}
-            onError={(message) => {
-              setError(message);
-              if (message) onExecution?.({ type: 'error', runId: activeRun.current });
-            }}
-            onClose={onClose}
-            onConnectionPreview={onConnectionPreview}
-            onLog={(log) => {
-              if (!running) return;
-              setLogs((previous) => [...previous, log]);
-              onLog(log);
-            }}
-          />
+          <div
+            className={`dxp-preview-viewport${device === 'mobile' ? ' dxp-preview-viewport-mobile' : ''}`}
+          >
+            <IsolatedPreview
+              key={`${workflow.websiteUrl}-${key}`}
+              url={workflow.websiteUrl}
+              searchParams={searchParams.trim()}
+              workflow={workflow}
+              running={running}
+              revision={revision}
+              title={t('preview.workflowPreviewWebsite')}
+              onReady={(value) => {
+                setReady(value);
+                if (!value) setRunning(false);
+              }}
+              onExecution={(event) => {
+                if (event.type === 'start') activeRun.current = event.runId;
+                if (event.type === 'stop' && activeRun.current === event.runId)
+                  activeRun.current = '';
+                onExecution?.(event);
+              }}
+              onError={(message) => {
+                setError(message);
+                if (message) onExecution?.({ type: 'error', runId: activeRun.current });
+              }}
+              onClose={onClose}
+              onConnectionPreview={onConnectionPreview}
+              onLog={(log) => {
+                if (!running) return;
+                setLogs((previous) => [...previous, log]);
+                onLog(log);
+              }}
+            />
+          </div>
           <aside className="dxp-run-log" data-tutorial="log">
-            <h3>
-              {t('preview.executionLog')}{' '}
-              <span>{logs.filter((x) => x.status === 'success').length}</span>
-            </h3>
-            {!logs.length && (
-              <div className="dxp-log-empty">
-                <Play size={25} />
-                <p>
-                  {running
-                    ? t('preview.listeningForYourTriggers')
-                    : t('preview.yourJourneyStepByStep')}
-                </p>
-                <small>
-                  {running
-                    ? t('preview.interactWithTheWebsiteToTriggerYourWorkflow')
-                    : t('preview.runTheWorkflowToSeeEachActionHappenOnThePage')}
-                </small>
-              </div>
-            )}
-            {logs.map((log, i) => (
-              // biome-ignore lint/suspicious/noArrayIndexKey: Log entries only append during a run and render stateless rows; a new run clears the list.
-              <div className={`dxp-log-item ${log.status}`} key={i}>
-                {log.status === 'success' ? (
-                  <Check size={14} />
-                ) : log.status === 'error' ? (
-                  <CircleAlert size={14} />
-                ) : (
-                  <LoaderCircle size={14} />
-                )}
-                <div>
-                  <strong>{log.label}</strong>
-                  <p>{log.message}</p>
+            <div className="dxp-run-log-content">
+              <h3>
+                {t('preview.executionLog')}{' '}
+                <span>{logs.filter((x) => x.status === 'success').length}</span>
+              </h3>
+              {!logs.length && (
+                <div className="dxp-log-empty">
+                  <Play size={25} />
+                  <p>
+                    {running
+                      ? t('preview.listeningForYourTriggers')
+                      : t('preview.yourJourneyStepByStep')}
+                  </p>
+                  <small>
+                    {running
+                      ? t('preview.interactWithTheWebsiteToTriggerYourWorkflow')
+                      : t('preview.runTheWorkflowToSeeEachActionHappenOnThePage')}
+                  </small>
                 </div>
-              </div>
-            ))}
-            {error && (
-              <p className="dxp-error" role="alert">
-                {error}
-              </p>
-            )}
-            <p className="dxp-log-note">
-              <ExternalLink size={13} />{' '}
-              {transport
-                ? t('websiteSetup.proxyLimitations')
-                : t(
-                    'preview.externalWebsitesNeedThePreviewBridgeConfiguredForThisBuilderOriginPreviews',
+              )}
+              {logs.map((log, i) => (
+                // biome-ignore lint/suspicious/noArrayIndexKey: Log entries only append during a run and render stateless rows; a new run clears the list.
+                <div className={`dxp-log-item ${log.status}`} key={i}>
+                  {log.status === 'success' ? (
+                    <Check size={14} />
+                  ) : log.status === 'error' ? (
+                    <CircleAlert size={14} />
+                  ) : (
+                    <LoaderCircle size={14} />
                   )}
-            </p>
+                  <div>
+                    <strong>{log.label}</strong>
+                    <p>{log.message}</p>
+                  </div>
+                </div>
+              ))}
+              {error && (
+                <p className="dxp-error" role="alert">
+                  {error}
+                </p>
+              )}
+              <p className="dxp-log-note">
+                <ExternalLink size={13} />{' '}
+                {transport
+                  ? t('websiteSetup.proxyLimitations')
+                  : t(
+                      'preview.externalWebsitesNeedThePreviewBridgeConfiguredForThisBuilderOriginPreviews',
+                    )}
+              </p>
+            </div>
+            <footer className="dxp-run-log-footer">
+              <button type="button" className="dxp-button" onClick={onClose}>
+                {t('preview.closePreview')}
+              </button>
+            </footer>
           </aside>
         </div>
       </section>

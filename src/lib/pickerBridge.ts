@@ -248,7 +248,19 @@ export function installPickerBridge(configuredOrigin: string, targetBaseUrl?: st
       event.stopImmediatePropagation();
     }
     function keydown(event: KeyboardEvent) {
-      if (!editor || event.key !== 'Escape') return;
+      if (!editor) return;
+      const key = event.key.toLowerCase();
+      if (
+        (event.metaKey || event.ctrlKey) &&
+        !event.altKey &&
+        (key === 'z' || (event.ctrlKey && key === 'y'))
+      ) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        send(event.shiftKey || key === 'y' ? 'request-redo' : 'request-undo');
+        return;
+      }
+      if (event.key !== 'Escape') return;
       if (valid(event.target) && editor.isEditing(event.target)) return;
       event.preventDefault();
       send('request-close');
