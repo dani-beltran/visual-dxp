@@ -1,3 +1,4 @@
+import { attachElementPicker, escapeCss, getElementSelector, type PickerSession } from './picker';
 import type { WorkflowRuntime } from './runtime';
 import { createRuntime, getRuntimeSource } from './runtime';
 import type { Workflow } from './types';
@@ -8,6 +9,7 @@ export function installPreviewBridge(
   parentOrigin: string,
   runtimeFactory: typeof createRuntime = createRuntime,
   baseUrl?: string,
+  pickerFactory: typeof attachElementPicker = attachElementPicker,
 ) {
   if (
     window.parent === window ||
@@ -17,6 +19,11 @@ export function installPreviewBridge(
     return;
   let runtime: WorkflowRuntime | undefined;
   let channel = '';
+  let picker: PickerSession | undefined;
+  const stopPicking = () => {
+    picker?.destroy();
+    picker = undefined;
+  };
   const send = (type: string, detail: Record<string, unknown> = {}) =>
     window.parent.postMessage(
       { protocol: 'visual-dxp:preview', type, channel, ...detail },
@@ -29,11 +36,30 @@ export function installPreviewBridge(
     if (data.type === 'init') {
       runtime?.destroy();
       runtime = undefined;
+      stopPicking();
       channel = data.channel;
-      send('ready');
+      send('ready', { elementPicking: true });
       return;
     }
     if (data.channel !== channel) return;
+    if (data.type === 'pick-start') {
+      stopPicking();
+      runtime?.destroy();
+      runtime = undefined;
+      picker = pickerFactory(
+        document,
+        () => {},
+        (element) => {
+          stopPicking();
+          send('pick-element', { selector: element.selector });
+        },
+      );
+      return;
+    }
+    if (data.type === 'pick-stop') {
+      stopPicking();
+      return;
+    }
     if (data.type === 'stop') {
       runtime?.destroy();
       runtime = undefined;
@@ -61,13 +87,27 @@ export function installPreviewBridge(
     }
   });
   window.addEventListener('pagehide', () => {
+    stopPicking();
     runtime?.destroy();
     send('unavailable');
   });
   window.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape') send('close');
+    if (event.key !== 'Escape') return;
+    event.preventDefault();
+    if (picker) {
+      stopPicking();
+      send('pick-cancel');
+    } else send('close');
   });
 }
 export function previewBridgeSource(parentOrigin: string): string {
-  return `(${installPreviewBridge.toString()})(${JSON.stringify(parentOrigin)}, ${getRuntimeSource()});`;
+  // These helpers are serialized together so selector escaping and highlighting
+  // behave identically in demo srcdoc and on websites using the bundled bridge.
+  return `(() => {
+    const escapeCss = ${escapeCss.toString()};
+    const selectorFor = ${getElementSelector.toString()};
+    const attach = ${attachElementPicker.toString()};
+    const pickerFactory = (doc, hover, select) => attach(doc, hover, select, (element) => selectorFor(element, escapeCss));
+    (${installPreviewBridge.toString()})(${JSON.stringify(parentOrigin)}, ${getRuntimeSource()}, undefined, pickerFactory);
+  })();`;
 }
