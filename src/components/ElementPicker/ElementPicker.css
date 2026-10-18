@@ -241,6 +241,38 @@
   height: 100%;
   border: 0;
 }
+.dxp-picker-device-toggle {
+  display: flex;
+  flex-shrink: 0;
+  gap: 4px;
+  margin-inline-start: auto;
+  padding: 3px;
+  border: 1px solid var(--dxp-line);
+  border-radius: 8px;
+}
+.dxp-picker-device-toggle button {
+  margin: 0;
+  padding: 6px 9px;
+  border-radius: 5px;
+}
+.dxp-picker-device-toggle button[aria-pressed='true'] {
+  background: var(--dxp-surface);
+  color: var(--dxp-primary-color);
+  box-shadow: 0 1px 3px var(--dxp-shadow-strong);
+}
+.dxp-picker-frame-wrap-mobile > .dxp-picker-frame {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(390px, calc(100% - 32px));
+  height: calc(100% - 32px);
+  max-height: 844px;
+  border-radius: 12px;
+  box-shadow:
+    0 0 0 1px var(--dxp-line),
+    0 8px 24px var(--dxp-shadow-strong);
+}
 .dxp-picker-help-unavailable {
   height: 100%;
   max-height: none;

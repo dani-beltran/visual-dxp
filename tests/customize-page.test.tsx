@@ -201,6 +201,17 @@ it('edits multiple elements, saves them once, and runs those exact changes in Te
     inline.textContent = 'Customized heading';
     inline.dispatchEvent(new Event('input', { bubbles: true }));
   });
+  const originalFrame = host.querySelector('iframe');
+  expect(button('Desktop').getAttribute('aria-pressed')).toBe('true');
+  await click('Mobile');
+  expect(button('Mobile').getAttribute('aria-pressed')).toBe('true');
+  expect(button('Desktop').getAttribute('aria-pressed')).toBe('false');
+  expect(host.querySelector('.dxp-picker-frame-wrap-mobile iframe')).toBe(originalFrame);
+  expect(doc.querySelector('#headline')?.textContent).toBe('Customized heading');
+  await click('Desktop');
+  expect(host.querySelector('.dxp-picker-frame-wrap-mobile')).toBeNull();
+  expect(host.querySelector('iframe')).toBe(originalFrame);
+  expect(doc.querySelector('#headline')?.textContent).toBe('Customized heading');
   await click('Text changed to “Customized heading”');
   expect(host.querySelector<HTMLDetailsElement>('.dxp-page-editor-advanced')?.open).toBe(false);
   expect(advancedAction.value).toBe('add-class');

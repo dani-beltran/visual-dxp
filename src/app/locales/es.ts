@@ -1012,6 +1012,7 @@ export const spanishMessages = {
   'pageEditor.selectedElement': 'Elemento seleccionado',
   'pageEditor.selectElement': 'Selecciona un elemento de la página para editarlo.',
   'pageEditor.editMode': 'Modo edición',
+  'pageEditor.previewDevice': 'Dispositivo de vista previa',
   'pageEditor.inlineHint': 'Edita el texto en la página o usa el campo de abajo.',
   'pageEditor.linkText': 'Texto del enlace',
   'pageEditor.destination': 'Destino',

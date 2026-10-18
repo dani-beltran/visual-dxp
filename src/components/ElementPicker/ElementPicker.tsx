@@ -7,8 +7,10 @@ import {
   Info,
   Maximize2,
   Minimize2,
+  Monitor,
   MousePointer2,
   RefreshCw,
+  Smartphone,
   X,
 } from 'lucide-react';
 import { type ReactNode, useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
@@ -57,6 +59,7 @@ export function ElementPicker({
   const [history, setHistory] = useState<PageChange[][]>([]);
   const [focusedChange, setFocusedChange] = useState<PageChange | null>(null);
   const [discard, setDiscard] = useState(false);
+  const [device, setDevice] = useState<'desktop' | 'mobile'>('desktop');
   const [editorReady, setEditorReady] = useState(false);
   const [editorError, setEditorError] = useState('');
   const requestClose = () => {
@@ -552,10 +555,34 @@ export function ElementPicker({
               <Info size={14} /> {t('elementPicker.websiteSetup')}
             </button>
           )}
+          {editing && (
+            <div
+              className="dxp-picker-device-toggle"
+              role="group"
+              aria-label={t('pageEditor.previewDevice')}
+            >
+              {(['desktop', 'mobile'] as const).map((option) => {
+                const Icon = option === 'desktop' ? Monitor : Smartphone;
+                return (
+                  <button
+                    key={option}
+                    type="button"
+                    aria-pressed={device === option}
+                    onClick={() => setDevice(option)}
+                  >
+                    <Icon size={14} aria-hidden="true" />
+                    {t(option === 'desktop' ? 'nodeInspector.desktop' : 'nodeInspector.mobile')}
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
         {!editing && showHelp && !unavailable && setup}
         <div className={editing ? 'dxp-page-editor-layout' : 'dxp-picker-standard-layout'}>
-          <div className="dxp-picker-frame-wrap">
+          <div
+            className={`dxp-picker-frame-wrap${editing && device === 'mobile' ? ' dxp-picker-frame-wrap-mobile' : ''}`}
+          >
             {unavailable ? (
               setup
             ) : frameUrl && preview.url ? (

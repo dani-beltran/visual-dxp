@@ -1145,6 +1145,7 @@ export const englishMessages = {
   'pageEditor.selectedElement': 'Selected element',
   'pageEditor.selectElement': 'Select an element on the page to edit it.',
   'pageEditor.editMode': 'Edit mode',
+  'pageEditor.previewDevice': 'Preview device',
   'pageEditor.inlineHint': 'Edit text directly on the page, or use the field below.',
   'pageEditor.linkText': 'Link text',
   'pageEditor.destination': 'Destination',
