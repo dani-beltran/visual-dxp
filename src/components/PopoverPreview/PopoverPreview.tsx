@@ -1,13 +1,17 @@
 import '../../styles/base.css';
 import '../../styles/shared.css';
-import { LoaderCircle, PanelTop, Redo2, RefreshCw, Undo2, X } from 'lucide-react';
+import { LoaderCircle, PanelTop, Redo2, Undo2 } from 'lucide-react';
 import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
 import { validateWorkflow } from '../../lib/export';
 import { useBuilderI18n } from '../../lib/i18nContext';
 import type { StepConfig, Workflow, WorkflowNode } from '../../lib/types';
 import { useDialogFocus } from '../../lib/useDialogFocus';
 import { IsolatedPreview } from '../IsolatedPreview/IsolatedPreview';
-import { EditorDiscardDialog, PreviewDeviceToggle } from '../WebsiteEditor/WebsiteEditor';
+import {
+  EditorDiscardDialog,
+  WebsitePreviewHeader,
+  WebsitePreviewToolbar,
+} from '../WebsiteEditor/WebsiteEditor';
 import { PopoverEditorPanel } from './PopoverEditorPanel';
 import './PopoverPreview.css';
 
@@ -130,73 +134,51 @@ export function PopoverPreview({
       aria-modal="true"
       aria-label={t('popoverEditor.editPopover')}
     >
-      <header className="dxp-popover-preview-header">
-        <div className="dxp-popover-preview-heading">
-          <div className="dxp-editor-title-icon">
-            <PanelTop size={19} aria-hidden="true" />
-          </div>
-          <div className="dxp-editor-heading">
-            <h2>{t('popoverEditor.editPopover')}</h2>
-            <p>{t('popoverEditor.description')}</p>
-          </div>
-        </div>
-        <button
-          type="button"
-          className="dxp-icon-button"
-          onClick={requestClose}
-          aria-label={t('common.cancel')}
-        >
-          <X size={20} />
-        </button>
-      </header>
-      <div className="dxp-popover-preview-bar">
-        <span>
-          <span className="dxp-status-dot" aria-hidden="true" />
-          {websiteUrl === '/demo-site.html' ? t('popoverPreview.demoWebsite') : websiteUrl}
-        </span>
-        <div className="dxp-popover-preview-devices">
-          <PreviewDeviceToggle device={device} onChange={setDevice} />
-          <button
-            type="button"
-            className="dxp-button"
-            title={t('preview.reloadWebsite')}
-            aria-label={t('preview.reloadWebsite')}
-            onClick={() => {
-              setPicking(false);
-              setReady(false);
-              setCanPick(false);
-              setWebsiteError('');
-              setRuntimeError('');
-              setReload((value) => value + 1);
-            }}
-          >
-            <RefreshCw size={14} aria-hidden="true" />
-          </button>
-        </div>
-        <span className="dxp-toolbar-divider" aria-hidden="true" />
-        <div className="dxp-popover-editor-history">
-          <button
-            type="button"
-            className="dxp-button"
-            disabled={!history.past.length}
-            title={t('builder.undoZ')}
-            aria-keyshortcuts="Meta+Z Control+Z"
-            onClick={undo}
-          >
-            <Undo2 size={14} /> {t('common.undo')}
-          </button>
-          <button
-            type="button"
-            className="dxp-button"
-            disabled={!history.future.length}
-            title={t('builder.redoZ')}
-            aria-keyshortcuts="Meta+Shift+Z Control+Shift+Z Control+Y"
-            onClick={redo}
-          >
-            <Redo2 size={14} /> {t('common.redo')}
-          </button>
-        </div>
-      </div>
+      <WebsitePreviewHeader
+        icon={<PanelTop size={19} aria-hidden="true" />}
+        title={t('popoverEditor.editPopover')}
+        description={t('popoverEditor.description')}
+        closeLabel={t('common.cancel')}
+        onClose={requestClose}
+      />
+      <WebsitePreviewToolbar
+        className="dxp-popover-preview-bar"
+        url={websiteUrl}
+        device={device}
+        onDeviceChange={setDevice}
+        onReload={() => {
+          setPicking(false);
+          setReady(false);
+          setCanPick(false);
+          setWebsiteError('');
+          setRuntimeError('');
+          setReload((value) => value + 1);
+        }}
+        actions={
+          <>
+            <button
+              type="button"
+              className="dxp-button"
+              disabled={!history.past.length}
+              title={t('builder.undoZ')}
+              aria-keyshortcuts="Meta+Z Control+Z"
+              onClick={undo}
+            >
+              <Undo2 size={14} /> {t('common.undo')}
+            </button>
+            <button
+              type="button"
+              className="dxp-button"
+              disabled={!history.future.length}
+              title={t('builder.redoZ')}
+              aria-keyshortcuts="Meta+Shift+Z Control+Shift+Z Control+Y"
+              onClick={redo}
+            >
+              <Redo2 size={14} /> {t('common.redo')}
+            </button>
+          </>
+        }
+      />
       {error && (
         <p className="dxp-popover-preview-error" role="alert">
           {error}

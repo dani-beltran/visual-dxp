@@ -1,22 +1,16 @@
 import '../../styles/base.css';
 import '../../styles/shared.css';
-import {
-  ArrowRight,
-  Check,
-  Command,
-  MousePointer2,
-  Paintbrush,
-  Redo2,
-  RefreshCw,
-  Undo2,
-  X,
-} from 'lucide-react';
+import { ArrowRight, Check, Command, MousePointer2, Paintbrush, Redo2, Undo2 } from 'lucide-react';
 import { type ReactNode, useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useBuilderI18n } from '../../lib/i18nContext';
 import type { PickedElement, PickerSession } from '../../lib/picker';
 import { normalizeWebsiteUrl, PICKER_PROTOCOL } from '../../lib/picker';
 import { type PreviewTransport, usePreviewUrl } from '../../lib/previewTransport';
-import { EditorDiscardDialog, PreviewDeviceToggle } from '../WebsiteEditor/WebsiteEditor';
+import {
+  EditorDiscardDialog,
+  WebsitePreviewHeader,
+  WebsitePreviewToolbar,
+} from '../WebsiteEditor/WebsiteEditor';
 import { WebsiteSetup } from '../WebsiteSetup/WebsiteSetup';
 import './ElementPicker.css';
 import { dataTools } from '../../lib/data';
@@ -544,56 +538,27 @@ export function ElementPicker({
           }
         }}
       >
-        <header className="dxp-picker-header">
-          <div className="dxp-editor-title-icon">
-            {editing ? <Paintbrush size={19} /> : <MousePointer2 size={19} />}
-          </div>
-          <div className="dxp-editor-heading">
-            <h2 id={headingId}>
-              {t(editing ? 'pageEditor.editPage' : 'elementPicker.selectAnElement')}
-            </h2>
-            <p>
-              {t(
-                editing
-                  ? 'pageEditor.description'
-                  : 'elementPicker.pointClickAndConnectYourExperience',
-              )}
-            </p>
-          </div>
-          <div className="dxp-picker-header-actions">
-            <button
-              type="button"
-              className="dxp-picker-icon-button"
-              aria-label={t(editing ? 'common.cancel' : 'elementPicker.closeElementPicker')}
-              onClick={requestClose}
-            >
-              <X size={20} />
-            </button>
-          </div>
-        </header>
-        {guidance}
-        <div className="dxp-picker-toolbar">
-          <span className="dxp-page-editor-target" title={url || '/demo-site.html'}>
-            <span className="dxp-status-dot" aria-hidden="true" />
-            <span className="dxp-picker-url">{url || '/demo-site.html'}</span>
-          </span>
-          <PreviewDeviceToggle device={device} onChange={setDevice} />
-          <button
-            type="button"
-            className="dxp-button dxp-page-editor-refresh"
-            title={t('preview.reloadWebsite')}
-            aria-label={t('preview.reloadWebsite')}
-            onClick={() => {
-              setStatus('loading');
-              setReload((value) => value + 1);
-            }}
-          >
-            <RefreshCw size={14} />
-          </button>
-          {editing && (
-            <>
-              <span className="dxp-toolbar-divider" aria-hidden="true" />
-              <div className="dxp-page-editor-history">
+        <WebsitePreviewHeader
+          icon={editing ? <Paintbrush size={19} /> : <MousePointer2 size={19} />}
+          titleId={headingId}
+          title={t(editing ? 'pageEditor.editPage' : 'elementPicker.selectAnElement')}
+          description={t(
+            editing ? 'pageEditor.description' : 'elementPicker.pointClickAndConnectYourExperience',
+          )}
+          closeLabel={t(editing ? 'common.cancel' : 'elementPicker.closeElementPicker')}
+          onClose={requestClose}
+        />
+        <WebsitePreviewToolbar
+          url={url || '/demo-site.html'}
+          device={device}
+          onDeviceChange={setDevice}
+          onReload={() => {
+            setStatus('loading');
+            setReload((value) => value + 1);
+          }}
+          actions={
+            editing && (
+              <>
                 <button
                   type="button"
                   className="dxp-button"
@@ -616,10 +581,11 @@ export function ElementPicker({
                   <Redo2 size={14} aria-hidden="true" />
                   {t('common.redo')}
                 </button>
-              </div>
-            </>
-          )}
-        </div>
+              </>
+            )
+          }
+        />
+        {guidance}
         <div className={editing ? 'dxp-website-editor-layout' : 'dxp-picker-standard-layout'}>
           <div
             className={`dxp-editor-viewport dxp-picker-frame-wrap${device === 'mobile' ? ' dxp-picker-frame-wrap-mobile' : ''}`}

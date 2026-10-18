@@ -115,11 +115,6 @@
   margin-bottom: 22px;
 }
 
-.dxp-page-editor-history {
-  display: flex;
-  flex-shrink: 0;
-  gap: 6px;
-}
 .dxp-page-editor-selection > span {
   font-size: 10px;
   text-transform: uppercase;
@@ -159,11 +154,4 @@
   font-weight: 600;
   overflow-wrap: anywhere;
   margin-bottom: 4px;
-}
-
-@media (max-width: 700px) {
-  .dxp-picker-toolbar:has(.dxp-page-editor-history) {
-    flex-wrap: wrap;
-    gap: 8px;
-  }
 }

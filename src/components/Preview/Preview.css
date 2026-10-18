@@ -1,12 +1,6 @@
 .dxp-preview {
   width: 1200px;
 }
-.dxp-preview-header-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
-}
 .dxp-modal-backdrop.dxp-preview-backdrop-fullscreen {
   padding: 0;
 }
@@ -18,28 +12,6 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-}
-.dxp-preview-bar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 9px;
-  padding: 12px 20px;
-  border-top: 1px solid var(--dxp-line);
-  border-bottom: 1px solid var(--dxp-line);
-  background: var(--dxp-canvas);
-}
-.dxp-preview-url {
-  min-width: 140px;
-  flex: 1;
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  font-size: 11px;
-  color: var(--dxp-muted);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 .dxp-preview-search {
   flex: 1 1 250px;
@@ -63,33 +35,6 @@
   color: var(--dxp-text);
   padding: 8px 10px;
   font: inherit;
-}
-.dxp-preview-device-toggle {
-  display: flex;
-  flex-shrink: 0;
-  min-width: 0;
-  gap: 4px;
-  margin: 0;
-  padding: 3px;
-  border: 1px solid var(--dxp-line);
-  border-radius: 8px;
-}
-.dxp-preview-device-toggle button {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  margin: 0;
-  padding: 6px 9px;
-  border: 0;
-  border-radius: 5px;
-  background: none;
-  color: var(--dxp-muted);
-  font-size: 11px;
-}
-.dxp-preview-device-toggle button[aria-pressed='true'] {
-  background: var(--dxp-surface);
-  color: var(--dxp-primary-color);
-  box-shadow: 0 1px 3px var(--dxp-shadow-strong);
 }
 .dxp-preview-body {
   display: flex;
@@ -125,8 +70,8 @@
     0 0 0 1px var(--dxp-line),
     0 8px 24px var(--dxp-shadow-strong);
 }
-.dxp-preview-backdrop-fullscreen .dxp-modal-header,
-.dxp-preview-backdrop-fullscreen .dxp-preview-bar {
+.dxp-preview-backdrop-fullscreen .dxp-website-preview-header,
+.dxp-preview-backdrop-fullscreen .dxp-website-preview-toolbar {
   flex-shrink: 0;
 }
 .dxp-preview-backdrop-fullscreen .dxp-preview-body {
@@ -275,10 +220,5 @@
 @media (max-width: 800px) {
   .dxp-log-item {
     margin-bottom: 8px;
-  }
-}
-@media (max-width: 800px) {
-  .dxp-preview-bar {
-    padding: 10px 13px;
   }
 }

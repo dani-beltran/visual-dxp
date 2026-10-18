@@ -5,12 +5,9 @@ import {
   CircleAlert,
   ExternalLink,
   LoaderCircle,
-  Monitor,
   Play,
   RotateCcw,
-  Smartphone,
   Square,
-  X,
 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
@@ -21,6 +18,7 @@ import { usePreviewTransport } from '../../lib/previewTransport';
 import type { PreviewExecutionEvent, RunLog, Workflow } from '../../lib/types';
 import { useDialogFocus } from '../../lib/useDialogFocus';
 import { IsolatedPreview } from '../IsolatedPreview/IsolatedPreview';
+import { WebsitePreviewHeader, WebsitePreviewToolbar } from '../WebsiteEditor/WebsiteEditor';
 import './Preview.css';
 
 function websiteSearch(url: string) {
@@ -97,27 +95,44 @@ export function Preview({
         aria-label={t('preview.previewWorkflow')}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="dxp-modal-header">
-          <div>
-            <span className="dxp-eyebrow">{t('preview.testYourExperience')}</span>
-            <h2>{t('preview.seeYourJourneyInAction')}</h2>
-          </div>
-          <div className="dxp-preview-header-actions">
-            <button
-              type="button"
-              className="dxp-icon-button"
-              onClick={onClose}
-              aria-label={t('preview.closePreview')}
-            >
-              <X size={20} />
-            </button>
-          </div>
-        </div>
-        <div className="dxp-preview-bar">
-          <span className="dxp-preview-url">
-            <span className="dxp-status-dot" />
-            {workflow.websiteUrl}
-          </span>
+        <WebsitePreviewHeader
+          icon={<Play size={19} aria-hidden="true" />}
+          title={t('preview.previewWorkflow')}
+          description={t('preview.seeYourJourneyInAction')}
+          closeLabel={t('preview.closePreview')}
+          onClose={onClose}
+        />
+        <WebsitePreviewToolbar
+          url={workflow.websiteUrl}
+          device={device}
+          onDeviceChange={setDevice}
+          onReload={() => {
+            stop();
+            setReady(false);
+            setLogs([]);
+            setError('');
+            setKey((x) => x + 1);
+          }}
+          actions={
+            <>
+              {running && (
+                <button type="button" className="dxp-button" onClick={stop}>
+                  <Square size={14} /> {t('preview.stopWorkflow')}
+                </button>
+              )}
+              <button
+                type="button"
+                className="dxp-button dxp-button-primary"
+                data-tutorial="run"
+                onClick={run}
+                disabled={!ready}
+              >
+                {running ? <RotateCcw size={14} /> : <Play size={14} />}{' '}
+                {running ? t('preview.restartWorkflow') : t('preview.runWorkflow')}
+              </button>
+            </>
+          }
+        >
           <div className="dxp-preview-search">
             <label htmlFor={searchParamsId}>{t('preview.searchParams')}</label>
             <input
@@ -135,57 +150,7 @@ export function Preview({
               }}
             />
           </div>
-          <fieldset
-            className="dxp-preview-device-toggle"
-            aria-label={t('pageEditor.previewDevice')}
-          >
-            {(['desktop', 'mobile'] as const).map((option) => {
-              const Icon = option === 'desktop' ? Monitor : Smartphone;
-              return (
-                <button
-                  key={option}
-                  type="button"
-                  aria-pressed={device === option}
-                  onClick={() => setDevice(option)}
-                >
-                  <Icon size={14} aria-hidden="true" />
-                  {t(option === 'desktop' ? 'nodeInspector.desktop' : 'nodeInspector.mobile')}
-                </button>
-              );
-            })}
-          </fieldset>
-          <button
-            type="button"
-            className="dxp-button"
-            onClick={() => {
-              stop();
-              setReady(false);
-              setLogs([]);
-              setError('');
-              setKey((x) => x + 1);
-            }}
-            title={t('preview.reloadWebsite')}
-            aria-label={t('preview.reloadWebsite')}
-          >
-            <RotateCcw size={14} />
-          </button>
-          <span className="dxp-toolbar-divider" aria-hidden="true" />
-          {running && (
-            <button type="button" className="dxp-button" onClick={stop}>
-              <Square size={14} /> {t('preview.stopWorkflow')}
-            </button>
-          )}
-          <button
-            type="button"
-            className="dxp-button dxp-button-primary"
-            data-tutorial="run"
-            onClick={run}
-            disabled={!ready}
-          >
-            {running ? <RotateCcw size={14} /> : <Play size={14} />}{' '}
-            {running ? t('preview.restartWorkflow') : t('preview.runWorkflow')}
-          </button>
-        </div>
+        </WebsitePreviewToolbar>
         {guidance}
         <div className="dxp-preview-body">
           <div

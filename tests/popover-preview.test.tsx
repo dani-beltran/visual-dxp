@@ -635,21 +635,21 @@ it.each(['parent', 'website', 'button'] as const)(
 it('uses the page editor heading layout and places refresh and divider beside device controls', async () => {
   await renderPreview();
   expect(
-    host.querySelector('.dxp-popover-preview-heading .dxp-editor-title-icon .lucide-panel-top'),
+    host.querySelector('.dxp-website-preview-heading .dxp-editor-title-icon .lucide-panel-top'),
   ).not.toBeNull();
-  expect(host.querySelector('.dxp-popover-preview-heading h2')?.textContent).toBe('Edit popover');
-  expect(host.querySelector('.dxp-popover-preview-heading p')?.textContent).toBe(
+  expect(host.querySelector('.dxp-website-preview-heading h2')?.textContent).toBe('Edit popover');
+  expect(host.querySelector('.dxp-website-preview-heading p')?.textContent).toBe(
     'Customize your popover’s content, appearance, and position, and preview it on your website.',
   );
-  expect(host.querySelector('.dxp-popover-preview-header')?.textContent).not.toContain('Restart');
+  expect(host.querySelector('.dxp-website-preview-header')?.textContent).not.toContain('Restart');
   const toggle = host.querySelector('.dxp-editor-device-toggle');
   expect(toggle?.nextElementSibling?.getAttribute('aria-label')).toBe('Reload website');
-  expect(toggle?.parentElement?.nextElementSibling?.classList.contains('dxp-toolbar-divider')).toBe(
-    true,
-  );
+  expect(
+    toggle?.parentElement?.nextElementSibling?.classList.contains('dxp-website-preview-divider'),
+  ).toBe(true);
   expect(
     toggle?.parentElement?.nextElementSibling?.nextElementSibling?.classList.contains(
-      'dxp-popover-editor-history',
+      'dxp-website-preview-actions',
     ),
   ).toBe(true);
 });
