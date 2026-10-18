@@ -43,6 +43,8 @@ export { BuilderI18nProvider } from './lib/i18nContext';
 export { englishMessages } from './lib/messages';
 export { installPickerBridge } from './lib/pickerBridge';
 export { installPreviewBridge } from './lib/previewBridge';
+export type { PreviewTransport } from './lib/previewTransport';
+export { createProxyPreviewTransport, PreviewTransportProvider } from './lib/previewTransport';
 export type { RuntimeOptions, WorkflowRuntime } from './lib/runtime';
 export { createRuntime, executeWorkflow } from './lib/runtime';
 export { isWorkflow } from './lib/serialization';

@@ -740,6 +740,13 @@ export const spanishMessages = {
   'websiteConnectionCheck.couldnTConnectToYourWebsiteCompleteTheSetupBelow':
     'No se ha podido conectar a tu sitio web. Completa la configuración de abajo.',
   'websiteSetup.connectYourWebsite': 'Conecta tu sitio web',
+  'websiteSetup.proxyTitle': 'Vista previa del sitio público',
+  'websiteSetup.proxyInstructions':
+    'El proxy conecta las páginas públicas y añade el puente de selección automáticamente. Recarga para reconectar si la sesión ha caducado.',
+  'websiteSetup.proxyLimitations':
+    'Las vistas previas públicas no tienen sesión de acceso. Las cookies, el almacenamiento, los formularios y algunas funciones dinámicas no están disponibles.',
+  'isolatedPreview.proxyUnavailable':
+    'El sitio a través del proxy no se ha conectado. Recarga para renovar la sesión. Algunos scripts pueden no funcionar en una vista previa pública aislada.',
   'websiteSetup.copied': 'Copiado',
   'websiteSetup.copyScript': 'Copiar script',
   'isolatedPreview.bridgeUnavailable':

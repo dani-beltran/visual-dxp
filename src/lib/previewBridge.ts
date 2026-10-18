@@ -7,6 +7,7 @@ export const PREVIEW_PROTOCOL = 'visual-dxp:preview';
 export function installPreviewBridge(
   parentOrigin: string,
   runtimeFactory: typeof createRuntime = createRuntime,
+  baseUrl?: string,
 ) {
   if (
     window.parent === window ||
@@ -44,6 +45,7 @@ export function installPreviewBridge(
       runtime = runtimeFactory(data.workflow as Workflow, {
         document,
         window,
+        baseUrl,
         analyticsMode: 'simulate',
         searchParams: typeof data.searchParams === 'string' ? data.searchParams : undefined,
         onLog: (log) => send('log', { log, runId: data.runId }),

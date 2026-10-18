@@ -167,7 +167,7 @@ export function createExecution(
             if (!config.url?.trim()) throw new Error('Enter a request URL.');
             const requestUrl = dataTools.requestTemplate(config.url, input);
             if (!requestUrl.trim()) throw new Error('Enter a request URL.');
-            const url = new URL(requestUrl, doc.baseURI);
+            const url = new URL(requestUrl, context.baseUrl);
             if (!['http:', 'https:'].includes(url.protocol))
               throw new Error('Requests require an HTTP or HTTPS URL.');
             const headers = config.headers?.trim()

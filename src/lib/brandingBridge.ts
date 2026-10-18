@@ -71,7 +71,7 @@ export function extractBrandingProfile(doc: Document, win: Window): BrandingProf
   };
 }
 
-export function installBrandingBridge(parentOrigin: string) {
+export function installBrandingBridge(parentOrigin: string, targetUrl?: string) {
   if (
     window.parent === window ||
     new URL(parentOrigin).origin !== parentOrigin ||
@@ -120,6 +120,7 @@ export function installBrandingBridge(parentOrigin: string) {
         ]);
         if (request.cancelled) return;
         const profile = extractBrandingProfile(document, window);
+        if (targetUrl) profile.websiteUrl = targetUrl;
         window.parent.postMessage(
           { protocol: BRANDING_PROTOCOL, type: 'profile', channel: request.channel, profile },
           parentOrigin,

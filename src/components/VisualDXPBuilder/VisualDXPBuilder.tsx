@@ -87,6 +87,7 @@ import { getNodeDataFlow } from '../../lib/nodeData';
 import { NoteEditingContext } from '../../lib/noteEditing';
 import { NoteSelectionProvider, useNoteSelection } from '../../lib/noteSelection';
 import { normalizeWebsiteUrl } from '../../lib/picker';
+import { type PreviewTransport, PreviewTransportProvider } from '../../lib/previewTransport';
 import { isWorkflow } from '../../lib/serialization';
 import {
   normalizeWebsiteInput,
@@ -158,6 +159,8 @@ export interface VisualDXPBuilderApi {
   flushActivity: () => void;
 }
 export interface VisualDXPBuilderProps {
+  /** Host-supplied proxy transport for external picker, preview, and connection iframes. */
+  previewTransport?: PreviewTransport;
   /** Host-supplied translations; omitted messages fall back to English. */
   i18n?: BuilderI18n;
   initialWorkflow?: Workflow;
@@ -194,11 +197,13 @@ function copyWorkflow(w: Workflow): Workflow {
 export function VisualDXPBuilder(props: VisualDXPBuilderProps) {
   return (
     <BuilderI18nProvider i18n={props.i18n}>
-      <ReactFlowProvider>
-        <NoteSelectionProvider>
-          <Builder {...props} />
-        </NoteSelectionProvider>
-      </ReactFlowProvider>
+      <PreviewTransportProvider transport={props.previewTransport}>
+        <ReactFlowProvider>
+          <NoteSelectionProvider>
+            <Builder {...props} />
+          </NoteSelectionProvider>
+        </ReactFlowProvider>
+      </PreviewTransportProvider>
     </BuilderI18nProvider>
   );
 }
