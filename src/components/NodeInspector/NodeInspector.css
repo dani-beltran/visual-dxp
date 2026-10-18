@@ -1,3 +1,13 @@
+.dxp-node-inspector-content {
+  display: flex;
+  flex-direction: column;
+}
+.dxp-node-inspector-content > * {
+  flex-shrink: 0;
+}
+.dxp-inspector-outputs {
+  margin-top: auto;
+}
 .dxp-inspector-loop-outputs .dxp-loop-body-icon,
 .dxp-inspector-loop-outputs .dxp-loop-done-icon {
   color: var(--dxp-muted);

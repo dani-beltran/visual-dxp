@@ -235,7 +235,7 @@ export function NodeInspector({
           <X size={17} />
         </button>
       </header>
-      <div className="dxp-inspector-content">
+      <div className="dxp-inspector-content dxp-node-inspector-content">
         <div className="dxp-inspector-intro">
           <div className={`dxp-inspector-node-icon dxp-inspector-node-icon-${metadata.color}`}>
             <Icon size={21} strokeWidth={1.8} />
@@ -1196,7 +1196,7 @@ export function NodeInspector({
             </div>
           </>
         )}
-        <section aria-labelledby={id('outputs-heading')}>
+        <section className="dxp-inspector-outputs" aria-labelledby={id('outputs-heading')}>
           <h3 id={id('outputs-heading')} className="dxp-inspector-section-label">
             <ArrowRight size={14} aria-hidden="true" /> {t('nodeInspector.outputs')}
           </h3>
