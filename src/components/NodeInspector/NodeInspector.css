@@ -1,12 +1,12 @@
-.dxp-inspector-outputs {
+.dxp-node-inspector-content {
+  display: flex;
+  flex-direction: column;
+}
+.dxp-node-inspector-content > * {
   flex-shrink: 0;
-  padding: 0 20px 15px;
 }
-.dxp-inspector-outputs .dxp-inspector-section-label {
-  margin-top: 0;
-}
-.dxp-inspector-outputs .dxp-inspector-data-output {
-  margin-bottom: 9px;
+.dxp-inspector-outputs {
+  margin-top: auto;
 }
 .dxp-inspector-loop-outputs .dxp-loop-body-icon,
 .dxp-inspector-loop-outputs .dxp-loop-done-icon {
