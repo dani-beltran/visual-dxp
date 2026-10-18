@@ -1,3 +1,13 @@
+.dxp-inspector-outputs {
+  flex-shrink: 0;
+  padding: 0 20px 15px;
+}
+.dxp-inspector-outputs .dxp-inspector-section-label {
+  margin-top: 0;
+}
+.dxp-inspector-outputs .dxp-inspector-data-output {
+  margin-bottom: 9px;
+}
 .dxp-inspector-loop-outputs .dxp-loop-body-icon,
 .dxp-inspector-loop-outputs .dxp-loop-done-icon {
   color: var(--dxp-muted);

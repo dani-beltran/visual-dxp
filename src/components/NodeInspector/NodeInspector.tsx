@@ -1196,89 +1196,89 @@ export function NodeInspector({
             </div>
           </>
         )}
-        <section aria-labelledby={id('outputs-heading')}>
-          <h3 id={id('outputs-heading')} className="dxp-inspector-section-label">
-            <ArrowRight size={14} aria-hidden="true" /> {t('nodeInspector.outputs')}
-          </h3>
-          {node.data.kind === 'experiment' ? (
-            <div className="dxp-inspector-branches">
-              <div>
-                <ArrowRight size={13} />
-                <strong>{t('experiment.variantA')}</strong>
-                <span>{t('experiment.outputA')}</span>
-              </div>
-              <div>
-                <ArrowRight size={13} />
-                <strong>{t('experiment.variantB')}</strong>
-                <span>{t('experiment.outputB')}</span>
-              </div>
-            </div>
-          ) : node.data.kind === 'fork' ? (
-            <div className="dxp-inspector-branches">
-              <div>
-                <b className="dxp-inspector-branch-letter" aria-hidden="true">
-                  T
-                </b>
-                <strong>{t('nodeInspector.true')}</strong>
-                <span>
-                  {forwardsData
-                    ? t('nodeInspector.conditionMatchesWithData')
-                    : t('nodeInspector.conditionMatches')}
-                </span>
-              </div>
-              <div>
-                <b className="dxp-inspector-branch-letter" aria-hidden="true">
-                  F
-                </b>
-                <strong>{t('nodeInspector.false')}</strong>
-                <span>
-                  {forwardsData
-                    ? t('nodeInspector.conditionDoesNotMatchWithData')
-                    : t('nodeInspector.conditionDoesNotMatch')}
-                </span>
-              </div>
-            </div>
-          ) : node.data.kind === 'loop' ? (
-            <>
-              <div className="dxp-inspector-branches dxp-inspector-loop-outputs">
-                <div>
-                  <Repeat2 size={13} className="dxp-loop-body-icon" />
-                  <strong>{t('nodeInspector.body')}</strong>
-                  <span>{t('nodeInspector.runsEachRepetition')}</span>
-                </div>
-                <div>
-                  <ArrowDown size={13} className="dxp-loop-done-icon" />
-                  <strong>{t('nodeInspector.done')}</strong>
-                  <span>{t('nodeInspector.runsAfterTheLastOne')}</span>
-                </div>
-              </div>
-              <p className="dxp-inspector-hint">
-                {t('nodeInspector.connectTheStepsToRepeatToBodyConnectTheNextStepTo')}
-              </p>
-            </>
-          ) : node.data.kind === 'note' || node.data.kind === 'frame' ? (
-            <InfoBox>{t('nodeInspector.annotationOutputs', { kind: itemName })}</InfoBox>
-          ) : (
-            <div
-              className={`dxp-inspector-branches${['http', 'transform'].includes(node.data.kind) ? ' dxp-inspector-data-output' : ''}`}
-            >
-              <div>
-                {['http', 'transform'].includes(node.data.kind) ? (
-                  <i className="dxp-inspector-dot-data" aria-hidden="true" />
-                ) : (
-                  <ArrowRight size={13} aria-hidden="true" />
-                )}
-                <strong>
-                  {['http', 'transform'].includes(node.data.kind)
-                    ? t('nodeInspector.data')
-                    : t('nodeInspector.next')}
-                </strong>
-                <span>{nextOutputDescriptions[node.data.kind]}</span>
-              </div>
-            </div>
-          )}
-        </section>
       </div>
+      <section className="dxp-inspector-outputs" aria-labelledby={id('outputs-heading')}>
+        <h3 id={id('outputs-heading')} className="dxp-inspector-section-label">
+          <ArrowRight size={14} aria-hidden="true" /> {t('nodeInspector.outputs')}
+        </h3>
+        {node.data.kind === 'experiment' ? (
+          <div className="dxp-inspector-branches">
+            <div>
+              <ArrowRight size={13} />
+              <strong>{t('experiment.variantA')}</strong>
+              <span>{t('experiment.outputA')}</span>
+            </div>
+            <div>
+              <ArrowRight size={13} />
+              <strong>{t('experiment.variantB')}</strong>
+              <span>{t('experiment.outputB')}</span>
+            </div>
+          </div>
+        ) : node.data.kind === 'fork' ? (
+          <div className="dxp-inspector-branches">
+            <div>
+              <b className="dxp-inspector-branch-letter" aria-hidden="true">
+                T
+              </b>
+              <strong>{t('nodeInspector.true')}</strong>
+              <span>
+                {forwardsData
+                  ? t('nodeInspector.conditionMatchesWithData')
+                  : t('nodeInspector.conditionMatches')}
+              </span>
+            </div>
+            <div>
+              <b className="dxp-inspector-branch-letter" aria-hidden="true">
+                F
+              </b>
+              <strong>{t('nodeInspector.false')}</strong>
+              <span>
+                {forwardsData
+                  ? t('nodeInspector.conditionDoesNotMatchWithData')
+                  : t('nodeInspector.conditionDoesNotMatch')}
+              </span>
+            </div>
+          </div>
+        ) : node.data.kind === 'loop' ? (
+          <>
+            <div className="dxp-inspector-branches dxp-inspector-loop-outputs">
+              <div>
+                <Repeat2 size={13} className="dxp-loop-body-icon" />
+                <strong>{t('nodeInspector.body')}</strong>
+                <span>{t('nodeInspector.runsEachRepetition')}</span>
+              </div>
+              <div>
+                <ArrowDown size={13} className="dxp-loop-done-icon" />
+                <strong>{t('nodeInspector.done')}</strong>
+                <span>{t('nodeInspector.runsAfterTheLastOne')}</span>
+              </div>
+            </div>
+            <p className="dxp-inspector-hint">
+              {t('nodeInspector.connectTheStepsToRepeatToBodyConnectTheNextStepTo')}
+            </p>
+          </>
+        ) : node.data.kind === 'note' || node.data.kind === 'frame' ? (
+          <InfoBox>{t('nodeInspector.annotationOutputs', { kind: itemName })}</InfoBox>
+        ) : (
+          <div
+            className={`dxp-inspector-branches${['http', 'transform'].includes(node.data.kind) ? ' dxp-inspector-data-output' : ''}`}
+          >
+            <div>
+              {['http', 'transform'].includes(node.data.kind) ? (
+                <i className="dxp-inspector-dot-data" aria-hidden="true" />
+              ) : (
+                <ArrowRight size={13} aria-hidden="true" />
+              )}
+              <strong>
+                {['http', 'transform'].includes(node.data.kind)
+                  ? t('nodeInspector.data')
+                  : t('nodeInspector.next')}
+              </strong>
+              <span>{nextOutputDescriptions[node.data.kind]}</span>
+            </div>
+          </div>
+        )}
+      </section>
       <footer className="dxp-inspector-footer">
         <button
           type="button"
