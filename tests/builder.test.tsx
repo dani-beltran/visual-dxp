@@ -13,6 +13,7 @@ import { App } from '../src/components/App/App';
 import { BRANDING_PROTOCOL, readBrandingProfile } from '../src/lib/branding';
 import { createNode } from '../src/lib/catalog';
 import { brandingProfile } from './helpers/branding';
+import { mockDemoFetch } from './helpers/preview';
 
 let host: HTMLDivElement;
 let root: Root;
@@ -74,6 +75,43 @@ async function click(target: HTMLElement) {
 }
 
 describe('builder and host boundary', () => {
+  it('saves fullscreen popover edits as one workflow change and reopens saved settings', async () => {
+    mockDemoFetch();
+    const workflow = initialWorkflow();
+    const node = createNode('popover');
+    workflow.nodes = [node];
+    let latest = workflow;
+    await act(async () =>
+      root.render(
+        <VisualDXPBuilder
+          initialWorkflow={workflow}
+          onChange={(value) => {
+            latest = value;
+          }}
+        />,
+      ),
+    );
+    await click(element(`[data-id="${node.id}"]`));
+    await click(button('Edit popover'));
+    const width = element<HTMLInputElement>('.dxp-popover-editor-panel input[type="number"]');
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set?.call(width, '640');
+      width.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    expect(latest.nodes[0].data.config.width).toBe(node.data.config.width);
+    await click(button('Save changes'));
+    expect(host.querySelector('.dxp-popover-preview')).toBeNull();
+    expect(latest.nodes[0].data.config.width).toBe(640);
+    await click(button('Edit popover'));
+    expect(element<HTMLInputElement>('.dxp-popover-editor-panel input[type="number"]').value).toBe(
+      '640',
+    );
+    await click(element('.dxp-popover-preview-header button[aria-label="Cancel"]'));
+    await click(button('Undo'));
+    expect(latest.nodes[0].data.config).toEqual(node.data.config);
+    expect(workflow.nodes[0]).toEqual(node);
+  });
+
   it('offers node actions for the right-clicked node and suppresses other canvas menus', async () => {
     const workflow = initialWorkflow();
     workflow.nodes = ['first', 'second'].map((id, index) => ({

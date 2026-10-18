@@ -57,28 +57,6 @@
   align-items: center;
   gap: 13px;
 }
-.dxp-picker-title-icon {
-  display: grid;
-  place-items: center;
-  flex-shrink: 0;
-  width: 40px;
-  height: 40px;
-  border: 1px solid var(--dxp-line);
-  border-radius: 11px;
-  background: var(--dxp-surface-muted);
-  color: var(--dxp-primary-color);
-}
-.dxp-picker-header h2 {
-  margin: 0 0 5px;
-  font-size: 17px;
-  font-weight: 600;
-  letter-spacing: -0.4px;
-}
-.dxp-picker-header p {
-  margin: 0;
-  font-size: 12px;
-  color: var(--dxp-muted);
-}
 .dxp-picker-header-actions {
   display: flex;
   align-items: center;
@@ -183,7 +161,8 @@
 .dxp-picker-hint code {
   font-size: 11px;
 }
-.dxp-picker-toolbar button {
+.dxp-picker-toolbar
+  button:where(:not(.dxp-editor-device-toggle button, .dxp-page-editor-history button)) {
   margin-left: auto;
   display: flex;
   align-items: center;
@@ -194,6 +173,24 @@
   padding: 0;
   color: var(--dxp-muted);
   font-size: 11px;
+}
+.dxp-page-editor-target {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+}
+.dxp-page-editor-target .dxp-status-dot {
+  flex-shrink: 0;
+}
+.dxp-picker-toolbar .dxp-page-editor-refresh {
+  margin-left: 0;
+  padding: 7px 10px;
+  border: 1px solid var(--dxp-line);
+  border-radius: 6px;
+  background: var(--dxp-surface);
+  color: var(--dxp-text-secondary);
 }
 .dxp-picker-help {
   padding: 15px 25px;
@@ -240,27 +237,6 @@
   width: 100%;
   height: 100%;
   border: 0;
-}
-.dxp-picker-device-toggle {
-  display: flex;
-  flex-shrink: 0;
-  min-width: 0;
-  gap: 4px;
-  margin: 0;
-  margin-inline-start: auto;
-  padding: 3px;
-  border: 1px solid var(--dxp-line);
-  border-radius: 8px;
-}
-.dxp-picker-device-toggle button {
-  margin: 0;
-  padding: 6px 9px;
-  border-radius: 5px;
-}
-.dxp-picker-device-toggle button[aria-pressed='true'] {
-  background: var(--dxp-surface);
-  color: var(--dxp-primary-color);
-  box-shadow: 0 1px 3px var(--dxp-shadow-strong);
 }
 .dxp-picker-frame-wrap-mobile > .dxp-picker-frame {
   position: absolute;

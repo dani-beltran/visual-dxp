@@ -333,12 +333,16 @@ it('keeps page undo and redo in the toolbar and handles shortcuts in the panel a
     ),
   );
   const { doc, win } = await website(true);
-  const toggle = host.querySelector('.dxp-picker-device-toggle')!;
-  expect(toggle.nextElementSibling?.className).toBe('dxp-toolbar-divider');
-  expect(toggle.nextElementSibling?.nextElementSibling?.className).toBe('dxp-page-editor-history');
-  expect(toggle.nextElementSibling?.nextElementSibling?.textContent).toBe('UndoRedo');
-  expect(host.querySelector('.dxp-page-editor-footer button')?.textContent).toBe('Cancel');
-  expect(host.querySelector('.dxp-page-editor-footer .dxp-footer-shortcut')?.textContent).toBe(
+  const toggle = host.querySelector('.dxp-editor-device-toggle')!;
+  const refresh = toggle.nextElementSibling;
+  expect(refresh?.classList.contains('dxp-page-editor-refresh')).toBe(true);
+  expect(refresh?.nextElementSibling?.className).toBe('dxp-toolbar-divider');
+  expect(refresh?.nextElementSibling?.nextElementSibling?.className).toBe(
+    'dxp-page-editor-history',
+  );
+  expect(refresh?.nextElementSibling?.nextElementSibling?.textContent).toBe('UndoRedo');
+  expect(host.querySelector('.dxp-website-editor-footer button')?.textContent).toBe('Cancel');
+  expect(host.querySelector('.dxp-website-editor-footer .dxp-footer-shortcut')?.textContent).toBe(
     ' Z to undo',
   );
   expect(button('Undo').disabled).toBe(true);

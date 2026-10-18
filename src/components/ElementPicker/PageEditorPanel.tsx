@@ -139,7 +139,10 @@ export function PageEditorPanel({
     }
   }
   return (
-    <aside className="dxp-page-editor-panel" aria-label={t('pageEditor.selectedElement')}>
+    <aside
+      className="dxp-page-editor-panel dxp-website-editor-panel"
+      aria-label={t('pageEditor.selectedElement')}
+    >
       {selected ? (
         <>
           <div className="dxp-page-editor-selection">

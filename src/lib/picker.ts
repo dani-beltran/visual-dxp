@@ -40,7 +40,10 @@ export function escapeCss(value: string): string {
     .join('');
 }
 
-export function getElementSelector(element: Element): string {
+export function getElementSelector(
+  element: Element,
+  escapeIdentifier: typeof escapeCss = escapeCss,
+): string {
   const doc = element.ownerDocument;
   const unique = (selector: string) => {
     try {
@@ -54,7 +57,7 @@ export function getElementSelector(element: Element): string {
   while (current) {
     const tag = current.tagName.toLowerCase();
     if (current.id) {
-      const id = `#${escapeCss(current.id)}`;
+      const id = `#${escapeIdentifier(current.id)}`;
       if (unique(id)) {
         parts.unshift(id);
         break;
@@ -107,6 +110,7 @@ export function attachElementPicker(
   doc: Document,
   onHover: (element: PickedElement | null) => void,
   onSelect: (element: PickedElement) => void,
+  selectorFor: typeof getElementSelector = getElementSelector,
 ): PickerSession {
   const view = doc.defaultView;
   if (!view || !doc.documentElement)
@@ -134,7 +138,7 @@ export function attachElementPicker(
   let hovered: Element | null = null;
   let selected: Element | null = null;
   const detail = (element: Element): PickedElement => ({
-    selector: getElementSelector(element),
+    selector: selectorFor(element),
     tagName: element.tagName.toLowerCase(),
     text: (element.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 100),
   });
@@ -155,7 +159,7 @@ export function attachElementPicker(
       width: `${rect.width}px`,
       height: `${rect.height}px`,
     });
-    outline.label.textContent = `${isSelected ? 'Selected · ' : ''}${getElementSelector(element)}`;
+    outline.label.textContent = `${isSelected ? 'Selected · ' : ''}${selectorFor(element)}`;
     outline.label.style.bottom = rect.top < 30 ? 'auto' : '100%';
     outline.label.style.top = rect.top < 30 ? '100%' : 'auto';
   };

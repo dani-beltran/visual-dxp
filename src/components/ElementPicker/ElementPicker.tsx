@@ -8,11 +8,10 @@ import {
   Info,
   Maximize2,
   Minimize2,
-  Monitor,
   MousePointer2,
+  Paintbrush,
   Redo2,
   RefreshCw,
-  Smartphone,
   Undo2,
   X,
 } from 'lucide-react';
@@ -21,6 +20,7 @@ import { useBuilderI18n } from '../../lib/i18nContext';
 import type { PickedElement, PickerSession } from '../../lib/picker';
 import { normalizeWebsiteUrl, PICKER_PROTOCOL } from '../../lib/picker';
 import { type PreviewTransport, usePreviewUrl } from '../../lib/previewTransport';
+import { EditorDiscardDialog, PreviewDeviceToggle } from '../WebsiteEditor/WebsiteEditor';
 import { WebsiteSetup } from '../WebsiteSetup/WebsiteSetup';
 import './ElementPicker.css';
 import { dataTools } from '../../lib/data';
@@ -93,8 +93,6 @@ export function ElementPicker({
   requestCloseRef.current = requestClose;
 
   const headingId = useId();
-  const discardHeadingId = useId();
-  const discardDialogRef = useRef<HTMLDialogElement>(null);
   const selectorId = useId();
   const frameRef = useRef<HTMLIFrameElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -291,19 +289,6 @@ export function ElementPicker({
     return () => prior?.focus();
   }, []);
 
-  useEffect(() => {
-    if (!discard) return;
-    const dialog = discardDialogRef.current;
-    if (!dialog) return;
-    const prior = document.activeElement as HTMLElement | null;
-    dialog.showModal?.();
-    dialog.querySelector<HTMLButtonElement>('button')?.focus();
-    return () => {
-      dialog.close?.();
-      prior?.focus();
-    };
-  }, [discard]);
-
   // biome-ignore lint/correctness/useExhaustiveDependencies: Reload replaces the iframe even when its URL stays unchanged, so its picker session must reconnect.
   useEffect(() => {
     if (unavailable) return;
@@ -423,7 +408,7 @@ export function ElementPicker({
         editChange(data.change);
       if (editing && data.type === 'changes-result')
         setEditorError(data.valid ? '' : t('pageEditor.previewError'));
-      if (editing && data.type === 'request-close') requestCloseRef.current();
+      if (data.type === 'request-close') requestCloseRef.current();
       if (editing && !discardRef.current && data.type === 'request-undo') undo();
       if (editing && !discardRef.current && data.type === 'request-redo') redo();
       if (data.type === 'selector-result')
@@ -571,10 +556,10 @@ export function ElementPicker({
         }}
       >
         <header className="dxp-picker-header">
-          <div className="dxp-picker-title-icon">
-            <MousePointer2 size={19} />
+          <div className="dxp-editor-title-icon">
+            {editing ? <Paintbrush size={19} /> : <MousePointer2 size={19} />}
           </div>
-          <div>
+          <div className="dxp-editor-heading">
             <h2 id={headingId}>
               {t(editing ? 'pageEditor.editPage' : 'elementPicker.selectAnElement')}
             </h2>
@@ -609,40 +594,51 @@ export function ElementPicker({
           </div>
         </header>
         {guidance}
-        <div className="dxp-picker-address">
-          <Globe2 size={16} aria-hidden="true" />
-          <span className="dxp-picker-url" title={url || '/demo-site.html'}>
-            {url || '/demo-site.html'}
-          </span>
-          <button
-            type="button"
-            className="dxp-picker-load"
-            title={t('preview.reloadWebsite')}
-            aria-label={t('preview.reloadWebsite')}
-            onClick={() => {
-              setStatus('loading');
-              setReload((value) => value + 1);
-            }}
-          >
-            <RefreshCw size={14} />
-          </button>
-        </div>
+        {!editing && (
+          <div className="dxp-picker-address">
+            <Globe2 size={16} aria-hidden="true" />
+            <span className="dxp-picker-url" title={url || '/demo-site.html'}>
+              {url || '/demo-site.html'}
+            </span>
+            <button
+              type="button"
+              className="dxp-picker-load"
+              title={t('preview.reloadWebsite')}
+              aria-label={t('preview.reloadWebsite')}
+              onClick={() => {
+                setStatus('loading');
+                setReload((value) => value + 1);
+              }}
+            >
+              <RefreshCw size={14} />
+            </button>
+          </div>
+        )}
         <div className="dxp-picker-toolbar">
-          <span className={`dxp-picker-status dxp-picker-status-${status}`}>
-            <i />
-            {status === 'connected' || status === 'bridge'
-              ? t(editing ? 'pageEditor.editMode' : 'elementPicker.selectionModeIsOn')
-              : status === 'loading'
-                ? t('elementPicker.connectingToWebsite')
-                : t('elementPicker.connectionRequired')}
-          </span>
-          <span className="dxp-picker-hint">
-            {hovered ? (
-              <code>{hovered.selector}</code>
-            ) : (
-              t('elementPicker.hoverToInspectClickToSelect')
-            )}
-          </span>
+          {editing ? (
+            <span className="dxp-page-editor-target" title={url || '/demo-site.html'}>
+              <span className="dxp-status-dot" aria-hidden="true" />
+              <span className="dxp-picker-url">{url || '/demo-site.html'}</span>
+            </span>
+          ) : (
+            <>
+              <span className={`dxp-picker-status dxp-picker-status-${status}`}>
+                <i />
+                {status === 'connected' || status === 'bridge'
+                  ? t('elementPicker.selectionModeIsOn')
+                  : status === 'loading'
+                    ? t('elementPicker.connectingToWebsite')
+                    : t('elementPicker.connectionRequired')}
+              </span>
+              <span className="dxp-picker-hint">
+                {hovered ? (
+                  <code>{hovered.selector}</code>
+                ) : (
+                  t('elementPicker.hoverToInspectClickToSelect')
+                )}
+              </span>
+            </>
+          )}
           {!editing && !unavailable && (
             <button type="button" onClick={() => setShowHelp(!showHelp)} aria-expanded={showHelp}>
               <Info size={14} /> {t('elementPicker.websiteSetup')}
@@ -650,29 +646,24 @@ export function ElementPicker({
           )}
           {editing && (
             <>
-              <fieldset
-                className="dxp-picker-device-toggle"
-                aria-label={t('pageEditor.previewDevice')}
+              <PreviewDeviceToggle device={device} onChange={setDevice} />
+              <button
+                type="button"
+                className="dxp-button dxp-page-editor-refresh"
+                title={t('preview.reloadWebsite')}
+                aria-label={t('preview.reloadWebsite')}
+                onClick={() => {
+                  setStatus('loading');
+                  setReload((value) => value + 1);
+                }}
               >
-                {(['desktop', 'mobile'] as const).map((option) => {
-                  const Icon = option === 'desktop' ? Monitor : Smartphone;
-                  return (
-                    <button
-                      key={option}
-                      type="button"
-                      aria-pressed={device === option}
-                      onClick={() => setDevice(option)}
-                    >
-                      <Icon size={14} aria-hidden="true" />
-                      {t(option === 'desktop' ? 'nodeInspector.desktop' : 'nodeInspector.mobile')}
-                    </button>
-                  );
-                })}
-              </fieldset>
+                <RefreshCw size={14} />
+              </button>
               <span className="dxp-toolbar-divider" aria-hidden="true" />
               <div className="dxp-page-editor-history">
                 <button
                   type="button"
+                  className="dxp-button"
                   onClick={undo}
                   disabled={!history.past.length}
                   title={t('builder.undoZ')}
@@ -683,6 +674,7 @@ export function ElementPicker({
                 </button>
                 <button
                   type="button"
+                  className="dxp-button"
                   onClick={redo}
                   disabled={!history.future.length}
                   title={t('builder.redoZ')}
@@ -696,9 +688,9 @@ export function ElementPicker({
           )}
         </div>
         {!editing && showHelp && !unavailable && setup}
-        <div className={editing ? 'dxp-page-editor-layout' : 'dxp-picker-standard-layout'}>
+        <div className={editing ? 'dxp-website-editor-layout' : 'dxp-picker-standard-layout'}>
           <div
-            className={`dxp-picker-frame-wrap${editing && device === 'mobile' ? ' dxp-picker-frame-wrap-mobile' : ''}`}
+            className={`dxp-editor-viewport dxp-picker-frame-wrap${editing && device === 'mobile' ? ' dxp-picker-frame-wrap-mobile' : ''}`}
           >
             {unavailable ? (
               setup
@@ -756,7 +748,7 @@ export function ElementPicker({
                 {draftError || editorError}
               </div>
             )}
-            <footer className="dxp-page-editor-footer">
+            <footer className="dxp-website-editor-footer">
               <span>
                 {t('pageEditor.changeCount', {
                   count: draft.length,
@@ -779,30 +771,11 @@ export function ElementPicker({
               </button>
             </footer>
             {discard && (
-              <dialog
-                ref={discardDialogRef}
-                className="dxp-page-editor-discard"
-                aria-labelledby={discardHeadingId}
-                aria-modal="true"
-                onCancel={(event) => {
-                  event.preventDefault();
-                  setDiscard(false);
-                }}
-              >
-                <h2 id={discardHeadingId}>{t('pageEditor.cancelTitle')}</h2>
-                <div className="dxp-page-editor-discard-actions">
-                  <button
-                    type="button"
-                    className="dxp-picker-cancel"
-                    onClick={() => setDiscard(false)}
-                  >
-                    {t('pageEditor.keepEditing')}
-                  </button>
-                  <button type="button" className="dxp-picker-confirm" onClick={onClose}>
-                    {t('pageEditor.discard')}
-                  </button>
-                </div>
-              </dialog>
+              <EditorDiscardDialog
+                title={t('pageEditor.cancelTitle')}
+                onKeepEditing={() => setDiscard(false)}
+                onDiscard={onClose}
+              />
             )}
           </>
         ) : (

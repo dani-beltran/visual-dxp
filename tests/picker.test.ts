@@ -244,7 +244,7 @@ describe('cross-origin picker bridge', () => {
     expect(parent.postMessage).not.toHaveBeenCalled();
     receive({ origin: 'https://editor.example', source: parent, data: previewInit });
     expect(parent.postMessage).toHaveBeenCalledWith(
-      { ...previewInit, type: 'ready' },
+      { ...previewInit, type: 'ready', elementPicking: true },
       'https://editor.example',
     );
     parent.postMessage.mockClear();

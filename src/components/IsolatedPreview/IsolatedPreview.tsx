@@ -22,7 +22,15 @@ export function IsolatedPreview({
   onError,
   onClose,
   onExecution,
+  picking = false,
+  onPickElement,
+  onPickCancel,
+  onPickingReady,
 }: {
+  picking?: boolean;
+  onPickElement?: (selector: string) => void;
+  onPickCancel?: () => void;
+  onPickingReady?: (supported: boolean) => void;
   onExecution?: (event: PreviewExecutionEvent) => void;
   url: string;
   searchParams?: string;
@@ -43,8 +51,30 @@ export function IsolatedPreview({
   const runId = useRef('');
   const channel = useRef('');
   const reconnect = useRef<() => void>(() => {});
-  const callbacks = useRef({ onReady, onLog, onConnectionPreview, onError, onClose, onExecution });
-  callbacks.current = { onReady, onLog, onConnectionPreview, onError, onClose, onExecution };
+  const callbacks = useRef({
+    onReady,
+    onLog,
+    onConnectionPreview,
+    onError,
+    onClose,
+    onExecution,
+    onPickElement,
+    onPickCancel,
+    onPickingReady,
+  });
+  callbacks.current = {
+    onReady,
+    onLog,
+    onConnectionPreview,
+    onError,
+    onClose,
+    onExecution,
+    onPickElement,
+    onPickCancel,
+    onPickingReady,
+  };
+  const pickingRef = useRef(picking);
+  pickingRef.current = picking;
   const current = useRef(workflow);
   current.current = workflow;
   const demo = url.split(/[?#]/, 1)[0] === '/demo-site.html';
@@ -60,6 +90,7 @@ export function IsolatedPreview({
   useEffect(() => {
     setReady(false);
     callbacks.current.onReady(false);
+    callbacks.current.onPickingReady?.(false);
     setHtml(undefined);
     channel.current = crypto.randomUUID();
     const controller = new AbortController();
@@ -74,6 +105,7 @@ export function IsolatedPreview({
       channel.current = crypto.randomUUID();
       setReady(false);
       callbacks.current.onReady(false);
+      callbacks.current.onPickingReady?.(false);
       callbacks.current.onError('');
       retry = window.setInterval(() => send('init'), 1000);
       timeout = window.setTimeout(() => {
@@ -120,12 +152,26 @@ export function IsolatedPreview({
         callbacks.current.onError('');
         setReady(true);
         callbacks.current.onReady(true);
+        callbacks.current.onPickingReady?.(data.elementPicking === true);
+        if (data.elementPicking !== true && pickingRef.current) callbacks.current.onPickCancel?.();
       }
       if (data.type === 'unavailable') {
         clearConnectionTimers();
         setReady(false);
         callbacks.current.onReady(false);
+        callbacks.current.onPickingReady?.(false);
+        callbacks.current.onPickCancel?.();
       }
+      if (
+        data.type === 'pick-element' &&
+        pickingRef.current &&
+        typeof data.selector === 'string' &&
+        data.selector.trim() &&
+        data.selector.length <= 4000
+      ) {
+        callbacks.current.onPickElement?.(data.selector);
+      }
+      if (data.type === 'pick-cancel' && pickingRef.current) callbacks.current.onPickCancel?.();
       if (data.type === 'close') callbacks.current.onClose();
       if (data.type === 'error' && runId.current && data.runId === runId.current)
         callbacks.current.onError(t('isolatedPreview.theIsolatedPreviewCouldNotRunThisWorkflow'));
@@ -198,6 +244,18 @@ export function IsolatedPreview({
       send('stop');
     };
   }, [ready, running, workflow, revision, searchParams, send]);
+  useEffect(() => {
+    if (!ready || !picking) return;
+    const pickerWindow = frame.current?.contentWindow;
+    const pickerChannel = channel.current;
+    send('pick-start');
+    // Capture this browsing context; a refresh can clear the iframe ref before cleanup.
+    return () =>
+      pickerWindow?.postMessage(
+        { protocol: PREVIEW_PROTOCOL, channel: pickerChannel, type: 'pick-stop' },
+        '*',
+      );
+  }, [ready, picking, send]);
   return !demo && !preview.url ? null : (
     <iframe
       ref={frame}

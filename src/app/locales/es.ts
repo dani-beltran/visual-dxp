@@ -558,7 +558,7 @@ export const spanishMessages = {
   'nodeInspector.animationZoom': 'Ampliar',
   'nodeInspector.animationBounce': 'Rebotar',
   'nodeInspector.animationHint':
-    'Previsualiza la animación en pantalla completa. La dirección sigue la posición del popover.',
+    'Las animaciones se reproducen en la vista previa. La dirección sigue la posición del popover.',
   'nodeInspector.position': 'Posición',
   'nodeInspector.centerOfScreen': 'Centro de la pantalla',
   'nodeInspector.topLeft': 'Arriba a la izquierda',
@@ -618,6 +618,20 @@ export const spanishMessages = {
   'noteControls.customBackgroundColor': 'Color de fondo personalizado',
   'noteControls.customColor': 'Color personalizado',
   'noteTextEditor.writeANote': 'Escribe una nota…',
+  'popoverEditor.pickingHint':
+    'Haz clic en un elemento de la vista previa para usarlo como ancla. Pulsa Esc para cancelar.',
+  'popoverEditor.pickingUnavailable':
+    'La selección de elementos no está disponible en este sitio web. Introduce un selector CSS.',
+  'popoverEditor.editPopover': 'Editar ventana emergente',
+  'popoverEditor.description':
+    'Personaliza el contenido, la apariencia y la posición de la ventana emergente y previsualízala en tu sitio web.',
+  'popoverEditor.settings': 'Configuración de la ventana emergente',
+  'popoverEditor.openHint':
+    'Edita el contenido y la apariencia en la vista previa del sitio web a pantalla completa.',
+  'popoverEditor.unsavedChanges': 'Cambios sin guardar en la ventana emergente',
+  'popoverEditor.previewHint':
+    'Previsualiza los cambios en escritorio o móvil antes de guardarlos.',
+  'popoverEditor.cancelTitle': '¿Descartar los cambios sin guardar en la ventana emergente?',
   'popoverPreview.centerOfScreen': 'Centro de la pantalla',
   'popoverPreview.topLeft': 'Arriba a la izquierda',
   'popoverPreview.topRight': 'Arriba a la derecha',

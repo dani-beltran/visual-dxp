@@ -17,5 +17,8 @@ export function connectPreview(frame: HTMLIFrameElement) {
   new Function('window', 'document', previewBridgeSource(window.location.origin))(win, doc);
 }
 export function mockDemoFetch() {
-  vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('<html><body>Demo</body></html>')));
+  vi.stubGlobal(
+    'fetch',
+    vi.fn().mockImplementation(async () => new Response('<html><body>Demo</body></html>')),
+  );
 }

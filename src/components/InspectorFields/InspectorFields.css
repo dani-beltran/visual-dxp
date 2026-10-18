@@ -1,0 +1,14 @@
+.dxp-inspector-unit-field {
+  position: relative;
+}
+.dxp-inspector-unit-field input {
+  padding-inline-end: 54px;
+}
+.dxp-inspector-unit-field span {
+  position: absolute;
+  inset-inline-end: 11px;
+  top: 10px;
+  font-size: 10px;
+  color: var(--dxp-muted);
+  pointer-events: none;
+}

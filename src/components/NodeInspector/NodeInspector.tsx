@@ -10,15 +10,15 @@ import {
   Copy,
   Frame,
   Info,
-  Maximize2,
   MousePointer2,
+  Pencil,
   Repeat2,
   ScanLine,
   StickyNote,
   Trash2,
   X,
 } from 'lucide-react';
-import { type ReactNode, useEffect, useId, useState } from 'react';
+import { useId } from 'react';
 import { createAnalyticsTools } from '../../lib/analytics';
 import { getCatalog } from '../../lib/catalog';
 import { validateCookie } from '../../lib/cookies';
@@ -32,9 +32,9 @@ import type { ConditionType, NodeKind, StepConfig, StepData, WorkflowNode } from
 import { DataTransformInspector } from '../DataTransformInspector/DataTransformInspector';
 import { PageChangesSummary } from '../ElementPicker/PageChangesSummary';
 import { InfoBox } from '../InfoBox/InfoBox';
+import { Field, NumberInput } from '../InspectorFields/InspectorFields';
 import { NoteControls } from '../NoteControls/NoteControls';
 import { NoteTextEditor } from '../NoteTextEditor/NoteTextEditor';
-import { PopoverContentPreview } from '../PopoverContentPreview/PopoverContentPreview';
 import { Select } from '../Select/Select';
 import './NodeInspector.css';
 
@@ -50,70 +50,6 @@ interface NodeInspectorProps {
   onDelete: () => void;
   onDuplicate: () => void;
   onPreviewContent: () => void;
-}
-
-function Field({
-  label,
-  htmlFor,
-  hint,
-  children,
-}: {
-  label: string;
-  htmlFor?: string;
-  hint?: string;
-  children: ReactNode;
-}) {
-  return (
-    <div className="dxp-inspector-field">
-      <label htmlFor={htmlFor}>{label}</label>
-      {children}
-      {hint && <p className="dxp-inspector-hint">{hint}</p>}
-    </div>
-  );
-}
-
-function NumberInput({
-  id,
-  value,
-  min,
-  max,
-  step,
-  onChange,
-}: {
-  id: string;
-  value: number;
-  min: number;
-  max: number;
-  step: number;
-  onChange: (value: number) => void;
-}) {
-  const [draft, setDraft] = useState(String(value));
-  useEffect(() => setDraft(String(value)), [value]);
-  return (
-    <input
-      id={id}
-      type="number"
-      min={min}
-      max={max}
-      step={step}
-      value={draft}
-      onChange={(event) => {
-        const next = event.target.value;
-        setDraft(next);
-        const parsed = Number(next);
-        if (next.trim() && Number.isInteger(parsed) && parsed >= min && parsed <= max)
-          onChange(parsed);
-      }}
-      onBlur={() => {
-        const parsed = draft.trim() === '' ? value : Number(draft);
-        const next = Number.isFinite(parsed)
-          ? Math.min(max, Math.max(min, Math.round(parsed)))
-          : value;
-        setDraft(String(next));
-        if (next !== value) onChange(next);
-      }}
-    />
-  );
 }
 
 export function NodeInspector({
@@ -420,7 +356,7 @@ export function NodeInspector({
               className="dxp-button dxp-button-primary dxp-page-editor-open"
               onClick={onPickElement}
             >
-              <MousePointer2 size={15} />
+              <Pencil size={15} />
               {t('pageEditor.editPage')}
             </button>
             <PageChangesSummary changes={getPageChanges(config)} />
@@ -990,121 +926,47 @@ export function NodeInspector({
 
         {node.data.kind === 'popover' && (
           <>
-            <Field label={t('nodeInspector.contentType')} htmlFor={id('content-type')}>
-              <Select
-                id={id('content-type')}
-                value={config.contentType ?? 'html'}
-                onChange={(event) =>
-                  update({ contentType: event.target.value as StepConfig['contentType'] })
-                }
-              >
-                <option value="html">{t('nodeInspector.customHtml')}</option>
-                <option value="iframe">{t('nodeInspector.embeddedWebsite')}</option>
-              </Select>
-            </Field>
-            {config.contentType === 'iframe' ? (
-              <Field
-                label={t('nodeInspector.websiteUrl')}
-                htmlFor={id('url')}
-                hint={t('nodeInspector.theWebsiteMustAllowEmbeddingInAnIframe')}
-              >
-                <input
-                  id={id('url')}
-                  type="url"
-                  value={config.url ?? ''}
-                  placeholder="https://example.com"
-                  onChange={(event) => update({ url: event.target.value })}
-                  spellCheck={false}
-                />
-              </Field>
-            ) : (
-              <Field label={t('nodeInspector.htmlContent')} htmlFor={id('content')}>
-                <textarea
-                  id={id('content')}
-                  className="dxp-inspector-code"
-                  rows={6}
-                  value={config.content ?? ''}
-                  placeholder={'<h2>A little something for you</h2>\n<p>Make yourself at home.</p>'}
-                  onChange={(event) => update({ content: event.target.value })}
-                  spellCheck={false}
-                />
-              </Field>
-            )}
-            <Field label={t('nodeInspector.position')} htmlFor={id('position')}>
-              <Select
-                id={id('position')}
-                value={config.position ?? 'bottom-right'}
-                onChange={(event) =>
-                  update({ position: event.target.value as StepConfig['position'] })
-                }
-              >
-                <option value="center">{t('nodeInspector.centerOfScreen')}</option>
-                <option value="top-left">{t('nodeInspector.topLeft')}</option>
-                <option value="top-right">{t('nodeInspector.topRight')}</option>
-                <option value="bottom-left">{t('nodeInspector.bottomLeft')}</option>
-                <option value="bottom-right">{t('nodeInspector.bottomRight')}</option>
-                <option value="anchor">{t('nodeInspector.nextToAnElement')}</option>
-              </Select>
-            </Field>
-            {config.position === 'anchor' && targetField(t('nodeInspector.anchorElement'))}
-            <Field
-              label={t('nodeInspector.popoverAnimation')}
-              htmlFor={id('popover-animation')}
-              hint={t('nodeInspector.animationHint')}
+            <button
+              type="button"
+              className="dxp-button dxp-button-primary dxp-popover-editor-open"
+              onClick={onPreviewContent}
             >
-              <Select
-                id={id('popover-animation')}
-                value={config.popoverAnimation ?? 'none'}
-                onChange={(event) =>
-                  update({ popoverAnimation: event.target.value as StepConfig['popoverAnimation'] })
-                }
-              >
-                <option value="none">{t('nodeInspector.animationNone')}</option>
-                <option value="fade">{t('nodeInspector.animationFade')}</option>
-                <option value="slide">{t('nodeInspector.animationSlide')}</option>
-                <option value="zoom">{t('nodeInspector.animationZoom')}</option>
-                <option value="bounce">{t('nodeInspector.animationBounce')}</option>
-              </Select>
-            </Field>
-            <Field
-              label={t('nodeInspector.popoverWidth')}
-              htmlFor={id('width')}
-              hint={t('nodeInspector.chooseAWidthBetween240And960Pixels')}
-            >
-              <div className="dxp-inspector-unit-field">
-                <NumberInput
-                  key={node.id}
-                  id={id('width')}
-                  min={240}
-                  max={960}
-                  step={10}
-                  value={config.width ?? 360}
-                  onChange={(width) => update({ width })}
-                />
-                <span>{t('nodeInspector.px')}</span>
-              </div>
-            </Field>
-            <div className="dxp-inspector-preview">
-              <div>
-                <span>{t('nodeInspector.contentPreview')}</span>
-                <button
-                  type="button"
-                  className="dxp-inspector-preview-expand"
-                  onClick={onPreviewContent}
-                  aria-label={t('nodeInspector.openFullscreenContentPreview')}
-                  title={t('nodeInspector.previewOnTheDemoWebsite')}
-                >
-                  <Maximize2 size={12} /> {t('nodeInspector.fullscreen')}
-                </button>
-              </div>
-              {(config.contentType ?? 'html') === 'html' && config.content ? (
-                <PopoverContentPreview node={node} title={t('nodeInspector.popoverHtmlPreview')} />
-              ) : (
-                <p className="dxp-inspector-preview-hint">
-                  {t('nodeInspector.previewYourPopoverInPositionOnTheDemoWebsite')}
-                </p>
+              <Pencil size={15} /> {t('popoverEditor.editPopover')}
+            </button>
+            <p className="dxp-inspector-hint">
+              {t(
+                config.contentType === 'iframe'
+                  ? 'nodeInspector.embeddedWebsite'
+                  : 'nodeInspector.customHtml',
               )}
-            </div>
+              {' · '}
+              {config.width ?? 360} {t('nodeInspector.px')}
+              {' · '}
+              {t(
+                (
+                  {
+                    center: 'nodeInspector.centerOfScreen',
+                    'top-left': 'nodeInspector.topLeft',
+                    'top-right': 'nodeInspector.topRight',
+                    'bottom-left': 'nodeInspector.bottomLeft',
+                    'bottom-right': 'nodeInspector.bottomRight',
+                    anchor: 'nodeInspector.nextToAnElement',
+                  } as const
+                )[config.position ?? 'bottom-right'],
+              )}
+              {' · '}
+              {t(
+                (
+                  {
+                    none: 'nodeInspector.animationNone',
+                    fade: 'nodeInspector.animationFade',
+                    slide: 'nodeInspector.animationSlide',
+                    zoom: 'nodeInspector.animationZoom',
+                    bounce: 'nodeInspector.animationBounce',
+                  } as const
+                )[config.popoverAnimation ?? 'none'],
+              )}
+            </p>
           </>
         )}
         <section className="dxp-inspector-outputs" aria-labelledby={id('outputs-heading')}>
