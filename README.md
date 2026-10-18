@@ -22,39 +22,50 @@ Import `commonDXPPresets` from `visual-dxp` and pass it as `<VisualDXPBuilder pr
 
 ## Run the demo
 
-Requires Node.js 22.12+ (tested with Node.js 24).
+Requires Node.js 22.12+ (tested with Node.js 24) and pnpm 10.33.4, pinned in
+`package.json`. Install that pnpm version before running the commands below.
 
 ```sh
-npm install
+pnpm install
 cp .env.example .env.local
 # Optional: set OPENAI_API_KEY for development, or configure a provider in AI Settings.
-npm run dev
+pnpm run dev
 ```
 
 Open http://localhost:3000 (the default `PREVIEW_EDITOR_ORIGIN`). The page, AI API, and public preview proxy run in the same Next.js process; no sibling backend process is needed. The included demo website supports the element picker and live workflow testing without additional setup. The demo saves workflow changes and activity history in local browser storage and restores them when the page reloads. Its Activity tab starts empty until you make changes.
 
+Dependency installation is configured in `pnpm-workspace.yaml`: newly resolved
+versions must be at least 24 hours old, and dependency install scripts are blocked.
+The esbuild and fsevents install scripts are explicitly denied. esbuild uses its
+packaged platform binary; fsevents is an optional macOS file-watching dependency. Any new dependency build script causes
+installation to fail until its policy is reviewed. Keep approvals narrow and
+version-specific if a dependency later requires a build. This repository's own
+`predev`, `prebuild`, `prebuild:lib`, and `pretest` hooks remain enabled, so the
+bridge builds automatically. Use pnpm for installs and commit `pnpm-lock.yaml`;
+the release delay applies to resolution, not a fresh review of existing lockfile entries.
+
 ```sh
-npm test             # Frontend, integrated backend, and mocked Route Handler tests
-npm run typecheck    # App, server, library, and test types
-npm run build        # Production Next.js application (.next/)
-npm start            # Serve the production application on port 3000
-npm run build:lib    # Reusable dist/ library with declarations and public assets
+pnpm test             # Frontend, integrated backend, and mocked Route Handler tests
+pnpm run typecheck    # App, server, library, and test types
+pnpm run build        # Production Next.js application (.next/)
+pnpm start            # Serve the production application on port 3000
+pnpm run build:lib    # Reusable dist/ library with declarations and public assets
 node tests/export-library.mjs # Execute targeting tests against both built library bundles
-npm run lint         # Check Biome lint rules
-npm run lint:fix     # Apply safe lint fixes
-npm run format       # Format supported files with Biome
-npm run format:check # Check formatting without changing files
-npm run check        # Check lint rules, formatting, and import organization
-npm run check:fix    # Apply safe lint fixes, formatting, and import organization
+pnpm run lint         # Check Biome lint rules
+pnpm run lint:fix     # Apply safe lint fixes
+pnpm run format       # Format supported files with Biome
+pnpm run format:check # Check formatting without changing files
+pnpm run check        # Check lint rules, formatting, and import organization
+pnpm run check:fix    # Apply safe lint fixes, formatting, and import organization
 ```
 
 [Biome](https://biomejs.dev/) handles linting and formatting, configured in `biome.json`.
-Generated output, dependencies, and `package-lock.json` are excluded.
+Generated output, dependencies, and `pnpm-lock.yaml` are excluded.
 
 ## Pull request validation
 
 The GitHub Actions workflow in `.github/workflows/ci.yml` runs on every pull request,
-pushes to `main`, merge queues, and manual dispatches. It uses Node.js 24 and `npm ci`
+pushes to `main`, merge queues, and manual dispatches. It uses Node.js 24 and `pnpm install --frozen-lockfile`
 with the committed lockfile. Four jobs validate:
 
 - Biome lint, formatting, and import organization, then generated Next.js route types and TypeScript.
@@ -74,11 +85,11 @@ Build and install this local package from your application (the package is not p
 
 ```sh
 # In this repository
-npm run build:lib
-npm pack
+pnpm run build:lib
+pnpm pack
 
 # In your application, using the archive produced above
-npm install /absolute/path/to/visual-dxp-0.1.0.tgz
+pnpm install /absolute/path/to/visual-dxp-0.1.0.tgz
 ```
 
 React and React DOM 19 are peer dependencies. React Flow and icons are included in the built library.
@@ -470,7 +481,7 @@ For direct connections, the target website must permit embedding via its `Conten
 
 See [MDN: iframe contentDocument](https://developer.mozilla.org/en-US/docs/Web/API/HTMLIFrameElement/contentDocument) and [MDN: postMessage](https://developer.mozilla.org/en-US/docs/Web/API/Window/postMessage) for the browser model.
 
-**Live previews run in an isolated sandbox origin.** The included demo works automatically. Element selection and live previews use the same `/bridge.js` script shown above. The standalone script bundles both bridges and the preview runtime, and works without React or the editor package. It is generated by `npm run build:bridge` and automatically before development, tests, application builds, and library builds. Alternatively, install the runtime bridge in the website's bundle:
+**Live previews run in an isolated sandbox origin.** The included demo works automatically. Element selection and live previews use the same `/bridge.js` script shown above. The standalone script bundles both bridges and the preview runtime, and works without React or the editor package. It is generated by `pnpm run build:bridge` and automatically before development, tests, application builds, and library builds. Alternatively, install the runtime bridge in the website's bundle:
 
 ```ts
 import { installPreviewBridge } from 'visual-dxp';

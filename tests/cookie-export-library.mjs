@@ -1,4 +1,4 @@
-// Run after npm run build:lib to verify cookie variables in both distributed bundles.
+// Run after pnpm run build:lib to verify cookie variables in both distributed bundles.
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { JSDOM } from 'jsdom';

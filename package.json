@@ -27,9 +27,9 @@
   "scripts": {
     "logs:chats": "node scripts/export-chats.mjs",
     "build:bridge": "vite build --config vite.bridge.config.ts",
-    "predev": "npm run build:bridge",
-    "prebuild": "npm run build:bridge",
-    "prebuild:lib": "npm run build:bridge",
+    "predev": "pnpm run build:bridge",
+    "prebuild": "pnpm run build:bridge",
+    "prebuild:lib": "pnpm run build:bridge",
     "dev": "next dev --hostname 127.0.0.1",
     "build": "next build",
     "test": "vitest run",
@@ -43,7 +43,7 @@
     "build:lib": "vite build --config vite.lib.config.ts",
     "typecheck": "tsc --noEmit",
     "smoke": "node tests/smoke.mjs",
-    "pretest": "npm run build:bridge"
+    "pretest": "pnpm run build:bridge"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "4.0.65",
@@ -95,5 +95,6 @@
   },
   "engines": {
     "node": ">=22.12.0"
-  }
+  },
+  "packageManager": "pnpm@10.33.4"
 }

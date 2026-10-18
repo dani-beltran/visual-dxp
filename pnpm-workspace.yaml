@@ -1,0 +1,12 @@
+# Delay newly resolved releases by 24 hours (pnpm uses minutes).
+minimumReleaseAge: 1440
+
+# Keep this repository's predev/prebuild/pretest hooks enabled.
+enablePrePostScripts: true
+
+# Block dependency lifecycle scripts; fail when a new script needs review.
+strictDepBuilds: true
+dangerouslyAllowAllBuilds: false
+allowBuilds:
+  esbuild: false
+  fsevents: false

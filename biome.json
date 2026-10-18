@@ -11,7 +11,7 @@
       "!!**/node_modules",
       "!!**/dist",
       "!!**/demo-dist",
-      "!**/package-lock.json",
+      "!**/pnpm-lock.yaml",
       "!!**/.next",
       "!next-env.d.ts"
     ]
