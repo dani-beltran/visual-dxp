@@ -248,9 +248,9 @@ export function installPickerBridge(configuredOrigin: string, targetBaseUrl?: st
       event.stopImmediatePropagation();
     }
     function keydown(event: KeyboardEvent) {
-      if (!editor) return;
       const key = event.key.toLowerCase();
       if (
+        editor &&
         (event.metaKey || event.ctrlKey) &&
         !event.altKey &&
         (key === 'z' || (event.ctrlKey && key === 'y'))
@@ -261,7 +261,7 @@ export function installPickerBridge(configuredOrigin: string, targetBaseUrl?: st
         return;
       }
       if (event.key !== 'Escape') return;
-      if (valid(event.target) && editor.isEditing(event.target)) return;
+      if (valid(event.target) && editor?.isEditing(event.target)) return;
       event.preventDefault();
       send('request-close');
     }
