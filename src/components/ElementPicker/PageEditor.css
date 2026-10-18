@@ -38,16 +38,8 @@
   white-space: pre-wrap;
 }
 .dxp-page-editor-open {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
   width: 100%;
   padding: 11px;
-  border: 0;
-  border-radius: 7px;
-  color: #fff;
-  background: var(--dxp-primary-color);
   margin-bottom: 20px;
 }
 .dxp-page-editor-layout {
