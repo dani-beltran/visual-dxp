@@ -1,5 +1,6 @@
 import type { ConnectionData } from '../../../lib/connections';
 import type { DataTransformConfig } from '../../../lib/dataTransform';
+import type { PageChange } from '../../../lib/pageChanges';
 import type { DataOperator } from './data';
 export type NodeKind =
   | 'trigger'
@@ -47,6 +48,8 @@ export type TriggerEvent =
   | 'scroll-thrashing'
   | 'scroll-depth';
 export interface StepConfig extends DataTransformConfig {
+  changes?: PageChange[];
+  textPath?: number[];
   event?: TriggerEvent;
   /** Nearby primary clicks required for rage clicking. Defaults to 3. */
   rageClickCount?: number;

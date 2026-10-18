@@ -1,6 +1,7 @@
 import { createAnalyticsTools } from '../../../lib/analytics';
 import { dataTransformTools } from '../../../lib/dataTransform';
 import { createExperimentTools } from '../../../lib/experiment';
+import { getPageChanges, isPageChange } from '../../../lib/pageChanges';
 import { getWeekdays } from '../../../lib/weekdays';
 import { validateCookie } from './cookies';
 import { dataTools } from './data';
@@ -227,31 +228,41 @@ export function validateWorkflow(workflow: Workflow): ValidationIssue[] {
           }
         }
         break;
-      case 'dom':
-        try {
-          dataTools.validateElementValue(config);
-        } catch (error) {
-          add((error as Error).message, node.id);
-        }
-        if (!dataTools.hasVariables(config.selector))
-          selector(config.selector, node.id, 'Choose an element to update.');
-        if (
-          config.action &&
-          ![
-            'text',
-            'html',
-            'add-class',
-            'remove-class',
-            'hide',
-            'show',
-            'attribute',
-            'replace-image',
-          ].includes(config.action)
-        )
-          add('Choose a supported element action.', node.id);
-        if (config.action === 'attribute' && !config.attribute?.trim())
-          add('Enter an attribute name.', node.id);
+      case 'dom': {
+        const changes = getPageChanges(config);
+        if (!Array.isArray(changes)) add('A page change is invalid.', node.id);
+        if (Array.isArray(changes))
+          for (const change of changes) {
+            if (!isPageChange(change)) {
+              add('A page change is invalid.', node.id);
+              continue;
+            }
+            try {
+              dataTools.validateElementValue(change);
+            } catch (error) {
+              add((error as Error).message, node.id);
+            }
+            if (!dataTools.hasVariables(change.selector))
+              selector(change.selector, node.id, 'Choose an element to update.');
+            if (
+              change.action &&
+              ![
+                'text',
+                'html',
+                'add-class',
+                'remove-class',
+                'hide',
+                'show',
+                'attribute',
+                'replace-image',
+              ].includes(change.action)
+            )
+              add('Choose a supported element action.', node.id);
+            if (change.action === 'attribute' && !change.attribute?.trim())
+              add('Enter an attribute name.', node.id);
+          }
         break;
+      }
       case 'delay':
         if (
           config.duration !== undefined &&

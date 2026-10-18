@@ -59,13 +59,13 @@ const configPolicies: Record<NodeKind, ConfigPolicy> = {
   },
   transform: { fields: ['dataPath', 'transformations'] },
   dom: {
-    fields: ['selector'],
+    fields: ['selector', 'changes'],
     variants: [
       {
         key: 'action',
         defaultValue: 'text',
         options: {
-          text: { fields: ['value'] },
+          text: { fields: ['value', 'textPath'] },
           html: { fields: ['value'] },
           'add-class': { fields: ['value'] },
           'remove-class': { fields: ['value'] },
@@ -204,6 +204,19 @@ export function validateAIConfigWrite(
   patch: StepConfig,
   current: StepConfig = {},
 ): void {
+  if (
+    kind === 'dom' &&
+    current.changes !== undefined &&
+    patch.changes === undefined &&
+    ['selector', 'action', 'value', 'attribute', 'imageAlt', 'textPath'].some((key) =>
+      Object.hasOwn(patch, key),
+    )
+  ) {
+    throw new RecoverableToolError(
+      'invalid_configuration',
+      'This Customize Page node stores config.changes. Update the complete changes list while preserving unrelated edits.',
+    );
+  }
   const { fields, modes } = applicableConfig(kind, { ...current, ...patch });
   const invalid = Object.keys(patch)
     .filter((key) => !fields.has(key as ConfigField))
@@ -226,6 +239,14 @@ export function applicableAIConfigDefaults(
   patch: StepConfig = {},
 ): StepConfig {
   const { fields } = applicableConfig(kind, { ...defaults, ...patch });
+  if (
+    kind === 'dom' &&
+    patch.changes === undefined &&
+    ['selector', 'action', 'value', 'attribute', 'imageAlt'].some((key) =>
+      Object.hasOwn(patch, key),
+    )
+  )
+    fields.delete('changes');
   return Object.fromEntries(
     Object.entries(defaults).filter(([key]) => fields.has(key as ConfigField)),
   );

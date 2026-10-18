@@ -1,3 +1,4 @@
+import { attachPageEditing, type PageEditingSession } from './pageEditing';
 import { getElementSelector, PICKER_PROTOCOL, type PickerSession } from './picker';
 
 /**
@@ -6,7 +7,7 @@ import { getElementSelector, PICKER_PROTOCOL, type PickerSession } from './picke
  * The exact parent origin is mandatory. The site must separately permit framing.
  * This bridge never executes code received through postMessage.
  */
-export function installPickerBridge(configuredOrigin: string) {
+export function installPickerBridge(configuredOrigin: string, targetBaseUrl?: string) {
   const logPrefix = '[Visual DXP picker bridge]';
   console.info(logPrefix, 'Script loaded.');
   if (!configuredOrigin) {
@@ -145,6 +146,7 @@ export function installPickerBridge(configuredOrigin: string) {
   const protocol = PICKER_PROTOCOL;
   let activeChannel: string | null = null;
   let session: PickerSession | null = null;
+  let editor: PageEditingSession | null = null;
   function send(type: string, values: Record<string, unknown> = {}) {
     window.parent.postMessage(
       Object.assign({ protocol: protocol, channel: activeChannel, type: type }, values || {}),
@@ -175,6 +177,7 @@ export function installPickerBridge(configuredOrigin: string) {
     let hovered: Element | null = null;
     let selected: Element | null = null;
     function detail(element: Element) {
+      if (editor) return editor.detail(element);
       return {
         selector: getElementSelector(element),
         tagName: element.tagName.toLowerCase(),
@@ -214,6 +217,7 @@ export function installPickerBridge(configuredOrigin: string) {
       );
     }
     function move(event: MouseEvent) {
+      if (valid(event.target) && editor?.isEditing(event.target)) return;
       if (!valid(event.target) || event.target === hovered) return;
       hovered = event.target;
       refresh();
@@ -226,15 +230,33 @@ export function installPickerBridge(configuredOrigin: string) {
     }
     function click(event: MouseEvent) {
       if (!valid(event.target)) return;
+      if (editor?.isEditing(event.target)) return;
       event.preventDefault();
       event.stopImmediatePropagation();
-      selected = event.target;
+      selected = editor
+        ? event.target.closest('img') || event.target.closest('a') || event.target
+        : event.target;
+      editor?.select(selected);
+      editor?.focus();
       refresh();
       send('select', { element: detail(selected) });
       console.info(logPrefix, 'Element selected and sent to the editor.');
     }
+    function submit(event: Event) {
+      if (!editor) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+    }
+    function keydown(event: KeyboardEvent) {
+      if (!editor || event.key !== 'Escape') return;
+      if (valid(event.target) && editor.isEditing(event.target)) return;
+      event.preventDefault();
+      send('request-close');
+    }
     document.addEventListener('mousemove', move, true);
     document.addEventListener('click', click, true);
+    document.addEventListener('submit', submit, true);
+    document.addEventListener('keydown', keydown, true);
     document.addEventListener('mouseleave', leave, true);
     document.addEventListener('scroll', refresh, true);
     window.addEventListener('resize', refresh);
@@ -242,6 +264,8 @@ export function installPickerBridge(configuredOrigin: string) {
       select: (selector: string) => {
         try {
           selected = selector.trim() ? document.querySelector(selector) : null;
+          editor?.select(selected);
+          if (editor && selected) send('select', { element: detail(selected) });
           refresh();
           console.info(logPrefix, 'Selector lookup completed.', { found: !!selected });
           return !!selected;
@@ -253,9 +277,13 @@ export function installPickerBridge(configuredOrigin: string) {
         }
       },
       destroy: () => {
+        editor?.destroy();
+        editor = null;
         root.remove();
         document.removeEventListener('mousemove', move, true);
         document.removeEventListener('click', click, true);
+        document.removeEventListener('submit', submit, true);
+        document.removeEventListener('keydown', keydown, true);
         document.removeEventListener('mouseleave', leave, true);
         document.removeEventListener('scroll', refresh, true);
         window.removeEventListener('resize', refresh);
@@ -281,13 +309,22 @@ export function installPickerBridge(configuredOrigin: string) {
       if (session) session.destroy();
       activeChannel = data.channel;
       session = attach();
+      if (data.editing === true) {
+        editor = attachPageEditing(document, send, {
+          baseUrl: targetBaseUrl,
+          proxyOrigin: targetBaseUrl ? window.location.origin : undefined,
+        });
+        editor.update(data.changes ?? []);
+      }
       if (typeof data.selector === 'string' && data.selector.length <= 4000)
         session.select(data.selector);
-      send('ready');
+      send('ready', editor ? { editing: true } : {});
       console.info(logPrefix, 'Picker ready; acknowledgment sent to the editor.');
       return;
     }
     if (!session || data.channel !== activeChannel) return;
+    if (data.type === 'set-changes' && editor)
+      send('changes-result', { valid: editor.update(data.changes) });
     if (
       data.type === 'set-selector' &&
       typeof data.selector === 'string' &&

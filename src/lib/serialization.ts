@@ -1,6 +1,7 @@
 import { isAnalyticsSettings } from './analytics';
 import { type DataTransformation, dataTransformTools } from './dataTransform';
 import { isNoteMarks } from './noteText';
+import { isPageChange } from './pageChanges';
 import type { Workflow } from './types';
 
 const kinds = new Set([
@@ -106,6 +107,13 @@ export function isWorkflow(value: unknown): value is Workflow {
     )
       return false;
     const config = node.data.config;
+    if (
+      config.changes !== undefined &&
+      (!Array.isArray(config.changes) || !config.changes.every(isPageChange))
+    )
+      return false;
+    if (config.textPath !== undefined && !isPageChange({ selector: '', textPath: config.textPath }))
+      return false;
     if (
       (config.experimentAnalytics !== undefined &&
         !['none', 'ga4'].includes(config.experimentAnalytics as string)) ||

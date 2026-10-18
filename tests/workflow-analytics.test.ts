@@ -291,6 +291,7 @@ it('preserves and edits event nodes across JSON import, client and server AI, an
   const toolkit = createWorkflowTools(workflow, []);
   const add = toolkit.tools.find((tool) => tool.name === 'add_node');
   expect(add).toBeDefined();
+  // biome-ignore lint/style/noNonNullAssertion: tested to be defined
   const result = await add!.invoke({
     kind: 'track-event',
     label: 'Checkout',

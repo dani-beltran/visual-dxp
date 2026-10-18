@@ -7,9 +7,9 @@ import {
   GitFork,
   Globe2,
   MousePointerClick,
+  Paintbrush,
   PanelTop,
   Repeat2,
-  SquareDashedMousePointer,
   StickyNote,
   Timer,
 } from 'lucide-react';
@@ -50,12 +50,12 @@ export const catalog: {
   },
   {
     kind: 'dom',
-    label: 'Update element',
+    label: 'Customize Page',
     description: nodeDescriptions.dom,
-    color: 'orange',
-    icon: SquareDashedMousePointer,
+    color: 'pink',
+    icon: Paintbrush,
     category: 'Action',
-    config: { selector: '#shop-now', action: 'text', value: 'Discover your next favorite' },
+    config: { changes: [] },
   },
   {
     kind: 'fork',
@@ -160,6 +160,7 @@ export const catalog: {
   },
 ];
 export function createNode(kind: NodeKind, position = { x: 200, y: 200 }): WorkflowNode {
+  // biome-ignore lint/style/noNonNullAssertion: Catalog is a fixed list; the kind is always valid.
   const entry = catalog.find((x) => x.kind === kind)!;
   return {
     id: `${kind}-${crypto.randomUUID()}`,
@@ -218,6 +219,11 @@ export function stepSummary(
         url: c.url ? c.url.replace(/^https?:\/\//, '') : t('summary.configureUrl'),
       });
     case 'dom':
+      if (c.changes !== undefined)
+        return t('pageEditor.changeCount', {
+          count: c.changes.length,
+          elements: new Set(c.changes.map((change) => change.selector)).size,
+        });
       return t('summary.dom', {
         action: c.action || 'text',
         element,

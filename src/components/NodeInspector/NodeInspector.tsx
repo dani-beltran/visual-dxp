@@ -26,9 +26,11 @@ import { dataTools } from '../../lib/data';
 import { dataHint, getDataOperators } from '../../lib/dataLabels';
 import { formatBuilderError } from '../../lib/i18n';
 import { useBuilderI18n } from '../../lib/i18nContext';
+import { getPageChanges } from '../../lib/pageChanges';
 import { elementTriggerEvents, getTriggerOptions } from '../../lib/triggers';
 import type { ConditionType, NodeKind, StepConfig, StepData, WorkflowNode } from '../../lib/types';
 import { DataTransformInspector } from '../DataTransformInspector/DataTransformInspector';
+import { PageChangesSummary } from '../ElementPicker/PageChangesSummary';
 import { InfoBox } from '../InfoBox/InfoBox';
 import { NoteControls } from '../NoteControls/NoteControls';
 import { NoteTextEditor } from '../NoteTextEditor/NoteTextEditor';
@@ -413,107 +415,12 @@ export function NodeInspector({
 
         {node.data.kind === 'dom' && (
           <>
-            {targetField()}
-            <Field label={t('nodeInspector.action')} htmlFor={id('action')}>
-              <Select
-                id={id('action')}
-                value={config.action ?? 'text'}
-                onChange={(event) => update({ action: event.target.value as StepConfig['action'] })}
-              >
-                <option value="text">{t('nodeInspector.changeText')}</option>
-                <option value="replace-image">{t('nodeInspector.replaceImage')}</option>
-                <option value="html">{t('nodeInspector.replaceHtml')}</option>
-                <option value="add-class">{t('nodeInspector.addCssClass')}</option>
-                <option value="remove-class">{t('nodeInspector.removeCssClass')}</option>
-                <option value="hide">{t('nodeInspector.hideElement')}</option>
-                <option value="show">{t('nodeInspector.showElement')}</option>
-                <option value="attribute">{t('nodeInspector.setAttribute')}</option>
-              </Select>
-            </Field>
-            {config.action === 'attribute' && (
-              <Field label={t('nodeInspector.attributeName')} htmlFor={id('attribute')}>
-                <input
-                  id={id('attribute')}
-                  value={config.attribute ?? ''}
-                  placeholder={t('nodeInspector.eGAriaLabel')}
-                  onChange={(event) => update({ attribute: event.target.value })}
-                  spellCheck={false}
-                />
-              </Field>
-            )}
-            {!['hide', 'show'].includes(config.action ?? 'text') && (
-              <Field
-                label={
-                  config.action === 'replace-image'
-                    ? t('nodeInspector.imageUrl')
-                    : config.action === 'html'
-                      ? t('nodeInspector.htmlContent')
-                      : ['add-class', 'remove-class'].includes(config.action ?? '')
-                        ? t('nodeInspector.cssClassNames')
-                        : config.action === 'attribute'
-                          ? t('nodeInspector.attributeValue')
-                          : t('nodeInspector.newText')
-                }
-                htmlFor={id('value')}
-                hint={
-                  ['add-class', 'remove-class'].includes(config.action ?? '')
-                    ? t('nodeInspector.separateMultipleClassNamesWithSpaces')
-                    : undefined
-                }
-              >
-                {config.action === 'replace-image' ? (
-                  <input
-                    id={id('value')}
-                    value={config.value ?? ''}
-                    placeholder="https://example.com/image.jpg"
-                    onChange={(event) => update({ value: event.target.value })}
-                    spellCheck={false}
-                  />
-                ) : (
-                  <textarea
-                    id={id('value')}
-                    className={config.action === 'html' ? 'dxp-inspector-code' : ''}
-                    rows={config.action === 'html' ? 5 : 3}
-                    value={config.value ?? ''}
-                    placeholder={
-                      config.action === 'html'
-                        ? '<p>Hello {{name}}</p>'
-                        : t('nodeInspector.enterAValue')
-                    }
-                    onChange={(event) => update({ value: event.target.value })}
-                    spellCheck={config.action !== 'html'}
-                  />
-                )}
-              </Field>
-            )}
-            {config.action === 'replace-image' && (
-              <>
-                <Field
-                  label={t('nodeInspector.imageAlt')}
-                  htmlFor={id('image-alt')}
-                  hint={t('nodeInspector.imageAltHint')}
-                >
-                  <input
-                    id={id('image-alt')}
-                    value={config.imageAlt ?? ''}
-                    placeholder={t('nodeInspector.keepExistingAlt')}
-                    onChange={(event) => update({ imageAlt: event.target.value || undefined })}
-                  />
-                </Field>
-                {config.value &&
-                !dataTools.hasVariables(config.value) &&
-                /^https?:\/\//i.test(config.value.trim()) ? (
-                  <img
-                    className="dxp-inspector-image-preview"
-                    src={config.value.trim()}
-                    alt={t('nodeInspector.imagePreview')}
-                    referrerPolicy="no-referrer"
-                  />
-                ) : (
-                  <p className="dxp-inspector-hint">{t('nodeInspector.imagePreviewHint')}</p>
-                )}
-              </>
-            )}
+            <button type="button" className="dxp-page-editor-open" onClick={onPickElement}>
+              <MousePointer2 size={15} />
+              {t('pageEditor.editPage')}
+            </button>
+            <PageChangesSummary changes={getPageChanges(config)} />
+            <p className="dxp-inspector-hint">{t('pageEditor.appliedWhenRun')}</p>
             {dataError && (
               <p role="alert" className="dxp-inspector-hint">
                 {dataError}

@@ -2,6 +2,7 @@ import type { Edge, Node } from '@xyflow/react';
 import type { ConnectionData } from './connections';
 import type { DataOperator } from './data';
 import type { DataTransformConfig } from './dataTransform';
+import type { PageChange } from './pageChanges';
 export type NodeKind =
   | 'trigger'
   | 'http'
@@ -49,6 +50,9 @@ export type TriggerEvent =
   | 'scroll-thrashing'
   | 'scroll-depth';
 export interface StepConfig extends DataTransformConfig {
+  /** All customizations performed by this page step. Absent in historical single-edit nodes. */
+  changes?: PageChange[];
+  textPath?: number[];
   event?: TriggerEvent;
   /** Nearby primary clicks required for rage clicking. Defaults to 3. */
   rageClickCount?: number;

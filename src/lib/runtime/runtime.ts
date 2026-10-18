@@ -4,6 +4,7 @@ import { createDataTools } from '../data';
 import { createDataTransformTools } from '../dataTransform';
 import { getDateRange } from '../dateRange';
 import { createExperimentTools } from '../experiment';
+import { applyPageChange } from '../pageChanges';
 import { placePopover } from '../popoverPosition';
 import { getTimeRange } from '../timeRange';
 import type { Workflow } from '../types';
@@ -24,6 +25,7 @@ import { startZoomTrigger } from './zoom-trigger';
 // functions free of module-scope references so their compiled source can also
 // power exported workflows, including after bundling and minification.
 const runtimeModules = {
+  applyPageChange,
   createAnalyticsTools,
   createWorkflowAnalytics,
   createExperimentTools,

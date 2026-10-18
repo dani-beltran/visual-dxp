@@ -68,6 +68,7 @@ export function WorkflowCard({ id, data, selected }: NodeProps<WorkflowNode>) {
   if (data.kind === 'frame') return <FrameCard data={data} selected={selected} />;
   if (data.kind === 'note')
     return <NoteCard id={id} data={data} selected={selected} onChange={editNote} />;
+  // biome-ignore lint/style/noNonNullAssertion: Catalog is a fixed list; the kind is always valid.
   const entry = catalog.find((x) => x.kind === data.kind)!;
   const Icon = entry.icon;
   const split = data.kind === 'fork' || data.kind === 'loop' || data.kind === 'experiment';

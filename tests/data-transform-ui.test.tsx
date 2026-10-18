@@ -280,48 +280,23 @@ it('offers transformation-specific controls and reorders operations', async () =
   expect(host.textContent).not.toContain('Text to add');
 });
 
-it('keeps the receiving badge and data socket while variables are edited, including undo', async () => {
-  const workflow = graph();
-  workflow.nodes[1].data.config = { selector: '#result', value: 'Static text' };
-  const onChange = vi.fn<(workflow: Workflow) => void>();
-  await act(async () =>
-    root.render(<VisualDXPBuilder initialWorkflow={workflow} onChange={onChange} />),
-  );
-  await click('[data-id="dom"]');
-  expect(element('[data-id="http"] .dxp-node-incoming-value').textContent).toContain(
-    'Produces data',
-  );
-  expect(element('[data-id="dom"] .dxp-node-incoming-value').textContent).toContain(
-    'Receives data',
-  );
-  expect(
-    host.querySelector('[data-id="dom"] .react-flow__handle.target.dxp-handle-data'),
-  ).not.toBeNull();
-  expect(host.querySelector('[role="switch"]')).toBeNull();
-  for (const value of ['Hello {{name}}', 'Static again']) {
-    const textarea = element('.dxp-inspector textarea');
-    const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')?.set;
-    if (!setter) throw new Error('Missing textarea setter');
-    await act(async () => {
-      setter.call(textarea, value);
-      textarea.dispatchEvent(new Event('input', { bubbles: true }));
-    });
+it.each(['Hello {{name}}', 'Static text'])(
+  'keeps the receiving badge and data socket for a page customization with %s',
+  async (value) => {
+    const workflow = graph();
+    workflow.nodes[1].data.config = { changes: [{ selector: '#result', action: 'text', value }] };
+    await act(async () => root.render(<VisualDXPBuilder initialWorkflow={workflow} />));
+    await click('[data-id="dom"]');
+    expect(element('[data-id="http"] .dxp-node-incoming-value').textContent).toContain(
+      'Produces data',
+    );
     expect(element('[data-id="dom"] .dxp-node-incoming-value').textContent).toContain(
       'Receives data',
     );
     expect(
-      Boolean(host.querySelector('[data-id="dom"] .react-flow__handle.target.dxp-handle-data')),
-    ).toBe(true);
-    expect(onChange.mock.lastCall?.[0].nodes[1].data.config).toEqual({
-      selector: '#result',
-      value,
-    });
-    // End this editing session so undo restores the previous content.
-    await click('[data-id="http"]');
-    await click('[data-id="dom"]');
-  }
-  await click('button[title^="Undo"]');
-  expect(element('[data-id="dom"] .dxp-node-incoming-value').textContent).toContain(
-    'Receives data',
-  );
-});
+      host.querySelector('[data-id="dom"] .react-flow__handle.target.dxp-handle-data'),
+    ).not.toBeNull();
+    expect(element('.dxp-page-changes').textContent).toContain(value);
+    expect(host.querySelector('[role="switch"]')).toBeNull();
+  },
+);

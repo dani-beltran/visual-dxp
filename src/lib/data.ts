@@ -16,6 +16,7 @@ interface RequestConfig {
 }
 
 interface ElementValueConfig {
+  changes?: ElementValueConfig[];
   selector?: string;
   attribute?: string;
   imageAlt?: string;
@@ -230,6 +231,7 @@ export function createDataTools() {
   }
 
   function usesIncomingValue(config: ElementValueConfig): boolean {
+    if (config.changes !== undefined) return config.changes.some(usesIncomingValue);
     return (
       hasVariables(config.selector) ||
       (config.action === 'attribute' && hasVariables(config.attribute)) ||
@@ -239,6 +241,10 @@ export function createDataTools() {
   }
 
   function validateElementValue(config: ElementValueConfig): void {
+    if (config.changes !== undefined) {
+      config.changes.forEach(validateElementValue);
+      return;
+    }
     validateTemplate(config.selector);
     if (config.action === 'attribute') validateTemplate(config.attribute);
     if (config.action === 'replace-image') {

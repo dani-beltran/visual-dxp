@@ -10,7 +10,7 @@ try {
   if (!origin || new URL(origin).origin !== origin || !/^https?:/.test(origin)) {
     throw new Error('Invalid parent origin');
   }
-  installPickerBridge(origin);
+  installPickerBridge(origin, targetBaseUrl);
   installBrandingBridge(origin, targetUrl);
   installPreviewBridge(origin, undefined, targetBaseUrl);
 } catch {

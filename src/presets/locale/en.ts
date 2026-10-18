@@ -12,7 +12,7 @@ export const englishPresetMessages = {
   'headline-experiment.value-b': 'Thoughtful design for the way you live.',
   'headline-experiment.setup': 'Setup: Headlines and traffic',
   'headline-experiment.instructions':
-    'Choose your hero heading in both Update Element nodes and customize each headline. Adjust the Experiment split to control the percentage assigned to A; the rest goes to B. Only the selected branch runs. Each browser keeps its assigned variant on future visits when local storage is available.',
+    'Choose your hero heading in both Customize Page nodes and customize each headline. Adjust the Experiment split to control the percentage assigned to A; the rest goes to B. Only the selected branch runs. Each browser keeps its assigned variant on future visits when local storage is available.',
   'headline-experiment.testing': 'Setup: Try both variants',
   'headline-experiment.testing-instructions':
     'Assignments use the key dxp_headline_experiment in local storage. To try A, set the split to 100%; for B, set it to 0%. Use a new experiment key for each test and restart the preview. Restore 50% and a shared key before publishing. Analytics is disabled; configure GA4 in the Experiment node to measure results.',
