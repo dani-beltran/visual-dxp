@@ -5,8 +5,10 @@ import {
   CircleAlert,
   ExternalLink,
   LoaderCircle,
+  Monitor,
   Play,
   RotateCcw,
+  Smartphone,
   Square,
   X,
 } from 'lucide-react';
@@ -55,6 +57,7 @@ export function Preview({
   }, [workflow.websiteUrl]);
   const modalRef = useDialogFocus(true);
   const [ready, setReady] = useState(false);
+  const [device, setDevice] = useState<'desktop' | 'mobile'>('desktop');
   const [running, setRunning] = useState(false);
   const [logs, setLogs] = useState<RunLog[]>([]);
   const [error, setError] = useState('');
@@ -147,6 +150,26 @@ export function Preview({
           >
             <RotateCcw size={14} />
           </button>
+          <fieldset
+            className="dxp-preview-device-toggle"
+            aria-label={t('pageEditor.previewDevice')}
+          >
+            {(['desktop', 'mobile'] as const).map((option) => {
+              const Icon = option === 'desktop' ? Monitor : Smartphone;
+              return (
+                <button
+                  key={option}
+                  type="button"
+                  aria-pressed={device === option}
+                  onClick={() => setDevice(option)}
+                >
+                  <Icon size={14} aria-hidden="true" />
+                  {t(option === 'desktop' ? 'nodeInspector.desktop' : 'nodeInspector.mobile')}
+                </button>
+              );
+            })}
+          </fieldset>
+          <span className="dxp-toolbar-divider" aria-hidden="true" />
           {running && (
             <button type="button" className="dxp-button" onClick={stop}>
               <Square size={14} /> {t('preview.stopWorkflow')}
@@ -165,36 +188,40 @@ export function Preview({
         </div>
         {guidance}
         <div className="dxp-preview-body">
-          <IsolatedPreview
-            key={`${workflow.websiteUrl}-${key}`}
-            url={workflow.websiteUrl}
-            searchParams={searchParams.trim()}
-            workflow={workflow}
-            running={running}
-            revision={revision}
-            title={t('preview.workflowPreviewWebsite')}
-            onReady={(value) => {
-              setReady(value);
-              if (!value) setRunning(false);
-            }}
-            onExecution={(event) => {
-              if (event.type === 'start') activeRun.current = event.runId;
-              if (event.type === 'stop' && activeRun.current === event.runId)
-                activeRun.current = '';
-              onExecution?.(event);
-            }}
-            onError={(message) => {
-              setError(message);
-              if (message) onExecution?.({ type: 'error', runId: activeRun.current });
-            }}
-            onClose={onClose}
-            onConnectionPreview={onConnectionPreview}
-            onLog={(log) => {
-              if (!running) return;
-              setLogs((previous) => [...previous, log]);
-              onLog(log);
-            }}
-          />
+          <div
+            className={`dxp-preview-viewport${device === 'mobile' ? ' dxp-preview-viewport-mobile' : ''}`}
+          >
+            <IsolatedPreview
+              key={`${workflow.websiteUrl}-${key}`}
+              url={workflow.websiteUrl}
+              searchParams={searchParams.trim()}
+              workflow={workflow}
+              running={running}
+              revision={revision}
+              title={t('preview.workflowPreviewWebsite')}
+              onReady={(value) => {
+                setReady(value);
+                if (!value) setRunning(false);
+              }}
+              onExecution={(event) => {
+                if (event.type === 'start') activeRun.current = event.runId;
+                if (event.type === 'stop' && activeRun.current === event.runId)
+                  activeRun.current = '';
+                onExecution?.(event);
+              }}
+              onError={(message) => {
+                setError(message);
+                if (message) onExecution?.({ type: 'error', runId: activeRun.current });
+              }}
+              onClose={onClose}
+              onConnectionPreview={onConnectionPreview}
+              onLog={(log) => {
+                if (!running) return;
+                setLogs((previous) => [...previous, log]);
+                onLog(log);
+              }}
+            />
+          </div>
           <aside className="dxp-run-log" data-tutorial="log">
             <div className="dxp-run-log-content">
               <h3>
