@@ -3,6 +3,7 @@ export class RecoverableToolError extends Error {
   constructor(
     public readonly code: 'invalid_configuration' | 'invalid_source_handle' | 'layout_conflict',
     message: string,
+    public readonly details?: Record<string, unknown>,
   ) {
     super(message);
     this.name = 'RecoverableToolError';
