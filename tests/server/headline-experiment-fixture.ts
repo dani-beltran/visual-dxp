@@ -1,6 +1,7 @@
 import type { AIChatRequest } from '../../src/server/ai/workflow/ai';
 
-// Graph and selection from issue #38's recorded run; keep its IDs and canvas metadata.
+// Page load selects one of two headline variants. Fractional positions and dimensions
+// ensure configuration edits preserve unrelated canvas metadata.
 export function experimentKeyRequest(): AIChatRequest {
   return {
     messages: [
@@ -16,12 +17,12 @@ export function experimentKeyRequest(): AIChatRequest {
     ],
     workflow: {
       version: 1,
-      name: 'Experimento de titulares',
+      name: 'Headline experiment',
       websiteUrl: '/demo-site.html',
       includeSubpages: false,
       nodes: [
         {
-          id: 'trigger-bb56a200-c266-45fe-a347-a982c1b7b198',
+          id: 'page-load',
           type: 'workflow',
           position: {
             x: 60,
@@ -31,14 +32,14 @@ export function experimentKeyRequest(): AIChatRequest {
           height: 156,
           data: {
             kind: 'trigger',
-            label: 'Al cargar la landing',
+            label: 'Page loaded',
             config: {
               event: 'page-load',
             },
           },
         },
         {
-          id: 'experiment-6360188b-b552-445c-b61c-e7c70eeb6674',
+          id: 'headline-experiment',
           type: 'workflow',
           position: {
             x: 360,
@@ -48,24 +49,24 @@ export function experimentKeyRequest(): AIChatRequest {
           height: 180,
           data: {
             kind: 'experiment',
-            label: 'Experimento de titulares',
+            label: 'Headline experiment',
             config: {
               experimentSplit: 50,
             },
           },
         },
         {
-          id: 'dom-60b2ec83-2f49-438d-8ee0-dbaccf3b7c12',
+          id: 'headline-a',
           type: 'workflow',
           position: {
-            x: 907.0085989404618,
-            y: 120.7187028250948,
+            x: 910.5,
+            y: 120.75,
           },
           width: 238,
           height: 156,
           data: {
             kind: 'dom',
-            label: 'Título variante A',
+            label: 'Headline A',
             config: {
               selector: 'h1',
               action: 'text',
@@ -74,7 +75,7 @@ export function experimentKeyRequest(): AIChatRequest {
           },
         },
         {
-          id: 'dom-13a29b99-c21a-4b4d-8984-dfcc3560cd11',
+          id: 'headline-b',
           type: 'workflow',
           position: {
             x: 660,
@@ -84,7 +85,7 @@ export function experimentKeyRequest(): AIChatRequest {
           height: 156,
           data: {
             kind: 'dom',
-            label: 'Título variante B',
+            label: 'Headline B',
             config: {
               selector: 'h1',
               action: 'text',
@@ -95,34 +96,34 @@ export function experimentKeyRequest(): AIChatRequest {
       ],
       edges: [
         {
-          id: 'edge-b86a73b9-797c-42b3-abd1-2a5856f2001c',
-          source: 'trigger-bb56a200-c266-45fe-a347-a982c1b7b198',
-          target: 'experiment-6360188b-b552-445c-b61c-e7c70eeb6674',
+          id: 'start-experiment',
+          source: 'page-load',
+          target: 'headline-experiment',
           type: 'smoothstep',
         },
         {
-          id: 'edge-5106b763-742e-4dd8-8396-1c55720bbe2c',
-          source: 'experiment-6360188b-b552-445c-b61c-e7c70eeb6674',
-          target: 'dom-60b2ec83-2f49-438d-8ee0-dbaccf3b7c12',
+          id: 'experiment-to-a',
+          source: 'headline-experiment',
+          target: 'headline-a',
           type: 'smoothstep',
           sourceHandle: 'a',
-          label: 'Variante A',
+          label: 'Variant A',
         },
         {
-          id: 'edge-ec3795d8-a4e1-440b-9f16-43fe0bbf98e9',
-          source: 'experiment-6360188b-b552-445c-b61c-e7c70eeb6674',
-          target: 'dom-13a29b99-c21a-4b4d-8984-dfcc3560cd11',
+          id: 'experiment-to-b',
+          source: 'headline-experiment',
+          target: 'headline-b',
           type: 'smoothstep',
           sourceHandle: 'b',
-          label: 'Variante B',
+          label: 'Variant B',
         },
       ],
     },
-    selectedNodeIds: ['experiment-6360188b-b552-445c-b61c-e7c70eeb6674'],
+    selectedNodeIds: ['headline-experiment'],
   };
 }
 
-// Issue #39 is the preceding read-only request over the same recorded graph.
+// Explaining the workflow requires no selection and authorizes no configuration changes.
 export function experimentExplanationRequest(): AIChatRequest {
   const request = experimentKeyRequest();
   request.messages = [{ role: 'user', content: 'what is this workflow?' }];

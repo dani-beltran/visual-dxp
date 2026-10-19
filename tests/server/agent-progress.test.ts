@@ -11,7 +11,7 @@ import { CHAT_TIMEOUT_MS, handleChat } from '../../src/server/ai/http';
 import { reviewWorkflow } from '../../src/server/ai/review';
 import * as workflowTools from '../../src/server/ai/tools';
 import type { AIChatRequest, AIChatResponse } from '../../src/server/ai/workflow/ai';
-import { experimentKeyRequest } from './experiment-key-fixture';
+import { experimentKeyRequest } from './headline-experiment-fixture';
 
 vi.mock('ai', async (original) => ({
   ...(await original<typeof import('ai')>()),
@@ -230,7 +230,7 @@ describe.each([false, true])('agent progress (streaming: %s)', (streaming) => {
   }
 
   it.each([false, true])(
-    'repairs issue #38 without recreating nodes (repeat rejection: %s)',
+    'corrects fork-only fields on an experiment without recreating nodes (repeat rejection: %s)',
     async (repeat) => {
       const input = experimentKeyRequest();
       const before = structuredClone(input);
@@ -280,7 +280,7 @@ describe.each([false, true])('agent progress (streaming: %s)', (streaming) => {
     },
   );
 
-  it('exhausts the existing budget on repeated issue #38 failures without publishing earlier edits', async () => {
+  it('discards staged edits when repeated invalid experiment patches exhaust the correction budget', async () => {
     const input = experimentKeyRequest();
     const before = structuredClone(input);
     const id = input.selectedNodeIds[0];

@@ -9,7 +9,7 @@ import {
 import { reviewSchema, reviewWorkflow, type WorkflowReview } from '../../src/server/ai/review';
 import { experimentReviewFacts, reviewBehaviorFacts } from '../../src/server/ai/reviewFacts';
 import type { Workflow } from '../../src/server/ai/workflow/types';
-import { experimentExplanationRequest, experimentKeyRequest } from './experiment-key-fixture';
+import { experimentExplanationRequest, experimentKeyRequest } from './headline-experiment-fixture';
 
 const verdictSchema = z
   .object({
@@ -72,7 +72,7 @@ const validExplanation = {
 
 // Explicit opt-in: these tests make real reviewer AND semantic-judge requests.
 describe.skipIf(process.env.DXP_PROVIDER_EVAL !== '1')(
-  'issue #39 provider grounding evaluation',
+  'experiment review factual grounding',
   () => {
     it('accepts a grounded control explanation', async () => {
       const verdict = await judge(validExplanation, 'what is this workflow?', explanationFacts);
@@ -120,7 +120,11 @@ describe.skipIf(process.env.DXP_PROVIDER_EVAL !== '1')(
     );
 
     it.each([
-      ['explains recorded headline graph', 'what is this workflow?', explanationFacts],
+      [
+        'explains an exclusive 50/50 headline experiment',
+        'what is this workflow?',
+        explanationFacts,
+      ],
       [
         'rejects notes as tracking',
         'Can notes record impressions or conversions for these headlines?',

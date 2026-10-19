@@ -11,7 +11,7 @@ import {
   parseAIChatResponse,
 } from '../../src/server/ai/workflow/ai';
 import type { NodeKind, StepConfig, Workflow } from '../../src/server/ai/workflow/types';
-import { experimentKeyRequest } from './experiment-key-fixture';
+import { experimentKeyRequest } from './headline-experiment-fixture';
 
 function workflow(kind: NodeKind, config: StepConfig): Workflow {
   return {
@@ -457,7 +457,7 @@ describe('configuration dependencies across node kinds', () => {
   );
 });
 
-describe('issue #38 configuration capabilities', () => {
+describe('node-kind configuration capabilities', () => {
   it('exposes experiment-only capabilities and the shared analytics authoring path', () => {
     const input = experimentKeyRequest();
     const toolkit = createWorkflowTools(input.workflow, input.selectedNodeIds);

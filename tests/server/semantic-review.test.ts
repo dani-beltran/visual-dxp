@@ -8,7 +8,7 @@ import {
   type AIChatRequest,
   parseAIChatRequest as parseServerRequest,
 } from '../../src/server/ai/workflow/ai';
-import { experimentExplanationRequest, experimentKeyRequest } from './experiment-key-fixture';
+import { experimentExplanationRequest, experimentKeyRequest } from './headline-experiment-fixture';
 
 vi.mock('ai', async (original) => ({
   ...(await original<typeof import('ai')>()),
@@ -475,7 +475,7 @@ it('blocks review and commitment when the final structural layout violates an ex
   expect(ready).not.toHaveBeenCalled();
 });
 
-it('grounds the recorded explanation in runtime facts without creating a proposal or mutation', async () => {
+it('grounds a headline experiment explanation in runtime facts without creating a proposal or mutation', async () => {
   const request = experimentExplanationRequest();
   const before = structuredClone(request);
   const explanation = {
