@@ -198,3 +198,41 @@ it('round trips Experiment through import and both assistant boundaries', () => 
     expect(changed.nodes[1].data.config.experimentSplit).toBe(70);
   }
 });
+
+it('uses the same assignment key for runtime storage and reviewer evidence', () => {
+  const tools = createExperimentTools();
+  expect(tools.assignmentKey('one', {})).toBe('visual-dxp-experiment-v1:one');
+  expect(tools.assignmentKey('one', { experimentKey: '  ' })).toBe('visual-dxp-experiment-v1:one');
+  expect(tools.assignmentKey('one', { experimentKey: ' campaign ' })).toBe(
+    'visual-dxp-experiment-v1:campaign',
+  );
+  tools.assign('one', { experimentKey: ' campaign ', experimentSplit: 100 }, window);
+  expect(localStorage.getItem(tools.assignmentKey('one', { experimentKey: 'campaign' }))).toBe('a');
+  expect(
+    createExperimentTools().assign(
+      'one',
+      { experimentKey: 'campaign', experimentSplit: 0 },
+      window,
+    ),
+  ).toBe('a');
+});
+
+it('keeps default node-ID assignments after redeployment and reporting version changes in runtime and export', async () => {
+  const workflow = graph({ experimentSplit: 100 });
+  const first = createRuntime(workflow);
+  runtimes.push(first);
+  await first.run();
+  first.destroy();
+  workflow.name = 'Redeployed headline test';
+  workflow.analytics = { provider: 'none', workflowVersion: '2' };
+  workflow.nodes[1].data.config.experimentSplit = 0;
+  const restarted = createRuntime(workflow);
+  runtimes.push(restarted);
+  await restarted.run();
+  expect(document.querySelector('#result')?.textContent).toBe('A');
+  restarted.destroy();
+  new Function('window', 'document', exportWorkflow(workflow))(window, document);
+  await exported.visualDXP?.run();
+  expect(document.querySelector('#result')?.textContent).toBe('A');
+  expect(localStorage.getItem('visual-dxp-experiment-v1:experiment')).toBe('a');
+});

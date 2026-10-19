@@ -121,3 +121,11 @@ export function experimentKeyRequest(): AIChatRequest {
     selectedNodeIds: ['experiment-6360188b-b552-445c-b61c-e7c70eeb6674'],
   };
 }
+
+// Issue #39 is the preceding read-only request over the same recorded graph.
+export function experimentExplanationRequest(): AIChatRequest {
+  const request = experimentKeyRequest();
+  request.messages = [{ role: 'user', content: 'what is this workflow?' }];
+  request.selectedNodeIds = [];
+  return request;
+}
