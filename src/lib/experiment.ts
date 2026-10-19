@@ -12,9 +12,13 @@ export function createExperimentTools() {
       throw new Error('Experiment ID must be text.');
   }
 
+  function assignmentKey(nodeId: string, config: StepConfig): string {
+    return `visual-dxp-experiment-v1:${config.experimentKey?.trim() || nodeId}`;
+  }
+
   function assign(nodeId: string, config: StepConfig, win: Window): 'a' | 'b' {
     validate(config);
-    const key = `visual-dxp-experiment-v1:${config.experimentKey?.trim() || nodeId}`;
+    const key = assignmentKey(nodeId, config);
     const cached = assignments.get(key);
     if (cached) return cached;
     let storage: Storage | undefined;
@@ -96,5 +100,5 @@ export function createExperimentTools() {
     });
   }
 
-  return { validate, validateAnalytics, assign, resolveAnalytics, validateSettings };
+  return { validate, validateAnalytics, assignmentKey, assign, resolveAnalytics, validateSettings };
 }

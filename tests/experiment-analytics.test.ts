@@ -440,8 +440,10 @@ it('persists analytics configuration through import/export and both workflow ass
   expect(
     JSON.parse(
       await update.invoke({ id: 'test', config: { ...toolConfig, experimentDelivery: 'gtm' } }),
-    ).ok,
-  ).toBe(true);
+    ),
+  ).toMatchObject({ ok: false, code: 'invalid_arguments', retryable: true });
+  expect(toolkit.getOperations()).toEqual([]);
+  expect(toolkit.getWorkflow()).toEqual(graph);
   expect(
     JSON.parse(await update.invoke({ id: 'test', config: { experimentAnalytics: 'posthog' } })),
   ).toMatchObject({ ok: false, code: 'invalid_arguments', retryable: true });

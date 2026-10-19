@@ -6,7 +6,7 @@ The editing harness reviews both technical validity and whether the resulting wo
 
 1. Tools stage requested operations in a private draft.
 2. The harness finalizes [local structural layout](ai-layout.md), including any required position operations in the same batch. `applyWorkflowOperations` replays and validates the batch using the existing graph/configuration rules. Existing unrelated validation issues retain their existing policy; validation findings are also supplied to the reviewer, so it must not claim a clean pass when issues remain.
-3. A separate, read-only model call receives the original workflow, actual final draft, staged changes, conversation, selected nodes, branding context, technical findings, workflow versions, and supported runtime behavior. It does not receive the editor's proposed final answer and has no editing tools.
+3. A separate, read-only model call receives the original workflow, actual final draft, staged changes, conversation, selected nodes, branding context, technical findings, workflow versions, and supported runtime behavior. It also receives concise experiment/analytics facts and per-experiment evidence derived with the runtime's assignment-key function. It does not receive the editor's proposed final answer and has no editing tools.
 4. The harness parses and validates the structured review. It checks bounded fields, referenced node IDs, required questions, completion status, and credentials before accepting it.
 5. Implementation errors return the draft to the editor. Design concerns and missing context become explanations and proposals, without applying an alternative.
 6. Only an accepted review allows `workflow-ready` and the reviewed response to reach the client. The existing canvas fingerprint check still rejects applying a batch if the user changed the canvas during the request.
@@ -18,6 +18,17 @@ All direct providers and the repository's LangGraph deployment use this harness.
 ## What the review checks
 
 The reviewer evaluates intent, reachability and branch meaning, execution order, incoming data, failure paths, repeated triggers, redundant effects, and analytics timing. Findings must connect concrete behavior to a consequence and a supported alternative. They should prioritize the requested changes and their effects, without turning a narrow edit into unrelated cleanup.
+
+Read-only explanation requests, including “what is this workflow?”, receive a factual explanation with no proposal unless the supplied graph demonstrates a material defect or essential missing context needed to answer. Optional custom keys, personalization, and unobserved website timing are not missing requirements. The same rule applies to suggestions hidden in the summary. A supported edit explicitly accepted by the user remains permitted.
+
+The reviewer receives concise runtime facts independently of the longer editing prompt:
+
+- Empty experiment keys use the stable node ID. LocalStorage assignments persist within the visitor browser and website origin; runtime memory is the fallback when storage is unavailable. Workflow versions and redeployments alone do not change the bucket.
+- Changing the key selects a different bucket without migrating or clearing the old one. The new bucket can reuse an existing assignment. Changing traffic splits affects only new assignments.
+- Each experiment invocation selects A or B exclusively. Variant paths targeting the same headline are intentional, not evidence that both paths execute.
+- Notes never execute or collect analytics. Displaying a headline/popover is exposure, not a confirmed conversion; tracking should follow a signal that actually confirms the milestone.
+
+`experimentFacts` supplies each draft experiment's current and previous storage keys, whether its storage key changed, whether it uses the node-ID fallback, traffic percentages, and branch targets. Storage keys come from the same helper used by runtime assignment. Node IDs, keys and other authored text remain untrusted data.
 
 The structured result contains:
 
@@ -58,3 +69,14 @@ History is bounded and session-local. If a proposal is no longer in chat history
 Review adds one model call to a normal completion, with additional calls for bounded repairs. It is an assessment based on supplied evidence, not a guarantee of business correctness or a live website/API execution. Unknown response shapes, selectors, external events, and business goals must remain explicit uncertainties. Category accuracy and recommendation quality still depend on the model.
 
 `tests/server/semantic-review.test.ts` exercises the real review parser and harness with mocked model outputs: all completion paths, finish/edit batching, bounded repairs, unapplied alternatives, proposal transport, changed-canvas context, missing information, invalid results, and technical failures. Existing provider/tool-loop tests isolate the reviewer and retain their original provider responsibilities. Streaming tests assert that unreviewed final text is withheld while reasoning and observability continue to work.
+
+
+The headline experiment regression tests verify the supplied facts and review/commitment behavior for the explanation and accepted custom-key edit. Runtime tests verify storage-key parity and persistence across restarts/redeployment and reporting version changes, including exported scripts. These deterministic tests do not establish model factual accuracy.
+
+For real-model checks, configure the existing server provider environment and run:
+
+```sh
+DXP_PROVIDER_EVAL=1 pnpm exec vitest run tests/server/experiment-review-provider.test.ts tests/server/experiment-key-provider.test.ts
+```
+
+These evaluations are skipped in normal CI and make real provider requests. The review grounding evaluation runs the reviewer and a separate semantic judge against explicit runtime facts. A grounded positive control and schema-valid negative controls cover false version/reset claims, invented branch conflicts, notes as tracking, and exposure described as conversion. Generated-review cases cover the headline experiment explanation, tracking questions, and the accepted key edit. The judge checks meaning across all response fields, including suggestions in summaries, rather than relying on keyword matches. As a model-based evaluation, its results are evidence rather than a proof of correctness; an unavailable provider is a validation limitation, not a passing evaluation.

@@ -11,6 +11,7 @@ import { CHAT_TIMEOUT_MS, handleChat } from '../../src/server/ai/http';
 import { reviewWorkflow } from '../../src/server/ai/review';
 import * as workflowTools from '../../src/server/ai/tools';
 import type { AIChatRequest, AIChatResponse } from '../../src/server/ai/workflow/ai';
+import { experimentKeyRequest } from './headline-experiment-fixture';
 
 vi.mock('ai', async (original) => ({
   ...(await original<typeof import('ai')>()),
@@ -227,6 +228,86 @@ describe.each([false, true])('agent progress (streaming: %s)', (streaming) => {
       .at(-1)?.[0]
       ?.messages?.flatMap((message) => (message.role === 'tool' ? message.content : []));
   }
+
+  it.each([false, true])(
+    'corrects fork-only fields on an experiment without recreating nodes (repeat rejection: %s)',
+    async (repeat) => {
+      const input = experimentKeyRequest();
+      const before = structuredClone(input);
+      const id = input.selectedNodeIds[0];
+      const invalid: Call = [
+        'update_node',
+        { id, config: { experimentSplit: 50, conditionType: 'selector', condition: 'h1' } },
+      ];
+      const reordered: Call = [
+        'update_node',
+        { config: { condition: 'h1', conditionType: 'selector', experimentSplit: 50 }, id },
+      ];
+      const corrected: Call = [
+        'update_node',
+        { id, config: { experimentKey: 'headline-test-v1' } },
+      ];
+      const invocations = provider(
+        repeat ? [read, invalid, read, reordered, corrected] : [read, invalid, corrected],
+        streaming,
+      );
+      const response = await runLocalAgent(input, new AbortController().signal, config, emit());
+      expect(response.operations).toEqual([
+        { type: 'update_node', id, config: { experimentKey: 'headline-test-v1' } },
+      ]);
+      const results = outputs(invocations()) ?? [];
+      const failures = results
+        .filter((item) => item.type === 'tool-result')
+        .map((item) => JSON.parse((item.output as { value: string }).value))
+        .filter((item) => item.ok === false);
+      expect(failures).toHaveLength(repeat ? 2 : 1);
+      expect(failures[0]).toMatchObject({
+        details: { kind: 'experiment', invalidFields: ['condition', 'conditionType'] },
+      });
+      if (repeat)
+        expect(failures[1]).toMatchObject({
+          repeatedRejectedCall: true,
+          rejectedAttempts: 2,
+          repairHint: expect.stringContaining('already rejected'),
+        });
+      const expected = structuredClone(input.workflow);
+      const experiment = expected.nodes.find((node) => node.id === id);
+      if (!experiment) throw new Error('Missing fixture experiment');
+      experiment.data.config.experimentKey = 'headline-test-v1';
+      expect(applyClient(input.workflow, response.operations)).toEqual(expected);
+      expect(toolkit.getWorkflow()).toEqual(expected);
+      expect(input).toEqual(before);
+    },
+  );
+
+  it('discards staged edits when repeated invalid experiment patches exhaust the correction budget', async () => {
+    const input = experimentKeyRequest();
+    const before = structuredClone(input);
+    const id = input.selectedNodeIds[0];
+    const invalid: Call = [
+      'update_node',
+      { id, config: { conditionType: 'selector', condition: 'h1' } },
+    ];
+    const invocations = provider(
+      [read, ['update_node', { id, label: 'Staged only' }], invalid, read, invalid, invalid],
+      streaming,
+    );
+    const ready = vi.fn();
+    await expect(
+      runLocalAgent(
+        input,
+        new AbortController().signal,
+        config,
+        emit(),
+        undefined,
+        streaming ? ready : undefined,
+      ),
+    ).rejects.toMatchObject({ code: 'invalid_workflow_edit' });
+    expect(invocations()).toHaveLength(6);
+    expect(ready).not.toHaveBeenCalled();
+    expect(toolkit.getOperations()).toHaveLength(1);
+    expect(input).toEqual(before);
+  });
 
   const missingDevice: Call = ['add_node', { kind: 'fork', config: { conditionType: 'device' } }];
   const mobileDevice: Call = [

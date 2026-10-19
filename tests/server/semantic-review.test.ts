@@ -3,10 +3,12 @@ import { beforeEach, expect, it, vi } from 'vitest';
 import { parseAIChatRequest, parseAIChatResponse } from '../../src/lib/ai';
 import { runLocalAgent } from '../../src/server/ai/agent';
 import { reviewVersion, reviewWorkflow } from '../../src/server/ai/review';
+import { experimentReviewFacts, reviewBehaviorFacts } from '../../src/server/ai/reviewFacts';
 import {
   type AIChatRequest,
   parseAIChatRequest as parseServerRequest,
 } from '../../src/server/ai/workflow/ai';
+import { experimentExplanationRequest, experimentKeyRequest } from './headline-experiment-fixture';
 
 vi.mock('ai', async (original) => ({
   ...(await original<typeof import('ai')>()),
@@ -472,3 +474,126 @@ it('blocks review and commitment when the final structural layout violates an ex
   expect(reviews).toHaveLength(0);
   expect(ready).not.toHaveBeenCalled();
 });
+
+it('grounds a headline experiment explanation in runtime facts without creating a proposal or mutation', async () => {
+  const request = experimentExplanationRequest();
+  const before = structuredClone(request);
+  const explanation = {
+    summary:
+      'On page load, this 50/50 A/B test selects one headline: Hola or Adios on h1. The default node ID keeps the assignment in browser storage on the website origin. Version changes and redeployments alone do not reset it.',
+    findings: [],
+    question: '',
+  };
+  const reviews = setup([result('Unreviewed recommendation to add a key')], [explanation]);
+  const response = await runLocalAgent(request, new AbortController().signal, config);
+  expect(response).toEqual({ message: explanation.summary, operations: [] });
+  expect(response.reviewProposal).toBeUndefined();
+  expect(request).toEqual(before);
+  const id = request.workflow.nodes[1].id;
+  expect(reviews[0].experimentFacts).toEqual([
+    {
+      nodeId: id,
+      usesNodeId: true,
+      storageKey: `visual-dxp-experiment-v1:${id}`,
+      previousStorageKey: `visual-dxp-experiment-v1:${id}`,
+      storageKeyChanged: false,
+      trafficPercent: { a: 50, b: 50 },
+      branchTargets: {
+        a: [request.workflow.nodes[2].id],
+        b: [request.workflow.nodes[3].id],
+      },
+    },
+  ]);
+  const options = vi.mocked(generateText).mock.calls.at(-1)?.[0];
+  expect(options?.system).toContain('A read-only explanation request');
+  expect(options?.system).toContain('unless it demonstrates a material defect');
+  expect(options?.system).toContain('Do not append unsupported recommendations in summary');
+  expect(options?.system).toContain(JSON.stringify(reviewBehaviorFacts));
+  expect(options?.system).toContain(
+    'workflow version changes and redeployments alone do not reset',
+  );
+  expect(options?.system).toContain(
+    'Notes cannot track events; exposure alone is not a confirmed conversion',
+  );
+});
+
+it('allows the accepted custom key edit and supplies its actual assignment-bucket consequence to review', async () => {
+  const request = experimentKeyRequest();
+  const id = request.selectedNodeIds[0];
+  const changed = {
+    summary:
+      'Added headline-test-v1. It selects a different assignment bucket, so visitors may receive new assignments; it does not migrate the old bucket.',
+    findings: [],
+    question: '',
+  };
+  const reviews = setup(
+    [
+      result('', [['update_node', { id, config: { experimentKey: 'headline-test-v1' } }]]),
+      result('Done'),
+    ],
+    [changed],
+  );
+  const response = await runLocalAgent(request, new AbortController().signal, config);
+  expect(response.operations).toEqual([
+    { type: 'update_node', id, config: { experimentKey: 'headline-test-v1' } },
+  ]);
+  expect(response.message).toBe(changed.summary);
+  expect(response.reviewProposal).toBeUndefined();
+  expect(reviews[0].experimentFacts).toEqual([
+    expect.objectContaining({
+      nodeId: id,
+      usesNodeId: false,
+      storageKey: 'visual-dxp-experiment-v1:headline-test-v1',
+      previousStorageKey: `visual-dxp-experiment-v1:${id}`,
+      storageKeyChanged: true,
+    }),
+  ]);
+});
+
+it('does not invent a bucket reset for whitespace-equivalent keys, a label change, or a reporting version change', () => {
+  const original = experimentKeyRequest().workflow;
+  original.nodes[1].data.config.experimentKey = ' headline-test-v1 ';
+  const draft = structuredClone(original);
+  draft.name = 'Redeployed';
+  draft.analytics = { provider: 'none', workflowVersion: '2' };
+  draft.nodes[1].data.label = 'New label';
+  draft.nodes[1].data.config.experimentKey = 'headline-test-v1';
+  expect(experimentReviewFacts(original, draft)[0]).toMatchObject({
+    storageKeyChanged: false,
+  });
+  draft.nodes[1].id = 'replacement';
+  expect(experimentReviewFacts(original, draft)[0]).toMatchObject({
+    storageKeyChanged: null,
+    usesNodeId: false,
+  });
+  expect(experimentReviewFacts(original, draft)[0].storageKey).toBe(
+    'visual-dxp-experiment-v1:headline-test-v1',
+  );
+});
+
+it.each([
+  [
+    'Can notes record impressions or conversions for these headlines?',
+    'Notes are canvas annotations and never execute or collect analytics.',
+  ],
+  [
+    'Does displaying Hola or Adios prove a conversion?',
+    'It establishes exposure only. A conversion needs a signal confirming the intended outcome.',
+  ],
+])(
+  'answers tracking questions without proposing unsupported changes: %s',
+  async (question, answer) => {
+    const request = experimentExplanationRequest();
+    request.messages = [{ role: 'user', content: question }];
+    const reviews = setup(
+      [result('Provisional answer')],
+      [{ summary: answer, findings: [], question: '' }],
+    );
+    const response = await runLocalAgent(request, new AbortController().signal, config);
+    expect(response).toEqual({ message: answer, operations: [] });
+    expect(reviews[0].conversation).toEqual(request.messages);
+    expect(vi.mocked(generateText).mock.calls.at(-1)?.[0].system).toContain(
+      JSON.stringify(reviewBehaviorFacts),
+    );
+  },
+);

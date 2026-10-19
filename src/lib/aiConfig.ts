@@ -5,6 +5,8 @@ import type { NodeKind, StepConfig } from './types';
 
 type ConfigField = keyof StepConfig;
 interface ConfigPolicy {
+  /** Accepted only for historical operation replay, never advertised for new tool calls. */
+  legacy?: ConfigPolicy;
   fields?: readonly ConfigField[];
   variants?: readonly {
     key: ConfigField;
@@ -82,25 +84,30 @@ const configPolicies: Record<NodeKind, ConfigPolicy> = {
   delay: { fields: ['duration'] },
   experiment: {
     fields: ['experimentSplit', 'experimentKey'],
-    variants: [
-      {
-        key: 'experimentAnalytics',
-        defaultValue: 'none',
-        options: {
-          none: {},
-          ga4: {
-            fields: ['experimentId', 'experimentSelector', 'experimentInteraction'],
-            variants: [
-              {
-                key: 'experimentDelivery',
-                defaultValue: 'gtag',
-                options: { gtag: { fields: ['experimentMeasurementId'] }, gtm: {} },
-              },
-            ],
+    legacy: {
+      variants: [
+        {
+          key: 'experimentAnalytics',
+          defaultValue: 'none',
+          options: {
+            none: {},
+            ga4: {
+              fields: ['experimentId', 'experimentSelector', 'experimentInteraction'],
+              variants: [
+                {
+                  key: 'experimentDelivery',
+                  defaultValue: 'gtag',
+                  options: {
+                    gtag: { fields: ['experimentMeasurementId'] },
+                    gtm: {},
+                  },
+                },
+              ],
+            },
           },
         },
-      },
-    ],
+      ],
+    },
   },
   fork: {
     variants: [
@@ -180,10 +187,11 @@ const configPolicies: Record<NodeKind, ConfigPolicy> = {
   frame: {},
 };
 
-function applicableConfig(kind: NodeKind, config: StepConfig) {
+function applicableConfig(kind: NodeKind, config: StepConfig, includeLegacy = true) {
   const fields = new Set<ConfigField>();
   const modes: [ConfigField, string][] = [];
   function visit(policy: ConfigPolicy) {
+    if (includeLegacy && policy.legacy) visit(policy.legacy);
     for (const field of policy.fields ?? []) fields.add(field);
     for (const variant of policy.variants ?? []) {
       fields.add(variant.key);
@@ -198,6 +206,46 @@ function applicableConfig(kind: NodeKind, config: StepConfig) {
   visit(configPolicies[kind]);
   return { fields, modes };
 }
+
+/** Describe fields and mode transitions using the same policy as AI write validation. */
+export function aiConfigCapabilities(kind: NodeKind, config: StepConfig = {}) {
+  const { fields, modes } = applicableConfig(kind, config, false);
+  function describe(policy: ConfigPolicy): {
+    fields: readonly ConfigField[];
+    variants: {
+      key: ConfigField;
+      defaultValue: string;
+      options: Record<string, ReturnType<typeof describe>>;
+    }[];
+  } {
+    return {
+      fields: policy.fields ?? [],
+      variants: (policy.variants ?? []).map(({ key, defaultValue, options }) => ({
+        key,
+        defaultValue,
+        options: Object.fromEntries(
+          Object.entries(options).map(([value, option]) => [value, describe(option)]),
+        ),
+      })),
+    };
+  }
+  return {
+    kind,
+    applicableFields: [...fields].sort(),
+    modes: Object.fromEntries(modes),
+    policy: describe(configPolicies[kind]),
+    updateRule:
+      kind === 'dom' && config.changes !== undefined
+        ? 'Update the complete changes list, preserving unrelated entries. Do not patch legacy single-change fields.'
+        : 'Send a partial patch with only requested fields. Fields depend on the resulting modes; include fields required by a mode change.',
+  };
+}
+
+export const aiAnalyticsAuthoring = {
+  path: 'workflow.analytics',
+  instruction:
+    'Configure shared analytics in the Analytics tab. These tools cannot edit workflow.analytics. Use track-event nodes for milestones; do not configure analytics delivery on individual nodes.',
+};
 
 export function validateAIConfigWrite(
   kind: NodeKind,
@@ -215,19 +263,37 @@ export function validateAIConfigWrite(
     throw new RecoverableToolError(
       'invalid_configuration',
       'This Customize Page node stores config.changes. Update the complete changes list while preserving unrelated edits.',
+      {
+        ...aiConfigCapabilities(kind, current),
+        currentConfig: current,
+        invalidFields: Object.keys(patch)
+          .filter((key) => key !== 'changes')
+          .sort(),
+        repairHint:
+          'Submit a changed patch containing the complete changes list, preserving unrelated edits.',
+      },
     );
   }
-  const { fields, modes } = applicableConfig(kind, { ...current, ...patch });
+  const { fields } = applicableConfig(kind, { ...current, ...patch });
   const invalid = Object.keys(patch)
     .filter((key) => !fields.has(key as ConfigField))
     .sort();
   if (invalid.length) {
+    const capabilities = aiConfigCapabilities(kind, { ...current, ...patch });
+    const modes = Object.entries(capabilities.modes);
     const target = modes.length
       ? `${kind} (${modes.map(([key, value]) => `${key}=${value}`).join(', ')})`
       : kind;
     throw new RecoverableToolError(
       'invalid_configuration',
       `Invalid configuration fields: ${invalid.join(', ')} for ${target}. Send only fields supported by the resulting configuration.`,
+      {
+        ...capabilities,
+        currentConfig: current,
+        invalidFields: invalid,
+        repairHint:
+          'Remove invalidFields and submit a changed partial patch for this target using applicableFields and the resulting modes. Preserve unrelated configuration.',
+      },
     );
   }
 }

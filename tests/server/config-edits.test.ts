@@ -3,12 +3,15 @@ import {
   applyWorkflowOperations as applyClient,
   parseAIChatResponse as parseClient,
 } from '../../src/lib/ai';
+import { aiConfigCapabilities, validateAIConfigWrite } from '../../src/lib/aiConfig';
+import { isWorkflow } from '../../src/lib/serialization';
 import { createWorkflowTools } from '../../src/server/ai/tools';
 import {
   applyWorkflowOperations as applyServer,
   parseAIChatResponse,
 } from '../../src/server/ai/workflow/ai';
 import type { NodeKind, StepConfig, Workflow } from '../../src/server/ai/workflow/types';
+import { experimentKeyRequest } from './headline-experiment-fixture';
 
 function workflow(kind: NodeKind, config: StepConfig): Workflow {
   return {
@@ -176,18 +179,11 @@ const cases: {
     after: { content: '<p>Offer</p>', position: 'bottom-right' },
   },
   {
-    name: 'disabling analytics preserves experiment assignment',
+    name: 'key update preserves legacy analytics configuration',
     kind: 'experiment',
     before: analytics,
-    patch: { experimentAnalytics: 'none' },
-    after: { experimentSplit: 40, experimentKey: 'offer', experimentAnalytics: 'none' },
-  },
-  {
-    name: 'Google tag to GTM removes measurement ID',
-    kind: 'experiment',
-    before: analytics,
-    patch: { experimentDelivery: 'gtm' },
-    after: { ...gtmAnalytics, experimentDelivery: 'gtm' },
+    patch: { experimentKey: 'new-offer' },
+    after: { ...analytics, experimentKey: 'new-offer' },
   },
 ];
 
@@ -337,7 +333,7 @@ describe('configuration dependencies across node kinds', () => {
     [
       'experiment',
       { experimentKey: 'offer', experimentId: 'Historical ID' },
-      { experimentAnalytics: 'none', experimentSplit: 30 },
+      { experimentSplit: 30 },
     ],
   ] satisfies [NodeKind, StepConfig, StepConfig][])(
     'preserves historical fields on same-mode %s patches',
@@ -398,7 +394,7 @@ describe('configuration dependencies across node kinds', () => {
         JSON.parse(toolkit.invokePrivate('update_node', { id: 'target', config: patch })),
       ).toMatchObject({
         ok: false,
-        error: expect.stringContaining('Invalid configuration fields'),
+        error: expect.stringMatching(/Invalid configuration fields|Invalid tool arguments/),
       });
       expect(toolkit.getOperations()).toEqual([]);
       expect(toolkit.getWorkflow()).toEqual(original);
@@ -459,4 +455,121 @@ describe('configuration dependencies across node kinds', () => {
       expect(applyClient(original, toolkit.getOperations())).toEqual(toolkit.getWorkflow());
     },
   );
+});
+
+describe('node-kind configuration capabilities', () => {
+  it('exposes experiment-only capabilities and the shared analytics authoring path', () => {
+    const input = experimentKeyRequest();
+    const toolkit = createWorkflowTools(input.workflow, input.selectedNodeIds);
+    const read = JSON.parse(toolkit.invokePrivate('read_workflow', {}));
+    const id = input.selectedNodeIds[0];
+    expect(read.workflow).toEqual(input.workflow);
+    expect(read.configCapabilities[id]).toMatchObject({
+      kind: 'experiment',
+      applicableFields: ['experimentKey', 'experimentSplit'],
+      modes: {},
+    });
+    expect(read.analyticsAuthoring).toMatchObject({ path: 'workflow.analytics' });
+    expect(read.analyticsAuthoring.instruction).toContain('Analytics tab');
+    const entry = JSON.parse(toolkit.invokePrivate('read_node_catalog', {})).find(
+      (entry: { kind: string }) => entry.kind === 'experiment',
+    );
+    expect(entry.configCapabilities).toEqual(read.configCapabilities[id]);
+    for (const definition of toolkit.definitions.filter(({ name }) =>
+      ['update_node', 'add_node', 'insert_node'].includes(name),
+    )) {
+      const schema = JSON.stringify(definition.parameters);
+      expect(schema).not.toContain('experimentAnalytics');
+      expect(schema).not.toContain('experimentSelector');
+      expect(schema).not.toContain('Required for GA4');
+    }
+  });
+
+  it('returns repair details and replays only the requested key change on server and client', () => {
+    const input = experimentKeyRequest();
+    const snapshot = structuredClone(input);
+    const id = input.selectedNodeIds[0];
+    const toolkit = createWorkflowTools(input.workflow, input.selectedNodeIds);
+    const failure = JSON.parse(
+      toolkit.invokePrivate('update_node', {
+        id,
+        config: { experimentSplit: 50, conditionType: 'selector', condition: 'h1' },
+      }),
+    );
+    expect(failure).toMatchObject({
+      ok: false,
+      code: 'invalid_configuration',
+      retryable: true,
+      details: {
+        kind: 'experiment',
+        invalidFields: ['condition', 'conditionType'],
+        applicableFields: ['experimentKey', 'experimentSplit'],
+        currentConfig: { experimentSplit: 50 },
+        repairHint: expect.stringContaining('changed partial patch'),
+      },
+    });
+    expect(toolkit.getOperations()).toEqual([]);
+    const patch = { id, config: { experimentKey: 'headline-test-v1' } };
+    expect(JSON.parse(toolkit.invokePrivate('update_node', patch))).toMatchObject({
+      ok: true,
+      changed: true,
+    });
+    const expected = structuredClone(input.workflow);
+    const experiment = expected.nodes.find((node) => node.id === id);
+    if (!experiment) throw new Error('Missing fixture experiment');
+    experiment.data.config.experimentKey = 'headline-test-v1';
+    expect(toolkit.getOperations()).toEqual([{ type: 'update_node', ...patch }]);
+    for (const apply of [applyServer, applyClient])
+      expect(apply(input.workflow, toolkit.getOperations())).toEqual(expected);
+    expect(toolkit.getWorkflow()).toEqual(expected);
+    expect(input).toEqual(snapshot);
+  });
+
+  it('describes mode transitions without blocking fields made active by the patch', () => {
+    const capabilities = aiConfigCapabilities('http', {
+      method: 'GET',
+      url: 'https://example.test',
+    });
+    expect(capabilities.applicableFields).not.toContain('body');
+    expect(capabilities.policy.variants[0].options.POST.fields).toContain('body');
+    expect(() =>
+      validateAIConfigWrite('http', { method: 'POST', body: '{}' }, { method: 'GET' }),
+    ).not.toThrow();
+    const fork = aiConfigCapabilities('fork', { conditionType: 'selector' });
+    expect(fork.policy.variants[0].options.data.variants[0].options.exists.fields).toEqual([]);
+    expect(fork.policy.variants[0].options.data.variants[0].options.equal.fields).toContain(
+      'conditionValue',
+    );
+  });
+
+  it('preserves saved legacy configuration but rejects new legacy analytics writes without silently dropping them', () => {
+    const original = workflow('experiment', analytics);
+    expect(isWorkflow(original)).toBe(true);
+    const toolkit = createWorkflowTools(original, ['target']);
+    for (const name of ['update_node', 'add_node']) {
+      expect(
+        JSON.parse(
+          toolkit.invokePrivate(name, {
+            id: 'target',
+            kind: 'experiment',
+            config: { experimentAnalytics: 'ga4' },
+          }),
+        ),
+      ).toMatchObject({ ok: false, code: 'invalid_arguments', retryable: true });
+    }
+    expect(toolkit.getOperations()).toEqual([]);
+    expect(toolkit.getWorkflow()).toEqual(original);
+    expect(
+      JSON.parse(
+        toolkit.invokePrivate('update_node', {
+          id: 'target',
+          config: { experimentKey: 'new-key' },
+        }),
+      ),
+    ).toMatchObject({ ok: true });
+    expect(toolkit.getWorkflow().nodes[1].data.config).toEqual({
+      ...analytics,
+      experimentKey: 'new-key',
+    });
+  });
 });
