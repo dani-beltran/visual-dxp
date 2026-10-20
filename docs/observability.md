@@ -217,7 +217,7 @@ Grafana Cloud ingestion was verified on 2026-10-04 for the configured demo stack
 
 ## Debug missing telemetry
 
-Run `npm run dev` as usual. Telemetry diagnostics use `console.debug` with an `[otel-debug]` prefix and require no environment toggle. In Node.js these messages appear in the server terminal by default; they are not sent to the browser or Loki.
+Run `npm run dev` as usual. Telemetry diagnostics use `console.debug` with an `[otel-debug]` prefix and are enabled by default outside production. In production (`NODE_ENV=production`), set `OTEL_DEBUG=true` and restart to enable diagnostics temporarily. In Node.js these messages appear in the server terminal; they are not sent to the browser or Loki. Suppressing diagnostics does not disable telemetry exports or console exporters.
 
 Look for `initializing` / `initialized`, then `operation` when you send an AI request, `content.queued` when content capture is enabled, and per-signal `export.started` / `export.succeeded` / `export.failed`. Startup reports the export mode and sanitized destinations plus whether auth headers are configured; it never prints header values or conversation content. `console` mode means no OTLP endpoint is configured. A signal showing `default localhost:4318` means its endpoint is missing while another signal has an endpoint; set the shared endpoint or all three signal endpoints. `initialization.failed` followed by disabled fallback explains configuration errors that would otherwise be silent.
 
