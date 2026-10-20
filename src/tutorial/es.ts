@@ -59,7 +59,7 @@ export const tutorialSpanish = {
   'tutorial.ai.example':
     '«Crea una ventana emergente que anuncie nuestra colección de otoño usando la identidad visual de este sitio». ',
   'tutorial.ai.branding':
-    'La identidad visual solo se usa si la comprobación de conexión ha capturado un perfil del sitio correspondiente. Tu sitio necesita el puente de Visual DXP configurado para este editor. La demostración no captura un perfil de marca. Aquí no hace falta enviar mensajes ni generar contenido.',
+    'La identidad visual se usa cuando se ha capturado un perfil del sitio correspondiente, también en la demostración. El perfil proporciona a la IA los colores, la tipografía y los estilos de botones observados. Aquí no hace falta enviar mensajes ni generar contenido.',
   'tutorial.ai.unavailable':
     'La IA usa un servidor de asistente configurado. Si no está disponible, configura o desbloquea un proveedor en Configuración de IA, o pide al anfitrión que configure el servicio. Puedes continuar sin credenciales ni solicitudes.',
   'tutorial.help.title': 'Descubre la ayuda del lienzo',

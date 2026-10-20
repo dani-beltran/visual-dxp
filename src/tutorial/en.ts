@@ -59,7 +59,7 @@ export const tutorialEnglish = {
   'tutorial.ai.example':
     '“Create a popover announcing our autumn collection, using this website’s branding.”',
   'tutorial.ai.branding':
-    'Branding is used only when a matching website profile has been captured by the website connection check. Your own site needs the Visual DXP bridge configured for this editor. The built-in demo does not capture a branding profile. No message or generation is needed here.',
+    'Branding is used when a matching website profile has been captured, including for the built-in demo. The profile supplies observed colors, typography and button styles to AI. No message or generation is needed here.',
   'tutorial.ai.unavailable':
     'AI uses a configured assistant endpoint. If it is unavailable, configure or unlock a provider in AI Settings, or ask the host to configure the service. You can continue without credentials or a request.',
   'tutorial.help.title': 'Discover Canvas Help',

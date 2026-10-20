@@ -167,3 +167,46 @@ it('runs the bundled bridge with origin checks, cancellation, and rendered-style
   expect(profiles[0].profile.colors.primary).toBe('rgb(255, 0, 0)');
   expect(post.mock.calls.at(-1)![1]).toBe(window.location.origin);
 });
+
+it('initializes the demo-owned bridge from the document base and extracts its actual branding', async () => {
+  const frame = document.createElement('iframe');
+  host.append(frame);
+  const target = frame.contentWindow!;
+  const doc = frame.contentDocument!;
+  doc.documentElement.innerHTML = new DOMParser().parseFromString(
+    readFileSync('public/demo-site.html', 'utf8'),
+    'text/html',
+  ).documentElement.innerHTML;
+  const base = doc.createElement('base');
+  base.href = `${window.location.origin}/nested/editor`;
+  doc.head.prepend(base);
+  const script = doc.querySelector<HTMLScriptElement>('#visual-dxp-demo-bridge')!;
+  expect(script.defer).toBe(true);
+  expect(script.src).toBe(`${window.location.origin}/bridge.js`);
+  new Function('document', doc.querySelector('#visual-dxp-demo-bridge-config')!.textContent!)(doc);
+  expect(script.getAttribute('data-parent-origin')).toBe(window.location.origin);
+  expect(script.getAttribute('data-target-url')).toBe(`${window.location.origin}/demo-site.html`);
+  vi.spyOn(doc, 'currentScript', 'get').mockReturnValue(script);
+  vi.spyOn(doc, 'readyState', 'get').mockReturnValue('complete');
+  for (const element of doc.querySelectorAll('body, h1, h2, button, a, input')) {
+    vi.spyOn(element, 'getClientRects').mockReturnValue([{}] as unknown as DOMRectList);
+  }
+  const post = vi.spyOn(target.parent, 'postMessage').mockImplementation(() => {});
+  new Function('window', 'document', readFileSync('public/bridge.js', 'utf8'))(target, doc);
+  target.dispatchEvent(
+    new MessageEvent('message', {
+      source: target.parent,
+      origin: window.location.origin,
+      data: { protocol: BRANDING_PROTOCOL, type: 'extract', channel: 'demo-branding' },
+    }),
+  );
+  await vi.advanceTimersByTimeAsync(0);
+  const profile = post.mock.calls
+    .map(([data]) => data)
+    .find((data) => data.type === 'profile')?.profile;
+  expect(profile).toMatchObject({
+    websiteUrl: `${window.location.origin}/demo-site.html`,
+    colors: { primary: 'rgb(105, 120, 86)' },
+    elements: { body: expect.any(Object), heading: expect.any(Object), button: expect.any(Object) },
+  });
+});
