@@ -5,6 +5,8 @@ export function telemetryDebug(
   event: string,
   fields: Record<string, string | number | boolean> = {},
 ) {
+  if (process.env.NODE_ENV === 'production' && process.env.OTEL_DEBUG !== 'true') return;
+
   try {
     console.debug('[otel-debug]', JSON.stringify({ event, ...fields }));
   } catch {

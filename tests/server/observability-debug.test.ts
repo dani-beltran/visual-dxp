@@ -13,12 +13,43 @@ afterEach(() => {
 });
 
 it('prints diagnostics through console.debug without configuration', () => {
+  vi.stubEnv('NODE_ENV', 'development');
+  vi.stubEnv('OTEL_DEBUG', undefined);
   const output = vi.spyOn(console, 'debug').mockImplementation(() => {});
   telemetryDebug('test', { records: 2 });
   expect(output).toHaveBeenCalledWith(
     '[otel-debug]',
     JSON.stringify({ event: 'test', records: 2 }),
   );
+});
+
+it.each([undefined, 'false', '1'])(
+  'suppresses production diagnostics with OTEL_DEBUG=%s',
+  (value) => {
+    vi.stubEnv('NODE_ENV', 'production');
+    vi.stubEnv('OTEL_DEBUG', value);
+    const output = vi.spyOn(console, 'debug').mockImplementation(() => {});
+    const callback = vi.fn();
+    const exporter = debugExporter('traces', {
+      export: (_payload: unknown, done: (result: { code: ExportResultCode }) => void) => {
+        done({ code: ExportResultCode.SUCCESS });
+      },
+    });
+
+    telemetryDebug('test');
+    exporter.export([], callback);
+
+    expect(output).not.toHaveBeenCalled();
+    expect(callback).toHaveBeenCalledExactlyOnceWith({ code: ExportResultCode.SUCCESS });
+  },
+);
+
+it('allows production diagnostics with OTEL_DEBUG=true', () => {
+  vi.stubEnv('NODE_ENV', 'production');
+  vi.stubEnv('OTEL_DEBUG', 'true');
+  const output = vi.spyOn(console, 'debug').mockImplementation(() => {});
+  telemetryDebug('test');
+  expect(output).toHaveBeenCalledWith('[otel-debug]', JSON.stringify({ event: 'test' }));
 });
 
 it('reports safe endpoint metadata and error categories without credentials or raw errors', () => {
