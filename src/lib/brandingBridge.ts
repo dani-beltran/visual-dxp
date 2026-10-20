@@ -82,7 +82,7 @@ export function extractBrandingProfile(doc: Document, win: Window): BrandingProf
     return style;
   };
   const group = <T extends BrandingStyleSample>(groups: Map<string, T>, sample: T): T => {
-    const key = JSON.stringify(sample.style);
+    const key = JSON.stringify('variant' in sample ? [sample.style, sample.variant] : sample.style);
     const existing = groups.get(key);
     if (existing) {
       existing.sampleCount++;
@@ -98,6 +98,13 @@ export function extractBrandingProfile(doc: Document, win: Window): BrandingProf
         b.sampleCount - a.sampleCount ||
         JSON.stringify(a.style).localeCompare(JSON.stringify(b.style), 'en'),
     );
+  const sampleCounts = new Map<string, number>();
+  const takeSample = (category: string) => {
+    const count = sampleCounts.get(category) ?? 0;
+    if (count >= BRANDING_SAMPLE_LIMIT) return false;
+    sampleCounts.set(category, count + 1);
+    return true;
+  };
   const typographyGroups = new Map<string, Map<string, BrandingStyleSample>>();
   const paragraphs = new Map<string, BrandingStyleSample>();
   const flowingProse = new Map<string, BrandingStyleSample>();
@@ -110,7 +117,7 @@ export function extractBrandingProfile(doc: Document, win: Window): BrandingProf
     value: string | undefined,
     inferred = false,
   ) => {
-    if (!hasColor(value) || value.length > 300) return;
+    if (!hasColor(value) || value.length > 300 || !takeSample(`color:${role}`)) return;
     let colors = palette.get(role);
     if (!colors) {
       colors = new Map();
@@ -135,8 +142,8 @@ export function extractBrandingProfile(doc: Document, win: Window): BrandingProf
   let inspected = 0;
   let sampled = 0;
   let node: Node | null = doc.documentElement;
-  // Bound traversal as well as retained output; hidden nodes cannot exhaust the sample quota.
-  while (node && inspected++ < 2000 && sampled < BRANDING_SAMPLE_LIMIT) {
+  // Bound traversal independently of category quotas so navigation cannot starve headings or CTAs.
+  while (node && inspected++ < 2000) {
     const element = node as Element;
     node = walker.nextNode();
     if (!visible(element)) continue;
@@ -181,8 +188,12 @@ export function extractBrandingProfile(doc: Document, win: Window): BrandingProf
           groups = new Map();
           typographyGroups.set(role, groups);
         }
-        group(groups, sample);
-        if (role === 'body' && element.matches('p, li, dd, dt, blockquote, [role="paragraph"]')) {
+        if (takeSample(`typography:${role}`)) group(groups, sample);
+        if (
+          role === 'body' &&
+          element.matches('p, li, dd, dt, blockquote, [role="paragraph"]') &&
+          takeSample('prose')
+        ) {
           group(paragraphs, { ...sample, sampleCount: 1 });
           const size = Number.parseFloat(style.fontSize);
           const lineHeight = Number.parseFloat(style.lineHeight);
@@ -208,18 +219,19 @@ export function extractBrandingProfile(doc: Document, win: Window): BrandingProf
     if (
       hasText &&
       hasColor(style.color) &&
-      !element.closest(`${BUTTON_SELECTOR}, a[href], svg, label, select, textarea`)
+      !element.closest(`${BUTTON_SELECTOR}, a[href], svg, label, select, textarea`) &&
+      takeSample('textColors')
     ) {
       const existing = textColors.get(style.color);
       if (existing) existing.sampleCount++;
       else
         textColors.set(style.color, { value: style.color, sampleCount: 1, roleSource: 'inferred' });
     }
-    if (isLink) {
+    if (isLink && takeSample('links')) {
       group(links, { style: readStyle(element, BRANDING_STYLE_KEYS), sampleCount: 1 });
       if (style.color !== computed(doc.body).color) addColor('accent', style.color, true);
     }
-    if (!isButton) continue;
+    if (!isButton || !takeSample('buttons')) continue;
     const buttonStyle = readStyle(element, BRANDING_STYLE_KEYS);
     const backdrop = background(element.parentElement);
     const fillContrast = contrast(style.backgroundColor, backdrop);
@@ -280,7 +292,11 @@ export function extractBrandingProfile(doc: Document, win: Window): BrandingProf
       // These groups already count rendered elements; don't count grouping itself.
       const signature = JSON.stringify(sample.style);
       const existing = captions.get(signature);
-      if (existing) existing.sampleCount += sample.sampleCount;
+      if (existing)
+        existing.sampleCount = Math.min(
+          BRANDING_SAMPLE_LIMIT,
+          existing.sampleCount + sample.sampleCount,
+        );
       else captions.set(signature, sample);
     }
     typographyGroups.set('body', prose);

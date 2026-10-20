@@ -60,6 +60,62 @@ it('retains filled, outline and text variants and infers the rare prominent CTA 
   expect(parseBrandingProfile(profile)).toEqual(profile);
 });
 
+it('keeps identical button styles separate when their backdrops produce different variants', () => {
+  document.head.innerHTML = `<style>
+    body { background: white; color: black; }
+    button { background: black; color: white; border: 0; font: 16px Arial; }
+  </style>`;
+  document.body.innerHTML = `<nav style="background:black"><button>Menu</button></nav>
+    <main><button>Buy</button></main>`;
+  rendered();
+  vi.spyOn(Element.prototype, 'getBoundingClientRect').mockReturnValue({
+    width: 160,
+    height: 44,
+  } as DOMRect);
+  const profile = extractBrandingProfile(document, window);
+  expect(profile.buttons).toHaveLength(2);
+  expect(profile.buttons).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({ variant: 'text', role: 'unknown', sampleCount: 1 }),
+      expect.objectContaining({ variant: 'filled', role: 'likely-primary', sampleCount: 1 }),
+    ]),
+  );
+  expect(parseBrandingProfile(profile)).toEqual(profile);
+});
+
+it('reserves bounded category samples for main content after a large navigation', () => {
+  document.head.innerHTML = `<style>
+    body { background: white; color: black; font: 16px Arial; }
+    nav span { font-size: 10px; }
+    p { font-size: 18px; line-height: 28px; }
+    button { background: black; color: white; border: 0; }
+  </style>`;
+  document.body.innerHTML = `<nav>${'<span>Menu</span>'.repeat(350)}</nav>
+    <main><h1>Heading</h1><p>Prose</p><button>Buy</button></main>`;
+  rendered();
+  const profile = extractBrandingProfile(document, window);
+  expect(profile.typography.h1).toHaveLength(1);
+  expect(profile.typography.body?.[0].style.fontSize).toBe('18px');
+  expect(profile.buttons).toHaveLength(1);
+  expect(profile.typography.caption?.[0].sampleCount).toBeLessThanOrEqual(300);
+  expect(parseBrandingProfile(profile)).toEqual(profile);
+});
+
+it('keeps merged explicit and inferred caption counts within the profile contract', () => {
+  document.head.innerHTML = `<style>
+    body { font: 16px Arial; }
+    small, span { font-size: 10px; }
+    p { font-size: 18px; line-height: 28px; }
+  </style>`;
+  document.body.innerHTML = `${'<small>Caption</small>'.repeat(350)}
+    ${'<span>Label</span>'.repeat(350)}<p>Prose</p>`;
+  rendered();
+  const profile = extractBrandingProfile(document, window);
+  expect(profile.typography.caption?.[0].sampleCount).toBe(300);
+  expect(profile.typography.body?.[0].style.fontSize).toBe('18px');
+  expect(parseBrandingProfile(profile)).toEqual(profile);
+});
+
 it('does not treat transparent fills or borders as visible button treatments', () => {
   document.body.innerHTML =
     '<button style="background:rgba(0,0,0,0);border:1px solid transparent;color:black">Plain</button>';
