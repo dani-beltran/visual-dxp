@@ -3,7 +3,7 @@ import '../../styles/shared.css';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ConnectionPreview } from '../../lib/connections';
 import { useBuilderI18n } from '../../lib/i18nContext';
-import { PREVIEW_PROTOCOL, previewBridgeSource } from '../../lib/previewBridge';
+import { PREVIEW_PROTOCOL } from '../../lib/previewBridge';
 import { usePreviewUrl } from '../../lib/previewTransport';
 import type { PreviewExecutionEvent, RunLog, Workflow } from '../../lib/types';
 import './IsolatedPreview.css';
@@ -131,12 +131,7 @@ export function IsolatedPreview({
           if (!response.ok) throw new Error();
           const source = await response.text();
           if (controller.signal.aborted) return;
-          const bridge = previewBridgeSource(window.location.origin).replace(
-            /<\/script/gi,
-            '<\\/script',
-          );
-          // Sandbox applies to every script in the document, including author HTML.
-          setHtml(`${source}<script>${bridge}</script>`);
+          setHtml(source);
         })
         .catch(() => {
           if (!controller.signal.aborted)

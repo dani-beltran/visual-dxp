@@ -423,11 +423,7 @@ function Builder({
   useEffect(() => {
     try {
       const url = normalizeWebsiteUrl(workflow.websiteUrl, window.location.href);
-      setBackgroundConnection(
-        url !== resolveWebsiteUrl('/demo-site.html').href
-          ? { target: workflow.websiteUrl, url }
-          : undefined,
-      );
+      setBackgroundConnection({ target: workflow.websiteUrl, url });
     } catch {
       // Invalid targets are handled by the website settings dialog.
       setBackgroundConnection(undefined);

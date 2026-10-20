@@ -773,5 +773,15 @@
         });
       })();
     </script>
+    <script id="visual-dxp-demo-bridge" src="/bridge.js" defer></script>
+    <script id="visual-dxp-demo-bridge-config">
+      (() => {
+        // srcdoc inherits the editor's base URL while keeping an opaque sandbox origin.
+        const origin = new URL(document.baseURI).origin;
+        const bridge = document.getElementById('visual-dxp-demo-bridge');
+        bridge.setAttribute('data-parent-origin', origin);
+        bridge.setAttribute('data-target-url', new URL('/demo-site.html', origin).href);
+      })();
+    </script>
   </body>
 </html>

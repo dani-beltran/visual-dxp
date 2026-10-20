@@ -9,7 +9,9 @@ import {
   type VisualDXPBuilderApi,
 } from '../src/components/VisualDXPBuilder/VisualDXPBuilder';
 import { AISettingsStore } from '../src/lib/aiSettings';
+import { BRANDING_PROTOCOL } from '../src/lib/branding';
 import type { Workflow } from '../src/lib/types';
+import { brandingProfile } from './helpers/branding';
 
 let host: HTMLDivElement;
 let root: Root;
@@ -150,6 +152,70 @@ function responseWithOperations(operations: unknown[]) {
 }
 
 describe('canvas AI chat', () => {
+  it('captures demo branding in the background and includes it in AI requests', async () => {
+    vi.useFakeTimers();
+    try {
+      const fetchMock = vi.fn().mockResolvedValue(responseWithOperations([]));
+      vi.stubGlobal('fetch', fetchMock);
+      await act(async () =>
+        root.render(
+          <VisualDXPBuilder
+            initialWorkflow={{ ...initialWorkflow(), websiteUrl: '/demo-site.html' }}
+            ai={{ endpoint: '/api/ai/chat' }}
+          />,
+        ),
+      );
+      await act(async () => vi.advanceTimersByTimeAsync(500));
+      const frame = host.querySelector('iframe')!;
+      expect(frame).not.toBeNull();
+      expect(frame.getAttribute('sandbox')).toBe('allow-scripts');
+      expect(frame.src).toBe(`${window.location.origin}/demo-site.html`);
+      expect(host.querySelector('.dxp-website-connection')).toBeNull();
+      expect(fetchMock).not.toHaveBeenCalled();
+      const source = frame.contentWindow!;
+      const post = vi.spyOn(source, 'postMessage').mockImplementation(() => {});
+      await act(async () => frame.dispatchEvent(new Event('load')));
+      const init = post.mock.calls.at(-1)![0];
+      const receive = async (data: object, sender = source, origin = 'null') =>
+        act(async () => {
+          window.dispatchEvent(new MessageEvent('message', { source: sender, origin, data }));
+        });
+      await receive({ ...init, type: 'ready' });
+      const extract = post.mock.calls.at(-1)![0];
+      expect(extract).toEqual({
+        protocol: BRANDING_PROTOCOL,
+        channel: expect.any(String),
+        type: 'extract',
+      });
+      const profile = brandingProfile(`${window.location.origin}/demo-site.html`);
+      const response = {
+        protocol: BRANDING_PROTOCOL,
+        channel: extract.channel,
+        type: 'profile',
+        profile,
+      };
+      await receive(response, window);
+      await receive(response, source, window.location.origin);
+      await receive({ ...response, channel: 'wrong-channel' });
+      await receive({ ...response, profile: {} });
+      expect(host.querySelector('iframe')).toBe(frame);
+      await receive(response);
+      expect(host.querySelector('iframe')).toBeNull();
+      expect(post.mock.calls).toContainEqual([{ ...extract, type: 'stop' }, '*']);
+      await click(button('AI chat'));
+      await typeMessage('Use this website’s branding');
+      await click(button('Send message'));
+      const request = fetchMock.mock.calls.find(([url]) => url === '/api/ai/chat');
+      expect(request).toBeDefined();
+      expect(JSON.parse(request![1].body)).toMatchObject({
+        brandingProfile: { ...profile, websiteUrl: '/demo-site.html' },
+        workflow: { websiteUrl: '/demo-site.html' },
+      });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('places the AI chat trigger immediately before Canvas help in the builder', async () => {
     await act(async () => {
       root.render(
