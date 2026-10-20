@@ -16,6 +16,12 @@ Spans record provider, requested/actual model when returned, maximum output toke
 
 Automatic retries were already disabled and remain disabled (`maxRetries=0`, `streamRetries=0`): there are no hidden retry calls or synthetic retry spans. Every content record and generation span has retry attempt zero. A manual user retry is a new workflow run. If automatic retries are introduced later, instrument each attempt explicitly instead of turning on opaque SDK retries.
 
+### HTTP server error logs
+
+AI and preview endpoints write `[endpoint-error]` followed by one JSON record to the server console for failures with status 500 or higher. These diagnostics are always enabled, independently of OTLP export, `OTEL_DEBUG`, or content capture. Records include the endpoint template, response status, method, error category, and selected error fields: name, message, stack, code, HTTP status, and nested causes or aggregate errors. AI records also include duration, provider, streaming mode, and run/trace IDs when execution has started; match these IDs to the response's `X-DXP-Run-Id` and `X-DXP-Trace-Id` headers. Preview paths use templates so signed session tokens are not logged.
+
+Environment credentials and the active browser provider key are redacted before truncation. Messages are limited to 2 KiB and stacks to 8 KiB per error; cause traversal is bounded by depth and error count. Request bodies, response bodies, headers, and arbitrary SDK properties are excluded. Error messages can still contain application data without a recognizable secret pattern, so treat server logs as private diagnostics. HTTP responses retain their existing error contract; these extra details stay in server logs.
+
 ## Local setup
 
 Use Node >=22.12, `npm install`, then copy `.env.example` to `.env.local` if it does not already exist. Preserve existing private settings. Run:

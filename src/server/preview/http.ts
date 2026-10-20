@@ -29,9 +29,9 @@ function quota(request: Request, scope: 'session' | 'resource') {
   buckets.set(key, bucket);
 }
 
-function errorResponse(endpoint: string, error: unknown): Response {
+function errorResponse(endpoint: string, error: unknown, request: Request): Response {
   const known = error instanceof PreviewError;
-  logEndpointError(endpoint, known ? error.status : 502, error);
+  logEndpointError(endpoint, known ? error.status : 502, error, { method: request.method });
   return Response.json(
     {
       error: known ? error.message : 'The public website could not be loaded by the preview proxy.',
@@ -91,7 +91,7 @@ export async function createPreviewSession(request: Request): Promise<Response> 
       { headers: { 'Cache-Control': 'no-store' } },
     );
   } catch (error) {
-    return errorResponse('/api/preview/sessions', error);
+    return errorResponse('/api/preview/sessions', error, request);
   }
 }
 
@@ -142,7 +142,16 @@ export async function servePreview(
     }
     if (request.method === 'HEAD') {
       headers.set('Content-Type', html ? 'text/html; charset=utf-8' : contentType);
-      logEndpointError('/api/preview/content/[token]/[[...path]]', upstream.status);
+      if (upstream.status >= 500)
+        logEndpointError(
+          '/api/preview/content/[token]/[[...path]]',
+          upstream.status,
+          new PreviewError(
+            `The preview website returned HTTP ${upstream.status}.`,
+            upstream.status,
+          ),
+          { method: request.method },
+        );
       return new Response(null, { status: upstream.status, headers });
     }
     let body = upstream.body;
@@ -183,12 +192,18 @@ export async function servePreview(
     } else headers.set('Content-Type', contentType);
     if (body.length > 16 * 1024 * 1024)
       throw new PreviewError('Transformed preview resource is too large.', 413);
-    logEndpointError('/api/preview/content/[token]/[[...path]]', upstream.status);
+    if (upstream.status >= 500)
+      logEndpointError(
+        '/api/preview/content/[token]/[[...path]]',
+        upstream.status,
+        new PreviewError(`The preview website returned HTTP ${upstream.status}.`, upstream.status),
+        { method: request.method },
+      );
     return new Response(new Uint8Array(body), {
       status: upstream.status,
       headers,
     });
   } catch (error) {
-    return errorResponse('/api/preview/content/[token]/[[...path]]', error);
+    return errorResponse('/api/preview/content/[token]/[[...path]]', error, request);
   }
 }

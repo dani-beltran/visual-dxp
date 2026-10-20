@@ -579,6 +579,12 @@ async function executeRemoteAgent(
     throw new AIServiceError(
       502,
       `The AI deployment returned HTTP ${upstream.status}. Check its URL, assistant ID and server-side credentials.`,
+      undefined,
+      {
+        cause: Object.assign(new Error('AI deployment request failed.'), {
+          statusCode: upstream.status,
+        }),
+      },
     );
   }
   let payload: unknown;

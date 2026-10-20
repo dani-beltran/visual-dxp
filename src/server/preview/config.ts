@@ -6,6 +6,7 @@ export class PreviewError extends Error {
     public status = 400,
   ) {
     super(message);
+    this.name = 'PreviewError';
   }
 }
 
