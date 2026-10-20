@@ -53,6 +53,32 @@ const fixture = (html = '<html><head></head><body><h1 id="hero">Welcome</h1></bo
   body: Buffer.from(html),
 });
 
+it('logs preview server failures while keeping client errors quiet', async () => {
+  const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+  const token = signSession(session(), previewConfig());
+  const request = new Request(`http://127.0.0.1:3000/api/preview/content/${token}/`);
+  for (const status of [400, 429, 502]) {
+    log.mockClear();
+    const response = await servePreview(request, token, async () => {
+      throw new PreviewError('private details', status);
+    });
+    expect(response.status).toBe(status);
+    expect(log).toHaveBeenCalledTimes(status >= 500 ? 1 : 0);
+  }
+  log.mockClear();
+  await servePreview(request, token, async () => ({ ...fixture(), status: 503 }));
+  expect(log).toHaveBeenCalledExactlyOnceWith('[endpoint-error]', {
+    endpoint: '/api/preview/content/[token]/[[...path]]',
+    status: 503,
+    error_type: 'operation_failed',
+  });
+  log.mockClear();
+  vi.stubEnv('PREVIEW_PROXY_SECRET', '');
+  expect((await createPreviewSession(create())).status).toBe(502);
+  expect(log).toHaveBeenCalledOnce();
+  expect(JSON.stringify(log.mock.calls)).not.toContain('private details');
+});
+
 describe('configuration and signed capabilities', () => {
   it('uses the actual HTTP host when Next normalizes a loopback request URL', () => {
     const request = new Request('http://localhost:3000/api/preview/content/token', {
