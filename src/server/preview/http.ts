@@ -2,6 +2,7 @@ import 'server-only';
 import { randomBytes } from 'node:crypto';
 import { brotliDecompressSync, gunzipSync, inflateSync } from 'node:zlib';
 import { aiRateLimitKey } from '../ai/access';
+import { logEndpointError } from '../endpointErrors';
 import { isPreviewHost, PreviewError, previewConfig } from './config';
 import { fetchPublic, MAX_RESOURCE_BYTES, publicAddresses, type UpstreamResponse } from './network';
 import { previewCsp, rewriteCsp, rewriteCss, rewriteHtml } from './rewrite';
@@ -28,8 +29,9 @@ function quota(request: Request, scope: 'session' | 'resource') {
   buckets.set(key, bucket);
 }
 
-function errorResponse(error: unknown): Response {
+function errorResponse(endpoint: string, error: unknown): Response {
   const known = error instanceof PreviewError;
+  logEndpointError(endpoint, known ? error.status : 502, error);
   return Response.json(
     {
       error: known ? error.message : 'The public website could not be loaded by the preview proxy.',
@@ -89,7 +91,7 @@ export async function createPreviewSession(request: Request): Promise<Response> 
       { headers: { 'Cache-Control': 'no-store' } },
     );
   } catch (error) {
-    return errorResponse(error);
+    return errorResponse('/api/preview/sessions', error);
   }
 }
 
@@ -140,6 +142,7 @@ export async function servePreview(
     }
     if (request.method === 'HEAD') {
       headers.set('Content-Type', html ? 'text/html; charset=utf-8' : contentType);
+      logEndpointError('/api/preview/content/[token]/[[...path]]', upstream.status);
       return new Response(null, { status: upstream.status, headers });
     }
     let body = upstream.body;
@@ -180,11 +183,12 @@ export async function servePreview(
     } else headers.set('Content-Type', contentType);
     if (body.length > 16 * 1024 * 1024)
       throw new PreviewError('Transformed preview resource is too large.', 413);
+    logEndpointError('/api/preview/content/[token]/[[...path]]', upstream.status);
     return new Response(new Uint8Array(body), {
       status: upstream.status,
       headers,
     });
   } catch (error) {
-    return errorResponse(error);
+    return errorResponse('/api/preview/content/[token]/[[...path]]', error);
   }
 }

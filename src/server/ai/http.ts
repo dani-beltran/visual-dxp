@@ -16,6 +16,7 @@ import {
 } from '../../lib/aiCredentials';
 import { getAIEditFailure } from '../../lib/aiErrors';
 import { safeTextEmitter } from '../../lib/aiStream';
+import { logEndpointError } from '../endpointErrors';
 import { identifiers, withWorkflow } from '../observability';
 import { aiRateLimitKey, allowAIRequest } from './access';
 import { AIServiceError, respondToAIChat } from './agent';
@@ -300,6 +301,11 @@ export async function handleChat(
               send({ type: 'result', response: parsed });
             } catch (error) {
               const failure = controller.signal.aborted ? controller.signal.reason : error;
+              logEndpointError(
+                '/api/ai/chat',
+                failure instanceof AIServiceError ? failure.status : 502,
+                failure,
+              );
               const edit =
                 failure instanceof AIServiceError ? getAIEditFailure(failure) : undefined;
               send({ type: 'error', ...(edit ? { code: edit.code, error: edit.message } : {}) });
@@ -337,6 +343,11 @@ export async function handleChat(
     return response;
   } catch (error) {
     const failure = controller.signal.aborted ? controller.signal.reason : error;
+    logEndpointError(
+      '/api/ai/chat',
+      failure instanceof AIServiceError ? failure.status : 502,
+      failure,
+    );
     const edit = getAIEditFailure(failure);
     if (failure instanceof AIServiceError)
       return json(

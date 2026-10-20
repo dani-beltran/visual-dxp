@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { runtime as chatRuntime, POST } from '../../src/app/api/ai/chat/route';
 import { GET, runtime as healthRuntime } from '../../src/app/api/ai/health/route';
 import { applyWorkflowOperations as applyClientOperations } from '../../src/lib/ai';
+import { AIServiceError } from '../../src/server/ai/errors';
 import { CHAT_TIMEOUT_MS, handleChat } from '../../src/server/ai/http';
 import { type AIChatRequest, applyWorkflowOperations } from '../../src/server/ai/workflow/ai';
 
@@ -63,6 +64,43 @@ afterEach(() => {
 });
 
 describe('Next Node Route Handlers', () => {
+  it.each([400, 403, 429, 499, 500, 502, 504, undefined])(
+    'logs only server failures (status %s) for JSON and streamed responses',
+    async (status) => {
+      vi.stubEnv('AI_RATE_LIMIT_IP_HEADER', 'x-test-client-ip');
+      const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+      try {
+        for (const streaming of [false, true]) {
+          log.mockClear();
+          const response = await handleChat(
+            request(JSON.stringify(input), {
+              headers: {
+                'x-test-client-ip': '192.0.2.240',
+                ...(streaming ? { Accept: 'application/x-ndjson' } : {}),
+              },
+            }),
+            async () => {
+              throw status === undefined
+                ? new Error('sensitive provider payload')
+                : new AIServiceError(status, 'sensitive provider payload');
+            },
+          );
+          await response.text();
+          if (status === undefined || status >= 500) {
+            expect(log).toHaveBeenCalledExactlyOnceWith('[endpoint-error]', {
+              endpoint: '/api/ai/chat',
+              status: status ?? 502,
+              error_type: 'operation_failed',
+            });
+          } else expect(log).not.toHaveBeenCalled();
+          expect(JSON.stringify(log.mock.calls)).not.toContain('sensitive provider payload');
+        }
+      } finally {
+        log.mockRestore();
+      }
+    },
+  );
+
   it('preserves the contract and sends context and credentials only to the provider', async () => {
     expect(chatRuntime).toBe('nodejs');
     expect(healthRuntime).toBe('nodejs');
