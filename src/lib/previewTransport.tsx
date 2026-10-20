@@ -44,12 +44,33 @@ export function createProxyPreviewTransport(endpoint = '/api/preview/sessions'):
         signal: AbortSignal.any([signal, AbortSignal.timeout(15_000)]),
         body: JSON.stringify({ url }),
       });
-      const result = await response.json();
+      const fallback = response.ok
+        ? 'The preview service returned an invalid response. Please try again.'
+        : `The preview service returned HTTP ${response.status}. Please try again later.`;
+      const contentType = response.headers.get('content-type')?.split(';')[0].trim().toLowerCase();
+      if (contentType !== 'application/json') throw new Error(fallback);
+      let result: unknown;
+      try {
+        result = await response.json();
+      } catch (error) {
+        if (error instanceof Error && ['AbortError', 'TimeoutError'].includes(error.name))
+          throw error;
+        throw new Error(fallback);
+      }
+      if (!result || typeof result !== 'object' || Array.isArray(result)) throw new Error(fallback);
       if (!response.ok)
         throw new Error(
-          typeof result.error === 'string' ? result.error : 'The preview proxy could not connect.',
+          'error' in result && typeof result.error === 'string' && result.error.trim()
+            ? result.error
+            : fallback,
         );
-      const resolved = new URL(result.url);
+      if (!('url' in result) || typeof result.url !== 'string') throw new Error(fallback);
+      let resolved: URL;
+      try {
+        resolved = new URL(result.url);
+      } catch {
+        throw new Error(fallback);
+      }
       if (
         !['http:', 'https:'].includes(resolved.protocol) ||
         resolved.username ||
