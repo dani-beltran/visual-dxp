@@ -635,7 +635,7 @@ describe('builder and host boundary', () => {
         }),
       ),
     );
-    expect(readBrandingProfile(frame.src)?.colors.primary).toBe('rgb(38, 116, 86)');
+    expect(readBrandingProfile(frame.src)?.colors.accent?.[0].value).toBe('rgb(38, 116, 86)');
     expect(host.textContent).toContain('Website connected successfully');
     expect(host.querySelector('iframe')).toBeNull();
     expect(post.mock.calls.at(-1)![0].type).toBe('stop');

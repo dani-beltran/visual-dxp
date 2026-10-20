@@ -164,7 +164,7 @@ it('runs the bundled bridge with origin checks, cancellation, and rendered-style
   );
   expect(profiles).toHaveLength(1);
   expect(profiles[0].channel).toBe('active');
-  expect(profiles[0].profile.colors.primary).toBe('rgb(255, 0, 0)');
+  expect(profiles[0].profile.colors.accent[0].value).toBe('rgb(255, 0, 0)');
   expect(post.mock.calls.at(-1)![1]).toBe(window.location.origin);
 });
 
@@ -206,7 +206,13 @@ it('initializes the demo-owned bridge from the document base and extracts its ac
     .find((data) => data.type === 'profile')?.profile;
   expect(profile).toMatchObject({
     websiteUrl: `${window.location.origin}/demo-site.html`,
-    colors: { primary: 'rgb(105, 120, 86)' },
-    elements: { body: expect.any(Object), heading: expect.any(Object), button: expect.any(Object) },
+    version: 2,
+    colors: {
+      accent: expect.arrayContaining([
+        expect.objectContaining({ value: 'rgb(105, 120, 86)', roleSource: 'inferred' }),
+      ]),
+    },
+    typography: { body: expect.any(Array), h1: expect.any(Array), h2: expect.any(Array) },
+    buttons: expect.arrayContaining([expect.objectContaining({ variant: 'filled' })]),
   });
 });

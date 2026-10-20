@@ -25,7 +25,13 @@ export {
   requestAIChat,
   workflowFingerprint,
 } from './lib/ai';
-export type { BrandingProfile, BrandingStyle } from './lib/branding';
+export type {
+  BrandingButtonSample,
+  BrandingColorSample,
+  BrandingProfile,
+  BrandingStyle,
+  BrandingStyleSample,
+} from './lib/branding';
 export { installBrandingBridge } from './lib/brandingBridge';
 export { createEmptyWorkflow, createNode, defaultWorkflow } from './lib/catalog';
 export type { ConnectionData, ConnectionPreview } from './lib/connections';
