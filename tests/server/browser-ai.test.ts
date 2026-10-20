@@ -77,6 +77,34 @@ afterEach(() => {
 });
 
 describe('request-scoped browser AI', () => {
+  it.each([false, true])(
+    'redacts the active browser key in failure logs (streaming %s)',
+    async (streaming) => {
+      const key = 'request-private-value';
+      const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const result = await handleChat(
+        request({
+          [OPENAI_KEY_HEADER]: key,
+          ...(streaming ? { Accept: 'application/x-ndjson' } : {}),
+        }),
+        async () => {
+          throw new Error(`Provider connection failed: ${key}`);
+        },
+      );
+      expect(await result.text()).not.toContain(key);
+      expect(log).toHaveBeenCalledExactlyOnceWith('[endpoint-error]', expect.any(String));
+      const output = log.mock.calls[0][1];
+      expect(output).not.toContain(key);
+      expect(JSON.parse(output)).toMatchObject({
+        streaming,
+        error: {
+          message: 'Provider connection failed: [REDACTED]',
+          stack: expect.stringContaining('Provider connection failed: [REDACTED]'),
+        },
+      });
+    },
+  );
+
   it('keeps concurrent users separate, overrides env, disables traces, and never calls remote LangGraph', async () => {
     vi.stubEnv('OPENAI_API_KEY', 'server-key');
     vi.stubEnv('OPENAI_MODEL', 'server-model');

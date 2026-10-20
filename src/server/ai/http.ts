@@ -141,6 +141,7 @@ export async function handleChat(
   request: Request,
   handler: ChatHandler = respondToAIChat,
 ): Promise<Response> {
+  const started = performance.now();
   if (!allowedOrigin(request)) return json(403, { error: 'The request origin is not allowed.' });
   if (
     request.headers.get('content-type')?.split(';')[0].trim().toLowerCase() !== 'application/json'
@@ -206,6 +207,21 @@ export async function handleChat(
   }, CHAT_TIMEOUT_MS);
   let streaming = false;
   const telemetryHeaders: Record<string, string> = {};
+  const logFailure = (failure: unknown) =>
+    logEndpointError(
+      '/api/ai/chat',
+      failure instanceof AIServiceError ? failure.status : 502,
+      failure,
+      {
+        method: request.method,
+        duration_ms: Math.round(performance.now() - started),
+        streaming,
+        provider: override?.provider ?? serverDefaultProvider(),
+        workflow_run_id: telemetryHeaders['X-DXP-Run-Id'],
+        trace_id: telemetryHeaders['X-DXP-Trace-Id'],
+      },
+      browserKey ? [browserKey] : [],
+    );
   const cleanup = () => {
     clearTimeout(timer);
     request.signal.removeEventListener('abort', disconnected);
@@ -301,11 +317,7 @@ export async function handleChat(
               send({ type: 'result', response: parsed });
             } catch (error) {
               const failure = controller.signal.aborted ? controller.signal.reason : error;
-              logEndpointError(
-                '/api/ai/chat',
-                failure instanceof AIServiceError ? failure.status : 502,
-                failure,
-              );
+              logFailure(failure);
               const edit =
                 failure instanceof AIServiceError ? getAIEditFailure(failure) : undefined;
               send({ type: 'error', ...(edit ? { code: edit.code, error: edit.message } : {}) });
@@ -343,11 +355,7 @@ export async function handleChat(
     return response;
   } catch (error) {
     const failure = controller.signal.aborted ? controller.signal.reason : error;
-    logEndpointError(
-      '/api/ai/chat',
-      failure instanceof AIServiceError ? failure.status : 502,
-      failure,
-    );
+    logFailure(failure);
     const edit = getAIEditFailure(failure);
     if (failure instanceof AIServiceError)
       return json(

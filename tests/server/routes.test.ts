@@ -81,19 +81,30 @@ describe('Next Node Route Handlers', () => {
             }),
             async () => {
               throw status === undefined
-                ? new Error('sensitive provider payload')
-                : new AIServiceError(status, 'sensitive provider payload');
+                ? new Error('provider operation failed')
+                : new AIServiceError(status, 'provider operation failed');
             },
           );
           await response.text();
           if (status === undefined || status >= 500) {
-            expect(log).toHaveBeenCalledExactlyOnceWith('[endpoint-error]', {
+            expect(log).toHaveBeenCalledExactlyOnceWith('[endpoint-error]', expect.any(String));
+            expect(JSON.parse(log.mock.calls[0][1])).toMatchObject({
               endpoint: '/api/ai/chat',
               status: status ?? 502,
               error_type: 'operation_failed',
+              method: 'POST',
+              streaming,
+              provider: 'openai',
+              duration_ms: expect.any(Number),
+              workflow_run_id: response.headers.get('x-dxp-run-id'),
+              trace_id: response.headers.get('x-dxp-trace-id'),
+              error: {
+                name: status === undefined ? 'Error' : 'AIServiceError',
+                message: 'provider operation failed',
+                stack: expect.stringContaining('provider operation failed'),
+              },
             });
           } else expect(log).not.toHaveBeenCalled();
-          expect(JSON.stringify(log.mock.calls)).not.toContain('sensitive provider payload');
         }
       } finally {
         log.mockRestore();
@@ -286,6 +297,24 @@ describe('Next Node Route Handlers', () => {
       expect(await response.text()).not.toMatch(/secret-provider-detail|mock-server-secret/);
     },
   );
+
+  it('retains the upstream HTTP status in server diagnostics', async () => {
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      provider.mockResolvedValue(new Response('private upstream body', { status: 503 }));
+      const response = await POST(request());
+      expect(response.status).toBe(502);
+      expect(JSON.parse(log.mock.calls[0][1])).toMatchObject({
+        status: 502,
+        error_type: 'provider_http_error',
+        error: { cause: { status_code: 503 } },
+      });
+      expect(JSON.stringify(log.mock.calls)).not.toContain('private upstream body');
+      expect(await response.text()).not.toContain('private upstream body');
+    } finally {
+      log.mockRestore();
+    }
+  });
 
   it('times out the route and aborts an uncooperative provider at 360 seconds', async () => {
     vi.useFakeTimers();

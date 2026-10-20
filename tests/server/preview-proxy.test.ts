@@ -67,10 +67,13 @@ it('logs preview server failures while keeping client errors quiet', async () =>
   }
   log.mockClear();
   await servePreview(request, token, async () => ({ ...fixture(), status: 503 }));
-  expect(log).toHaveBeenCalledExactlyOnceWith('[endpoint-error]', {
+  expect(log).toHaveBeenCalledExactlyOnceWith('[endpoint-error]', expect.any(String));
+  expect(JSON.parse(log.mock.calls[0][1])).toMatchObject({
     endpoint: '/api/preview/content/[token]/[[...path]]',
     status: 503,
     error_type: 'operation_failed',
+    method: 'GET',
+    error: { message: 'The preview website returned HTTP 503.', status_code: 503 },
   });
   log.mockClear();
   vi.stubEnv('PREVIEW_PROXY_SECRET', '');
