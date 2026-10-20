@@ -56,6 +56,101 @@ it('creates proxy sessions with same-origin editor credentials', async () => {
   );
 });
 
+it.each([
+  [
+    'HTML gateway error',
+    () =>
+      new Response('<!DOCTYPE html><title>Bad gateway</title>', {
+        status: 502,
+        headers: { 'Content-Type': 'text/html' },
+      }),
+    'The preview service returned HTTP 502. Please try again later.',
+  ],
+  [
+    'empty error',
+    () => new Response(null, { status: 503 }),
+    'The preview service returned HTTP 503. Please try again later.',
+  ],
+  [
+    'malformed JSON error',
+    () =>
+      new Response('<!DOCTYPE html>', {
+        status: 502,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    'The preview service returned HTTP 502. Please try again later.',
+  ],
+  [
+    'JSON server error',
+    () =>
+      Response.json(
+        { error: 'Too many preview requests. Try again in a minute.' },
+        { status: 429 },
+      ),
+    'Too many preview requests. Try again in a minute.',
+  ],
+  [
+    'null JSON error',
+    () => Response.json(null, { status: 500 }),
+    'The preview service returned HTTP 500. Please try again later.',
+  ],
+  [
+    'blank JSON error',
+    () => Response.json({ error: ' ' }, { status: 403 }),
+    'The preview service returned HTTP 403. Please try again later.',
+  ],
+  [
+    'HTML success',
+    () => new Response('<!DOCTYPE html>', { headers: { 'Content-Type': 'text/html' } }),
+    'The preview service returned an invalid response. Please try again.',
+  ],
+  [
+    'malformed JSON success',
+    () => new Response('{', { headers: { 'Content-Type': 'application/json' } }),
+    'The preview service returned an invalid response. Please try again.',
+  ],
+  [
+    'missing session URL',
+    () => Response.json({}),
+    'The preview service returned an invalid response. Please try again.',
+  ],
+  [
+    'invalid session URL',
+    () => Response.json({ url: 'invalid' }),
+    'The preview service returned an invalid response. Please try again.',
+  ],
+] as const)('reports a readable error for %s', async (_name, response, message) => {
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue(response()));
+  await expect(
+    createProxyPreviewTransport().resolve(target, { signal: new AbortController().signal }),
+  ).rejects.toThrow(message);
+});
+
+it('shows the HTTP gateway error in the website connection check', async () => {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn().mockResolvedValue(
+      new Response('<!DOCTYPE html>', {
+        status: 502,
+        headers: { 'Content-Type': 'text/html' },
+      }),
+    ),
+  );
+  await act(async () =>
+    root.render(
+      <PreviewTransportProvider transport={createProxyPreviewTransport()}>
+        <WebsiteConnectionCheck url={target} />
+      </PreviewTransportProvider>,
+    ),
+  );
+  await act(async () => vi.advanceTimersByTimeAsync(500));
+  expect(host.textContent).toContain(
+    'The preview service returned HTTP 502. Please try again later.',
+  );
+  expect(host.textContent).not.toContain('Unexpected token');
+  expect(host.querySelector('iframe')).toBeNull();
+});
+
 it('routes picker, preview and connection check through one transport while retaining real target URLs', async () => {
   await act(async () =>
     root.render(
