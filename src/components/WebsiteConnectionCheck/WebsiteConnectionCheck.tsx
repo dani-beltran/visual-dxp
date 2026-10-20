@@ -82,7 +82,9 @@ export function WebsiteConnectionCheck({ url, silent = false }: { url: string; s
               'Branding profile received successfully.',
               {
                 savedToLocalStorage: persisted,
-                sampledElements: Object.keys(profile.elements),
+                typographyRoles: Object.keys(profile.typography),
+                buttonVariants: profile.buttons.length,
+                colorRoles: Object.keys(profile.colors),
               },
             );
             finish('connected');
