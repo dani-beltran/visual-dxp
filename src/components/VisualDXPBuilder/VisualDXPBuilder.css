@@ -152,6 +152,8 @@
   margin: 26px 28px;
 }
 .dxp-builder .react-flow__panel.dxp-canvas-dock {
+  /* Keep assistant windows above canvas panels, nodes, and context menus. */
+  z-index: 110;
   right: 28px;
   bottom: 23px;
   left: 28px;
