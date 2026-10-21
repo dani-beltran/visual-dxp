@@ -210,7 +210,9 @@ describe('local atomic insertion layout', () => {
   });
 
   it('does not arrange label/configuration-only changes; finalizes structural rewiring once', () => {
-    const tools = createWorkflowTools(graph([0, 0, 0]), []);
+    const workflow = graph([0, 0, 0]);
+    workflow.nodes[1].position.y = 400;
+    const tools = createWorkflowTools(workflow, []);
     tools.invokePrivate('update_node', { id: '1', label: 'Label', config: { duration: 20 } });
     tools.invokePrivate('update_connection', { id: 'e0', label: 'Label' });
     tools.finalizeLayout();

@@ -214,7 +214,9 @@ describe('LangChain workflow tools', () => {
         result = (await graph.invoke({ request: input })).response;
       }
       expect(result.message).toBe('Added and connected a 2-second delay.');
-      expect(result.operations).toHaveLength(2);
+      expect(
+        result.operations.filter((op) => op.type !== 'update_node' || !op.position),
+      ).toHaveLength(2);
       expect(result.operations[0]).toMatchObject({
         type: 'add_node',
         node: { data: { kind: 'delay', config: { duration: 2000 } } },

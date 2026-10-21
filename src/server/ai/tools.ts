@@ -12,7 +12,12 @@ import type { WorkflowOperation } from './workflow/ai';
 import { applyWorkflowOperations } from './workflow/ai';
 import { catalog } from './workflow/catalog';
 import { dataTools } from './workflow/data';
-import { insertionPosition, layoutOperations } from './workflow/layout';
+import {
+  componentScope,
+  insertionPosition,
+  layoutOperations,
+  validateGeometry,
+} from './workflow/layout';
 import type { Workflow, WorkflowNode } from './workflow/types';
 
 const shortText = z.string().max(200);
@@ -350,9 +355,24 @@ export function createWorkflowTools(
 
   const pinned = new Set<string>();
   const pendingLayout = new Set<string>();
+  const componentLayout = new Set<string>();
+  const arrangeOptions = new Map<string, { rankGap?: number; laneGap?: number }>();
   function structuralSeeds(changes: WorkflowOperation[]) {
     return changes.flatMap((change) => {
       if (change.type === 'add_node') return [change.node.id];
+      if (change.type === 'remove_edge' || change.type === 'remove_node') {
+        const sources =
+          change.type === 'remove_edge'
+            ? draft.edges.filter((e) => e.id === change.id).map((e) => e.source)
+            : draft.edges.filter((e) => e.target === change.id).map((e) => e.source);
+        return sources.filter((source) =>
+          draft.nodes.some(
+            (n) =>
+              ['fork', 'experiment', 'loop'].includes(n.data.kind) &&
+              componentScope(draft, new Set([source])).has(n.id),
+          ),
+        );
+      }
       if (change.type === 'add_edge') return [change.edge.target];
       if (
         change.type === 'update_edge' &&
@@ -376,8 +396,8 @@ export function createWorkflowTools(
   function finalizeLayout() {
     // Rebuild from user/graph edits, never from provisional automatic moves.
     // Keep seeds across review attempts: a repair can remove an old obstacle.
-    const placements: WorkflowOperation[] = [];
-    let candidate = applyWorkflowOperations(workflow, edits);
+    const semantic = applyWorkflowOperations(workflow, edits);
+    let candidate = semantic;
     for (const [id, insertion] of automaticInsertions) {
       const node = candidate.nodes.find((item) => item.id === id);
       const source = candidate.nodes.find((item) => item.id === insertion.source);
@@ -387,12 +407,55 @@ export function createWorkflowTools(
       const position = insertionPosition(geometry, source, target);
       if (semanticJSON(position) !== semanticJSON(node.position)) {
         const placement: WorkflowOperation = { type: 'update_node', id, position };
-        placements.push(placement);
         candidate = applyWorkflowOperations(candidate, [placement]);
       }
     }
-    const moves = layoutOperations(candidate, pendingLayout, pinned);
-    const batch = [...edits, ...placements, ...moves];
+    const unseen = componentScope(candidate, componentLayout);
+    const groups: Set<string>[] = [];
+    while (unseen.size) {
+      const group = componentScope(candidate, new Set([unseen.values().next().value!]));
+      groups.push(group);
+      for (const id of group) unseen.delete(id);
+    }
+    const groupKey = (group: Set<string>) =>
+      candidate.nodes
+        .filter((n) => group.has(n.id))
+        .map((n) => `${n.data.kind}:${n.data.label}`)
+        .sort()
+        .join('|');
+    groups.sort((a, b) => groupKey(a).localeCompare(groupKey(b)));
+    for (const group of groups) {
+      const options = [...arrangeOptions].reverse().find(([id]) => group.has(id))?.[1];
+      const moves = layoutOperations(candidate, group, pinned, { mode: 'component', ...options });
+      candidate = applyWorkflowOperations(candidate, moves);
+    }
+    const componentIds = componentScope(candidate, componentLayout);
+    const localSeeds = new Set(
+      [...pendingLayout].filter((id) => !componentIds.has(id) && !componentLayout.has(id)),
+    );
+    const localLocks = new Set([
+      ...pinned,
+      ...[...automaticInsertions.values()].map((i) => i.source),
+    ]);
+    candidate = applyWorkflowOperations(
+      candidate,
+      layoutOperations(candidate, localSeeds, localLocks),
+    );
+    const checked = new Set([...componentIds, ...localSeeds, ...pinned]);
+    for (const id of checked) {
+      for (const edge of candidate.edges) if (edge.source === id) checked.add(edge.target);
+      for (const node of candidate.nodes) if (node.parentId === id) checked.add(node.id);
+    }
+    if (checked.size) validateGeometry(candidate, checked);
+    // One derived position per node, compared with the semantic ledger. This
+    // also removes provisional insertion moves superseded by a component pass.
+    const moves: WorkflowOperation[] = candidate.nodes.flatMap((node) => {
+      const original = semantic.nodes.find((n) => n.id === node.id);
+      return original && semanticJSON(original.position) !== semanticJSON(node.position)
+        ? [{ type: 'update_node' as const, id: node.id, position: node.position }]
+        : [];
+    });
+    const batch = [...edits, ...moves];
     const next = applyWorkflowOperations(workflow, batch);
     // Publish only after the complete replacement batch validates.
     operations = batch;
@@ -410,8 +473,25 @@ export function createWorkflowTools(
           semanticJSON(intent?.nodes.find((node) => node.id === operation.id)?.position) !==
             semanticJSON(operation.position));
       if (changed) {
+        const seeds = structuralSeeds([operation]);
         stage([operation]);
-        for (const id of structuralSeeds([operation])) pendingLayout.add(id);
+        for (const id of seeds) {
+          pendingLayout.add(id);
+          const target = next.nodes.find((n) => n.id === id);
+          if (
+            target &&
+            !['frame', 'note'].includes(target.data.kind) &&
+            (operation.type === 'add_node' ||
+              operation.type === 'remove_node' ||
+              operation.type === 'remove_edge' ||
+              next.nodes.some(
+                (n) =>
+                  ['fork', 'experiment', 'loop'].includes(n.data.kind) &&
+                  componentScope(next, new Set([id])).has(n.id),
+              ))
+          )
+            componentLayout.add(id);
+        }
       }
       if (explicitPosition && (operation.type === 'add_node' || operation.type === 'update_node')) {
         pinned.add(operation.type === 'add_node' ? operation.node.id : operation.id);
@@ -502,6 +582,61 @@ export function createWorkflowTools(
     return { ...fields, invoke: async (input: unknown) => invoke(input) };
   }
   const tools = [
+    defineTool(
+      ({ scope, nodeIds, rankGap, laneGap }) => {
+        const seeds =
+          scope === 'workflow'
+            ? new Set(
+                draft.nodes
+                  .filter((n) => !['frame', 'note'].includes(n.data.kind))
+                  .map((n) => n.id),
+              )
+            : new Set(nodeIds ?? selectedNodeIds);
+        if (
+          !seeds.size ||
+          [...seeds].some(
+            (id) =>
+              !draft.nodes.some((n) => n.id === id && !['frame', 'note'].includes(n.data.kind)),
+          )
+        )
+          return JSON.stringify({
+            ok: false,
+            code: 'layout_conflict',
+            error: 'Choose executable nodes in the component(s) to arrange.',
+          });
+        try {
+          const moves = layoutOperations(draft, seeds, pinned, {
+            mode: 'component',
+            rankGap,
+            laneGap,
+          });
+          stage([], moves);
+          for (const id of seeds) {
+            componentLayout.add(id);
+            arrangeOptions.delete(id);
+            arrangeOptions.set(id, { rankGap, laneGap });
+          }
+          return JSON.stringify({ ok: true, changed: moves.length > 0, operations: moves });
+        } catch (error) {
+          return JSON.stringify({
+            ok: false,
+            code: 'layout_conflict',
+            error: error instanceof Error ? error.message : 'Cannot arrange this scope.',
+          });
+        }
+      },
+      {
+        name: 'arrange_workflow',
+        description:
+          'Explicitly arrange executable graph components left to right. scope=components expands nodeIds (or current selection) to their entire connected components including branches and joins; workflow arranges all executable components. Unrelated components and notes remain fixed obstacles. Pins and frame membership are preserved; constrained or cross-frame component arrangements can fail atomically. Call only for an explicit arrange request; structural creation is arranged automatically.',
+        schema: z.object({
+          scope: z.enum(['components', 'workflow']),
+          nodeIds: z.array(id).max(500).optional(),
+          rankGap: z.number().min(52).max(500).optional(),
+          laneGap: z.number().min(52).max(500).optional(),
+        }),
+      },
+    ),
     defineTool(
       () =>
         JSON.stringify({

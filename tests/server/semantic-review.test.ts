@@ -1,6 +1,7 @@
 import { generateText, streamText } from 'ai';
 import { beforeEach, expect, it, vi } from 'vitest';
 import { parseAIChatRequest, parseAIChatResponse } from '../../src/lib/ai';
+import { nodeBox, pathHitsBox, routeEdges } from '../../src/lib/workflowGeometry';
 import { runLocalAgent } from '../../src/server/ai/agent';
 import { reviewVersion, reviewWorkflow } from '../../src/server/ai/review';
 import { experimentReviewFacts, reviewBehaviorFacts } from '../../src/server/ai/reviewFacts';
@@ -8,6 +9,7 @@ import {
   type AIChatRequest,
   parseAIChatRequest as parseServerRequest,
 } from '../../src/server/ai/workflow/ai';
+import { diamond } from '../helpers/layoutWorkflow';
 import { experimentExplanationRequest, experimentKeyRequest } from './headline-experiment-fixture';
 
 vi.mock('ai', async (original) => ({
@@ -597,3 +599,34 @@ it.each([
     );
   },
 );
+
+it('reviews the final Dagre lanes and routed shared join after structural branch edits', async () => {
+  const request = input();
+  request.messages[0].content = 'Connect the first branch to the shared join.';
+  request.workflow = diamond();
+  request.workflow.edges = request.workflow.edges.filter((e) => e.id !== 'first-join');
+  const reviews = setup([
+    result('', [['add_connection', { source: 'z-first', target: 'join' }]]),
+    result('Connected the branch.'),
+  ]);
+  const ready = vi.fn();
+  const response = await runLocalAgent(
+    request,
+    new AbortController().signal,
+    config,
+    vi.fn(),
+    undefined,
+    ready,
+  );
+  const draft = reviews[0].draft as AIChatRequest['workflow'];
+  const first = draft.nodes.find((n) => n.id === 'z-first')!;
+  const second = draft.nodes.find((n) => n.id === 'a-second')!;
+  expect(first.position.y).toBeLessThan(second.position.y);
+  const routes = routeEdges(draft.nodes, draft.edges);
+  for (const edge of draft.edges.filter((e) => e.target === 'join')) {
+    const other = edge.source === first.id ? second : first;
+    expect(pathHitsBox(routes.get(edge.id)!, nodeBox(other, draft.nodes))).toBe(false);
+  }
+  expect(reviews[0].changes).toEqual(response.operations);
+  expect(ready).toHaveBeenCalledOnce();
+});

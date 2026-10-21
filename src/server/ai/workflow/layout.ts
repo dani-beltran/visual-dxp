@@ -1,164 +1,375 @@
+import { Graph, layout } from '@dagrejs/dagre';
 import { RecoverableToolError } from '../../../lib/aiToolErrors';
-import { FRAME_HEADER_HEIGHT, FRAME_HEIGHT, FRAME_WIDTH } from '../../../lib/frames';
+import { FRAME_HEADER_HEIGHT } from '../../../lib/frames';
+import {
+  branchOrder,
+  dimensions,
+  nodeBox,
+  pathHitsBox,
+  routeEdges,
+} from '../../../lib/workflowGeometry';
 import type { WorkflowOperation } from './ai';
+import { layoutOperations as localLayout } from './localLayout';
 import type { Workflow, WorkflowNode } from './types';
 
-export const LAYOUT_GAP = 52;
-const size = (node: WorkflowNode) => ({
-  width: node.width ?? (node.data.kind === 'frame' ? FRAME_WIDTH : 248),
-  height: node.height ?? (node.data.kind === 'frame' ? FRAME_HEIGHT : 180),
-});
-export function canvasPosition(node: WorkflowNode, workflow: Workflow) {
-  const parent = workflow.nodes.find((item) => item.id === node.parentId);
-  return {
-    x: node.position.x + (parent?.position.x ?? 0),
-    y: node.position.y + (parent?.position.y ?? 0),
-  };
+export { canvasPosition, insertionPosition, LAYOUT_GAP } from './localLayout';
+export interface LayoutOptions {
+  rankGap?: number;
+  laneGap?: number;
+  mode?: 'local' | 'component';
 }
 function fail(message: string): never {
   throw new RecoverableToolError(
     'layout_conflict',
-    `${message} Provide more space or revise the explicit position; frames are never resized or reparented automatically.`,
+    `${message} Revise the scope or explicit positions, or provide more space. Frames are never resized or reparented automatically.`,
   );
 }
+export function componentScope(workflow: Workflow, seeds: Set<string>) {
+  const scope = new Set(
+    [...seeds].filter((id) =>
+      workflow.nodes.some((n) => n.id === id && !['frame', 'note'].includes(n.data.kind)),
+    ),
+  );
+  for (const id of scope)
+    for (const edge of workflow.edges) {
+      if (edge.source === id) scope.add(edge.target);
+      if (edge.target === id) scope.add(edge.source);
+    }
+  return scope;
+}
+const overlaps = (a: ReturnType<typeof nodeBox>, b: ReturnType<typeof nodeBox>, gap = 0) =>
+  a.x < b.x + b.width + gap &&
+  a.x + a.width + gap > b.x &&
+  a.y < b.y + b.height + gap &&
+  a.y + a.height + gap > b.y;
 
-/** Local, monotone left-to-right constraint solving. No input objects are mutated. */
+/** Validate final positions, including pins, frames, notes and the renderer's paths. */
+export function validateGeometry(workflow: Workflow, scope: Set<string>) {
+  for (const node of workflow.nodes.filter((n) => scope.has(n.id))) {
+    const box = nodeBox(node, workflow.nodes);
+    const parent = workflow.nodes.find((n) => n.id === node.parentId);
+    if (parent) {
+      const bounds = nodeBox(parent, workflow.nodes);
+      if (
+        box.x < bounds.x ||
+        box.y < bounds.y + FRAME_HEADER_HEIGHT ||
+        box.x + box.width > bounds.x + bounds.width ||
+        box.y + box.height > bounds.y + bounds.height
+      )
+        fail(`Insufficient space in frame "${parent.id}" for node "${node.id}".`);
+    }
+    for (const other of workflow.nodes) {
+      if (
+        other.id === node.id ||
+        other.id === node.parentId ||
+        (other.parentId && other.parentId !== node.parentId)
+      )
+        continue;
+      if (overlaps(box, nodeBox(other, workflow.nodes), 8))
+        fail(`Node "${node.id}" overlaps obstacle "${other.id}".`);
+    }
+  }
+  const edges = workflow.edges.filter((e) => scope.has(e.source) || scope.has(e.target));
+  const routes = routeEdges(workflow.nodes, workflow.edges);
+  for (const edge of edges) {
+    const path = routes.get(edge.id);
+    if (!path) fail(`Cannot route connection "${edge.id}" around node obstacles.`);
+    const source = workflow.nodes.find((n) => n.id === edge.source)!;
+    const target = workflow.nodes.find((n) => n.id === edge.target)!;
+    for (const node of workflow.nodes) {
+      if ([edge.source, edge.target, source.parentId, target.parentId].includes(node.id)) continue;
+      if (pathHitsBox(path, nodeBox(node, workflow.nodes), 6))
+        fail(`Connection "${edge.id}" crosses node "${node.id}".`);
+    }
+  }
+}
+
+/** Small Dagre adapter: dimensions in, React Flow top-left positions out. */
+export function dagrePositions(
+  nodes: WorkflowNode[],
+  edges: Workflow['edges'],
+  options: LayoutOptions = {},
+) {
+  const rankGap = options.rankGap ?? 80,
+    laneGap = options.laneGap ?? 72;
+  if (![rankGap, laneGap].every((n) => Number.isFinite(n) && n >= 52 && n <= 500))
+    fail('Layout spacing must be between 52 and 500 pixels.');
+  const graph = new Graph({ multigraph: true });
+  graph.setGraph({ rankdir: 'LR', ranksep: rankGap, nodesep: laneGap, edgesep: 24 });
+  graph.setDefaultEdgeLabel(() => ({}));
+  const byId = new Map(nodes.map((node) => [node.id, node]));
+  // Semantic traversal keys are independent of generated UUIDs. ID is only a
+  // final tie-break for semantically indistinguishable nodes on the same port.
+  const compare = (a: WorkflowNode, b: WorkflowNode) =>
+    a.data.kind.localeCompare(b.data.kind) ||
+    a.data.label.localeCompare(b.data.label) ||
+    a.id.localeCompare(b.id);
+  const outgoing = (id: string) =>
+    edges
+      .filter((e) => e.source === id)
+      .sort(
+        (a, b) =>
+          branchOrder(a.sourceHandle) - branchOrder(b.sourceHandle) ||
+          compare(byId.get(a.target)!, byId.get(b.target)!),
+      );
+  const order: WorkflowNode[] = [];
+  const remaining = new Set(nodes.map((n) => n.id));
+  const keys = new Map<string, number[]>();
+  const edgePath = (edge: Workflow['edges'][number]) => {
+    const key = [...(keys.get(edge.source) ?? [])];
+    const outputs = outgoing(edge.source);
+    if (['fork', 'experiment', 'loop'].includes(byId.get(edge.source)!.data.kind)) {
+      key.push(branchOrder(edge.sourceHandle));
+      const peers = outputs.filter((e) => e.sourceHandle === edge.sourceHandle);
+      if (peers.length > 1) key.push(peers.findIndex((e) => e.id === edge.id));
+    } else if (outputs.length > 1) key.push(outputs.findIndex((e) => e.id === edge.id));
+    return key;
+  };
+  while (remaining.size) {
+    const ready = nodes
+      .filter(
+        (n) =>
+          remaining.has(n.id) && !edges.some((e) => e.target === n.id && remaining.has(e.source)),
+      )
+      .sort(compare);
+    if (!ready.length) fail('Cannot arrange a circular graph.');
+    for (const node of ready) {
+      const inputs = edges.filter((e) => e.target === node.id).map(edgePath);
+      const common = [...(inputs[0] ?? [])];
+      for (const key of inputs.slice(1)) {
+        let i = 0;
+        while (i < common.length && common[i] === key[i]) i++;
+        common.length = i;
+      }
+      keys.set(node.id, common);
+      remaining.delete(node.id);
+      order.push(node);
+    }
+  }
+  // Stable graph insertion follows semantic paths rather than ID ordering.
+  const keyCompare = (a: number[], b: number[]) => {
+    for (let i = 0; i < Math.min(a.length, b.length); i++) if (a[i] !== b[i]) return a[i] - b[i];
+    return a.length - b.length;
+  };
+  order.sort((a, b) => keyCompare(keys.get(a.id)!, keys.get(b.id)!) || compare(a, b));
+  for (const node of order) graph.setNode(node.id, dimensions(node));
+  for (const node of order)
+    for (const edge of outgoing(node.id)) graph.setEdge(edge.source, edge.target, {}, edge.id);
+  layout(graph);
+  const positions = new Map(
+    order.map((node) => {
+      const placed = graph.node(node.id),
+        size = dimensions(node);
+      return [node.id, { x: placed.x! - size.width / 2, y: placed.y! - size.height / 2 }];
+    }),
+  );
+  // Dagre's crossing optimizer may reverse port order. Pack semantic lanes
+  // explicitly after ranking, then verify the actual output below. Joins use
+  // their incoming paths' common prefix and sit between converging lanes.
+  const paths = [...keys.values(), ...edges.map(edgePath)];
+  const leaves = [
+    ...new Map(
+      paths
+        .filter(
+          (path) => !paths.some((p) => p.length > path.length && path.every((v, i) => p[i] === v)),
+        )
+        .map((p) => [p.join('.'), p]),
+    ).values(),
+  ].sort(keyCompare);
+  if (leaves.length > 1) {
+    const stride = Math.max(...nodes.map((n) => dimensions(n).height)) + laneGap;
+    for (const node of nodes) {
+      const path = keys.get(node.id)!;
+      const indices = leaves.flatMap((p, i) => (path.every((v, j) => p[j] === v) ? [i] : []));
+      positions.get(node.id)!.y =
+        ((indices[0] + indices[indices.length - 1]) / 2) * stride +
+        (stride - laneGap - dimensions(node).height) / 2;
+    }
+    // Distinct entry points can share the same semantic prefix and rank.
+    // Keep lane order, then spread collisions within each rank and center the
+    // added space on its original extent. Dagre's center x identifies a rank
+    // even when its cards have different widths.
+    const ranks = new Map<number, WorkflowNode[]>();
+    for (const node of nodes) {
+      const x = graph.node(node.id).x!;
+      const rank = ranks.get(x) ?? [];
+      rank.push(node);
+      ranks.set(x, rank);
+    }
+    for (const rank of ranks.values()) {
+      rank.sort(
+        (a, b) =>
+          positions.get(a.id)!.y +
+            dimensions(a).height / 2 -
+            (positions.get(b.id)!.y + dimensions(b).height / 2) ||
+          graph.node(a.id).y! - graph.node(b.id).y! ||
+          compare(a, b),
+      );
+      const bottom = (node: WorkflowNode) => positions.get(node.id)!.y + dimensions(node).height;
+      const last = rank[rank.length - 1];
+      const originalBottom = bottom(last);
+      for (let i = 1; i < rank.length; i++) {
+        const position = positions.get(rank[i].id)!;
+        position.y = Math.max(position.y, bottom(rank[i - 1]) + laneGap);
+      }
+      const offset = (bottom(last) - originalBottom) / 2;
+      for (const node of rank) positions.get(node.id)!.y -= offset;
+    }
+  }
+  for (const node of nodes) {
+    const outputs = outgoing(node.id);
+    const first = outputs.filter((e) => branchOrder(e.sourceHandle) === 0),
+      second = outputs.filter((e) => branchOrder(e.sourceHandle) === 1);
+    for (const a of first)
+      for (const b of second) {
+        if (
+          a.target !== b.target &&
+          positions.get(a.target)!.y + dimensions(byId.get(a.target)!).height / 2 >=
+            positions.get(b.target)!.y + dimensions(byId.get(b.target)!).height / 2
+        )
+          fail(`Cannot preserve semantic branch order at "${node.id}".`);
+      }
+  }
+  return positions;
+}
+
 export function layoutOperations(
   workflow: Workflow,
   seeds: Set<string>,
   pinned = new Set<string>(),
+  options: LayoutOptions = {},
 ): WorkflowOperation[] {
   if (!seeds.size) return [];
-  const nodes = new Map(workflow.nodes.map((node) => [node.id, node]));
-  const affected = new Set([...seeds].filter((id) => nodes.has(id)));
-  const outgoing = new Map<string, string[]>();
-  const incoming = new Map<string, string[]>();
-  for (const edge of workflow.edges) {
-    outgoing.set(edge.source, [...(outgoing.get(edge.source) ?? []), edge.target]);
-    incoming.set(edge.target, [...(incoming.get(edge.target) ?? []), edge.source]);
+  if (options.mode !== 'component') {
+    const moves = localLayout(workflow, seeds, pinned);
+    const affected = new Set(seeds);
+    for (const id of affected)
+      for (const edge of workflow.edges) if (edge.source === id) affected.add(edge.target);
+    const positioned = {
+      ...workflow,
+      nodes: workflow.nodes.map((node) => {
+        const move = moves.find((m) => m.type === 'update_node' && m.id === node.id);
+        return move?.type === 'update_node' ? { ...node, position: move.position! } : node;
+      }),
+    };
+    validateGeometry(positioned, affected);
+    return moves;
   }
-  for (const id of affected) for (const target of outgoing.get(id) ?? []) affected.add(target);
-  const positions = new Map(
-    workflow.nodes.map((node) => [node.id, canvasPosition(node, workflow)]),
-  );
-  const remaining = new Set(nodes.keys());
-  const order: string[] = [];
-  while (remaining.size) {
-    const ready = [...remaining]
-      .filter((id) => !(incoming.get(id) ?? []).some((source) => remaining.has(source)))
-      .sort();
-    if (!ready.length) fail('Cannot lay out a circular graph.');
-    for (const id of ready) {
-      remaining.delete(id);
-      order.push(id);
-    }
+  const scope = componentScope(workflow, seeds);
+  const groups: Set<string>[] = [];
+  const unseen = new Set(scope);
+  while (unseen.size) {
+    const group = componentScope(workflow, new Set([unseen.values().next().value!]));
+    groups.push(group);
+    for (const id of group) unseen.delete(id);
   }
-  const settled = new Set<string>();
-  const changes: WorkflowOperation[] = [];
-  for (const id of order) {
-    const node = nodes.get(id)!;
-    if (!affected.has(id) || node.data.kind === 'frame') {
-      settled.add(id);
-      continue;
+  if (groups.length > 1) {
+    let candidate = workflow;
+    const moves: WorkflowOperation[] = [];
+    for (const group of groups.sort((a, b) => {
+      const key = (ids: Set<string>) =>
+        workflow.nodes
+          .filter((n) => ids.has(n.id))
+          .map((n) => `${n.data.kind}:${n.data.label}`)
+          .sort()
+          .join('|');
+      return key(a).localeCompare(key(b));
+    })) {
+      const changes = layoutOperations(candidate, group, pinned, options);
+      moves.push(...changes);
+      candidate = {
+        ...candidate,
+        nodes: candidate.nodes.map((n) => {
+          const change = changes.find((m) => m.type === 'update_node' && m.id === n.id);
+          return change?.type === 'update_node' ? { ...n, position: change.position! } : n;
+        }),
+      };
     }
-    const original = positions.get(id)!;
-    const location = { ...original };
-    const bounds = size(node);
-    for (const source of incoming.get(id) ?? []) {
-      location.x = Math.max(
-        location.x,
-        positions.get(source)!.x + size(nodes.get(source)!).width + LAYOUT_GAP,
-      );
-    }
-    // Fixed unrelated nodes and already placed branches are obstacles. Future
-    // descendants will resolve against this node when their turn arrives.
-    const obstacles = workflow.nodes
-      .filter(
-        (other) =>
-          other.id !== id &&
-          other.id !== node.parentId &&
-          (!affected.has(other.id) || pinned.has(other.id) || settled.has(other.id)),
-      )
-      .sort((a, b) => positions.get(a.id)!.x - positions.get(b.id)!.x || a.id.localeCompare(b.id));
-    for (const other of obstacles) {
-      // Members of a different frame are covered by that frame's rectangle.
-      if (other.parentId && other.parentId !== node.parentId) continue;
-      const at = positions.get(other.id)!;
-      const dimensions = size(other);
-      if (
-        location.y < at.y + dimensions.height + LAYOUT_GAP &&
-        location.y + bounds.height + LAYOUT_GAP > at.y &&
-        location.x < at.x + dimensions.width + LAYOUT_GAP &&
-        location.x + bounds.width + LAYOUT_GAP > at.x
-      ) {
-        location.x = at.x + dimensions.width + LAYOUT_GAP;
-      }
-    }
-    if (pinned.has(id) && (location.x !== original.x || location.y !== original.y))
-      fail(`Explicitly positioned node "${id}" blocks layout.`);
-    const parent = node.parentId ? nodes.get(node.parentId)! : undefined;
-    const origin = parent ? positions.get(parent.id)! : { x: 0, y: 0 };
-    const relative = { x: location.x - origin.x, y: location.y - origin.y };
+    return moves;
+  }
+  const nodes = workflow.nodes.filter((n) => scope.has(n.id));
+  if (!nodes.length) return [];
+  if (new Set(nodes.map((n) => n.parentId)).size > 1)
+    fail(
+      'Component arrangement across frame boundaries is unsupported. Use a local insertion or arrange each disconnected component separately.',
+    );
+  const edges = workflow.edges.filter((e) => scope.has(e.source) && scope.has(e.target));
+  const positions = dagrePositions(nodes, edges, options);
+  const locks = nodes.filter((n) => pinned.has(n.id));
+  const anchor =
+    locks[0] ??
+    [...nodes].sort(
+      (a, b) =>
+        a.position.x - b.position.x ||
+        a.position.y - b.position.y ||
+        a.data.label.localeCompare(b.data.label),
+    )[0];
+  const parent = workflow.nodes.find((n) => n.id === anchor.parentId);
+  const minX = Math.min(...[...positions.values()].map((p) => p.x));
+  const minY = Math.min(...[...positions.values()].map((p) => p.y));
+  let dx = anchor.position.x - positions.get(anchor.id)!.x;
+  let dy = anchor.position.y - positions.get(anchor.id)!.y;
+  if (!locks.length) {
+    dx = Math.min(...nodes.map((n) => n.position.x)) - minX;
+    dy =
+      Math.max(parent ? FRAME_HEADER_HEIGHT : 0, Math.min(...nodes.map((n) => n.position.y))) -
+      minY;
+  }
+  for (const node of locks) {
+    const p = positions.get(node.id)!;
     if (
-      parent &&
-      (relative.x < 0 ||
-        relative.y < FRAME_HEADER_HEIGHT ||
-        relative.x + bounds.width > size(parent).width ||
-        relative.y + bounds.height > size(parent).height)
-    ) {
-      fail(`Insufficient space in frame "${parent.id}" for node "${id}".`);
-    }
-    if (location.x !== original.x || location.y !== original.y)
-      changes.push({ type: 'update_node', id, position: relative });
-    positions.set(id, location);
-    settled.add(id);
+      Math.abs(p.x + dx - node.position.x) > 0.000001 ||
+      Math.abs(p.y + dy - node.position.y) > 0.000001
+    )
+      fail(`Explicitly positioned node "${node.id}" conflicts with component arrangement.`);
   }
-  return changes;
-}
-
-/** Prefer the center of available horizontal space, on the successor's branch lane. */
-export function insertionPosition(workflow: Workflow, source: WorkflowNode, target: WorkflowNode) {
-  const a = canvasPosition(source, workflow);
-  const b = canvasPosition(target, workflow);
-  const left = a.x + size(source).width + LAYOUT_GAP;
-  const parent = workflow.nodes.find((node) => node.id === source.parentId);
-  const origin = parent?.position ?? { x: 0, y: 0 };
-  const right = Math.min(
-    b.x - 248 - LAYOUT_GAP,
-    parent ? origin.x + size(parent).width - 248 : Infinity,
-  );
-  const y = parent
-    ? Math.max(origin.y + FRAME_HEADER_HEIGHT, Math.min(b.y, origin.y + size(parent).height - 180))
-    : b.y;
-  const downstream = new Set([target.id]);
-  for (const id of downstream)
-    for (const edge of workflow.edges) if (edge.source === id) downstream.add(edge.target);
-  const obstacles = workflow.nodes
+  const positioned = () => ({
+    ...workflow,
+    nodes: workflow.nodes.map((node) => {
+      const p = positions.get(node.id);
+      if (!p) return node;
+      const round = (value: number) => Math.round(value * 100) / 100;
+      return {
+        ...node,
+        position: pinned.has(node.id) ? node.position : { x: round(p.x + dx), y: round(p.y + dy) },
+      };
+    }),
+  });
+  // Translate the entire unpinned component past fixed obstacles. Membership
+  // never changes. A frame or pin blocks this translation and fails atomically.
+  if (!locks.length && !parent) {
+    for (let attempt = 0; attempt <= workflow.nodes.length; attempt++) {
+      const candidate = positioned();
+      const obstacle = candidate.nodes.find(
+        (other) =>
+          !scope.has(other.id) &&
+          !other.parentId &&
+          candidate.nodes.some(
+            (n) =>
+              scope.has(n.id) &&
+              overlaps(nodeBox(n, candidate.nodes), nodeBox(other, candidate.nodes), 52),
+          ),
+      );
+      if (!obstacle) break;
+      dy +=
+        nodeBox(obstacle, candidate.nodes).y +
+        dimensions(obstacle).height +
+        72 -
+        Math.min(...candidate.nodes.filter((n) => scope.has(n.id)).map((n) => n.position.y));
+    }
+  }
+  const candidate = positioned();
+  validateGeometry(candidate, scope);
+  return candidate.nodes
     .filter(
       (node) =>
-        node.id !== source.parentId &&
-        !downstream.has(node.id) &&
-        (!node.parentId || node.parentId === source.parentId),
-    )
-    .map((node) => ({ ...canvasPosition(node, workflow), ...size(node) }))
-    .filter((box) => y < box.y + box.height + LAYOUT_GAP && y + 180 + LAYOUT_GAP > box.y);
-  const center = (left + right) / 2;
-  // Try every free interval boundary as well as the preferred midpoint. This
-  // uses a gap before a fixed obstacle instead of needlessly pushing the tail.
-  const candidates = [
-    center,
-    left,
-    right,
-    ...obstacles.flatMap((box) => [box.x - 248 - LAYOUT_GAP, box.x + box.width + LAYOUT_GAP]),
-  ]
-    .filter(
-      (x) =>
-        x >= left &&
-        x <= right &&
-        obstacles.every(
-          (box) => x >= box.x + box.width + LAYOUT_GAP || x + 248 + LAYOUT_GAP <= box.x,
+        scope.has(node.id) &&
+        workflow.nodes.some(
+          (n) =>
+            n.id === node.id &&
+            (n.position.x !== node.position.x || n.position.y !== node.position.y),
         ),
     )
-    .sort((a, b) => Math.abs(a - center) - Math.abs(b - center) || a - b);
-  return { x: (candidates[0] ?? left) - origin.x, y: y - origin.y };
+    .sort((a, b) => a.id.localeCompare(b.id))
+    .map((n) => ({ type: 'update_node', id: n.id, position: n.position }));
 }
