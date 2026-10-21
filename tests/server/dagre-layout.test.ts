@@ -14,7 +14,7 @@ import { createWorkflowTools } from '../../src/server/ai/tools';
 import { applyWorkflowOperations } from '../../src/server/ai/workflow/ai';
 import { layoutOperations, validateGeometry } from '../../src/server/ai/workflow/layout';
 import type { Workflow, WorkflowNode } from '../../src/server/ai/workflow/types';
-import { diamond } from '../helpers/layoutWorkflow';
+import { diamond, multiEntryDiamond } from '../helpers/layoutWorkflow';
 
 function arrange(workflow: Workflow) {
   return applyWorkflowOperations(
@@ -77,6 +77,81 @@ function interference(workflow: Workflow) {
 }
 
 describe('Dagre component layout and rendered orthogonal paths', () => {
+  it.each(['fork', 'experiment', 'loop'] as const)(
+    'separates multiple entry points feeding a shared %s without losing branch order',
+    (kind) => {
+      const graph = multiEntryDiamond(kind);
+      const placed = arrange(graph);
+      geometry(placed);
+      const entries = placed.nodes
+        .filter((n) => n.data.kind === 'trigger')
+        .sort((a, b) => a.position.y - b.position.y);
+      expect(entries[0].position.y + dimensions(entries[0]).height + 72).toBeLessThanOrEqual(
+        entries[1].position.y,
+      );
+      expect(placed.nodes.find((n) => n.id === 'z-first')!.position.y).toBeLessThan(
+        placed.nodes.find((n) => n.id === 'a-second')!.position.y,
+      );
+      expect(
+        layoutOperations(placed, new Set(['split']), new Set(), { mode: 'component' }),
+      ).toEqual([]);
+      graph.nodes.reverse();
+      graph.edges.reverse();
+      expect(Object.fromEntries(arrange(graph).nodes.map((n) => [n.id, n.position]))).toEqual(
+        Object.fromEntries(placed.nodes.map((n) => [n.id, n.position])),
+      );
+    },
+  );
+
+  it('separates three differently sized entry points using the requested lane gap', () => {
+    const graph = multiEntryDiamond();
+    graph.nodes[0].width = 330;
+    graph.nodes[0].height = 310;
+    graph.nodes.at(-1)!.width = 200;
+    graph.nodes.at(-1)!.height = 120;
+    graph.nodes.push({
+      ...structuredClone(graph.nodes[0]),
+      id: 'third-start',
+      height: 240,
+      position: { x: 0, y: 1000 },
+      data: { kind: 'trigger', label: 'Third start', config: { event: 'page-load' } },
+    });
+    graph.edges.push({ id: 'third-entry', source: 'third-start', target: 'split' });
+    const options = { mode: 'component' as const, laneGap: 110 };
+    const placed = applyWorkflowOperations(
+      graph,
+      layoutOperations(graph, new Set(['split']), new Set(), options),
+    );
+    geometry(placed);
+    const entries = placed.nodes
+      .filter((n) => n.data.kind === 'trigger')
+      .sort((a, b) => a.position.y - b.position.y);
+    for (let i = 1; i < entries.length; i++)
+      expect(
+        entries[i - 1].position.y + dimensions(entries[i - 1]).height + 110,
+      ).toBeLessThanOrEqual(entries[i].position.y);
+    expect(layoutOperations(placed, new Set(['split']), new Set(), options)).toEqual([]);
+  });
+
+  it('finalizes explicit and automatic multi-entry arrangements as stable replayable transactions', () => {
+    for (const explicit of [true, false]) {
+      const graph = multiEntryDiamond();
+      if (!explicit) graph.edges = graph.edges.filter((e) => e.id !== 'second-entry');
+      const tools = createWorkflowTools(graph, []);
+      const result = explicit
+        ? tools.invokePrivate('arrange_workflow', { scope: 'components', nodeIds: ['split'] })
+        : tools.invokePrivate('add_connection', { source: 'second-start', target: 'split' });
+      expect(JSON.parse(result).ok).toBe(true);
+      tools.finalizeLayout();
+      geometry(tools.getWorkflow());
+      const batch = tools.getOperations();
+      expect(applyClient(graph, batch)).toEqual(tools.getWorkflow());
+      expect(applyWorkflowOperations(graph, batch)).toEqual(tools.getWorkflow());
+      tools.finalizeLayout();
+      expect(tools.getOperations()).toEqual(batch);
+    }
+  });
+
   it.each(['fork', 'experiment', 'loop'] as const)(
     'separates %s lanes in semantic order and converges downstream',
     (kind) => {

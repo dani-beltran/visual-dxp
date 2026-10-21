@@ -6,10 +6,15 @@ import VisualDXPBuilder, { type VisualDXPBuilderApi, type Workflow } from '../..
 import { applyWorkflowOperations } from '../../src/lib/ai';
 import { type Point, segmentInterference, sourcePort } from '../../src/lib/workflowGeometry';
 import { layoutOperations } from '../../src/server/ai/workflow/layout';
-import { diamond } from '../helpers/layoutWorkflow';
+import { diamond, multiEntryDiamond } from '../helpers/layoutWorkflow';
 
-function fixture(kind: 'fork' | 'experiment' | 'loop', nested = false, sized = false) {
-  const workflow = diamond(kind);
+function fixture(
+  kind: 'fork' | 'experiment' | 'loop',
+  nested = false,
+  sized = false,
+  multiEntry = false,
+) {
+  const workflow = multiEntry ? multiEntryDiamond(kind) : diamond(kind);
   workflow.nodes[2].data.label = 'First branch';
   workflow.nodes[3].data.label = 'Second branch';
   if (sized) {
@@ -145,9 +150,12 @@ function Harness() {
   const initial = useMemo(
     () =>
       fixture(
-        ['nested', 'sized'].includes(choice) ? 'fork' : (choice as 'fork' | 'experiment' | 'loop'),
+        ['nested', 'sized', 'multi-entry'].includes(choice)
+          ? 'fork'
+          : (choice as 'fork' | 'experiment' | 'loop'),
         choice === 'nested',
         choice === 'sized',
+        choice === 'multi-entry',
       ),
     [choice],
   );
@@ -176,6 +184,7 @@ function Harness() {
             <option value="loop">Loop body/done</option>
             <option value="nested">Nested and unequal branches</option>
             <option value="sized">Different card dimensions</option>
+            <option value="multi-entry">Two triggers and shared condition</option>
           </select>
         </label>
         <button type="button" onClick={() => api.current?.fitView()}>

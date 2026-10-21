@@ -185,6 +185,36 @@ export function dagrePositions(
         ((indices[0] + indices[indices.length - 1]) / 2) * stride +
         (stride - laneGap - dimensions(node).height) / 2;
     }
+    // Distinct entry points can share the same semantic prefix and rank.
+    // Keep lane order, then spread collisions within each rank and center the
+    // added space on its original extent. Dagre's center x identifies a rank
+    // even when its cards have different widths.
+    const ranks = new Map<number, WorkflowNode[]>();
+    for (const node of nodes) {
+      const x = graph.node(node.id).x!;
+      const rank = ranks.get(x) ?? [];
+      rank.push(node);
+      ranks.set(x, rank);
+    }
+    for (const rank of ranks.values()) {
+      rank.sort(
+        (a, b) =>
+          positions.get(a.id)!.y +
+            dimensions(a).height / 2 -
+            (positions.get(b.id)!.y + dimensions(b).height / 2) ||
+          graph.node(a.id).y! - graph.node(b.id).y! ||
+          compare(a, b),
+      );
+      const bottom = (node: WorkflowNode) => positions.get(node.id)!.y + dimensions(node).height;
+      const last = rank[rank.length - 1];
+      const originalBottom = bottom(last);
+      for (let i = 1; i < rank.length; i++) {
+        const position = positions.get(rank[i].id)!;
+        position.y = Math.max(position.y, bottom(rank[i - 1]) + laneGap);
+      }
+      const offset = (bottom(last) - originalBottom) / 2;
+      for (const node of rank) positions.get(node.id)!.y -= offset;
+    }
   }
   for (const node of nodes) {
     const outputs = outgoing(node.id);

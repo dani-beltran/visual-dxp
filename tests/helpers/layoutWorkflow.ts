@@ -35,3 +35,15 @@ export function diamond(kind: 'fork' | 'experiment' | 'loop' = 'fork'): Workflow
     ],
   };
 }
+
+export function multiEntryDiamond(kind: 'fork' | 'experiment' | 'loop' = 'fork') {
+  const workflow = diamond(kind);
+  workflow.nodes.push({
+    ...structuredClone(workflow.nodes[0]),
+    id: 'second-start',
+    position: { x: 0, y: 600 },
+    data: { kind: 'trigger', label: 'Second start', config: { event: 'exit-intent' } },
+  });
+  workflow.edges.push({ id: 'second-entry', source: 'second-start', target: 'split' });
+  return workflow;
+}
