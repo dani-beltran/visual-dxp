@@ -10,9 +10,12 @@ import VisualDXPBuilder, {
   type Workflow,
 } from '../src';
 import { App } from '../src/components/App/App';
+import type { WorkflowOperation } from '../src/lib/ai';
 import { BRANDING_PROTOCOL, readBrandingProfile } from '../src/lib/branding';
 import { createNode } from '../src/lib/catalog';
+import { layoutOperations } from '../src/server/ai/workflow/layout';
 import { brandingProfile } from './helpers/branding';
+import { diamond } from './helpers/layoutWorkflow';
 import { mockDemoFetch } from './helpers/preview';
 
 let host: HTMLDivElement;
@@ -75,6 +78,64 @@ async function click(target: HTMLElement) {
 }
 
 describe('builder and host boundary', () => {
+  it('commits semantic edits and Dagre moves as one undo entry even with duplicate ready/result delivery', async () => {
+    const initial = initialWorkflow();
+    const graph = diamond();
+    const operations: WorkflowOperation[] = [
+      ...graph.nodes.map((node) => ({ type: 'add_node' as const, node })),
+      ...graph.edges.map((edge) => ({ type: 'add_edge' as const, edge })),
+      ...layoutOperations(graph, new Set(['split']), new Set(), { mode: 'component' }),
+    ];
+    let latest = initial;
+    const fetch = vi.fn().mockImplementation(async () => {
+      const response = { message: 'Created branches and shared join.', operations };
+      return new Response(
+        [
+          JSON.stringify({ type: 'workflow-ready', response }),
+          JSON.stringify({ type: 'result', response }),
+        ].join('\n') + '\n',
+        { headers: { 'content-type': 'application/x-ndjson' } },
+      );
+    });
+    vi.stubGlobal('fetch', fetch);
+    await act(async () =>
+      root.render(
+        <VisualDXPBuilder
+          initialWorkflow={initial}
+          ai={{ endpoint: '/api/ai/chat', showSettings: false }}
+          onChange={(value) => {
+            latest = value;
+          }}
+        />,
+      ),
+    );
+    await click(element('.dxp-ai-button'));
+    const textarea = element<HTMLTextAreaElement>('textarea');
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')?.set?.call(
+        textarea,
+        'Create a branching workflow',
+      );
+      textarea.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await act(async () =>
+      textarea.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })),
+    );
+    expect(fetch).toHaveBeenCalledOnce();
+    expect(latest.nodes).toHaveLength(5);
+    const first = latest.nodes.find((n) => n.id === 'z-first')!,
+      second = latest.nodes.find((n) => n.id === 'a-second')!;
+    expect(first.position.y).toBeLessThan(second.position.y);
+    const positioned = structuredClone(latest);
+    await click(button('Undo'));
+    expect(latest.nodes).toEqual([]);
+    expect(latest.edges).toEqual([]);
+    expect(button('Undo').hasAttribute('disabled')).toBe(true);
+    await click(button('Redo'));
+    expect(latest.nodes).toEqual(positioned.nodes);
+    expect(latest.edges).toEqual(positioned.edges);
+  });
+
   it('saves fullscreen popover edits as one workflow change and reopens saved settings', async () => {
     mockDemoFetch();
     const workflow = initialWorkflow();

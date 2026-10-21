@@ -194,7 +194,9 @@ describe.each([false, true])('agent progress (streaming: %s)', (streaming) => {
     const different: Call = ['update_node', { id: 'start', config: { scrollMinDistance: 75 } }];
     const invocations = provider([read, edit, read, edit, different, edit, read, edit], streaming);
     const response = await runLocalAgent(input, new AbortController().signal, config, emit());
-    expect(response.operations).toHaveLength(3);
+    expect(
+      response.operations.filter((op) => op.type !== 'update_node' || !op.position),
+    ).toHaveLength(3);
     expect(toolkit.getWorkflow().nodes[0].data.config).toEqual(scroll);
     expect(invocations()).toHaveLength(9);
   });
@@ -381,7 +383,9 @@ describe.each([false, true])('agent progress (streaming: %s)', (streaming) => {
       undefined,
       ready,
     );
-    expect(response.operations).toHaveLength(5);
+    expect(
+      response.operations.filter((op) => op.type !== 'update_node' || !op.position),
+    ).toHaveLength(5);
     const workflow = applyClient(input.workflow, response.operations);
     expect(workflow).toEqual(toolkit.getWorkflow());
     expect(workflow.nodes.map((node) => node.data.kind)).toEqual(['trigger', 'fork', 'dom']);
@@ -499,7 +503,9 @@ describe.each([false, true])('agent progress (streaming: %s)', (streaming) => {
       streaming,
     );
     const response = await runLocalAgent(input, new AbortController().signal, config, emit());
-    expect(response.operations).toHaveLength(3);
+    expect(
+      response.operations.filter((op) => op.type !== 'update_node' || !op.position),
+    ).toHaveLength(3);
     expect(response.operations[2]).toMatchObject({ type: 'add_edge', edge: { source, target } });
     expect(toolkit.getWorkflow().nodes.map((node) => node.id)).toEqual([source, target]);
     expect(applyClient(input.workflow, response.operations)).toEqual(toolkit.getWorkflow());

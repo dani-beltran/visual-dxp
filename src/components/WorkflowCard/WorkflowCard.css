@@ -188,20 +188,7 @@
   border-radius: 3px;
   pointer-events: none;
 }
-.dxp-branch-port-first,
-.dxp-builder .react-flow__handle.dxp-output-first {
-  top: 50%;
-}
 .dxp-branch-port svg {
   display: block;
   color: var(--dxp-muted);
-}
-.dxp-branch-port-second,
-.dxp-builder .react-flow__handle.dxp-output-second {
-  top: auto;
-  bottom: 12px;
-  transform: translateY(50%);
-}
-.dxp-builder .react-flow__handle.dxp-output-second {
-  transform: translate(50%, 50%);
 }

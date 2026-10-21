@@ -127,9 +127,11 @@ import { PresetsPanel } from '../PresetsPanel/PresetsPanel';
 import { Preview } from '../Preview/Preview';
 import { WebsiteConnectionCheck } from '../WebsiteConnectionCheck/WebsiteConnectionCheck';
 import { WorkflowCard } from '../WorkflowCard/WorkflowCard';
+import { WorkflowEdge as RoutedWorkflowEdge } from '../WorkflowEdge/WorkflowEdge';
 import './VisualDXPBuilder.css';
 
 const nodeTypes = { workflow: WorkflowCard };
+const edgeTypes = { smoothstep: RoutedWorkflowEdge };
 const edgeOptions = {
   type: 'smoothstep',
   style: { stroke: 'var(--dxp-edge)', strokeWidth: 1.6 },
@@ -1200,7 +1202,10 @@ function Builder({
         if (selectedEdgeId && !updated.edges.some((edge) => edge.id === selectedEdgeId))
           setSelectedEdgeId(null);
         notify(t('builder.aiUpdatedYourWorkflowUseUndoToRevertThisChange'));
-        requestAnimationFrame(() => void flow.fitView({ padding: 0.2, duration: 300 }));
+        // Keep the user's viewport for local edits. A newly generated canvas
+        // needs an initial fit after React Flow measures its cards.
+        if (!snapshot.nodes.length && updated.nodes.length)
+          requestAnimationFrame(() => void flow.fitView({ padding: 0.2, duration: 300 }));
       }
       changeCount = changed ? response.operations.length : 0;
       applied = true;
@@ -1464,6 +1469,7 @@ function Builder({
               nodes={nodes}
               edges={edges}
               nodeTypes={nodeTypes}
+              edgeTypes={edgeTypes}
               defaultEdgeOptions={edgeOptions}
               onNodesChange={onNodesChange}
               onEdgesChange={onEdgesChange}
