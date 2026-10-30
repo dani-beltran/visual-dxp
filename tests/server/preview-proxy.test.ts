@@ -413,3 +413,43 @@ describe('session and content endpoints', () => {
     ).toBe(415);
   });
 });
+
+it('answers sandbox preflights for signed public reads without contacting upstream', async () => {
+  const url = proxyUrl(
+    new URL('https://shop.example/api/cards'),
+    session(),
+    previewConfig(),
+    'asset',
+  );
+  const token = new URL(url).pathname.split('/')[4];
+  const fetcher = vi.fn();
+  const request = (
+    origin = 'null',
+    method = 'GET',
+    headers = 'content-type,sentry-trace,baggage',
+  ) =>
+    new Request(url, {
+      method: 'OPTIONS',
+      headers: {
+        origin,
+        'access-control-request-method': method,
+        'access-control-request-headers': headers,
+      },
+    });
+  const response = await servePreview(request(), token, fetcher);
+  expect(response.status).toBe(204);
+  expect(response.headers.get('Access-Control-Allow-Origin')).toBe('null');
+  expect(response.headers.get('Access-Control-Allow-Methods')).toBe('GET, HEAD');
+  expect(response.headers.get('Access-Control-Allow-Headers')).toBe(
+    'content-type,sentry-trace,baggage',
+  );
+  expect(response.headers.has('Access-Control-Allow-Credentials')).toBe(false);
+  expect((await servePreview(request('null', 'HEAD'), token, fetcher)).status).toBe(204);
+  expect((await servePreview(request('https://other.example'), token, fetcher)).status).toBe(403);
+  expect((await servePreview(request('null', 'POST'), token, fetcher)).status).toBe(405);
+  expect(
+    (await servePreview(request('null', 'GET', 'invalid header'), token, fetcher)).status,
+  ).toBe(400);
+  expect((await servePreview(request(), `${token}invalid`, fetcher)).status).toBe(403);
+  expect(fetcher).not.toHaveBeenCalled();
+});

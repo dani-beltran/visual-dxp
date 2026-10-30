@@ -15,7 +15,11 @@ function run(headers: Record<string, string>, parentOrigin = 'https://editor.exa
   const fetch = vi.fn().mockResolvedValue({ ok: true, headers: new Headers(headers) });
   const host = { location: { href: 'https://host.example/page' }, fetch, parent: {} };
   host.parent = host;
-  const document = { currentScript: { getAttribute: () => parentOrigin } };
+  const document = {
+    currentScript: {
+      getAttribute: (name: string) => (name === 'data-parent-origin' ? parentOrigin : null),
+    },
+  };
   new Function('window', 'document', bridge)(host, document);
   return { info, warn, fetch };
 }
@@ -109,7 +113,10 @@ describe('bridge embedding diagnostics on direct host visits', () => {
       const host = { location: { href: 'https://host.example/page' }, fetch, parent: {} };
       host.parent = host;
       new Function('window', 'document', bridge)(host, {
-        currentScript: { getAttribute: () => 'https://editor.example' },
+        currentScript: {
+          getAttribute: (name: string) =>
+            name === 'data-parent-origin' ? 'https://editor.example' : null,
+        },
       });
       await vi.advanceTimersByTimeAsync(5000);
       expect(warn).toHaveBeenCalledWith(prefix, expect.stringContaining('Unable to verify'));

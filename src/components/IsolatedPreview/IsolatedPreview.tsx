@@ -48,6 +48,7 @@ export function IsolatedPreview({
   const frame = useRef<HTMLIFrameElement>(null);
   const [html, setHtml] = useState<string>();
   const [ready, setReady] = useState(false);
+  const [reloadLoop, setReloadLoop] = useState(false);
   const runId = useRef('');
   const channel = useRef('');
   const reconnect = useRef<() => void>(() => {});
@@ -88,6 +89,7 @@ export function IsolatedPreview({
   }, []);
   // biome-ignore lint/correctness/useExhaustiveDependencies: A different URL needs a new message channel, even when both URLs are external.
   useEffect(() => {
+    setReloadLoop(false);
     setReady(false);
     callbacks.current.onReady(false);
     callbacks.current.onPickingReady?.(false);
@@ -120,7 +122,23 @@ export function IsolatedPreview({
       }, 8000);
       send('init');
     };
-    reconnect.current = connect;
+    let loads: number[] = [];
+    reconnect.current = () => {
+      const now = Date.now();
+      loads = loads.filter((time) => now - time < 10_000);
+      loads.push(now);
+      if (preview.proxied && loads.length >= 5) {
+        clearConnectionTimers();
+        setReady(false);
+        callbacks.current.onReady(false);
+        callbacks.current.onPickingReady?.(false);
+        callbacks.current.onPickCancel?.();
+        setReloadLoop(true);
+        callbacks.current.onError(t('isolatedPreview.reloadLoop'));
+        return;
+      }
+      connect();
+    };
     if (demo) {
       void fetch('/demo-site.html', {
         credentials: 'omit',
@@ -251,7 +269,7 @@ export function IsolatedPreview({
         '*',
       );
   }, [ready, picking, send]);
-  return !demo && !preview.url ? null : (
+  return reloadLoop || (!demo && !preview.url) ? null : (
     <iframe
       ref={frame}
       src={demo ? undefined : preview.url}

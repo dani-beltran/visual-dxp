@@ -663,6 +663,8 @@ export const spanishMessages = {
   'preview.closePreview': 'Cerrar vista previa',
   'preview.searchParams': 'Parámetros de búsqueda',
   'preview.reloadWebsite': 'Recargar sitio web',
+  'isolatedPreview.reloadLoop':
+    'El sitio web se recargaba continuamente y se ha detenido la vista previa. Recarga el sitio web para volver a intentarlo.',
   'preview.stopWorkflow': 'Detener flujo de trabajo',
   'preview.restartWorkflow': 'Reiniciar flujo de trabajo',
   'preview.runWorkflow': 'Ejecutar flujo de trabajo',

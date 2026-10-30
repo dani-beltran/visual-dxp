@@ -104,11 +104,36 @@ export async function servePreview(
     const config = previewConfig();
     if (!isPreviewHost(request, config.proxyOrigin))
       throw new PreviewError('Preview content must be served from PREVIEW_PROXY_ORIGIN.', 403);
-    if (!['GET', 'HEAD'].includes(request.method))
+    if (!['GET', 'HEAD', 'OPTIONS'].includes(request.method))
       throw new PreviewError('Public previews support GET and HEAD only.', 405);
     quota(request, 'resource');
     const session = readSession(token, config);
     const url = upstreamUrl(request, token, session);
+    if (request.method === 'OPTIONS') {
+      // Nuxt/ofetch and telemetry may add non-simple headers to public reads.
+      // A preflight never contacts upstream; fetchPublic discards browser headers.
+      if (request.headers.get('origin') !== 'null')
+        throw new PreviewError('Preview preflights require the sandbox origin.', 403);
+      if (!['GET', 'HEAD'].includes(request.headers.get('access-control-request-method') || ''))
+        throw new PreviewError('Public previews support GET and HEAD only.', 405);
+      const requestedHeaders = request.headers.get('access-control-request-headers') || '';
+      if (
+        requestedHeaders.length > 2048 ||
+        (requestedHeaders &&
+          !requestedHeaders.split(',').every((name) => /^[\w!#$%&'*+.^`|~-]+$/.test(name.trim())))
+      )
+        throw new PreviewError('Invalid preview preflight headers.');
+      return new Response(null, {
+        status: 204,
+        headers: {
+          'Access-Control-Allow-Origin': 'null',
+          'Access-Control-Allow-Methods': 'GET, HEAD',
+          'Access-Control-Allow-Headers': requestedHeaders,
+          'Cache-Control': 'no-store',
+          Vary: 'Origin, Access-Control-Request-Method, Access-Control-Request-Headers',
+        },
+      });
+    }
     const signal = AbortSignal.any([request.signal, AbortSignal.timeout(12_000)]);
     const upstream: UpstreamResponse = await fetcher(url, signal, request.method as 'GET' | 'HEAD');
     const headers = new Headers({
