@@ -78,6 +78,29 @@ export function NodeLibrary({ onAdd }: { onAdd: (kind: NodeKind) => void }) {
         setActiveTooltip(null);
         event.dataTransfer.setData('application/visual-dxp-node', kind);
         event.dataTransfer.effectAllowed = 'move';
+        const icon = event.currentTarget.querySelector('svg');
+        if (icon) {
+          // Preserve the rounded button, with transparent pixels outside its corners.
+          const buttonStyle = getComputedStyle(event.currentTarget);
+          const preview = document.createElement('div');
+          Object.assign(preview.style, {
+            position: 'fixed',
+            top: '-1000px',
+            width: '28px',
+            height: '28px',
+            display: 'grid',
+            placeItems: 'center',
+            background: buttonStyle.backgroundColor,
+            borderRadius: buttonStyle.borderRadius,
+            color: buttonStyle.color,
+            pointerEvents: 'none',
+          });
+          preview.append(icon.cloneNode(true));
+          document.body.append(preview);
+          event.dataTransfer.setDragImage(preview, 14, 14);
+          // Keep it mounted until the browser has captured the drag image.
+          setTimeout(() => preview.remove(), 0);
+        }
       }}
     >
       <Icon size={20} aria-hidden="true" />
