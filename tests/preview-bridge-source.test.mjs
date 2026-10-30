@@ -89,7 +89,12 @@ it('keeps inline selection and CSS escaping working after bundling and minifying
       ]),
     );
     win.dataLayer.push({ event: 'external_site_event' });
-    expect(events().at(-1)).toMatchObject({ name: 'external_site_event', count: 1 });
+    expect(events().at(-1)).toMatchObject({
+      name: 'external_site_event',
+      source: 'dataLayer',
+      data: { event: 'external_site_event' },
+      simulated: false,
+    });
     expect(originalTag).not.toHaveBeenCalled();
     expect(win.sessionStorage.getItem('visual-dxp:analytics:v1')).toBeNull();
     command('stop');

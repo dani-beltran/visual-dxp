@@ -35,7 +35,23 @@ export function createWorkflowAnalytics(
       tools.validateIdentity(settings);
       const detail = `${name} ${JSON.stringify(parameters)}`;
       if (context.analyticsMode === 'simulate') {
-        context.recordAnalytics?.(name);
+        const delivery = settings.delivery ?? 'gtag';
+        context.recordAnalytics?.(
+          name,
+          delivery,
+          delivery === 'gtag'
+            ? [
+                'event',
+                name,
+                {
+                  ...parameters,
+                  ...(settings.measurementId?.trim()
+                    ? { send_to: settings.measurementId.trim() }
+                    : {}),
+                },
+              ]
+            : { event: name, ...parameters },
+        );
         context.log(nodeId, 'success', `Simulated analytics: ${detail}`);
         return;
       }

@@ -41,7 +41,20 @@ export function createExperimentAnalytics(
     };
     const detail = `${event} ${JSON.stringify(parameters)}`;
     if (context.analyticsMode === 'simulate') {
-      context.recordAnalytics?.(event);
+      context.recordAnalytics?.(
+        event,
+        tracking.delivery,
+        tracking.delivery === 'gtag'
+          ? [
+              'event',
+              event,
+              {
+                ...parameters,
+                ...(tracking.measurementId ? { send_to: tracking.measurementId } : {}),
+              },
+            ]
+          : { event, ...parameters },
+      );
       log(tracking.nodeId, 'success', `Simulated analytics: ${detail}`);
       return;
     }

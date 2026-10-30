@@ -355,13 +355,11 @@ for (const library of [esm, umd]) {
       page.dataLayer.push({ event: 'site_purchase' });
       const stored = JSON.parse(page.sessionStorage.getItem('visual-dxp:analytics:v1'));
       assert.deepEqual(
-        stored.events.map(({ name, count }) => [name, count]),
-        [
-          ['dxp_workflow_started', 1],
-          ['dxp_workflow_completed', 1],
-          ['site_purchase', 2],
-        ],
+        stored.events.map(({ name }) => name),
+        ['dxp_workflow_started', 'dxp_workflow_completed', 'site_purchase', 'site_purchase'],
       );
+      assert.deepEqual(stored.events[2].data, ['event', 'site_purchase', { value: 10 }]);
+      assert.deepEqual(stored.events[3].data, { event: 'site_purchase' });
       page.visualDXP.destroy();
       assert.equal(page.gtag, originalTag);
       assert.equal(page.dataLayer.push, originalPush);

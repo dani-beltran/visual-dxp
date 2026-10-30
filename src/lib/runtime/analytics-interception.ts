@@ -1,15 +1,19 @@
 import type { Workflow } from '../types';
+import type { CapturedAnalyticsEvent, createAnalyticsCaptureTools } from './analytics-capture';
 import type { RuntimeContext } from './context';
 
 /** Self-contained so exported scripts and the preview bridge use the same hooks. */
-export function installAnalyticsInterception(workflow: Workflow, context: RuntimeContext): void {
+export function installAnalyticsInterception(
+  workflow: Workflow,
+  context: RuntimeContext,
+  captureTools: ReturnType<typeof createAnalyticsCaptureTools>,
+): void {
   if (workflow.analytics?.provider !== 'ga4') return;
   if (context.signal.aborted) return;
-  type Aggregate = { name: string; count: number; firstSeen: number; lastSeen: number };
-  type Sink = { references: number; record: (name: unknown) => void };
+  type Sink = { references: number; record: (event: CapturedAnalyticsEvent) => void };
   type Hub = { sinks: Map<string, Sink>; dispose: () => void };
   const browser = context.win as unknown as Record<PropertyKey, unknown>;
-  const hubKey = Symbol.for('visual-dxp.analytics-interception.v1');
+  const hubKey = Symbol.for('visual-dxp.analytics-interception.v2');
   const storageKey =
     context.analyticsMode === 'simulate'
       ? 'visual-dxp:analytics:preview:v1'
@@ -24,8 +28,10 @@ export function installAnalyticsInterception(workflow: Workflow, context: Runtim
     let active = true;
     const pendingItems = new Set<unknown>();
     const tagCalls: unknown[][] = [];
-    const record = (name: unknown) => {
-      if (active) for (const sink of sinks.values()) sink.record(name);
+    const record = (name: unknown, source: CapturedAnalyticsEvent['source'], raw: unknown) => {
+      if (!active) return;
+      const event = captureTools.capture(name, source, raw);
+      if (event) for (const sink of sinks.values()) sink.record(event);
     };
 
     // Observe ordinary assignments immediately, including tags loaded after us.
@@ -123,8 +129,8 @@ export function installAnalyticsInterception(workflow: Workflow, context: Runtim
                         args.length === event.length &&
                         args.every((arg, index) => arg === event[index]),
                     );
-                    if (!forwarded) record(event[1]);
-                  } else record(event.event);
+                    if (!forwarded) record(event[1], 'dataLayer', item);
+                  } else record(event.event, 'dataLayer', item);
                 } catch {
                   /* Observation must never prevent the original call. */
                 }
@@ -155,7 +161,7 @@ export function installAnalyticsInterception(workflow: Workflow, context: Runtim
               (call) =>
                 call.length === args.length && call.every((arg, index) => arg === args[index]),
             );
-            if (!forwarded) record(args[1]);
+            if (!forwarded) record(args[1], 'gtag', args);
           }
           tagCalls.push(args);
           try {
@@ -199,54 +205,22 @@ export function installAnalyticsInterception(workflow: Workflow, context: Runtim
   if (!sink) {
     sink = {
       references: 0,
-      record(name) {
-        if (typeof name !== 'string' || !name || name.length > 128) return;
-        try {
-          const now = Date.now();
-          const storage = context.win.sessionStorage;
-          const raw = storage.getItem(storageKey);
-          let events: Aggregate[] = [];
-          try {
-            const saved = raw && raw.length <= 65536 ? JSON.parse(raw) : undefined;
-            if (saved?.version === 1 && Array.isArray(saved.events)) {
-              events = saved.events
-                .filter(
-                  (event: Aggregate) =>
-                    event &&
-                    typeof event.name === 'string' &&
-                    event.name.length <= 128 &&
-                    Number.isSafeInteger(event.count) &&
-                    event.count > 0 &&
-                    Number.isFinite(event.firstSeen) &&
-                    Number.isFinite(event.lastSeen) &&
-                    event.lastSeen <= now,
-                )
-                .slice(-200);
-            }
-          } catch {
-            /* Replace corrupt or incompatible stored aggregates. */
-          }
-          const previous = events.find((event) => event.name === name);
-          events = events.filter((event) => event.name !== name);
-          events.push({
-            name,
-            count: Math.min(Number.MAX_SAFE_INTEGER, (previous?.count ?? 0) + 1),
-            firstSeen: previous?.firstSeen ?? now,
-            lastSeen: now,
-          });
-          storage.setItem(
-            storageKey,
-            JSON.stringify({ version: 1, updatedAt: now, events: events.slice(-200) }),
-          );
-        } catch {
-          /* Storage denial or quota exhaustion must not affect forwarding. */
-        }
+      record(event) {
+        captureTools.store(storageKey, event);
       },
     };
     hub.sinks.set(storageKey, sink);
   }
   sink.references++;
-  context.recordAnalytics = sink.record;
+  context.recordAnalytics = (name, delivery, data) => {
+    const event = captureTools.capture(
+      name,
+      delivery === 'gtag' ? 'gtag' : 'dataLayer',
+      data,
+      true,
+    );
+    if (event) sink.record(event);
+  };
   const currentHub = hub;
   const currentSink = sink;
   context.cleanups.add(() => {

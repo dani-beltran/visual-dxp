@@ -4,6 +4,7 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { isAnalyticsSettings } from '../src/lib/analytics';
 import { exportWorkflow } from '../src/lib/export';
 import { createRuntime, getRuntimeSource } from '../src/lib/runtime';
+import type { CapturedAnalyticsEvent } from '../src/lib/runtime/analytics-capture';
 import { isWorkflow } from '../src/lib/serialization';
 import type { Workflow } from '../src/lib/types';
 
@@ -41,9 +42,7 @@ function runtime(workflow = graph(), options: Parameters<typeof createRuntime>[1
   runtimes.push(result);
   return result;
 }
-function events(
-  key = liveKey,
-): { name: string; count: number; firstSeen: number; lastSeen: number }[] {
+function events(key = liveKey): CapturedAnalyticsEvent[] {
   return JSON.parse(sessionStorage.getItem(key) ?? '{"events":[]}').events;
 }
 beforeEach(() => {
@@ -77,17 +76,34 @@ it.each(['runtime', 'export', 'serialized-preview'])(
       runtimes.push(factory(graph(), { analyticsMode: 'simulate' }));
     } else runtime();
     const key = mode === 'serialized-preview' ? previewKey : liveKey;
-    const payload = { secret: 'never-store-me', event_callback: vi.fn() };
+    const payload = { secret: 'kept-in-snapshot', event_callback: vi.fn() };
     expect(browser.gtag?.('event', 'purchase', payload)).toBe(1);
     expect(browser.dataLayer?.push({ event: 'purchase', payload }, { event: 'sign_up' })).toBe(3);
     browser.gtag?.('config', 'G-TEST');
     browser.gtag?.('consent', 'update', { analytics_storage: 'denied' });
     browser.dataLayer?.push({ ecommerce: { value: 10 } }, null);
     expect(events(key)).toEqual([
-      expect.objectContaining({ name: 'purchase', count: 2 }),
-      expect.objectContaining({ name: 'sign_up', count: 1 }),
+      expect.objectContaining({
+        name: 'purchase',
+        source: 'gtag',
+        simulated: false,
+        data: [
+          'event',
+          'purchase',
+          { secret: 'kept-in-snapshot', event_callback: { $type: 'Function' } },
+        ],
+      }),
+      expect.objectContaining({
+        name: 'purchase',
+        source: 'dataLayer',
+        data: {
+          event: 'purchase',
+          payload: { secret: 'kept-in-snapshot', event_callback: { $type: 'Function' } },
+        },
+      }),
+      expect.objectContaining({ name: 'sign_up', source: 'dataLayer', data: { event: 'sign_up' } }),
     ]);
-    expect(sessionStorage.getItem(key)).not.toContain('never-store-me');
+    expect(sessionStorage.getItem(key)).toContain('kept-in-snapshot');
     expect(payload.event_callback).not.toHaveBeenCalled();
     expect((layer[0] as IArguments)[2]).toBe(payload);
   },
@@ -122,7 +138,7 @@ it('captures late tags, replaced layers, and GTM wrappers without duplicating ev
   browser.dataLayer.push = gtmPush;
   browser.gtag('event', 'late_event');
   expect(gtmPush).toHaveBeenCalledTimes(1);
-  expect(events()[0]).toMatchObject({ name: 'late_event', count: 1 });
+  expect(events()[0]).toMatchObject({ name: 'late_event', data: ['event', 'late_event'] });
   browser.dataLayer = [];
   const latestLayer = browser.dataLayer;
   browser.dataLayer.push({ event: 'replacement' });
@@ -145,7 +161,7 @@ it('shares interception between runtimes and restores latest host functions afte
   const replacement = vi.fn();
   browser.gtag = replacement;
   browser.gtag?.('event', 'shared');
-  expect(events()[0].count).toBe(3);
+  expect(events().map((event) => event.name)).toEqual(['shared', 'shared', 'shared']);
   expect(original).toHaveBeenCalledTimes(2);
   expect(replacement).toHaveBeenCalledTimes(1);
   two.destroy();
@@ -170,12 +186,7 @@ it('captures distinct nested events while deduplicating wrappers that forward th
     return Reflect.apply(oldPush, this, items);
   };
   browser.dataLayer.push({ event: 'parent' });
-  expect(events().map(({ name, count }) => [name, count])).toEqual([
-    ['outer', 1],
-    ['inner', 1],
-    ['parent', 1],
-    ['child', 1],
-  ]);
+  expect(events().map(({ name }) => name)).toEqual(['outer', 'inner', 'parent', 'child']);
 });
 
 it('re-hooks host property redefinitions and writable locked push methods', async () => {
@@ -226,36 +237,40 @@ it('keeps forwarding when storage is denied, full, or corrupt', () => {
   expect(original).toHaveBeenCalledTimes(3);
 });
 
-it('bounds stored names and keeps counts for the session without age-based expiry', () => {
+it('keeps the latest 1000 event occurrences, including repeated names, for the session', () => {
   browser.gtag = vi.fn();
   runtime();
-  for (let i = 0; i < 205; i++) browser.gtag?.('event', `event_${i}`);
-  expect(events()).toHaveLength(200);
+  for (let i = 0; i < 1005; i++) browser.gtag?.('event', `event_${i}`, { index: i });
+  expect(events()).toHaveLength(1000);
   expect(events()[0].name).toBe('event_5');
-  const firstSeen = events()[199].firstSeen;
+  const timestamp = events()[999].timestamp;
   vi.setSystemTime(Date.now() + 1000);
-  browser.gtag?.('event', 'event_204');
-  expect(events()[199]).toMatchObject({ count: 2, firstSeen, lastSeen: firstSeen + 1000 });
+  browser.gtag?.('event', 'event_1004', { repeated: true });
+  expect(events().at(-1)).toMatchObject({
+    timestamp: timestamp + 1000,
+    data: ['event', 'event_1004', { repeated: true }],
+  });
   vi.setSystemTime(Date.now() + 31 * 24 * 60 * 60 * 1000);
-  browser.gtag?.('event', 'event_204');
-  expect(events().at(-1)).toMatchObject({ name: 'event_204', count: 3, firstSeen });
+  browser.gtag?.('event', 'event_1004');
+  expect(events()).toHaveLength(1000);
+  expect(events().filter((event) => event.name === 'event_1004')).toHaveLength(3);
 });
 
-it('retains counts across runtime restarts within a session and starts fresh in a new session', () => {
+it('retains raw events across runtime restarts within a session and starts fresh in a new session', () => {
   browser.gtag = vi.fn();
   const first = runtime();
   browser.gtag?.('event', 'session_event');
   first.destroy();
   const second = runtime();
   browser.gtag?.('event', 'session_event');
-  expect(events()).toEqual([expect.objectContaining({ name: 'session_event', count: 2 })]);
+  expect(events().map((event) => event.name)).toEqual(['session_event', 'session_event']);
   expect(localStorage.getItem(liveKey)).toBeNull();
   second.destroy();
   // The browser clears sessionStorage at the end of a tab session.
   sessionStorage.clear();
   runtime();
   browser.gtag?.('event', 'fresh');
-  expect(events()).toEqual([expect.objectContaining({ name: 'fresh', count: 1 })]);
+  expect(events()).toEqual([expect.objectContaining({ name: 'fresh' })]);
 });
 
 it('does not replay existing queued events or change forwarding when payload accessors throw', () => {
@@ -307,4 +322,211 @@ it.each(['provider-none', 'aborted'])('does not intercept when %s', (mode) => {
 it('accepts analytics settings without a capture option across workflow serialization', () => {
   expect(isWorkflow(JSON.parse(JSON.stringify(graph())))).toBe(true);
   expect(isAnalyticsSettings({ provider: 'ga4' })).toBe(true);
+});
+
+it('snapshots all gtag arguments and dataLayer fields before the website mutates them', () => {
+  const payload = {
+    currency: 'EUR',
+    value: 25,
+    items: [{ item_id: 'sku-1', quantity: 2 }],
+    user_properties: { plan: 'premium' },
+  };
+  const extra = { transport: 'custom' };
+  const originalTag = vi.fn((_command, _name, parameters) => {
+    parameters.value = 99;
+  });
+  browser.gtag = originalTag;
+  const layer: unknown[] = [];
+  layer.push = function (...items) {
+    (items[0] as { ecommerce: { value: number } }).ecommerce.value = 100;
+    return Reflect.apply(Array.prototype.push, this, items);
+  };
+  browser.dataLayer = layer;
+  runtime();
+  browser.gtag?.('event', 'purchase', payload, extra);
+  const dataLayerEvent = {
+    event: 'purchase',
+    ecommerce: { value: 30 },
+    'gtm.uniqueEventId': 42,
+    custom: null,
+  };
+  browser.dataLayer.push(dataLayerEvent);
+  expect(events()[0]).toMatchObject({
+    name: 'purchase',
+    source: 'gtag',
+    simulated: false,
+    data: ['event', 'purchase', { ...payload, value: 25 }, extra],
+  });
+  expect(events()[1]).toMatchObject({
+    source: 'dataLayer',
+    data: { ...dataLayerEvent, ecommerce: { value: 30 } },
+  });
+  payload.items[0].quantity = 10;
+  expect(events()[0]).toMatchObject({
+    data: ['event', 'purchase', { items: [{ quantity: 2 }] }, extra],
+  });
+  expect(payload.value).toBe(99);
+  expect(dataLayerEvent.ecommerce.value).toBe(100);
+});
+
+it('serializes cycles, callbacks, accessors and non-JSON values without invoking them', () => {
+  const getter = vi.fn(() => 'unread');
+  const callback = vi.fn();
+  const toJSON = vi.fn(() => {
+    throw new Error('Must not execute');
+  });
+  const payload = {
+    amount: 123n,
+    absent: undefined,
+    infinite: Infinity,
+    notNumber: NaN,
+    callback,
+    toJSON,
+    date: new Date('2026-10-30T12:00:00Z'),
+    map: new Map([['key', { value: 1 }]]),
+    set: new Set(['a', 'b']),
+    element: document.querySelector('button'),
+    nested: {} as { self?: unknown },
+  };
+  payload.nested.self = payload;
+  Object.defineProperty(payload, 'computed', { enumerable: true, get: getter });
+  Object.defineProperty(payload, Symbol.toStringTag, { get: getter });
+  const original = vi.fn();
+  browser.gtag = original;
+  runtime();
+  browser.gtag?.('event', 'complex', payload);
+  expect(events()[0]).toMatchObject({
+    data: [
+      'event',
+      'complex',
+      {
+        amount: { $type: 'BigInt', value: '123' },
+        absent: { $type: 'Undefined' },
+        infinite: { $type: 'Number', value: 'Infinity' },
+        notNumber: { $type: 'Number', value: 'NaN' },
+        callback: { $type: 'Function' },
+        toJSON: { $type: 'Function' },
+        computed: { $type: 'Accessor' },
+        date: { $type: 'Date', value: '2026-10-30T12:00:00.000Z' },
+        map: { $type: 'Map', entries: [['key', { value: 1 }]] },
+        set: { $type: 'Set', values: ['a', 'b'] },
+        element: { $type: 'Element', value: '<button id="start">Start</button>' },
+        nested: { self: { $type: 'Circular' } },
+      },
+    ],
+  });
+  expect(original.mock.calls[0][2]).toBe(payload);
+  expect(getter).not.toHaveBeenCalled();
+  expect(callback).not.toHaveBeenCalled();
+  expect(toJSON).not.toHaveBeenCalled();
+});
+
+it.each(['gtag', 'gtm'] as const)(
+  'captures complete simulated event payloads through %s',
+  async (delivery) => {
+    const workflow = graph();
+    workflow.analytics = {
+      provider: 'ga4',
+      delivery,
+      measurementId: 'G-TEST',
+      workflowId: 'session-test',
+    };
+    browser.gtag = vi.fn();
+    const value = runtime(workflow, { analyticsMode: 'simulate' });
+    await value.run('start');
+    expect(events(previewKey)).toHaveLength(2);
+    const first = events(previewKey)[0];
+    expect(first).toMatchObject({
+      name: 'dxp_workflow_started',
+      simulated: true,
+      source: delivery === 'gtag' ? 'gtag' : 'dataLayer',
+    });
+    if (delivery === 'gtag')
+      expect(first.data).toEqual([
+        'event',
+        'dxp_workflow_started',
+        expect.objectContaining({ workflow_id: 'session-test', send_to: 'G-TEST' }),
+      ]);
+    else
+      expect(first.data).toMatchObject({
+        event: 'dxp_workflow_started',
+        workflow_id: 'session-test',
+        trigger_id: 'start',
+      });
+  },
+);
+
+it('replaces old aggregate records and preserves subsequent raw event occurrences', () => {
+  sessionStorage.setItem(
+    liveKey,
+    JSON.stringify({
+      version: 1,
+      events: [{ name: 'old', count: 100, firstSeen: 1, lastSeen: 2 }],
+    }),
+  );
+  browser.gtag = vi.fn();
+  runtime();
+  browser.gtag?.('event', 'new', { value: 1 });
+  browser.gtag?.('event', 'new', { value: 2 });
+  const stored = JSON.parse(sessionStorage.getItem(liveKey) ?? 'null');
+  expect(stored.version).toBe(2);
+  expect(stored.events).toHaveLength(2);
+  expect(stored.events[0]).not.toHaveProperty('count');
+  expect(stored.events[1].data).toEqual(['event', 'new', { value: 2 }]);
+});
+
+it.each(['x', '\u0000'])('bounds storage for oversized snapshots containing %j', (character) => {
+  browser.gtag = vi.fn();
+  runtime();
+  for (let i = 0; i < 8; i++)
+    browser.gtag?.('event', `large_${i}`, { text: character.repeat(600000) });
+  expect(events().at(-1)).toMatchObject({ name: 'large_7', truncated: true });
+  expect(events().length).toBeLessThan(8);
+  expect(sessionStorage.getItem(liveKey)?.length).toBeLessThanOrEqual(2000000);
+});
+
+it('evicts older raw records on quota pressure and still forwards every original event', () => {
+  const original = vi.fn();
+  browser.gtag = original;
+  runtime();
+  const nativeSet = Storage.prototype.setItem;
+  vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (this: Storage, key, value) {
+    if (value.length > 1200) throw new DOMException('Full', 'QuotaExceededError');
+    return nativeSet.call(this, key, value);
+  });
+  for (let i = 0; i < 20; i++) browser.gtag?.('event', `quota_${i}`, { payload: 'x'.repeat(100) });
+  expect(events().at(-1)?.name).toBe('quota_19');
+  expect(events().length).toBeLessThan(20);
+  expect(original).toHaveBeenCalledTimes(20);
+});
+
+it('preserves GTM browser-event details and element markup', () => {
+  browser.dataLayer = [];
+  runtime();
+  const nativeEvent = new MouseEvent('click', {
+    clientX: 123,
+    clientY: 45,
+    ctrlKey: true,
+    bubbles: true,
+  });
+  browser.dataLayer.push({
+    event: 'gtm.click',
+    'gtm.element': document.querySelector('button'),
+    nativeEvent,
+  });
+  expect(events()[0]).toMatchObject({
+    source: 'dataLayer',
+    data: {
+      event: 'gtm.click',
+      'gtm.element': { $type: 'Element', value: '<button id="start">Start</button>' },
+      nativeEvent: {
+        $type: 'Event',
+        type: 'click',
+        clientX: 123,
+        clientY: 45,
+        ctrlKey: true,
+        bubbles: true,
+      },
+    },
+  });
 });
