@@ -21,6 +21,7 @@ const page = window as Window &
     dataLayer?: { event: string; [key: string]: unknown }[];
     visualDXP?: ReturnType<typeof createRuntime>;
   };
+const googleTag = vi.fn();
 const runtimes: ReturnType<typeof createRuntime>[] = [];
 const node = (
   id: string,
@@ -63,10 +64,11 @@ function runtime(workflow: Workflow, options: Parameters<typeof createRuntime>[1
   runtimes.push(result);
   return result;
 }
-const names = () => page.gtag?.mock.calls.map((call) => call[1]);
+const names = () => googleTag.mock.calls.map((call) => call[1]);
 beforeEach(() => {
   vi.useFakeTimers();
-  page.gtag = vi.fn();
+  googleTag.mockReset();
+  page.gtag = googleTag;
   page.dataLayer = [];
   document.body.innerHTML = '<button id="start">Start</button><div id="result"></div>';
 });
@@ -84,7 +86,7 @@ it.each(['gtag', 'gtm'] as const)(
   'sends ordered lifecycle and milestone events through %s, including standalone export',
   async (delivery) => {
     for (const exported of [false, true]) {
-      page.gtag?.mockClear();
+      googleTag.mockClear();
       page.dataLayer = [];
       const workflow = graph();
       workflow.analytics!.delivery = delivery;
@@ -94,7 +96,7 @@ it.each(['gtag', 'gtm'] as const)(
       await value.run('start');
       const events =
         delivery === 'gtag'
-          ? page.gtag!.mock.calls.map((call) => ({ event: call[1], ...call[2] }))
+          ? googleTag.mock.calls.map((call) => ({ event: call[1], ...call[2] }))
           : page.dataLayer;
       expect(events?.map((item) => item.event)).toEqual([
         'dxp_workflow_started',
@@ -117,7 +119,7 @@ it.each(['gtag', 'gtm'] as const)(
       expect(events?.[4]).toMatchObject({ step_count: 2 });
       expect(document.querySelector('#result')?.textContent).toBe('Done');
       if (delivery === 'gtag') expect(events?.[0].send_to).toBe('G-TEST');
-      else expect(page.gtag).not.toHaveBeenCalled();
+      else expect(googleTag).not.toHaveBeenCalled();
       value.destroy();
     }
   },
@@ -132,7 +134,7 @@ it('keeps repeated and overlapping trigger invocations separate', async () => {
     two = value.run('start');
   await vi.advanceTimersByTimeAsync(30);
   await Promise.all([one, two]);
-  const calls = page.gtag!.mock.calls;
+  const calls = googleTag.mock.calls;
   const starts = calls.filter((call) => call[1] === 'dxp_workflow_started');
   const finishes = calls.filter((call) => call[1] === 'dxp_workflow_completed');
   expect(starts).toHaveLength(2);
@@ -165,8 +167,8 @@ it('tracks only executed branches and each loop iteration, and excludes annotati
   await runtime(workflow).run('start');
   expect(names()?.filter((name) => name === 'offer_accepted')).toHaveLength(2);
   expect(names()).not.toContain('unused_event');
-  const steps = page
-    .gtag!.mock.calls.filter((call) => call[1] === 'dxp_workflow_step')
+  const steps = googleTag.mock.calls
+    .filter((call) => call[1] === 'dxp_workflow_step')
     .map((call) => call[2]);
   expect(steps.map((params) => params.step_id)).toEqual([
     'condition',
@@ -181,7 +183,7 @@ it('tracks only executed branches and each loop iteration, and excludes annotati
 
 it('does not report completion for thrown errors, handled HTTP errors, or cancellation', async () => {
   for (const mode of ['throw', 'http', 'abort']) {
-    page.gtag?.mockClear();
+    googleTag.mockClear();
     const workflow = graph();
     workflow.nodes[1] =
       mode === 'throw'
@@ -199,8 +201,8 @@ it('does not report completion for thrown errors, handled HTTP errors, or cancel
     expect(names()).toContain('dxp_workflow_started');
     expect(names()).not.toContain('dxp_workflow_completed');
     expect(
-      page
-        .gtag!.mock.calls.filter((call) => call[1] === 'dxp_workflow_step')
+      googleTag.mock.calls
+        .filter((call) => call[1] === 'dxp_workflow_step')
         .some((call) => call[2].step_id === 'milestone'),
     ).toBe(false);
   }
@@ -214,7 +216,7 @@ it.each(['disabled', 'missing', 'throwing', 'simulate'])(
     if (mode === 'disabled') workflow.analytics = { provider: 'none' };
     if (mode === 'missing') delete page.gtag;
     if (mode === 'throwing')
-      page.gtag = vi.fn(() => {
+      page.gtag = googleTag.mockImplementation(() => {
         throw new Error('Blocked');
       });
     await runtime(workflow, {
@@ -223,12 +225,12 @@ it.each(['disabled', 'missing', 'throwing', 'simulate'])(
     }).run('start');
     expect(document.querySelector('#result')?.textContent).toBe('Done');
     if (mode === 'simulate') {
-      expect(page.gtag).not.toHaveBeenCalled();
+      expect(googleTag).not.toHaveBeenCalled();
       expect(logs.filter((entry) => entry.message.startsWith('Simulated analytics'))).toHaveLength(
         5,
       );
     }
-    if (mode === 'disabled') expect(page.gtag).not.toHaveBeenCalled();
+    if (mode === 'disabled') expect(googleTag).not.toHaveBeenCalled();
   },
 );
 
@@ -247,7 +249,7 @@ it('passes incoming data onward without adding it to any analytics payload', asy
       .mockResolvedValue({ ok: true, text: async () => '{"secret":"private@example.com"}' }),
   }).run('start');
   expect(document.querySelector('#result')?.textContent).toBe('private@example.com');
-  expect(JSON.stringify(page.gtag!.mock.calls)).not.toContain('private@example.com');
+  expect(JSON.stringify(googleTag.mock.calls)).not.toContain('private@example.com');
 });
 
 it.each([
@@ -315,7 +317,7 @@ it.each([false, true])(
     const value = exported ? page.visualDXP : runtime(workflow);
     if (!value) throw new Error('Missing runtime');
     await value.run('start');
-    expect(page.gtag).toHaveBeenCalledWith(
+    expect(googleTag).toHaveBeenCalledWith(
       'event',
       'dxp_workflow_step',
       expect.objectContaining({
@@ -334,7 +336,7 @@ it.each(['gtag', 'gtm'] as const)(
   'resolves JSON payload variables via %s in live and exported workflows',
   async (delivery) => {
     for (const exported of [false, true]) {
-      page.gtag?.mockClear();
+      googleTag.mockClear();
       page.dataLayer = [];
       const workflow = graph();
       workflow.analytics!.delivery = delivery;
@@ -364,7 +366,7 @@ it.each(['gtag', 'gtm'] as const)(
       await value.run('start');
       const payload =
         delivery === 'gtag'
-          ? page.gtag!.mock.calls.find((call) => call[1] === 'offer_accepted')?.[2]
+          ? googleTag.mock.calls.find((call) => call[1] === 'offer_accepted')?.[2]
           : page.dataLayer?.find((event) => event.event === 'offer_accepted');
       expect(payload).toMatchObject({
         plan: input.plan,

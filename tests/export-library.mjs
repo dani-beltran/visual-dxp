@@ -312,3 +312,64 @@ for (const library of [esm, umd]) {
   }
 }
 console.log(`Built ESM and UMD standalone scripts: ${analyticsCases} analytics cases passed.`);
+
+let interceptionCases = 0;
+for (const library of [esm, umd]) {
+  for (const delivery of ['gtag', 'gtm']) {
+    const dom = new JSDOM('<button id="start">Start</button>', {
+      url: 'https://example.com',
+      runScripts: 'outside-only',
+    });
+    const page = dom.window;
+    page.dataLayer = [];
+    const originalPush = page.dataLayer.push;
+    const originalTag = function () {
+      // biome-ignore lint/complexity/noArguments: match the standard Google tag implementation.
+      return page.dataLayer.push(arguments);
+    };
+    page.gtag = originalTag;
+    try {
+      page.eval(
+        library.exportWorkflow({
+          version: 1,
+          name: 'Built page capture',
+          websiteUrl: 'https://example.com',
+          analytics: { provider: 'ga4', delivery },
+          nodes: [
+            {
+              id: 'start',
+              type: 'workflow',
+              position: { x: 0, y: 0 },
+              data: {
+                kind: 'trigger',
+                label: 'Start',
+                config: { event: 'click', selector: '#start' },
+              },
+            },
+          ],
+          edges: [],
+        }),
+      );
+      await page.visualDXP.run('start');
+      assert.equal(page.gtag('event', 'site_purchase', { value: 10 }), 3);
+      page.dataLayer.push({ event: 'site_purchase' });
+      const stored = JSON.parse(page.sessionStorage.getItem('visual-dxp:analytics:v1'));
+      assert.deepEqual(
+        stored.events.map(({ name }) => name),
+        ['dxp_workflow_started', 'dxp_workflow_completed', 'site_purchase', 'site_purchase'],
+      );
+      assert.deepEqual(stored.events[2].data, ['event', 'site_purchase', { value: 10 }]);
+      assert.deepEqual(stored.events[3].data, { event: 'site_purchase' });
+      page.visualDXP.destroy();
+      assert.equal(page.gtag, originalTag);
+      assert.equal(page.dataLayer.push, originalPush);
+      interceptionCases++;
+    } finally {
+      page.visualDXP?.destroy();
+      page.close();
+    }
+  }
+}
+console.log(
+  `Built ESM and UMD standalone scripts: ${interceptionCases} page interception cases passed.`,
+);
