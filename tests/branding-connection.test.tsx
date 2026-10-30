@@ -121,7 +121,7 @@ it('runs the bundled bridge with origin checks, cancellation, and rendered-style
     {},
   ] as unknown as DOMRectList);
   vi.spyOn(doc, 'currentScript', 'get').mockReturnValue({
-    getAttribute: () => window.location.origin,
+    getAttribute: (name: string) => (name === 'data-parent-origin' ? window.location.origin : null),
   } as unknown as HTMLScriptElement);
   let finishFonts!: () => void;
   Object.defineProperty(doc, 'fonts', {

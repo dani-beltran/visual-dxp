@@ -239,3 +239,66 @@ it('preserves direct library connections when no transport is provided', async (
   expect(resolve).not.toHaveBeenCalled();
   expect(host.querySelector('iframe')?.src).toBe(target);
 });
+
+it('stops repeated proxy document loads, preserves the error, and permits an explicit retry', async () => {
+  const onError = vi.fn();
+  const onReady = vi.fn();
+  const render = (key: number) =>
+    root.render(
+      <PreviewTransportProvider transport={transport}>
+        <IsolatedPreview
+          key={key}
+          url={target}
+          workflow={workflow}
+          running={false}
+          revision={0}
+          title="Workflow"
+          onReady={onReady}
+          onError={onError}
+          onClose={() => {}}
+        />
+      </PreviewTransportProvider>,
+    );
+  await act(async () => render(0));
+  const frame = host.querySelector('iframe');
+  if (!frame) throw new Error('Expected preview iframe');
+  for (let load = 0; load < 5 && frame.isConnected; load++)
+    await act(async () => frame.dispatchEvent(new Event('load')));
+  expect(host.querySelector('iframe')).toBeNull();
+  expect(onReady).toHaveBeenLastCalledWith(false);
+  expect(onError).toHaveBeenLastCalledWith(expect.stringContaining('kept reloading'));
+  await act(async () => vi.advanceTimersByTimeAsync(10_000));
+  expect(onError).toHaveBeenLastCalledWith(expect.stringContaining('kept reloading'));
+  await act(async () => render(1));
+  expect(host.querySelector('iframe')?.src).toBe(proxy);
+});
+
+it('allows normal proxy navigations spaced beyond the reload-loop window', async () => {
+  const onError = vi.fn();
+  await act(async () =>
+    root.render(
+      <PreviewTransportProvider transport={transport}>
+        <IsolatedPreview
+          url={target}
+          workflow={workflow}
+          running={false}
+          revision={0}
+          title="Workflow"
+          onReady={() => {}}
+          onError={onError}
+          onClose={() => {}}
+        />
+      </PreviewTransportProvider>,
+    ),
+  );
+  for (let load = 0; load < 6; load++) {
+    await act(async () => {
+      host.querySelector('iframe')?.dispatchEvent(new Event('load'));
+      await vi.advanceTimersByTimeAsync(11_000);
+    });
+  }
+  expect(host.querySelector('iframe')?.src).toBe(proxy);
+  expect(onError.mock.calls.flat().some((message) => message.includes('kept reloading'))).toBe(
+    false,
+  );
+});

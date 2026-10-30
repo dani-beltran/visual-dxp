@@ -4,6 +4,7 @@ import postcss from 'postcss';
 import valueParser from 'postcss-value-parser';
 import { parseSrcset, stringifySrcset } from 'srcset';
 import { type PreviewConfig, PreviewError } from './config';
+import { isNuxtDocument } from './nuxtFrameworkFixes';
 import { type PreviewSession, proxyUrl, targetUrl } from './tokens';
 
 type Node = DefaultTreeAdapterMap['node'];
@@ -158,18 +159,37 @@ export function rewriteHtml(
     }
   }
   let references = 0;
+  const assetRoots: Record<string, string> = Object.create(null);
+  const assetRoot = (url: URL) => {
+    assetRoots[url.origin] = proxyUrl(new URL('/', url), session, config, 'asset');
+  };
+  assetRoot(page);
   const rewrite = (value: string, kind: PreviewSession['kind'] = 'asset') => {
     if (++references > 5000) throw new PreviewError('Too many preview resource references.', 413);
     if (value.trim().startsWith('#') || /^(?:data:|blob:|mailto:|tel:)/i.test(value.trim()))
       return value;
     try {
-      return proxyUrl(targetUrl(value, base), session, config, kind);
+      const url = targetUrl(value, base);
+      if (kind === 'asset') assetRoot(url);
+      return proxyUrl(url, session, config, kind);
     } catch {
       return 'about:blank';
     }
   };
   for (const element of elements) {
     const tag = element.tagName;
+    // Import maps contain URLs in script text, outside normal HTML attributes.
+    if (tag === 'script' && attr(element, 'type')?.value.toLowerCase() === 'importmap') {
+      for (const child of element.childNodes) {
+        if (child.nodeName !== '#text') continue;
+        const text = child as DefaultTreeAdapterMap['textNode'];
+        text.value = rewriteImportMap(text.value, rewrite);
+      }
+      // Rewriting invalidates an inline map's CSP hash. The same nonce used by
+      // the bridge authorizes it under nonce/hash-restricted upstream policies.
+      element.attrs = element.attrs.filter((item) => item.name !== 'nonce');
+      element.attrs.push({ name: 'nonce', value: nonce });
+    }
     const remove = () => {
       const parent = element.parentNode;
       if (parent && 'childNodes' in parent)
@@ -240,7 +260,46 @@ export function rewriteHtml(
     { name: 'data-target-url', value: page.href },
     { name: 'data-target-base-url', value: base },
   ];
+  if (isNuxtDocument(elements))
+    script.attrs.push({
+      name: 'data-nuxt-preview',
+      value: JSON.stringify({
+        targetUrl: page.href,
+        documentRoot: proxyUrl(new URL('/', page), session, config, 'document'),
+        assetRoots,
+      }),
+    });
   for (const node of bootstrap.childNodes) node.parentNode = head;
   head.childNodes.unshift(...bootstrap.childNodes);
   return serialize(document);
+}
+
+/** Rewrite import-map addresses, URL specifiers and scopes, preserving bare names. */
+export function rewriteImportMap(source: string, rewrite: (value: string) => string): string {
+  let map: Record<string, unknown>;
+  try {
+    map = JSON.parse(source);
+  } catch {
+    return source;
+  }
+  if (!map || typeof map !== 'object' || Array.isArray(map)) return source;
+  const urlKey = (key: string) => (/^(?:\.?\.?\/|https?:\/\/)/i.test(key) ? rewrite(key) : key);
+  const imports = (value: unknown) => {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return value;
+    return Object.fromEntries(
+      Object.entries(value).map(([key, address]) => [
+        urlKey(key),
+        typeof address === 'string' ? rewrite(address) : address,
+      ]),
+    );
+  };
+  if (map.imports) map.imports = imports(map.imports);
+  if (map.scopes && typeof map.scopes === 'object' && !Array.isArray(map.scopes))
+    map.scopes = Object.fromEntries(
+      Object.entries(map.scopes).map(([scope, value]) => [rewrite(scope), imports(value)]),
+    );
+  // Hashes describe upstream modules; preview responses may have been transformed.
+  delete map.integrity;
+  // Avoid terminating the script element when serializing untrusted JSON.
+  return JSON.stringify(map).replace(/</g, '\\u003c');
 }

@@ -8,3 +8,4 @@ export async function GET(request: Request, context: { params: Promise<{ token: 
 }
 
 export const HEAD = GET;
+export const OPTIONS = GET;

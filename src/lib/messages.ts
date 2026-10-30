@@ -695,6 +695,8 @@ export const englishMessages = {
   'preview.closePreview': 'Close preview',
   'preview.searchParams': 'Search parameters',
   'preview.reloadWebsite': 'Reload website',
+  'isolatedPreview.reloadLoop':
+    'The website kept reloading, so the preview was stopped. Reload the website to try again.',
   'preview.stopWorkflow': 'Stop workflow',
   'preview.restartWorkflow': 'Restart workflow',
   'preview.runWorkflow': 'Run workflow',
