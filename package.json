@@ -4,6 +4,7 @@
   "private": false,
   "type": "module",
   "description": "Embeddable React 19 digital experience workflow editor",
+  "license": "Elastic-2.0",
   "files": [
     "dist"
   ],

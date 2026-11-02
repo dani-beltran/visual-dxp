@@ -601,3 +601,17 @@ Event names support 1–40 ASCII letters, numbers, and underscores, starting wit
 Google tag delivery uses the existing `gtag` function and optional measurement destination. For **GTM**, configure custom event triggers for the three lifecycle names and every custom milestone name, data layer variables for their parameters, and GA4 event tags. No tracking means no workflow or milestone events. Previews simulate all events in the execution log.
 
 Register the low-cardinality identifiers you need as event-scoped custom dimensions and build a [GA4 Funnel exploration](https://support.google.com/analytics/answer/9327974?hl=en), for example `dxp_workflow_started → offer_accepted → lead_confirmed`. For automatic steps, filter `dxp_workflow_step` by `step_id` and the workflow ID/version. Verify collection with DebugView. Avoid registering unique `run_id` values as a custom dimension: GA4 funnels count users, while raw event exports can support exact per-run analysis.
+
+
+## License
+
+Visual DXP is source available under the [Elastic License 2.0 (ELv2)](LICENSE).
+Self-hosting for your own use, including internal business use, is allowed.
+You may not offer the software to third parties as a hosted or managed service
+that gives users access to any substantial set of its features or functionality,
+unless you obtain a separate license from the copyright holder.
+See [COPYRIGHT](COPYRIGHT) for ownership details.
+
+Use, modification, and redistribution are subject to the full license terms,
+including preservation of notices and restrictions on circumventing license keys.
+Third-party dependencies remain subject to their respective licenses.
