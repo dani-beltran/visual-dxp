@@ -1,7 +1,7 @@
 import { fileURLToPath } from 'node:url';
 import { JSDOM } from 'jsdom';
 import { build } from 'vite';
-import { expect, it } from 'vitest';
+import { expect, it, vi } from 'vitest';
 
 it('keeps inline selection and CSS escaping working after bundling and minifying the serialized preview bridge', async () => {
   const result = await build({
@@ -33,12 +33,12 @@ it('keeps inline selection and CSS escaping working after bundling and minifying
       win,
       win.document,
     );
-    const command = (type) =>
+    const command = (type, detail = {}) =>
       win.dispatchEvent(
         new dom.window.MessageEvent('message', {
           origin: 'https://editor.example',
           source: win.parent,
-          data: { protocol: 'visual-dxp:preview', channel: 'preview-test', type },
+          data: { protocol: 'visual-dxp:preview', channel: 'preview-test', type, ...detail },
         }),
       );
     command('init');
@@ -50,6 +50,56 @@ it('keeps inline selection and CSS escaping working after bundling and minifying
     expect(click.defaultPrevented).toBe(true);
     expect(messages.at(-1)).toMatchObject({ type: 'pick-element', selector: '#buy\\:now' });
     expect(win.document.querySelector('[data-visual-dxp-picker]')).toBeNull();
+
+    // Test workflow must use the minified, serialized runtime too, with local
+    // capture enabled while workflow delivery remains simulated.
+    win.document.body.innerHTML = '<button id="start">Start</button>';
+    const originalTag = vi.fn();
+    win.gtag = originalTag;
+    win.dataLayer = [];
+    command('run', {
+      runId: 'capture-test',
+      workflow: {
+        version: 1,
+        name: 'Capture',
+        websiteUrl: '',
+        analytics: { provider: 'ga4' },
+        nodes: [
+          {
+            id: 'start',
+            type: 'workflow',
+            position: { x: 0, y: 0 },
+            data: {
+              kind: 'trigger',
+              label: 'Start',
+              config: { event: 'click', selector: '#start' },
+            },
+          },
+        ],
+        edges: [],
+      },
+    });
+    win.document.querySelector('button').click();
+    const events = () =>
+      JSON.parse(win.sessionStorage.getItem('visual-dxp:analytics:preview:v1')).events;
+    await vi.waitFor(() =>
+      expect(events().map((event) => event.name)).toEqual([
+        'dxp_workflow_started',
+        'dxp_workflow_completed',
+      ]),
+    );
+    win.dataLayer.push({ event: 'external_site_event' });
+    expect(events().at(-1)).toMatchObject({
+      name: 'external_site_event',
+      source: 'dataLayer',
+      data: { event: 'external_site_event' },
+      simulated: false,
+    });
+    expect(originalTag).not.toHaveBeenCalled();
+    expect(win.sessionStorage.getItem('visual-dxp:analytics:v1')).toBeNull();
+    command('stop');
+    expect(win.gtag).toBe(originalTag);
+    expect(win.dataLayer.push).toBe(Array.prototype.push);
   } finally {
     dom.window.close();
   }

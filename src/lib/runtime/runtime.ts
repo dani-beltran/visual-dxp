@@ -9,6 +9,8 @@ import { placePopover } from '../popoverPosition';
 import { getTimeRange } from '../timeRange';
 import type { Workflow } from '../types';
 import { getWeekdays } from '../weekdays';
+import { createAnalyticsCaptureTools } from './analytics-capture';
+import { installAnalyticsInterception } from './analytics-interception';
 import { startBehaviorTrigger } from './behavior-triggers';
 import { matchesCondition } from './conditions';
 import { createRuntimeContext } from './context';
@@ -25,6 +27,8 @@ import { startZoomTrigger } from './zoom-trigger';
 // functions free of module-scope references so their compiled source can also
 // power exported workflows, including after bundling and minification.
 const runtimeModules = {
+  installAnalyticsInterception,
+  createAnalyticsCaptureTools,
   applyPageChange,
   createAnalyticsTools,
   createWorkflowAnalytics,
@@ -52,6 +56,11 @@ function createRuntimeFactory(modules: typeof runtimeModules) {
   return function createRuntime(workflow: Workflow, options: RuntimeOptions = {}): WorkflowRuntime {
     const context = modules.createRuntimeContext(workflow, options);
     const { controller, cleanups, popovers } = context;
+    modules.installAnalyticsInterception(
+      workflow,
+      context,
+      modules.createAnalyticsCaptureTools(context.win),
+    );
     const run = modules.createExecution(workflow, context, modules);
     let started = false;
 

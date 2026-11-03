@@ -515,7 +515,8 @@ it('uses shared delivery and measurement settings in the runtime and exported sc
       experimentMeasurementId: 'G-OLD',
     });
     graph.analytics = { provider: 'ga4', delivery: 'gtag', measurementId: 'G-SHARED' };
-    page.gtag = vi.fn();
+    const googleTag = vi.fn();
+    page.gtag = googleTag;
     page.dataLayer = [];
     if (exported) new Function(exportWorkflow(graph))();
     const runtime = exported ? page.visualDXP : createRuntime(graph);
@@ -523,7 +524,7 @@ it('uses shared delivery and measurement settings in the runtime and exported sc
     runtimes.push(runtime);
     await runtime.run('start');
     await settle();
-    expect(page.gtag).toHaveBeenCalledWith('event', 'experiment_view', {
+    expect(googleTag).toHaveBeenCalledWith('event', 'experiment_view', {
       experiment_id: 'homepage-cta-v1',
       variant_id: 'a',
       send_to: 'G-SHARED',

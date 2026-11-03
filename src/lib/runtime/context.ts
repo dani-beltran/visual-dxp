@@ -78,6 +78,9 @@ export function createRuntimeContext(workflow: Workflow, options: RuntimeOptions
 
   return {
     analyticsMode: options.analyticsMode ?? 'live',
+    recordAnalytics: undefined as
+      | ((name: string, delivery: 'gtag' | 'gtm', data: unknown) => void)
+      | undefined,
     searchParams: options.searchParams,
     baseUrl: options.baseUrl ?? doc.baseURI,
     onConnectionPreview: options.onConnectionPreview,
