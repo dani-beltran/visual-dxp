@@ -1,6 +1,7 @@
 import { MousePointer2 } from 'lucide-react';
 import { useId } from 'react';
 import { useBuilderI18n } from '../../lib/i18nContext';
+import { popoverHasForm } from '../../lib/popoverForm';
 import type { StepConfig } from '../../lib/types';
 import { Field, NumberInput } from '../InspectorFields/InspectorFields';
 import { Select } from '../Select/Select';
@@ -58,7 +59,11 @@ export function PopoverEditorPanel({
           />
         </Field>
       ) : (
-        <Field label={t('nodeInspector.htmlContent')} htmlFor={id('content')}>
+        <Field
+          label={t('nodeInspector.htmlContent')}
+          htmlFor={id('content')}
+          hint={popoverHasForm(config) ? t('popoverEditor.formDetected') : undefined}
+        >
           <textarea
             id={id('content')}
             className="dxp-inspector-code"

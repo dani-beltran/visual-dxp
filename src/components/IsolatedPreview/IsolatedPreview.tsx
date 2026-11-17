@@ -155,7 +155,9 @@ export function IsolatedPreview(props: IsolatedPreviewProps) {
       ref={frame}
       src={demo ? undefined : preview.url}
       srcDoc={demo ? html : undefined}
-      sandbox="allow-scripts"
+      // allow-forms lets submit events reach workflow triggers and form popovers. The preview
+      // bridge still cancels every native submission, so the tested website never submits.
+      sandbox="allow-scripts allow-forms"
       referrerPolicy="no-referrer"
       title={title}
       onLoad={() => connection.current?.onLoad()}

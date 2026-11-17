@@ -27,6 +27,9 @@ jobs:
         with:
           persist-credentials: false
       - uses: pnpm/action-setup@v4
+        with:
+          # Latest pnpm 10; package.json accepts >=10.26.0 <11.
+          version: 10
       - uses: actions/setup-node@v7
         with:
           node-version: '24'
@@ -46,6 +49,9 @@ jobs:
         with:
           persist-credentials: false
       - uses: pnpm/action-setup@v4
+        with:
+          # Latest pnpm 10; package.json accepts >=10.26.0 <11.
+          version: 10
       - uses: actions/setup-node@v7
         with:
           node-version: '24'
@@ -62,6 +68,9 @@ jobs:
         with:
           persist-credentials: false
       - uses: pnpm/action-setup@v4
+        with:
+          # Latest pnpm 10; package.json accepts >=10.26.0 <11.
+          version: 10
       - uses: actions/setup-node@v7
         with:
           node-version: '24'
@@ -79,6 +88,9 @@ jobs:
         with:
           persist-credentials: false
       - uses: pnpm/action-setup@v4
+        with:
+          # Latest pnpm 10; package.json accepts >=10.26.0 <11.
+          version: 10
       - uses: actions/setup-node@v7
         with:
           node-version: '24'

@@ -32,6 +32,7 @@ import {
   createMobileSpecificMessagingPreset,
   mobileSpecificMessagingPreset,
 } from './mobile-specific-messaging';
+import { createSatisfactionSurveyPreset, satisfactionSurveyPreset } from './satisfaction-survey';
 import { createSegmentedOnboardingPreset, segmentedOnboardingPreset } from './segmented-onboarding';
 import { createWelcomeJourneyPreset, welcomeJourneyPreset } from './welcome-journey';
 
@@ -49,6 +50,7 @@ export {
   headlineExperimentPreset,
   inactivityAssistancePreset,
   mobileSpecificMessagingPreset,
+  satisfactionSurveyPreset,
   segmentedOnboardingPreset,
   welcomeJourneyPreset,
 };
@@ -68,6 +70,7 @@ export const commonDXPPresets: readonly WorkflowPreset[] = [
   inactivityAssistancePreset,
   contextualSupportPreset,
   frustrationRecoveryPreset,
+  satisfactionSurveyPreset,
   boundedCtaAttentionPreset,
   segmentedOnboardingPreset,
 ];
@@ -91,6 +94,7 @@ const spanishPresets: readonly WorkflowPreset[] = [
   createInactivityAssistancePreset(spanishPresetMessages),
   createMobileSpecificMessagingPreset(spanishPresetMessages),
   createSegmentedOnboardingPreset(spanishPresetMessages),
+  createSatisfactionSurveyPreset(spanishPresetMessages),
 ].sort((a, b) => a.order - b.order);
 
 /** Select bundled preset content by BCP 47 locale; unsupported languages use English. */

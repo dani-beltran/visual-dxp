@@ -221,6 +221,7 @@ export function Preview({
                   <div>
                     <strong>{log.label}</strong>
                     <p>{log.message}</p>
+                    {log.data !== undefined && <pre className="dxp-log-data">{log.data}</pre>}
                   </div>
                 </div>
               ))}

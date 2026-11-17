@@ -25,7 +25,9 @@ import { dataTools } from '../../lib/data';
 import { dataHint, getDataOperators } from '../../lib/dataLabels';
 import { formatBuilderError } from '../../lib/i18n';
 import { useBuilderI18n } from '../../lib/i18nContext';
+import { producesData } from '../../lib/nodeData';
 import { getPageChanges } from '../../lib/pageChanges';
+import { popoverHasForm } from '../../lib/popoverForm';
 import { elementTriggerEvents, getTriggerOptions } from '../../lib/triggers';
 import type { ConditionType, NodeKind, StepConfig, StepData, WorkflowNode } from '../../lib/types';
 import { DataTransformInspector } from '../DataTransformInspector/DataTransformInspector';
@@ -74,7 +76,9 @@ export function NodeInspector({
     dom: t('nodeInspector.runsAfterTheElementsAreUpdated'),
     cookie: t('nodeInspector.runsAfterTheCookieIsSaved'),
     delay: t('nodeInspector.runsAfterThePause'),
-    popover: t('nodeInspector.runsAfterThePopoverIsDisplayed'),
+    popover: popoverHasForm(node.data.config)
+      ? t('nodeInspector.passesSubmittedFormDataToTheNextNode')
+      : t('nodeInspector.runsAfterThePopoverIsDisplayed'),
   } satisfies Record<Exclude<NodeKind, 'experiment' | 'fork' | 'loop' | 'note' | 'frame'>, string>;
   const triggerOptions = getTriggerOptions(t);
   const prefix = useId();
@@ -105,6 +109,7 @@ export function NodeInspector({
     dataError = formatBuilderError(error, t);
   }
   const variableCondition = ['query-param', 'cookie'].includes(conditionType);
+  const outputsData = producesData(node.data);
   const metadata = catalog.find((entry) => entry.kind === node.data.kind);
   if (!metadata) throw new Error(`Unknown node type: ${node.data.kind}`);
   const isNote = node.data.kind === 'note';
@@ -957,7 +962,13 @@ export function NodeInspector({
                   } as const
                 )[config.popoverAnimation ?? 'none'],
               )}
+              {outputsData && ` · ${t('nodeInspector.collectsFormData')}`}
             </p>
+            {outputsData && (
+              <InfoBox className="dxp-inspector-incoming-data">
+                {t('nodeInspector.popoverFormDetected')}
+              </InfoBox>
+            )}
           </>
         )}
         <section className="dxp-inspector-outputs" aria-labelledby={id('outputs-heading')}>
@@ -1024,19 +1035,15 @@ export function NodeInspector({
             <InfoBox>{t('nodeInspector.annotationOutputs', { kind: itemName })}</InfoBox>
           ) : (
             <div
-              className={`dxp-inspector-branches${['http', 'transform'].includes(node.data.kind) ? ' dxp-inspector-data-output' : ''}`}
+              className={`dxp-inspector-branches${outputsData ? ' dxp-inspector-data-output' : ''}`}
             >
               <div>
-                {['http', 'transform'].includes(node.data.kind) ? (
+                {outputsData ? (
                   <i className="dxp-inspector-dot-data" aria-hidden="true" />
                 ) : (
                   <ArrowRight size={13} aria-hidden="true" />
                 )}
-                <strong>
-                  {['http', 'transform'].includes(node.data.kind)
-                    ? t('nodeInspector.data')
-                    : t('nodeInspector.next')}
-                </strong>
+                <strong>{outputsData ? t('nodeInspector.data') : t('nodeInspector.next')}</strong>
                 <span>{nextOutputDescriptions[node.data.kind]}</span>
               </div>
             </div>

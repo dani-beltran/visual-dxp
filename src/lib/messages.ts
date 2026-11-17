@@ -427,6 +427,11 @@ export const englishMessages = {
   'nodeInspector.runsAfterTheCookieIsSaved': 'Runs after the cookie is saved',
   'nodeInspector.runsAfterThePause': 'Runs after the pause',
   'nodeInspector.runsAfterThePopoverIsDisplayed': 'Runs after the popover is displayed',
+  'nodeInspector.passesSubmittedFormDataToTheNextNode':
+    'Waits for the form to be submitted, then passes its fields to the next node',
+  'nodeInspector.popoverFormDetected':
+    'This popover contains a form, so the workflow waits here until the visitor submits it. The form is never sent: its fields are captured and passed to the next node, for example {{email}}. Repeated field names become arrays. Closing the popover without submitting stops this path.',
+  'nodeInspector.collectsFormData': 'Collects form data',
   'nodeInspector.targetElement': 'Target element',
   'nodeInspector.optionalWithoutAnAnchorChooseAFixedScreenPosition':
     'Optional. Without an anchor, choose a fixed screen position.',
@@ -655,6 +660,8 @@ export const englishMessages = {
   'noteControls.customBackgroundColor': 'Custom background color',
   'noteControls.customColor': 'Custom color',
   'noteTextEditor.writeANote': 'Write a note…',
+  'popoverEditor.formDetected':
+    'Form detected: the workflow waits for it to be submitted and passes its fields to the next node instead of sending it.',
   'popoverEditor.pickingHint':
     'Click an element in the preview to use it as the anchor. Press Esc to cancel.',
   'popoverEditor.pickingUnavailable':
@@ -799,7 +806,7 @@ export const englishMessages = {
   'websiteSetup.proxyInstructions':
     'The preview proxy connects public pages and adds the selection bridge automatically. Reload to reconnect if the session has expired.',
   'websiteSetup.proxyLimitations':
-    'Public previews have no login session. Cookies, storage, forms, and some dynamic website features are unavailable.',
+    'Public previews have no login session. Cookies are kept in memory and cleared each time the workflow runs or restarts. Browser storage, form submissions, and some dynamic website features are unavailable.',
   'isolatedPreview.proxyUnavailable':
     'The proxied website did not connect. Reload to renew the preview session. Some website scripts may not work in an isolated public preview.',
   'websiteSetup.copied': 'Copied',
@@ -823,6 +830,7 @@ export const englishMessages = {
   'workflowCard.falsePassesIncomingDataUnchanged': 'False — passes incoming data unchanged',
   'workflowCard.done': 'Done',
   'workflowCard.responseDataOutput': 'Response data output',
+  'workflowCard.formDataOutput': 'Submitted form data output',
 
   'activity.previewOpened': ({ name }: { name: string }) => `Opened a test preview of “${name}”`,
   'activity.workflowRenamed': ({ name }: { name: string }) => `Renamed the workflow to “${name}”`,
@@ -1112,7 +1120,7 @@ export const englishMessages = {
   'nodes.loop.description':
     'Repeats connected steps. Use it to run the same sequence more than once.',
   'nodes.popover.description':
-    'Displays a panel over the page. Use it to show a message or an embedded website.',
+    'Displays a panel over the page. Use it to show a message or an embedded website, or to collect form data.',
   'nodes.note.description':
     'Adds text to the canvas. Use it to document ideas, context, or reminders.',
   'nodes.frame.description':

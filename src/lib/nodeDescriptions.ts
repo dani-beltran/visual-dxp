@@ -16,7 +16,8 @@ export const nodeDescriptions = {
   experiment:
     'Splits visitors between variants A and B. Use it to test two experiences with a configurable traffic split and consistent browser assignments.',
   loop: 'Repeats connected steps. Use it to run the same sequence more than once.',
-  popover: 'Displays a panel over the page. Use it to show a message or an embedded website.',
+  popover:
+    'Displays a panel over the page. Use it to show a message or an embedded website, or to collect form data.',
   note: 'Adds text to the canvas. Use it to document ideas, context, or reminders.',
   frame:
     'Groups nodes on the canvas so they move together. Use it to organize related parts of a workflow.',

@@ -22,7 +22,7 @@ export function createRuntimeContext(workflow: Workflow, options: RuntimeOptions
     }
   }
 
-  function log(nodeId: string, status: RunLog['status'], message: string): void {
+  function log(nodeId: string, status: RunLog['status'], message: string, data?: string): void {
     const node = nodes.get(nodeId);
     try {
       options.onLog?.({
@@ -30,6 +30,7 @@ export function createRuntimeContext(workflow: Workflow, options: RuntimeOptions
         label: node?.data.label ?? nodeId,
         status,
         message,
+        ...(data === undefined ? {} : { data }),
         timestamp: Date.now(),
       });
     } catch {

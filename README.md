@@ -18,12 +18,15 @@ Connect nodes by dragging from an output socket to an input socket. Back revisit
 
 ## Common DXP presets
 
-Import `commonDXPPresets` from `visual-dxp` and pass it as `<VisualDXPBuilder presets={commonDXPPresets} />` to enable Blank followed by fourteen editable examples, ordered from basic help to segmented onboarding. The demo opts in explicitly; builders without presets still have no Presets tab. See the [preset reference and setup guide](docs/common-dxp-presets.md) for every scenario, selectors, HTTP placeholders, CSS, and runtime limits.
+Import `commonDXPPresets` from `visual-dxp` and pass it as `<VisualDXPBuilder presets={commonDXPPresets} />` to enable Blank followed by fifteen editable examples, ordered from basic help to segmented onboarding. The demo opts in explicitly; builders without presets still have no Presets tab. See the [preset reference and setup guide](docs/common-dxp-presets.md) for every scenario, selectors, HTTP placeholders, CSS, and runtime limits.
 
 ## Run the demo
 
-Requires Node.js 22.12+ (tested with Node.js 24) and pnpm 10.33.4, pinned in
-`package.json`. Install that pnpm version before running the commands below.
+Requires Node.js 22.12+ (tested with Node.js 24) and pnpm 10.26 or a later 10.x
+release (`engines` and `devEngines` in `package.json`). pnpm 10.26 is the first release
+that understands every setting in `pnpm-workspace.yaml`, including `allowBuilds`. pnpm 11 and
+later are rejected: they regenerate `pnpm-lock.yaml` differently, and some of their releases
+silently skip the `minimumReleaseAge` policy.
 
 ```sh
 pnpm install
@@ -161,6 +164,14 @@ The builder owns the toolbar, canvas, inspector, activity view, footer, element 
 
 `VisualDXPBuilder` is both the default and a named package export. Import `visual-dxp/styles.css` once in your application; it includes React Flow and all builder, inspector, dialog, picker, and activity styles. The package exposes the same stylesheet through its `style` field and marks CSS as a side effect so bundlers retain the import.
 
+The stylesheet does not download web fonts. The interface uses DM Sans and Manrope when the page provides them and otherwise falls back to system fonts. To match the demo, add this to your document `<head>` (the demo does so in `src/app/layout.tsx`):
+
+```html
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;450;500;550;600;650;700&family=Manrope:wght@400;500;600;650;700;750;800&display=swap" />
+```
+
+Load fonts from the document or self-host them rather than with a remote CSS `@import`. When a lazily loaded stylesheet contains an `@import` that fails (offline, firewall, or privacy blocker), browsers report the whole stylesheet as failed, and bundlers such as Turbopack then reject the chunk that imported it.
+
 ### Optional workflow presets
 
 Import the public `WorkflowPreset` type from `visual-dxp`. It uses the existing `Workflow` schema:
@@ -293,10 +304,10 @@ Hosts can reuse the configuration dialog with `builder.configureWebsite({ requir
 | Delay          | Wait 0–86,400,000 milliseconds.                                                                                                                                                  |
 | Condition      | Tests incoming data, element existence, device, language, referrer, date ranges, time of day, URL parameters, or cookies (including local and session storage). The upper `true` output runs on a match; otherwise the lower `false` output runs.                                                          |
 | Loop           | Executes the complete `body` path 1–1,000 times, then executes the `done` path once. Do not connect the body back to the loop; graph cycles are rejected.                        |
-| Popover        | Author-provided HTML or a sandboxed iframe, 240–960px wide, placed at screen center, any corner, or beneath a picked anchor. Anchored popovers reposition on scrolling/resizing. |
+| Popover        | Author-provided HTML or a sandboxed iframe, 240–960px wide, placed at screen center, any corner, or beneath a picked anchor. Anchored popovers reposition on scrolling/resizing. HTML containing a `<form>` waits for its submission and outputs the submitted fields (see [Popover forms](#popover-forms)). |
 | Note           | Editable canvas text with bold, italic, and strikethrough formatting, preset or custom background colors, and a transparent option. Notes have no connections and do not run. |
 
-Connections from a step execute in order. HTTP requests output their response body as incoming data for downstream nodes, including Conditions. Data Transform outputs its selected and transformed value; other nodes preserve their incoming data. Each outgoing path receives the same input independently; requests on one path do not overwrite sibling paths or concurrent runs. Repeat sends its incoming data to each body iteration and its Done branch. Conditions do not evaluate JavaScript expressions. An execution limit protects against excessive loops.
+Connections from a step execute in order. HTTP requests output their response body as incoming data for downstream nodes, including Conditions. Data Transform outputs its selected and transformed value, and a Popover containing a form outputs its submitted fields; other nodes preserve their incoming data. Each outgoing path receives the same input independently; requests on one path do not overwrite sibling paths or concurrent runs. Repeat sends its incoming data to each body iteration and its Done branch. Conditions do not evaluate JavaScript expressions. An execution limit protects against excessive loops.
 
 Select a node to see its setup guidance and **Outputs** in the step details panel. Outputs explain when the next step runs: **Next** for triggers and actions, **Data** for HTTP responses and Data Transform results, **True**/**False** for conditions, and **Body**/**Done** for loops. Notes and frames show that they have no outputs. Trigger choices also include event-specific hints, and condition descriptions explain what each check matches.
 
@@ -324,7 +335,13 @@ URLs and plain-text bodies insert strings directly and serialize other values as
 
 Successful HTTP responses parse valid JSON into native values and otherwise preserve the complete body as text. Failed requests continue with `{ "error": { "message": "Request failed: HTTP 503 Unavailable.", "code": 503 } }`; network/body-read failures use `"NETWORK_ERROR"`. Select `error.code` or `error.message` with Data Transform before a condition to handle failures. The execution log still records the request error. Cancellation stops the workflow.
 
-In Edit page, text, HTML, class, and attribute actions accept content; advanced controls expose the action and value directly. Combine text and variables, for example `Hello {{name}}`, `{{user.name}}`, or `{{items[0].price}}`. Variables resolve within the incoming data; `{{$}}` uses the entire input, including a primitive. Selectors also support variables for all actions (including Hide/Show), and the attribute action supports them in its attribute name. Input sockets use the data color when they receive data from a connected source; output sockets use it when their node produces or forwards data. This includes both outputs of conditions and repeat steps. There is no separate toggle. Data badges describe the connected path independently of variables: HTTP requests and Data Transform nodes show **Produces data**; other nodes with data arriving from either source show **Forwards data** when connected to another executable step, or **Receives data** at the end of the path. Data is traced through intermediate steps, including delays and conditions. Nodes without an upstream data source show no data badge.
+In Edit page, text, HTML, class, and attribute actions accept content; advanced controls expose the action and value directly. Combine text and variables, for example `Hello {{name}}`, `{{user.name}}`, or `{{items[0].price}}`. Variables resolve within the incoming data; `{{$}}` uses the entire input, including a primitive. Selectors also support variables for all actions (including Hide/Show), and the attribute action supports them in its attribute name. Input sockets use the data color when they receive data from a connected source; output sockets use it when their node produces or forwards data. This includes both outputs of conditions and repeat steps. There is no separate toggle. Data badges describe the connected path independently of variables: HTTP requests, Data Transform nodes, and Popovers whose HTML contains a `<form>` show **Produces data**; other nodes with data arriving from either source show **Forwards data** when connected to another executable step, or **Receives data** at the end of the path. Data is traced through intermediate steps, including delays and conditions. Nodes without an upstream data source show no data badge.
+
+### Popover forms
+
+When a Popover's HTML contains a `<form>` element, the node becomes a data producer, like an HTTP request. The canvas shows **Produces data**, the inspector shows a **Data** output, and the popover editor confirms that a form was detected. Detection ignores markup inside comments, `<script>`, `<style>`, `<textarea>`, and `<template>`; iframe popovers are never inspected.
+
+At runtime the workflow waits at the popover until the visitor submits the form. Native submission is always prevented, so the page never navigates and the form's `action` is never contacted. The submitted fields become the step's output, keyed by field name, for example `{ "email": "ada@example.com", "topics": ["news", "offers"], "plan": "pro" }`. The values follow the browser's own form data rules: native validation such as `required` still runs first, unchecked boxes and disabled fields are omitted, the clicked submit button's `name`/`value` is included, repeated names become arrays, and file inputs contribute the file name. The popover then closes and downstream steps run with that data, for example an HTTP request with the body `{"email": {{email}}}`. In **Test workflow**, the execution log shows the capture and the exact data passed to the next step as formatted JSON (very large values are shortened in the log only). Previews allow form events so the capture works, but the preview bridge cancels every native submission, so neither popover forms nor the website's own forms are ever sent from a preview. If the visitor closes the popover without submitting, or the same popover is shown again, the waiting path stops without running downstream steps. Popovers without a form still continue immediately and forward incoming data unchanged.
 
 For images, choose **Replace image**, target an `<img>` using the picker or a CSS selector, and enter an HTTP(S) or relative **Image URL**. URLs and optional **Alt text** support incoming variables such as `{{product.imageUrl}}`. Leaving alt text blank in the inspector preserves the existing description. Full HTTP(S) URLs show an inline preview; relative URLs and variables resolve on the target website. The action keeps the image element, classes, styles, and dimension attributes, and clears its `srcset`/`sizes` plus `srcset` on parent `<picture>` sources so responsive variants do not override the replacement. All matched targets must be images; CSS background images are not supported. In workflow configuration, omit `imageAlt` to preserve alt text or set it to an empty string to clear it.
 
@@ -342,7 +359,7 @@ Workflows use explicit Data Transform nodes and element templates throughout the
 
 `cookieDays` is a whole number from 0 to 400: zero or omitted uses a browser-session cookie, and a positive value sets `Max-Age` to that many days from execution. The inspector offers **Browser session** or **After a number of days**. For example, `{ "cookieName": "audience", "cookieValue": "returning", "cookieDays": 30 }` stores a value that a later Cookies condition can match with `conditionKey: 'audience'` and `conditionValue: 'returning'`.
 
-Cookie names and values are percent-encoded, with a 4,096-byte limit including settings. Writes use the current host, `Path=/`, `SameSite=Lax`, and `Secure` on HTTPS. Preview writes to the embedded website's document; exported scripts write to the target page. Cookies remain after the runtime stops. If the browser rejects the write or the value cannot be read back, the node reports an error and stops that execution. Browser cookie settings and expiration limits still apply, and HttpOnly cookies require a server. See the [document.cookie reference](https://developer.mozilla.org/en-US/docs/Web/API/Document/cookie) for browser behavior.
+Cookie names and values are percent-encoded, with a 4,096-byte limit including settings. Writes use the current host, `Path=/`, `SameSite=Lax`, and `Secure` on HTTPS. Exported scripts write to the target page, where cookies remain after the runtime stops. Sandboxed previews cannot use real cookies, so preview writes go to an in-memory store for the previewed page, which cookie conditions also read; it is cleared whenever the workflow runs or restarts. If the browser rejects the write or the value cannot be read back, the node reports an error and stops that execution. Browser cookie settings and expiration limits still apply, and HttpOnly cookies require a server. See the [document.cookie reference](https://developer.mozilla.org/en-US/docs/Web/API/Document/cookie) for browser behavior.
 
 Choose **Trigger → Start when → An element is zoomed into** and pick a **Target element** to detect zoom-in gestures over that element or its descendants (`event: 'zoom-in'`, `selector: '#product-image'`). Outward two-finger pinches and Safari scale gestures fire after a small 5% movement threshold; Ctrl+wheel zoom-in (including trackpad pinch where the browser emits it) fires once per wheel burst, rearming after a 300 ms pause. Pinches use their starting midpoint to identify the target. Native visual viewport scale changes can also complete an active pinch. Each gesture fires at most once, ordinary scrolling and zoom-out gestures are ignored, and dynamic target elements are supported.
 
@@ -494,7 +511,7 @@ import { installPreviewBridge } from 'visual-dxp';
 installPreviewBridge('https://your-editor.example');
 ```
 
-The bridge accepts workflow run/stop commands only from the exact parent origin. Parent messages validate the iframe source, sandbox origin (`null`), protocol and random channel; they carry no settings or credentials. Sandboxing disables access to cookies/localStorage and some integrations, so storage conditions take their unavailable-data branch. Test those integrations on a dedicated preview origin outside the builder. Serve published sites on a different origin from the builder; paths and storage prefixes do not isolate browser storage. Never install the builder or its settings code into a published site.
+The bridge accepts workflow run/stop commands only from the exact parent origin. Parent messages validate the iframe source, sandbox origin (`null`), protocol and random channel; they carry no settings or credentials. Sandboxing disables access to cookies/localStorage and some integrations. So that cookie steps and cookie conditions can still be tested, the preview bridge keeps `document.cookie` in memory for the previewed page and clears it every time the workflow runs or restarts; expiry (`Max-Age`/`Expires`) is honored, other attributes are ignored, and nothing reaches the real website. Local and session storage stay unavailable, so storage-only matches take their unavailable-data branch. Test those integrations on a dedicated preview origin outside the builder. Serve published sites on a different origin from the builder; paths and storage prefixes do not isolate browser storage. Never install the builder or its settings code into a published site.
 
 ## JavaScript export and runtime
 
