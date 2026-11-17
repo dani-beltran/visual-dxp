@@ -84,7 +84,9 @@ export function WorkflowCard({ id, data, selected }: NodeProps<WorkflowNode>) {
     dataFlow === 'produces'
       ? data.kind === 'transform'
         ? t('transform.outputHint')
-        : t('workflowCard.responseDataOutput')
+        : data.kind === 'popover'
+          ? t('workflowCard.formDataOutput')
+          : t('workflowCard.responseDataOutput')
       : t('workflowCard.forwardsData');
   const dataFlowLabel =
     dataFlow === 'produces'

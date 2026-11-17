@@ -316,7 +316,7 @@ describe('session and content endpoints', () => {
     expect(fetcher.mock.calls[0][0].href).toBe('https://shop.example/');
     const csp = result.headers.get('content-security-policy') ?? '';
     expect(csp).toContain("frame-ancestors 'self' http://localhost:3000");
-    expect(csp).toContain('sandbox allow-scripts');
+    expect(csp).toContain('sandbox allow-scripts allow-forms;');
     expect(csp).not.toContain("frame-ancestors 'none'");
     for (const name of ['set-cookie', 'x-frame-options', 'etag', 'content-length'])
       expect(result.headers.has(name)).toBe(false);
@@ -364,7 +364,9 @@ describe('session and content endpoints', () => {
     );
     expect(response.status).toBe(200);
     expect(await response.text()).toBe('');
-    expect(response.headers.get('content-security-policy')).toContain('sandbox allow-scripts');
+    expect(response.headers.get('content-security-policy')).toContain(
+      'sandbox allow-scripts allow-forms;',
+    );
     expect(fetcher.mock.calls[0][2]).toBe('HEAD');
   });
 

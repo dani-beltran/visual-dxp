@@ -177,10 +177,13 @@ it('routes picker, preview and connection check through one transport while reta
   for (const [url] of resolve.mock.calls) expect(url).toBe(target);
   const frames = host.querySelectorAll('iframe');
   expect(frames).toHaveLength(3);
-  for (const frame of frames) {
-    expect(frame.src).toBe(proxy);
-    expect(frame.getAttribute('sandbox')).toBe('allow-scripts');
-  }
+  for (const frame of frames) expect(frame.src).toBe(proxy);
+  // Only the workflow preview needs forms (for submit events); the picker and check do not.
+  expect([...frames].map((frame) => frame.getAttribute('sandbox')).sort()).toEqual([
+    'allow-scripts',
+    'allow-scripts',
+    'allow-scripts allow-forms',
+  ]);
   expect(host.textContent).toContain(target);
   expect(workflow.websiteUrl).toBe(target);
 });

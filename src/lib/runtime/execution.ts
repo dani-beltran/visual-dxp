@@ -120,6 +120,10 @@ export function createExecution(
       let requestError: string | undefined;
       let selectedHandle: string | undefined;
       let loopIterations = 0;
+      // A form popover closed without submitting ends this path without data.
+      let dismissed = false;
+      // Captured form data, formatted exactly as the next step receives it, for the log.
+      let capturedData: string | undefined;
       log(nodeId, 'running', 'Running step');
       try {
         switch (node.data.kind) {
@@ -268,9 +272,21 @@ export function createExecution(
             if (!Number.isInteger(loopIterations) || loopIterations < 1 || loopIterations > 1000)
               throw new Error('Repeat count must be an integer from 1 to 1,000.');
             break;
-          case 'popover':
-            showPopover(node, context, createPopoverElements, placePopover);
+          case 'popover': {
+            const submission = showPopover(node, context, createPopoverElements, placePopover);
+            if (!submission) break;
+            // Like an HTTP response, the submitted fields become this step's output.
+            log(nodeId, 'running', 'Waiting for the form to be submitted');
+            const result = await submission;
+            aborted();
+            if (result.submitted) {
+              output = { exists: true, value: result.value };
+              const text = JSON.stringify(result.value, null, 2);
+              capturedData =
+                text.length > 8000 ? `${text.slice(0, 8000)}\n… (truncated in this log)` : text;
+            } else dismissed = true;
             break;
+          }
           default:
             throw new Error(`Unknown step type: ${String(node.data.kind)}.`);
         }
@@ -285,13 +301,19 @@ export function createExecution(
                 : `Condition is ${selectedHandle}`
               : loopIterations
                 ? `Repeating ${loopIterations} times`
-                : 'Step completed'),
+                : dismissed
+                  ? 'Popover closed before the form was submitted'
+                  : capturedData !== undefined
+                    ? 'Form submission captured. The form was not sent; this data is passed to the next step:'
+                    : 'Step completed'),
+          capturedData,
         );
       } catch (error) {
         if (!signal.aborted)
           log(nodeId, 'error', error instanceof Error ? error.message : String(error));
         throw error;
       }
+      if (dismissed) return;
       if (requestError !== undefined) state.hadError = true;
       if (!loopIterations && node.data.kind !== 'trigger' && requestError === undefined)
         state.analytics.step(node, selectedHandle);

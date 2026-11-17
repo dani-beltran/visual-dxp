@@ -169,6 +169,24 @@
   margin-top: 4px;
   overflow-wrap: anywhere;
 }
+.dxp-log-item > div {
+  min-width: 0;
+}
+.dxp-log-data {
+  margin: 6px 0 0;
+  padding: 7px 8px;
+  max-height: 180px;
+  overflow: auto;
+  border: 1px solid var(--dxp-line);
+  border-radius: 6px;
+  background: var(--dxp-surface-muted);
+  color: var(--dxp-text);
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+  font-size: 9px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
 .dxp-log-note {
   font-size: 9px !important;
   color: var(--dxp-subtle);

@@ -402,6 +402,11 @@ export const spanishMessages = {
   'nodeInspector.runsAfterThePause': 'Se ejecuta después de la pausa',
   'nodeInspector.runsAfterThePopoverIsDisplayed':
     'Se ejecuta después de mostrar la ventana emergente',
+  'nodeInspector.passesSubmittedFormDataToTheNextNode':
+    'Espera a que se envíe el formulario y pasa sus campos al siguiente nodo',
+  'nodeInspector.popoverFormDetected':
+    'Esta ventana emergente contiene un formulario, así que el flujo espera aquí hasta que el visitante lo envíe. El formulario nunca se envía realmente: sus campos se capturan y se pasan al siguiente nodo, por ejemplo {{email}}. Los nombres de campo repetidos se convierten en listas. Si se cierra la ventana sin enviar el formulario, esta ruta se detiene.',
+  'nodeInspector.collectsFormData': 'Recoge datos de formulario',
   'nodeInspector.targetElement': 'Elemento de destino',
   'nodeInspector.optionalWithoutAnAnchorChooseAFixedScreenPosition':
     'Opcional. Sin un elemento de anclaje, elige una posición fija en la pantalla.',
@@ -621,6 +626,8 @@ export const spanishMessages = {
   'noteControls.customBackgroundColor': 'Color de fondo personalizado',
   'noteControls.customColor': 'Color personalizado',
   'noteTextEditor.writeANote': 'Escribe una nota…',
+  'popoverEditor.formDetected':
+    'Formulario detectado: el flujo espera a que se envíe y pasa sus campos al siguiente nodo en lugar de enviarlo.',
   'popoverEditor.pickingHint':
     'Haz clic en un elemento de la vista previa para usarlo como ancla. Pulsa Esc para cancelar.',
   'popoverEditor.pickingUnavailable':
@@ -763,7 +770,7 @@ export const spanishMessages = {
   'websiteSetup.proxyInstructions':
     'El proxy conecta las páginas públicas y añade el puente de selección automáticamente. Recarga para reconectar si la sesión ha caducado.',
   'websiteSetup.proxyLimitations':
-    'Las vistas previas públicas no tienen sesión de acceso. Las cookies, el almacenamiento, los formularios y algunas funciones dinámicas no están disponibles.',
+    'Las vistas previas públicas no tienen sesión de acceso. Las cookies se guardan en memoria y se borran cada vez que el flujo se ejecuta o se reinicia. El almacenamiento del navegador, el envío de formularios y algunas funciones dinámicas no están disponibles.',
   'isolatedPreview.proxyUnavailable':
     'El sitio a través del proxy no se ha conectado. Recarga para renovar la sesión. Algunos scripts pueden no funcionar en una vista previa pública aislada.',
   'websiteSetup.copied': 'Copiado',
@@ -789,6 +796,7 @@ export const spanishMessages = {
     'Falso — pasa los datos de entrada sin modificarlos',
   'workflowCard.done': 'Finalizado',
   'workflowCard.responseDataOutput': 'Salida de datos de respuesta',
+  'workflowCard.formDataOutput': 'Salida de datos del formulario enviado',
   'errors.cookies.enterACookieNameWithoutSpacesOrSeparatorsSuchAs':
     'Introduce un nombre de cookie sin espacios ni separadores como = y ;.',
   'errors.cookies.missingNameVariable': ({ name }) =>
@@ -981,7 +989,7 @@ export const spanishMessages = {
   'nodes.loop.description':
     'Repite los pasos conectados. Úsalo para ejecutar la misma secuencia más de una vez.',
   'nodes.popover.description':
-    'Muestra un panel sobre la página. Úsalo para mostrar un mensaje o un sitio web incrustado.',
+    'Muestra un panel sobre la página. Úsalo para mostrar un mensaje o un sitio web incrustado, o para recoger datos de formulario.',
   'nodes.note.description':
     'Añade texto al lienzo. Úsalo para documentar ideas, contexto o recordatorios.',
   'nodes.frame.description':

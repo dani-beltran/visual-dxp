@@ -179,7 +179,7 @@ describe('fullscreen popover preview', () => {
     const frame = websiteFrame();
     expect(frame.src).toBe(websiteUrl);
     expect(frame.hasAttribute('srcdoc')).toBe(false);
-    expect(frame.getAttribute('sandbox')).toBe('allow-scripts');
+    expect(frame.getAttribute('sandbox')).toBe('allow-scripts allow-forms');
     expect(fetch).not.toHaveBeenCalled();
     expect(document.querySelector('.dxp-popover-preview-bar')?.textContent).toContain(websiteUrl);
     expect(document.body.textContent).not.toContain('Demo website');
@@ -283,7 +283,7 @@ describe('fullscreen popover preview', () => {
     async (position, vertical, horizontal) => {
       await renderPreview(popover({ position }));
       expect(document.querySelector('[role="dialog"][aria-label="Edit popover"]')).not.toBeNull();
-      expect(websiteFrame().getAttribute('sandbox')).toBe('allow-scripts');
+      expect(websiteFrame().getAttribute('sandbox')).toBe('allow-scripts allow-forms');
 
       const { doc } = await loadWebsite();
       expect(doc.querySelector('main h1')?.textContent).toBe('Atelier');

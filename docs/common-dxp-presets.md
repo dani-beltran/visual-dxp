@@ -1,6 +1,6 @@
 # Common DXP workflow presets
 
-`commonDXPPresets` contains Blank followed by fourteen independent examples, ordered by implementation complexity. Every preset is an editable, JSON-serializable object literal in its own file under `src/presets/`, checked with `satisfies WorkflowPreset`. The catalog covers every current node kind except Transform. Static IDs remain stable when the workflow is applied; annotation IDs are never used in connections.
+`commonDXPPresets` contains Blank followed by fifteen independent examples, ordered by implementation complexity. Every preset is an editable, JSON-serializable object literal in its own file under `src/presets/`, checked with `satisfies WorkflowPreset`. The catalog covers every current node kind except Track event. Static IDs remain stable when the workflow is applied; annotation IDs are never used in connections.
 
 Each nonempty preset carries its setup instructions as editable, disconnected note nodes on the canvas, beside the steps they explain. Onboarding places these notes inside the corresponding stage frames. The common presets omit the optional `setupInstructions` metadata, so their cards show the scenario summary while setup guidance appears when applied. Other consumers can still supply that optional metadata for their own preset cards.
 
@@ -39,6 +39,7 @@ After Blank, the first three examples are ordered by their final implementation:
 | 90 | Inactivity assistance / `inactivityAssistancePreset` | Intermediate | 30 seconds idle → form existence → 1-second pause → anchored help; absent form → general help. `trigger`, `fork`, `delay`, `popover`. | `#newsletter form` must still exist after the pause. Remove it to test fallback. Activity can restart the inactivity timer but does not cancel an already-started delay. |
 | 95 | Contextual support by opening hours / `contextualSupportPreset` | Intermediate | Hover over Help → UTC support hours → demo support chat or offline message. `trigger`, `fork`, `dom`, `popover`. | Demo footer `#support-help`; reveal `#support-chat` with `dxp-support-visible`, configure daily hours, and customize offline copy. See below. |
 | 100 | Frustration recovery / `frustrationRecoveryPreset` | Advanced | Three nearby clicks or scroll thrashing → session gate → help → generic HTTP event → marker. `trigger`, `fork`, `popover`, `http`, `cookie`. | Configure the HTTP endpoint below. `#collection` link; `dxp_assistance_shown=shown` session marker. Either trigger starts the journey: three clicks within 1 second and 40 CSS pixels across the document, or four page scroll reversals within 2 seconds with at least 50 CSS pixels of travel. |
+| 105 | Satisfaction survey / `satisfactionSurveyPreset` | Advanced | Page load → seen check → 3-second pause → seen marker → survey popover with a form, which produces the answers as data. They go both to Select the answer → Incoming data condition → thank-you (positive) or support message (negative or no answer), and to an HTTP request that sends them. `trigger`, `fork`, `delay`, `cookie`, `popover`, `transform`, `http`. | Configure the feedback endpoint; see below. Keep the form's `satisfaction`/`comment` names and `positive`/`negative` values. Replace `support@example.test`. `dxp_survey_seen=seen` lasts 365 days. In Test workflow, restart to see the survey again. |
 | 110 | Bounded CTA attention sequence / `boundedCtaAttentionPreset` | Advanced | CTA click → three complete highlight/rest iterations → completion tip. `trigger`, `loop`, `dom`, `delay`, `popover`. | Trigger `#shop-now`, target `#collection h2`, and CSS below. The demo CTA scrolls to that heading. |
 | 120 | Segmented onboarding journey / `segmentedOnboardingPreset` | Advanced | Page load → prior-delivery check → campaign/default copy → delayed contextual guidance → HTTP → completion marker. `trigger`, `fork`, `dom`, `delay`, `popover`, `http`, `cookie`, `frame`, `note`. | Configure HTTP; `.hero .description`, `#shop-now`, `#collection`; optional `utm_campaign=onboarding`. Marker `dxp_onboarding_delivered=yes` lasts 30 days. Campaign waits 1.5 seconds; default waits 2 seconds. |
 
@@ -50,9 +51,24 @@ The demo chat is hidden until the visibility class is added. Its icon and invita
 
 Replace `#support-help` with a help link on your own website. This example demonstrates pointer hover; the demo link retains its normal click navigation. Repeated hovers reveal the chat or reopen a dismissed offline popover, and the condition is evaluated on each hover rather than on a timer. Once revealed, the chat remains available until the page is reloaded; it does not automatically hide at closing time.
 
+## Satisfaction survey
+
+`satisfactionSurveyPreset` shows how a popover form produces data. Because its HTML contains a `<form>`, the survey popover waits until the visitor submits it. The browser never sends the form: the runtime captures the fields instead, so the survey's output is `{ "satisfaction": "positive" | "negative", "comment": "…" }`. The answer is required (native validation); the comment is optional and may be empty. Closing the survey without answering ends the journey: no reply and no request.
+
+The survey has two outgoing connections, and connections from one step run in order:
+
+1. **Select the answer** (Data Transform, path `satisfaction`, fallback `""`) → **Positive feedback?** (Incoming data condition, *Equal* `positive`). True shows “Thank you! We got your feedback”. False, including a missing answer, shows “Let us know what went wrong at support@example.test” with a `mailto:` link. A Data Transform is needed because Incoming data conditions compare the whole incoming value.
+2. **Send feedback to the API** (HTTP POST). It is connected from the survey rather than after the condition, because an HTTP step replaces the data with the API response.
+
+The reply path is listed first, so the reply appears immediately and does not wait for the request. A failed request is logged but never hides the reply. In **Test workflow**, the execution log shows the captured answers exactly as both paths receive them.
+
+**Showing the survey once.** *Survey already seen?* checks `dxp_survey_seen=seen` (cookies, local storage, or session storage) right after the page loads; visitors who match end there. Otherwise, after the 3-second pause, *Remember survey seen* writes that cookie for 365 days **just before** the survey appears. It cannot come after the survey: a popover with a form continues only after a submission, so a later marker would miss visitors who see the survey and simply keep browsing. Visitors who leave during the pause have not seen it and are asked on a later visit.
+
+If the cookie cannot be saved, the journey stops before the survey, so blocked cookies cannot cause the survey to reappear on every page. **Test workflow** keeps cookies in memory for the previewed page and clears them whenever the workflow runs or restarts, so the first run shows the survey and a restart shows it again. On your website, delete the `dxp_survey_seen` cookie to see the survey again.
+
 ## HTTP examples
 
-The two request nodes use **`https://events.example.invalid/dxp-events`**, a reserved, non-serving placeholder. Replace it before running either HTTP example. There is no bundled event service or analytics integration.
+The frustration-recovery and onboarding request nodes use **`https://events.example.invalid/dxp-events`**, and the satisfaction survey uses **`https://feedback.example.invalid/satisfaction`**. Both are reserved, non-serving placeholders. Replace them before running the HTTP examples. There is no bundled event service or analytics integration.
 
 For a local mock, supply `fetch` through `createRuntime` and return a successful response, without any network access:
 
@@ -78,9 +94,10 @@ For the demo preview or an exported script, edit the request node's URL to a loc
 ```json
 {"event":"assistance_shown"}
 {"event":"onboarding_guidance_displayed"}
+{"satisfaction": "positive", "comment": "…"}
 ```
 
-Do not add visitor identifiers, email addresses, form values, page URLs, or other personal data. The presets do not collect those values. An actual HTTP connection may carry normal browser transport metadata and same-origin cookies; configure your own endpoint appropriately. The mock does not perform a connection.
+The survey body is built from the submitted form with `{{satisfaction}}` and `{{comment}}` templates; it contains only what the visitor chose and typed. The comment is free text, so visitors could still type personal details even though the placeholder asks them not to. Tell visitors how feedback is used, and handle it according to your privacy policy. Do not add visitor identifiers, email addresses, page URLs, or other personal data to these requests. The other presets collect no form values. An actual HTTP connection may carry normal browser transport metadata and same-origin cookies; configure your own endpoint appropriately. The mock does not perform a connection.
 
 A failed HTTP response or network error passes `{ "error": { "message": "…", "code": 503 } }` downstream (code is `"NETWORK_ERROR"` when there is no HTTP response). Execution continues to the following cookie, which records that guidance was displayed regardless of event delivery. There is no error branch or retry action in these graphs; add an Incoming data condition on `error.code` to handle delivery failures separately. Popovers have already rendered at that point. A 2xx response means the HTTP step succeeded; it does not prove durable server storage. The response is not interpolated into content or used for personalization.
 
@@ -105,7 +122,7 @@ The effect uses no animation or layout shift. Completion describes the completed
 - A `fork` selects `true` or `false`; unconnected outputs end that path. An annotation never executes. Frames precede children in the array; child positions are relative to their frame, with room for its header. Three onboarding frames separate recognition, guidance, and delivery; their notes explain setup and branch behavior.
 - “Cookie” conditions check exact matches in cookies, local storage, and session storage. Cookie nodes write host-only cookies at `/`, with SameSite=Lax and Secure on HTTPS. `cookieDays: 0` omits expiration. Browser session restoration may preserve session cookies. Use separate keys for these examples, and clear the same key from all three stores when retesting.
 - Frequency control is best effort. Cookie access may be blocked, and multiple invocations can pass a gate before a pending HTTP request saves its marker. These examples do not implement an atomic rate limit.
-- Popover steps complete after insertion into the DOM. They never wait for a close button, a link click, reading, signup, or a purchase. The reader/visitor markers record display. Onboarding's completion marker means its chosen DOM update and guidance rendered and its generic request was attempted, including failed requests. Returning visitors receive only updated copy; they do not replay guidance or HTTP.
+- Popover steps complete after insertion into the DOM. They never wait for a close button, a link click, reading, signup, or a purchase. The exception is a popover whose HTML contains a `<form>`, such as the satisfaction survey: it waits for the form's submission and ends the path if it is closed first. The reader/visitor markers record display. Onboarding's completion marker means its chosen DOM update and guidance rendered and its generic request was attempted, including failed requests. Returning visitors receive only updated copy; they do not replay guidance or HTTP.
 - Device targeting uses client hints or user-agent detection. Selector conditions check existence, not visibility. An anchored popover errors if its anchor is missing when it executes; the inactivity fallback only handles absence at the preceding condition.
 - Exit intent detects a pointer leaving the top edge once per runtime. Scroll depth requires downward movement across the configured percentage of scrollable distance and fires once per runtime. Rage clicks are document-wide. Inactivity can recur after new activity. None infers business intent with certainty.
 - HTML copy is static and author-controlled. There is no user profile lookup, analytics SDK, conversion observation, or templated response interpolation in these presets. The demo newsletter form is itself a local demonstration, not a subscription service.

@@ -198,6 +198,8 @@ export interface RunLog {
   label: string;
   status: 'running' | 'success' | 'error';
   message: string;
+  /** Data passed to the next step, as formatted JSON, for debugging. Bounded in length. */
+  data?: string;
   timestamp: number;
 }
 export interface ValidationIssue {

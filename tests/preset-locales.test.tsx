@@ -68,6 +68,31 @@ it.each(commonDXPPresets)('localizes $id while preserving executable configurati
   expect(localizeCommonDXPPreset(customized, 'es')).toBe(customized);
 });
 
+it('keeps form field names and values identical in translated popover forms', () => {
+  // Downstream conditions and requests read these, so only visible wording may change.
+  const fields = (content = '') =>
+    [...new DOMParser().parseFromString(content, 'text/html').querySelectorAll('form [name]')].map(
+      (field) => [
+        field.localName,
+        field.getAttribute('type'),
+        field.getAttribute('name'),
+        field.getAttribute('value'),
+        field.hasAttribute('required'),
+      ],
+    );
+  let forms = 0;
+  for (const english of commonDXPPresets) {
+    const spanish = getCommonDXPPresets('es').find((preset) => preset.id === english.id);
+    for (const [index, node] of english.workflow.nodes.entries()) {
+      const original = fields(node.data.config.content);
+      if (!original.length) continue;
+      forms += 1;
+      expect(fields(spanish?.workflow.nodes[index].data.config.content)).toEqual(original);
+    }
+  }
+  expect(forms).toBeGreaterThan(0);
+});
+
 it('updates bundled cards with the editor locale and applies the displayed translation', async () => {
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
   const host = document.createElement('div');

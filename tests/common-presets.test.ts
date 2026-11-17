@@ -21,6 +21,7 @@ import {
   headlineExperimentPreset,
   inactivityAssistancePreset,
   mobileSpecificMessagingPreset,
+  satisfactionSurveyPreset,
   segmentedOnboardingPreset,
   welcomeJourneyPreset,
 } from '../src/presets';
@@ -102,11 +103,7 @@ describe('common DXP preset contracts and layout', () => {
     expect(
       new Set(commonDXPPresets.flatMap((p) => p.workflow.nodes.map((n) => n.data.kind))),
     ).toEqual(
-      new Set(
-        catalog
-          .filter((entry) => !['transform', 'track-event'].includes(entry.kind))
-          .map((entry) => entry.kind),
-      ),
+      new Set(catalog.filter((entry) => entry.kind !== 'track-event').map((entry) => entry.kind)),
     );
   });
 
@@ -566,5 +563,146 @@ describe('preset execution with a mocked browser and network', () => {
     await runtime(exitIntentOfferPreset).run();
     expect(popover('exit-popover')).toBeNull();
     expect(document.cookie).toBe('');
+  });
+});
+
+describe('satisfaction survey preset', () => {
+  function survey() {
+    return required(popover('survey-popover')?.querySelector('form'));
+  }
+  async function answer(value: 'positive' | 'negative', comment = '') {
+    runtime(satisfactionSurveyPreset).start();
+    await vi.advanceTimersByTimeAsync(2999);
+    expect(popover('survey-popover')).toBeNull();
+    await vi.advanceTimersByTimeAsync(1);
+    const form = survey();
+    required(
+      form.querySelector<HTMLInputElement>(`input[name="satisfaction"][value="${value}"]`),
+    ).checked = true;
+    required(form.querySelector('textarea')).value = comment;
+    required(form.querySelector('button')).click();
+    await vi.advanceTimersByTimeAsync(0);
+  }
+
+  it('sends positive feedback to the API and thanks the visitor', async () => {
+    await answer('positive', 'Lovely shop');
+    expect(popover('survey-popover')).toBeNull();
+    expect(popover('survey-thanks')?.textContent).toContain('Thank you! We got your feedback');
+    expect(popover('survey-support')).toBeNull();
+    expect(request).toHaveBeenCalledExactlyOnceWith(
+      'https://feedback.example.invalid/satisfaction',
+      expect.objectContaining({
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: '{"satisfaction": "positive", "comment": "Lovely shop"}',
+      }),
+    );
+    // The reply path is connected first, so it does not wait for the request.
+    expect(successful()).toEqual([
+      'survey-trigger',
+      'survey-seen-check',
+      'survey-delay',
+      'survey-seen-cookie',
+      'survey-popover',
+      'survey-select',
+      'survey-check',
+      'survey-thanks',
+      'survey-send',
+    ]);
+  });
+
+  it('sends negative feedback to the API and points the visitor to support', async () => {
+    await answer('negative');
+    const support = required(popover('survey-support'));
+    expect(support.textContent).toContain('Let us know what went wrong at support@example.test');
+    expect(support.querySelector('a[href="mailto:support@example.test"]')).not.toBeNull();
+    expect(popover('survey-thanks')).toBeNull();
+    expect(JSON.parse(String(request.mock.calls[0][1]?.body))).toEqual({
+      satisfaction: 'negative',
+      comment: '',
+    });
+    expect(successful()).toContain('survey-support');
+  });
+
+  it('still replies to the visitor when the feedback API fails', async () => {
+    request.mockRejectedValue(new TypeError('Failed to fetch'));
+    await answer('positive');
+    expect(popover('survey-thanks')).not.toBeNull();
+    expect(
+      logs.find((log) => log.nodeId === 'survey-send' && log.status === 'error')?.message,
+    ).toBe('Failed to fetch');
+  });
+
+  it('remembers the survey as seen for 365 days as soon as it appears, before any answer', async () => {
+    const written: string[] = [];
+    const cookie = Object.getOwnPropertyDescriptor(Document.prototype, 'cookie');
+    vi.spyOn(document, 'cookie', 'set').mockImplementation((value) => {
+      written.push(value);
+      cookie?.set?.call(document, value);
+    });
+    runtime(satisfactionSurveyPreset).start();
+    await vi.advanceTimersByTimeAsync(2999);
+    expect(document.cookie).not.toContain('dxp_survey_seen');
+    await vi.advanceTimersByTimeAsync(1);
+    expect(popover('survey-popover')).not.toBeNull();
+    expect(document.cookie).toContain('dxp_survey_seen=seen');
+    expect(written).toEqual(['dxp_survey_seen=seen; Path=/; SameSite=Lax; Max-Age=31536000']);
+  });
+
+  it.each([
+    ['after answering', true],
+    ['after ignoring it', false],
+  ])('does not show the survey again to a returning visitor %s', async (_case, answered) => {
+    if (answered) await answer('positive');
+    else {
+      runtime(satisfactionSurveyPreset).start();
+      await vi.advanceTimersByTimeAsync(3000);
+      expect(popover('survey-popover')).not.toBeNull();
+    }
+    // A later page load: a new runtime on a fresh page with the same cookie jar.
+    for (const instance of runtimes.splice(0)) instance.destroy();
+    logs = [];
+    request.mockClear();
+    runtime(satisfactionSurveyPreset).start();
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(popover('survey-popover')).toBeNull();
+    expect(successful()).toEqual(['survey-trigger', 'survey-seen-check']);
+    expect(request).not.toHaveBeenCalled();
+  });
+
+  it('does not show the survey when the seen cookie cannot be saved', async () => {
+    // Restore here: the shared cleanup writes cookies before restoring mocks.
+    const blocked = vi.spyOn(document, 'cookie', 'set').mockImplementation(() => {
+      throw new DOMException('Blocked', 'SecurityError');
+    });
+    try {
+      runtime(satisfactionSurveyPreset).start();
+      await vi.advanceTimersByTimeAsync(3000);
+      expect(popover('survey-popover')).toBeNull();
+      expect(logs.find((log) => log.nodeId === 'survey-seen-cookie')).toMatchObject({
+        status: 'running',
+      });
+      expect(logs.at(-1)).toMatchObject({ nodeId: 'survey-seen-cookie', status: 'error' });
+      expect(request).not.toHaveBeenCalled();
+    } finally {
+      blocked.mockRestore();
+    }
+  });
+
+  it('requires an answer and sends nothing when the survey is closed', async () => {
+    runtime(satisfactionSurveyPreset).start();
+    await vi.advanceTimersByTimeAsync(3000);
+    required(survey().querySelector('button')).click();
+    await vi.advanceTimersByTimeAsync(0);
+    // Native validation keeps the survey open until an answer is chosen.
+    expect(popover('survey-popover')).not.toBeNull();
+    required(
+      popover('survey-popover')?.querySelector<HTMLButtonElement>('button[aria-label]'),
+    ).click();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(popover('survey-popover')).toBeNull();
+    expect(popover('survey-thanks')).toBeNull();
+    expect(popover('survey-support')).toBeNull();
+    expect(request).not.toHaveBeenCalled();
   });
 });

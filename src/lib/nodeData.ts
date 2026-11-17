@@ -1,4 +1,5 @@
 import { dataTools } from './data';
+import { popoverHasForm } from './popoverForm';
 import type { NodeKind, StepConfig, StepData, WorkflowEdge, WorkflowNode } from './types';
 
 interface NodeDataPorts {
@@ -15,6 +16,8 @@ const dataPorts: Partial<Record<NodeKind, (config: StepConfig) => NodeDataPorts>
   }),
   transform: () => ({ acceptsData: true, outputsData: true }),
   http: () => ({ acceptsData: true, outputsData: true }),
+  // A form replaces incoming data with its submitted fields.
+  popover: (config) => ({ acceptsData: false, outputsData: popoverHasForm(config) }),
   fork: (config) => ({
     acceptsData: config.conditionType === 'data',
     outputsData: false,
@@ -43,6 +46,13 @@ export function getNodeDataPorts(node?: Pick<StepData, 'kind' | 'config'>): Node
 type DataFlowNode = Pick<WorkflowNode, 'id' | 'data'>;
 type DataFlowEdge = Pick<WorkflowEdge, 'source' | 'target'>;
 
+/** Steps that replace incoming data with their own output: responses, transforms, form payloads. */
+export function producesData(node?: Pick<StepData, 'kind' | 'config'>): boolean {
+  if (!node) return false;
+  if (node.kind === 'http' || node.kind === 'transform') return true;
+  return node.kind === 'popover' && popoverHasForm(node.config ?? {});
+}
+
 /** Describes potential data flow through the connected graph, before execution. */
 export function getNodeDataFlow(
   id: string,
@@ -54,7 +64,7 @@ export function getNodeDataFlow(
     node && !['trigger', 'note', 'frame'].includes(node.data.kind);
   const node = nodeMap.get(id);
   if (!isExecutable(node)) return undefined;
-  if (['http', 'transform'].includes(node?.data.kind ?? '')) return 'produces';
+  if (producesData(node?.data)) return 'produces';
 
   const sources = new Map<string, string[]>();
   for (const edge of edges) {
@@ -71,7 +81,7 @@ export function getNodeDataFlow(
     visited.add(sourceId);
     const source = nodeMap.get(sourceId);
     if (!isExecutable(source)) continue;
-    if (['http', 'transform'].includes(source?.data.kind ?? '')) {
+    if (producesData(source?.data)) {
       return edges.some((edge) => edge.source === id && isExecutable(nodeMap.get(edge.target)))
         ? 'forwards'
         : 'receives';

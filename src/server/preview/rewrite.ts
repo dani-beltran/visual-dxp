@@ -85,7 +85,9 @@ export function rewriteCsp(value: string, nonce: string, config: PreviewConfig):
 }
 
 export function previewCsp(config: PreviewConfig): string {
-  return `frame-ancestors 'self' ${config.editorOrigin}; sandbox allow-scripts; object-src 'none'`;
+  // Sandboxes without allow-forms never fire submit events. Keep this in sync with the preview
+  // iframe; the injected bridge cancels native submissions (see installPreviewBridge).
+  return `frame-ancestors 'self' ${config.editorOrigin}; sandbox allow-scripts allow-forms; object-src 'none'`;
 }
 
 export function rewriteCss(source: string, rewrite: (value: string) => string): string {

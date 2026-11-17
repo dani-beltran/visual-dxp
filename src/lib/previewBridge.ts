@@ -17,6 +17,70 @@ export function installPreviewBridge(
     new URL(parentOrigin).origin !== parentOrigin
   )
     return;
+  // The preview sandbox allows forms so submit events reach workflow triggers and form
+  // popovers, but the tested website must never really submit. Cancel every native
+  // submission first (capture on window), while still dispatching the event to page scripts
+  // and the workflow. Programmatic submit() skips submit events, so it becomes a no-op.
+  window.addEventListener('submit', (event) => event.preventDefault(), true);
+  try {
+    Object.defineProperty(window.HTMLFormElement.prototype, 'submit', {
+      configurable: true,
+      writable: true,
+      value() {
+        window.console.info('[Visual DXP preview]', 'Form submission is disabled in previews.');
+      },
+    });
+  } catch {
+    /* A frozen prototype keeps the browser's behavior. */
+  }
+  // Sandboxed previews have an opaque origin, so document.cookie throws. Keep cookies in
+  // memory for this document instead, so cookie steps and conditions can be previewed.
+  // Each run starts empty (see "run" below); real cookies and exports are unaffected.
+  let clearPreviewCookies = () => {};
+  try {
+    void document.cookie;
+  } catch (error) {
+    if ((error as { name?: unknown } | null)?.name === 'SecurityError') {
+      const jar = new Map<string, { value: string; expires: number }>();
+      const live = () => {
+        const now = Date.now();
+        for (const [name, cookie] of jar) if (cookie.expires <= now) jar.delete(name);
+        return [...jar];
+      };
+      Object.defineProperty(document, 'cookie', {
+        configurable: true,
+        enumerable: true,
+        get: () =>
+          live()
+            .map(([name, cookie]) => (name ? `${name}=${cookie.value}` : cookie.value))
+            .join('; '),
+        set(text: unknown) {
+          const [pair, ...attributes] = String(text).split(';');
+          const separator = pair.indexOf('=');
+          const name = separator < 0 ? '' : pair.slice(0, separator).trim();
+          const value = (separator < 0 ? pair : pair.slice(separator + 1)).trim();
+          if (!name && !value) return;
+          // Like browsers: Max-Age wins over Expires; zero, negative or past values delete.
+          // Path, Domain, SameSite and Secure do not apply within a single document.
+          let expires = Number.POSITIVE_INFINITY;
+          let maxAge: number | undefined;
+          for (const attribute of attributes) {
+            const split = attribute.indexOf('=');
+            const key = (split < 0 ? attribute : attribute.slice(0, split)).trim().toLowerCase();
+            const option = split < 0 ? '' : attribute.slice(split + 1).trim();
+            if (key === 'max-age' && /^-?\d+$/.test(option)) maxAge = Number(option);
+            else if (key === 'expires' && !Number.isNaN(Date.parse(option)))
+              expires = Date.parse(option);
+          }
+          if (maxAge !== undefined) expires = maxAge <= 0 ? 0 : Date.now() + maxAge * 1000;
+          // Updating keeps a cookie's original position, as browsers keep its creation time.
+          if (expires <= Date.now()) jar.delete(name);
+          else jar.set(name, { value, expires });
+        },
+      });
+      clearPreviewCookies = () => jar.clear();
+    }
+  }
   let runtime: WorkflowRuntime | undefined;
   let channel = '';
   let picker: PickerSession | undefined;
@@ -67,6 +131,8 @@ export function installPreviewBridge(
     }
     if (data.type !== 'run') return;
     runtime?.destroy();
+    // Every run, including a restart, starts without cookies from earlier runs.
+    clearPreviewCookies();
     try {
       runtime = runtimeFactory(data.workflow as Workflow, {
         document,

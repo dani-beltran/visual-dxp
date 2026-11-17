@@ -312,3 +312,75 @@ for (const library of [esm, umd]) {
   }
 }
 console.log(`Built ESM and UMD standalone scripts: ${analyticsCases} analytics cases passed.`);
+
+let formCases = 0;
+for (const library of [esm, umd]) {
+  for (const submit of [true, false]) {
+    const node = (id, kind, config) => ({
+      id,
+      type: 'workflow',
+      position: { x: 0, y: 0 },
+      data: { kind, label: id, config },
+    });
+    const workflow = {
+      version: 1,
+      name: 'Built popover form',
+      websiteUrl: 'https://example.com',
+      nodes: [
+        node('start', 'trigger', { event: 'click', selector: '#start' }),
+        node('signup', 'popover', {
+          content:
+            '<form action="/never"><input name="email" value="ada@example.com"><button>Join</button></form>',
+        }),
+        node('save', 'http', {
+          url: 'https://example.com/subscribe',
+          method: 'POST',
+          body: '{"email": {{email}}}',
+        }),
+        node('update', 'dom', { selector: '#result', value: 'saved' }),
+      ],
+      edges: [
+        { id: 'start-signup', source: 'start', target: 'signup' },
+        { id: 'signup-save', source: 'signup', target: 'save' },
+        { id: 'save-update', source: 'save', target: 'update' },
+      ],
+    };
+    const dom = new JSDOM('<button id="start">Run</button><p id="result">waiting</p>', {
+      url: 'https://example.com',
+      runScripts: 'outside-only',
+    });
+    const bodies = [];
+    dom.window.fetch = async (_url, init) => {
+      bodies.push(init.body);
+      return new Response('{}');
+    };
+    try {
+      dom.window.eval(library.exportWorkflow(workflow));
+      const running = dom.window.visualDXP.run();
+      await new Promise(setImmediate);
+      const popover = dom.window.document.querySelector('[data-visual-dxp-popover="signup"]');
+      assert.ok(popover, 'The form popover should be displayed.');
+      assert.equal(bodies.length, 0, 'Downstream steps must wait for the form.');
+      if (submit) popover.querySelector('form button').click();
+      else popover.querySelector('button[aria-label]').click();
+      await running;
+      assert.equal(dom.window.location.href, 'https://example.com/');
+      assert.deepEqual(
+        bodies.map((body) => JSON.parse(body)),
+        submit ? [{ email: 'ada@example.com' }] : [],
+      );
+      assert.equal(
+        dom.window.document.querySelector('#result').textContent,
+        submit ? 'saved' : 'waiting',
+      );
+      assert.equal(dom.window.document.querySelector('[data-visual-dxp-popover]'), null);
+      formCases += 1;
+    } finally {
+      dom.window.visualDXP?.destroy();
+      dom.window.close();
+    }
+  }
+}
+console.log(
+  `Built ESM and UMD standalone scripts: ${formCases} popover form submission cases passed.`,
+);

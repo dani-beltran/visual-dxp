@@ -2,6 +2,11 @@ import type { placePopover } from '../popoverPosition';
 import type { WorkflowNode } from '../types';
 import type { RuntimeContext } from './context';
 
+/** Settles when a form popover is submitted, or without data once it closes. */
+export type PopoverSubmission =
+  | { submitted: true; value: Record<string, unknown> }
+  | { submitted: false };
+
 /** Shared DOM and styles for runtime popovers and the sandboxed inspector preview. */
 export function createPopoverElements(node: WorkflowNode, doc: Document, anchored: boolean) {
   const config = node.data.config;
@@ -96,18 +101,69 @@ export function createPopoverElements(node: WorkflowNode, doc: Document, anchore
   return { panel, surface, arrow, close };
 }
 
+/**
+ * Display a popover. When its content contains a form, return a promise for the submission:
+ * native submission is always prevented and the fields are captured instead.
+ */
 export function showPopover(
   node: WorkflowNode,
   context: RuntimeContext,
   createElements: typeof createPopoverElements,
   positionPopover: typeof placePopover,
-): void {
+): Promise<PopoverSubmission> | undefined {
   const { doc, win, popovers, selectorElements } = context;
   const config = node.data.config;
   const anchor = config.position === 'anchor' ? selectorElements(config.selector)[0] : null;
   popovers.get(node.id)?.();
   const { panel, arrow, close } = createElements(node, doc, Boolean(anchor));
   (doc.body ?? doc.documentElement).appendChild(panel);
+
+  let settle: ((result: PopoverSubmission) => void) | undefined;
+  const submission = panel.querySelector('form')
+    ? new Promise<PopoverSubmission>((resolve) => {
+        settle = resolve;
+      })
+    : undefined;
+  function finish(result: PopoverSubmission): void {
+    const resolve = settle;
+    settle = undefined;
+    resolve?.(result);
+  }
+  // Field names map to values; repeated names (such as checkboxes) become arrays.
+  // Files are represented by their names because they cannot be serialized as data.
+  function formValues(form: HTMLFormElement, submitter: HTMLElement | null) {
+    const FormDataType = (win as unknown as typeof globalThis).FormData ?? FormData;
+    let entries: FormData;
+    try {
+      entries = new FormDataType(form, submitter);
+    } catch {
+      entries = new FormDataType(form);
+    }
+    const values = new Map<string, unknown>();
+    entries.forEach((entry, name) => {
+      const value = typeof entry === 'string' ? entry : entry.name;
+      const previous = values.get(name);
+      if (previous === undefined) values.set(name, value);
+      else if (Array.isArray(previous)) previous.push(value);
+      else values.set(name, [previous, value]);
+    });
+    // fromEntries defines own properties, so names such as __proto__ remain data.
+    return Object.fromEntries(values) as Record<string, unknown>;
+  }
+  function submit(event: Event): void {
+    const form = event.target as HTMLFormElement | null;
+    if (form?.localName !== 'form') return;
+    // Never navigate or send the form, including while the popover is closing.
+    event.preventDefault();
+    if (!settle) return;
+    finish({
+      submitted: true,
+      value: formValues(form, (event as SubmitEvent).submitter ?? null),
+    });
+    dismiss();
+  }
+  // Capture first, so author markup cannot stop the submission from being intercepted.
+  if (submission) panel.addEventListener('submit', submit, true);
 
   let directionX = 0;
   let directionY = 1;
@@ -169,16 +225,21 @@ export function showPopover(
       animation.cancel();
     }
     close.removeEventListener('click', dismiss);
+    panel.removeEventListener('submit', submit, true);
     win.removeEventListener('resize', place);
     win.removeEventListener('scroll', place, true);
     panel.remove();
     if (popovers.get(node.id) === dispose) popovers.delete(node.id);
+    // Replaced or destroyed before submission: the waiting path ends without data.
+    finish({ submitted: false });
   };
   let closing = false;
   function dismiss(): void {
     if (closing) return;
     closing = true;
     close.disabled = true;
+    // Closing without submitting releases the waiting step immediately.
+    finish({ submitted: false });
     if (!canAnimate()) {
       dispose();
       return;
@@ -196,4 +257,5 @@ export function showPopover(
   }
   close.addEventListener('click', dismiss);
   popovers.set(node.id, dispose);
+  return submission;
 }

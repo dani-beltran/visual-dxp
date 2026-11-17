@@ -299,7 +299,7 @@ describe('workflow website preview', () => {
     await act(async () => frame.dispatchEvent(new Event('load')));
 
     expect(button('Run workflow').disabled).toBe(true);
-    expect(frame.getAttribute('sandbox')).toBe('allow-scripts');
+    expect(frame.getAttribute('sandbox')).toBe('allow-scripts allow-forms');
     expect(onLog).not.toHaveBeenCalled();
   });
 
@@ -508,4 +508,56 @@ it('transports connection source samples from the isolated runtime and rejects s
     ),
   );
   expect(onConnectionPreview).toHaveBeenCalledTimes(count);
+});
+
+describe('form popovers in the test preview', () => {
+  it('captures the submission, continues the workflow, and logs the data passed on', async () => {
+    const onLog = await renderPreview(
+      workflow(
+        [
+          node('start', 'trigger', { event: 'page-load' }),
+          node('signup', 'popover', {
+            content:
+              '<form action="https://elsewhere.example/"><input name="email" value="ada@example.com"><input type="checkbox" name="topics" value="news" checked><input type="checkbox" name="topics" value="offers" checked><button>Join</button></form>',
+          }),
+          node('update', 'dom', { selector: '#result', value: '{{email}}' }),
+        ],
+        [
+          ['start', 'signup'],
+          ['signup', 'update'],
+        ],
+      ),
+    );
+    const { doc } = await loadWebsite();
+    await clickButton('Run workflow');
+    const form = doc.querySelector('[data-visual-dxp-popover] form');
+    if (!form) throw new Error('Expected the popover form.');
+    expect(host.textContent).toContain('Waiting for the form to be submitted');
+    expect(doc.querySelector('#result')?.textContent).toBe('Waiting');
+
+    const submit = new SubmitEvent('submit', { bubbles: true, cancelable: true });
+    await act(async () => form.dispatchEvent(submit));
+    await vi.waitFor(() =>
+      expect(doc.querySelector('#result')?.textContent).toBe('ada@example.com'),
+    );
+    expect(submit.defaultPrevented).toBe(true);
+
+    const expected =
+      '{\n  "email": "ada@example.com",\n  "topics": [\n    "news",\n    "offers"\n  ]\n}';
+    expect(onLog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        nodeId: 'signup',
+        status: 'success',
+        message:
+          'Form submission captured. The form was not sent; this data is passed to the next step:',
+        data: expected,
+      }),
+    );
+    const entry = Array.from(host.querySelectorAll('.dxp-log-item')).find((item) =>
+      item.textContent?.includes('Form submission captured'),
+    );
+    expect(entry?.querySelector('pre.dxp-log-data')?.textContent).toBe(expected);
+    // Only the captured step shows data.
+    expect(host.querySelectorAll('pre.dxp-log-data')).toHaveLength(1);
+  });
 });

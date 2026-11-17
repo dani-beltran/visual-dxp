@@ -87,6 +87,8 @@ export function readPreviewMessage(
         label: node.data.label ?? stepLabel,
         status: log.status,
         message: log.message,
+        // Optional debugging data is bounded text; anything else is dropped, not the entry.
+        ...(typeof log.data === 'string' && log.data.length <= 10000 ? { data: log.data } : {}),
         timestamp: now,
       },
     };
