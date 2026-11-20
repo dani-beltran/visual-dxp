@@ -74,6 +74,18 @@ export function createExecution(
     analytics: ReturnType<typeof workflowAnalytics.begin>;
   };
 
+  /** Formats data passed to the next step for the run log, or undefined if it has no JSON form. */
+  function loggedData(value: unknown): string | undefined {
+    let text: string | undefined;
+    try {
+      text = JSON.stringify(value, null, 2);
+    } catch {
+      return undefined; // For example, cyclic or BigInt values from a custom event detail.
+    }
+    if (text === undefined) return undefined;
+    return text.length > 8000 ? `${text.slice(0, 8000)}\n… (truncated in this log)` : text;
+  }
+
   async function next(
     nodeId: string,
     state: RunState,
@@ -122,7 +134,7 @@ export function createExecution(
       let loopIterations = 0;
       // A form popover closed without submitting ends this path without data.
       let dismissed = false;
-      // Captured form data, formatted exactly as the next step receives it, for the log.
+      // Captured form data or event detail, formatted as the next step receives it, for the log.
       let capturedData: string | undefined;
       log(nodeId, 'running', 'Running step');
       try {
@@ -160,6 +172,8 @@ export function createExecution(
             );
             break;
           case 'trigger':
+            // Custom event triggers pass the event's detail to the next step as incoming data.
+            if (input.exists) capturedData = loggedData(input.value);
             break;
           case 'delay': {
             const duration = config.duration ?? 1000;
@@ -281,9 +295,7 @@ export function createExecution(
             aborted();
             if (result.submitted) {
               output = { exists: true, value: result.value };
-              const text = JSON.stringify(result.value, null, 2);
-              capturedData =
-                text.length > 8000 ? `${text.slice(0, 8000)}\n… (truncated in this log)` : text;
+              capturedData = loggedData(result.value);
             } else dismissed = true;
             break;
           }
@@ -304,7 +316,9 @@ export function createExecution(
                 : dismissed
                   ? 'Popover closed before the form was submitted'
                   : capturedData !== undefined
-                    ? 'Form submission captured. The form was not sent; this data is passed to the next step:'
+                    ? node.data.kind === 'trigger'
+                      ? 'Event received. Its detail is passed to the next step:'
+                      : 'Form submission captured. The form was not sent; this data is passed to the next step:'
                     : 'Step completed'),
           capturedData,
         );
@@ -332,7 +346,10 @@ export function createExecution(
     }
   }
 
-  async function run(triggerId?: string): Promise<void> {
+  async function run(
+    triggerId?: string,
+    input: DataSelection = { exists: false, value: undefined },
+  ): Promise<void> {
     if (context.destroyed) return;
     const triggers = triggerId
       ? [nodes.get(triggerId)]
@@ -349,7 +366,7 @@ export function createExecution(
           hadError: false,
           analytics: workflowAnalytics.begin(trigger.id),
         };
-        await execute(trigger.id, state, { exists: false, value: undefined });
+        await execute(trigger.id, state, input);
         aborted();
         if (!state.hadError) state.analytics.complete();
       }

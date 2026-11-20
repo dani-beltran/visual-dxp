@@ -21,6 +21,7 @@ const kinds = new Set([
 ]);
 const strings = [
   'event',
+  'customEventName',
   'selector',
   'url',
   'method',

@@ -1,4 +1,5 @@
 import type { ConnectionPreview } from '../connections';
+import type { DataSelection } from '../data';
 import type { RunLog } from '../types';
 
 export interface RuntimeOptions {
@@ -22,8 +23,12 @@ export interface RuntimeOptions {
 export interface WorkflowRuntime {
   /** Install event listeners and run page-load triggers. Calling twice is safe. */
   start(): void;
-  /** Run a trigger immediately, or all triggers when the ID is omitted. */
-  run(triggerId?: string): Promise<void>;
+  /**
+   * Run a trigger immediately, or all triggers when the ID is omitted. The optional input is
+   * passed to the trigger's next steps as incoming data, as custom event triggers do with the
+   * event's detail. Without it, the next steps receive no data.
+   */
+  run(triggerId?: string, input?: DataSelection): Promise<void>;
   /** Abort requests and delays, remove listeners and close runtime popovers. */
   destroy(): void;
 }

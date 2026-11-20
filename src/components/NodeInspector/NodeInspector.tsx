@@ -28,7 +28,7 @@ import { useBuilderI18n } from '../../lib/i18nContext';
 import { producesData } from '../../lib/nodeData';
 import { getPageChanges } from '../../lib/pageChanges';
 import { popoverHasForm } from '../../lib/popoverForm';
-import { elementTriggerEvents, getTriggerOptions } from '../../lib/triggers';
+import { customEventTrigger, elementTriggerEvents, getTriggerOptions } from '../../lib/triggers';
 import type { ConditionType, NodeKind, StepConfig, StepData, WorkflowNode } from '../../lib/types';
 import { DataTransformInspector } from '../DataTransformInspector/DataTransformInspector';
 import { PageChangesSummary } from '../ElementPicker/PageChangesSummary';
@@ -70,7 +70,10 @@ export function NodeInspector({
   const catalog = getCatalog(t);
   const nextOutputDescriptions = {
     'track-event': t('analytics.outputHint'),
-    trigger: t('nodeInspector.runsWhenTheSelectedEventOccurs'),
+    trigger:
+      node.data.config.event === customEventTrigger
+        ? t('nodeInspector.passesTheEventDetailToTheNextNode')
+        : t('nodeInspector.runsWhenTheSelectedEventOccurs'),
     transform: t('transform.outputHint'),
     http: t('nodeInspector.passesResponseDataOrAnErrorObjectToTheNextNode'),
     dom: t('nodeInspector.runsAfterTheElementsAreUpdated'),
@@ -86,6 +89,7 @@ export function NodeInspector({
   const trigger = Object.hasOwn(triggerOptions, config.event ?? 'page-load')
     ? triggerOptions[config.event ?? 'page-load']
     : undefined;
+  const customEvent = node.data.kind === 'trigger' && config.event === customEventTrigger;
   const conditionType = config.conditionType ?? 'selector';
   const dataOperator = config.conditionOperator ?? 'equal';
   let requestTemplateError: string | undefined;
@@ -272,6 +276,28 @@ export function NodeInspector({
                 />
               </Field>
             ))}
+            {customEvent && (
+              <Field
+                label={t('triggers.customEventName')}
+                htmlFor={id('customEventName')}
+                hint={t('triggers.customEventNameHint')}
+              >
+                <input
+                  id={id('customEventName')}
+                  className="dxp-inspector-code"
+                  value={config.customEventName ?? ''}
+                  placeholder={t('triggers.customEventNamePlaceholder')}
+                  onChange={(event) => update({ customEventName: event.target.value })}
+                  // Trimming while typing would prevent spaces inside names.
+                  onBlur={(event) => {
+                    const name = event.target.value.trim();
+                    if (name !== event.target.value) update({ customEventName: name });
+                  }}
+                  spellCheck={false}
+                  autoComplete="off"
+                />
+              </Field>
+            )}
             {elementTriggerEvents.includes(config.event ?? 'page-load') && targetField()}
           </>
         )}

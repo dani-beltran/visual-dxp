@@ -427,6 +427,8 @@ export const englishMessages = {
   'nodeInspector.runsAfterTheCookieIsSaved': 'Runs after the cookie is saved',
   'nodeInspector.runsAfterThePause': 'Runs after the pause',
   'nodeInspector.runsAfterThePopoverIsDisplayed': 'Runs after the popover is displayed',
+  'nodeInspector.passesTheEventDetailToTheNextNode':
+    'Runs when the custom event occurs and passes its detail to the next node',
   'nodeInspector.passesSubmittedFormDataToTheNextNode':
     'Waits for the form to be submitted, then passes its fields to the next node',
   'nodeInspector.popoverFormDetected':
@@ -823,6 +825,7 @@ export const englishMessages = {
   'workflowCard.needsAttention': 'Needs attention',
   'workflowCard.completed': 'Completed',
   'workflowCard.configured': 'Configured',
+  'workflowCard.missingParameters': 'Missing parameters',
   'workflowCard.2Paths': '2 PATHS',
   'workflowCard.dataOut': 'DATA OUT',
   'workflowCard.truePassesIncomingDataUnchanged': 'True — passes incoming data unchanged',
@@ -831,6 +834,7 @@ export const englishMessages = {
   'workflowCard.done': 'Done',
   'workflowCard.responseDataOutput': 'Response data output',
   'workflowCard.formDataOutput': 'Submitted form data output',
+  'workflowCard.eventDetailOutput': 'Custom event detail output',
 
   'activity.previewOpened': ({ name }: { name: string }) => `Opened a test preview of “${name}”`,
   'activity.workflowRenamed': ({ name }: { name: string }) => `Renamed the workflow to “${name}”`,
@@ -1236,9 +1240,17 @@ export const englishMessages = {
   'triggers.startsOnceWhenTheVisitorScrollsDownToThisPercentage':
     'Starts once when the visitor scrolls down to this percentage of the page’s scrollable distance. 100% means the bottom of the page.',
   'triggers.scrollThreshold': 'Scroll threshold (%)',
+  'triggers.aCustomEventIsDispatched': 'A custom event is dispatched',
+  'triggers.startsEachTimeTheWebsiteDispatchesACustomEvent':
+    'Starts each time the website dispatches a CustomEvent with exactly this name. Names are case-sensitive; other event names and built-in browser events are ignored. No target element is needed: the event can be dispatched on window, document, or any element. The event’s detail is passed to the next step as data (null when the event has none).',
+  'triggers.customEventName': 'Custom event name',
+  'triggers.customEventNameHint':
+    'Use the exact name your website passes to new CustomEvent(), for example window.dispatchEvent(new CustomEvent("cart:updated", { detail: { items: 3 } })). Next steps can read the detail, for example with {{items}}.',
+  'triggers.customEventNamePlaceholder': 'e.g. cart:updated',
   'validation.unsupportedTrigger': 'Choose a supported trigger event.',
   'validation.triggerRange': ({ label, min, max }: { label: string; min: number; max: number }) =>
     `${label} must be a whole number between ${min} and ${max}.`,
+  'validation.enterACustomEventNameForThisTrigger': 'Enter a custom event name for this trigger.',
   'validation.aWorkflowMustContainArraysOfStepsAndConnections':
     'A workflow must contain arrays of steps and connections.',
   'validation.everyStepMustHaveAnIdTypeLabelAndConfiguration':
@@ -1364,6 +1376,8 @@ export const englishMessages = {
   'summary.scrollThrashing': ({ count, seconds }: { count: number; seconds: number }) =>
     `${count} scroll reversals within ${seconds}s`,
   'summary.scrollDepth': ({ percent }: { percent: number }) => `Scroll down to ${percent}%`,
+  'summary.customEvent': ({ name }: { name: string }) => `Custom event · ${name}`,
+  'summary.chooseCustomEvent': 'Enter an event name',
   'summary.elementEvent': ({ event, element }: { event: string; element: string }) =>
     `${event === 'zoom-in' ? 'Zoom in' : event === 'swipe' ? 'Swipe' : event} · ${element}`,
   'summary.http': ({ method, url }: { method: string; url: string }) => `${method}  ${url}`,

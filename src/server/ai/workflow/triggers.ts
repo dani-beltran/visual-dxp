@@ -133,15 +133,24 @@ export const triggerOptions: Record<
       { key: 'scrollThreshold', label: 'Scroll threshold (%)', defaultValue: 75, min: 1, max: 100 },
     ],
   },
+  'custom-event': {
+    label: 'A custom event is dispatched',
+    hint: 'Starts each time the website dispatches a CustomEvent with exactly this name. Names are case-sensitive; other event names and built-in browser events are ignored. No target element is needed: the event can be dispatched on window, document, or any element. The event’s detail is passed to the next step as data (null when the event has none).',
+    settings: [],
+  },
 };
 
 export function validateTriggerConfig(config: StepConfig): string[] {
   const event = config.event ?? 'page-load';
   if (!Object.hasOwn(triggerOptions, event)) return ['Choose a supported trigger event.'];
-  return triggerOptions[event].settings.flatMap(({ key, label, min, max }) => {
+  const messages = triggerOptions[event].settings.flatMap(({ key, label, min, max }) => {
     const value = config[key];
     return value !== undefined && (!Number.isInteger(value) || value < min || value > max)
       ? [`${label} must be a whole number between ${min} and ${max}.`]
       : [];
   });
+  // Surrounding whitespace is trimmed, so only a blank name is invalid.
+  if (event === 'custom-event' && !config.customEventName?.trim())
+    messages.push('Enter a custom event name for this trigger.');
+  return messages;
 }

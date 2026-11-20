@@ -1,5 +1,6 @@
 import { dataTools } from './data';
 import { popoverHasForm } from './popoverForm';
+import { customEventTrigger } from './triggers';
 import type { NodeKind, StepConfig, StepData, WorkflowEdge, WorkflowNode } from './types';
 
 interface NodeDataPorts {
@@ -10,6 +11,8 @@ interface NodeDataPorts {
 // Define data-port behavior once per node kind. Config changes are evaluated on render.
 // These describe data inputs/outputs shown on the canvas, including condition pass-through.
 const dataPorts: Partial<Record<NodeKind, (config: StepConfig) => NodeDataPorts>> = {
+  // A custom event trigger outputs the event's detail.
+  trigger: (config) => ({ acceptsData: false, outputsData: config.event === customEventTrigger }),
   'track-event': (config) => ({
     acceptsData: dataTools.hasVariables(config.analyticsPayload),
     outputsData: false,
@@ -46,10 +49,14 @@ export function getNodeDataPorts(node?: Pick<StepData, 'kind' | 'config'>): Node
 type DataFlowNode = Pick<WorkflowNode, 'id' | 'data'>;
 type DataFlowEdge = Pick<WorkflowEdge, 'source' | 'target'>;
 
-/** Steps that replace incoming data with their own output: responses, transforms, form payloads. */
+/**
+ * Steps that replace incoming data with their own output: responses, transforms, form payloads,
+ * and custom event details from triggers.
+ */
 export function producesData(node?: Pick<StepData, 'kind' | 'config'>): boolean {
   if (!node) return false;
   if (node.kind === 'http' || node.kind === 'transform') return true;
+  if (node.kind === 'trigger') return node.config?.event === customEventTrigger;
   return node.kind === 'popover' && popoverHasForm(node.config ?? {});
 }
 
@@ -63,8 +70,9 @@ export function getNodeDataFlow(
   const isExecutable = (node?: DataFlowNode) =>
     node && !['trigger', 'note', 'frame'].includes(node.data.kind);
   const node = nodeMap.get(id);
-  if (!isExecutable(node)) return undefined;
+  // Producers include custom event triggers, which start paths rather than run within them.
   if (producesData(node?.data)) return 'produces';
+  if (!isExecutable(node)) return undefined;
 
   const sources = new Map<string, string[]>();
   for (const edge of edges) {
@@ -80,12 +88,12 @@ export function getNodeDataFlow(
     if (visited.has(sourceId)) continue;
     visited.add(sourceId);
     const source = nodeMap.get(sourceId);
-    if (!isExecutable(source)) continue;
     if (producesData(source?.data)) {
       return edges.some((edge) => edge.source === id && isExecutable(nodeMap.get(edge.target)))
         ? 'forwards'
         : 'receives';
     }
+    if (!isExecutable(source)) continue;
     pending.push(...(sources.get(sourceId) ?? []));
   }
   return undefined;

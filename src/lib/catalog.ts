@@ -204,6 +204,10 @@ export function stepSummary(
           });
         case 'scroll-depth':
           return t('summary.scrollDepth', { percent: c.scrollThreshold ?? 75 });
+        case 'custom-event':
+          return t('summary.customEvent', {
+            name: c.customEventName?.trim() || t('summary.chooseCustomEvent'),
+          });
         default:
           return t('summary.elementEvent', { event, element });
       }

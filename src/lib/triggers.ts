@@ -28,6 +28,28 @@ export const elementTriggerEvents: readonly TriggerEvent[] = [
   'swipe',
 ];
 
+/** Page-wide trigger started by a website's own `CustomEvent`, identified by its exact name. */
+export const customEventTrigger = 'custom-event' satisfies TriggerEvent;
+
+/** Configuration fields, besides numeric settings, that each trigger event uses. */
+export function triggerFields(event: TriggerEvent): ('selector' | 'customEventName')[] {
+  if (elementTriggerEvents.includes(event)) return ['selector'];
+  return event === customEventTrigger ? ['customEventName'] : [];
+}
+
+/**
+ * Required trigger parameters that are empty or contain only whitespace. Numeric settings are
+ * never empty: omitted values use their defaults.
+ */
+export function missingTriggerParameters(config: StepConfig): ('selector' | 'customEventName')[] {
+  const event = config.event ?? 'page-load';
+  if (!Object.hasOwn(triggerOptions, event)) return [];
+  return triggerFields(event).filter((key) => {
+    const value = config[key];
+    return typeof value !== 'string' || !value.trim();
+  });
+}
+
 export function getTriggerOptions(t: BuilderTranslator = translateEnglish) {
   const triggerOptions: Record<
     TriggerEvent,
@@ -153,6 +175,11 @@ export function getTriggerOptions(t: BuilderTranslator = translateEnglish) {
         },
       ],
     },
+    'custom-event': {
+      label: t('triggers.aCustomEventIsDispatched'),
+      hint: t('triggers.startsEachTimeTheWebsiteDispatchesACustomEvent'),
+      settings: [],
+    },
   };
 
   return triggerOptions;
@@ -166,10 +193,14 @@ export function validateTriggerConfig(
   const triggerOptions = getTriggerOptions(t);
   const event = config.event ?? 'page-load';
   if (!Object.hasOwn(triggerOptions, event)) return [t('validation.unsupportedTrigger')];
-  return triggerOptions[event].settings.flatMap(({ key, label, min, max }) => {
+  const messages = triggerOptions[event].settings.flatMap(({ key, label, min, max }) => {
     const value = config[key];
     return value !== undefined && (!Number.isInteger(value) || value < min || value > max)
       ? [t('validation.triggerRange', { label, min, max })]
       : [];
   });
+  // Surrounding whitespace is trimmed, so only a blank name is invalid.
+  if (event === customEventTrigger && !config.customEventName?.trim())
+    messages.push(t('validation.enterACustomEventNameForThisTrigger'));
+  return messages;
 }

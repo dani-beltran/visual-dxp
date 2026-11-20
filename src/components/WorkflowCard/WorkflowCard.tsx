@@ -6,6 +6,7 @@ import {
   ArrowRight,
   Check,
   Circle,
+  CircleAlert,
   Ellipsis,
   LoaderCircle,
   Repeat2,
@@ -15,6 +16,7 @@ import { getCatalog, stepSummary } from '../../lib/catalog';
 import { useBuilderI18n } from '../../lib/i18nContext';
 import { getNodeDataFlow, getNodeDataPorts } from '../../lib/nodeData';
 import { NoteEditingContext } from '../../lib/noteEditing';
+import { missingTriggerParameters } from '../../lib/triggers';
 import type { WorkflowNode } from '../../lib/types';
 import { BRANCH_PORTS } from '../../lib/workflowGeometry';
 import { FrameCard } from '../FrameCard/FrameCard';
@@ -86,8 +88,14 @@ export function WorkflowCard({ id, data, selected }: NodeProps<WorkflowNode>) {
         ? t('transform.outputHint')
         : data.kind === 'popover'
           ? t('workflowCard.formDataOutput')
-          : t('workflowCard.responseDataOutput')
+          : data.kind === 'trigger'
+            ? t('workflowCard.eventDetailOutput')
+            : t('workflowCard.responseDataOutput')
       : t('workflowCard.forwardsData');
+  // Empty required trigger parameters replace the Configured and Completed statuses.
+  const missing = data.kind === 'trigger' ? missingTriggerParameters(data.config) : [];
+  const missingParameters =
+    missing.length > 0 && data.status !== 'running' && data.status !== 'error';
   const dataFlowLabel =
     dataFlow === 'produces'
       ? t('workflowCard.producesData')
@@ -211,11 +219,28 @@ export function WorkflowCard({ id, data, selected }: NodeProps<WorkflowNode>) {
             : { position: 'absolute', bottom: 0, left: 17, right: 17 }
         }
       >
-        <span>
+        <span
+          className={missingParameters ? 'dxp-node-missing-parameters' : undefined}
+          title={
+            missingParameters
+              ? missing
+                  .map((key) =>
+                    t(
+                      key === 'selector'
+                        ? 'validation.chooseATargetElementForThisTrigger'
+                        : 'validation.enterACustomEventNameForThisTrigger',
+                    ),
+                  )
+                  .join(' ')
+              : undefined
+          }
+        >
           {data.status === 'running' ? (
             <LoaderCircle size={12} className="dxp-spin" />
           ) : data.status === 'error' ? (
             <Circle size={10} />
+          ) : missingParameters ? (
+            <CircleAlert size={11} aria-hidden="true" />
           ) : (
             <Check size={12} />
           )}{' '}
@@ -223,9 +248,11 @@ export function WorkflowCard({ id, data, selected }: NodeProps<WorkflowNode>) {
             ? t('workflowCard.running')
             : data.status === 'error'
               ? t('workflowCard.needsAttention')
-              : data.status === 'success'
-                ? t('workflowCard.completed')
-                : t('workflowCard.configured')}
+              : missingParameters
+                ? t('workflowCard.missingParameters')
+                : data.status === 'success'
+                  ? t('workflowCard.completed')
+                  : t('workflowCard.configured')}
         </span>
         <span className={highlightsOutput ? 'dxp-node-data-output' : undefined}>
           {data.kind === 'trigger'

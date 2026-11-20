@@ -17,7 +17,7 @@ export function startTriggers(
   run: WorkflowRuntime['run'],
   { startBehaviorTrigger, startZoomTrigger, startSwipeTrigger }: TriggerModules,
 ): void {
-  const { doc, cleanups, log, reportFailure } = context;
+  const { doc, win, cleanups, listen, log, reportFailure } = context;
   for (const node of workflow.nodes.filter((entry) => entry.data.kind === 'trigger')) {
     const config = node.data.config;
     if (!config.event || config.event === 'page-load') {
@@ -40,6 +40,35 @@ export function startTriggers(
       } catch (error) {
         log(node.id, 'error', error instanceof Error ? error.message : 'Invalid trigger settings.');
       }
+    } else if (config.event === 'custom-event') {
+      // Surrounding whitespace is not part of the name, including in imported or AI-edited JSON.
+      const name = typeof config.customEventName === 'string' ? config.customEventName.trim() : '';
+      if (!name) {
+        log(node.id, 'error', 'Enter a custom event name for this trigger.');
+        continue;
+      }
+      // The trimmed name matches event types exactly and case-sensitively. A capture listener on the window sees
+      // each dispatch once, whether the page dispatches on window, document, or any element,
+      // and whether or not the event bubbles. The type tag, unlike instanceof, also works for
+      // events created in another realm. Built-in browser events sharing the name are ignored.
+      listen(
+        win,
+        name,
+        (incoming) => {
+          if (Object.prototype.toString.call(incoming) !== '[object CustomEvent]') return;
+          // The detail (null when omitted) becomes the next step's incoming data. A snapshot
+          // keeps later changes to the page's object from affecting this run, for example
+          // during a delay; values that cannot be cloned, such as functions, pass unchanged.
+          let detail: unknown = (incoming as CustomEvent).detail;
+          try {
+            detail = structuredClone(detail);
+          } catch {
+            /* Keep the original value. */
+          }
+          void run(node.id, { exists: true, value: detail }).catch(reportFailure);
+        },
+        true,
+      );
     } else if (
       ['click', 'mouseover', 'submit', 'change', 'zoom-in', 'swipe'].includes(config.event)
     ) {

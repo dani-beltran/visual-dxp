@@ -67,7 +67,7 @@ async function change(label: string, value: string) {
 
 it('edits every behavioral trigger with defaults, relevant controls, and readable canvas summaries', async () => {
   expect(field('Target element').value).toBe('#legacy');
-  expect(field('Start when').querySelectorAll('option')).toHaveLength(12);
+  expect(field('Start when').querySelectorAll('option')).toHaveLength(13);
   const summaries: Partial<Record<TriggerEvent, string>> = {
     'exit-intent': 'When a visitor intends to leave',
     'rage-click': '3 nearby clicks within 1s',
@@ -131,3 +131,51 @@ it.each([
     expect(stepSummary('trigger', current)).toBe(`${summary} · Choose an element`);
   },
 );
+
+it('edits a custom event name without a target element and preserves it when switching triggers', async () => {
+  const option = field('Start when').querySelector('option[value="custom-event"]');
+  expect(option?.textContent).toBe('A custom event is dispatched');
+  await change('Start when', 'custom-event');
+  expect(current.event).toBe('custom-event');
+  expect(host.textContent).toContain(triggerOptions['custom-event'].hint);
+  expect(triggerOptions['custom-event'].settings).toEqual([]);
+  expect(host.querySelector('input[type="number"]')).toBeNull();
+  expect(host.textContent).not.toContain('Target element');
+  expect(host.textContent).not.toContain('Select on website');
+
+  const name = field('Custom event name');
+  expect(name.value).toBe('');
+  expect(name.getAttribute('placeholder')).toBe('e.g. cart:updated');
+  // A blank name is reported by workflow validation rather than as an immediate alert.
+  expect(host.querySelector('[role="alert"]')).toBeNull();
+  expect(stepSummary('trigger', current)).toBe('Custom event · Enter an event name');
+
+  await change('Custom event name', 'Cart:Updated');
+  expect(current.customEventName).toBe('Cart:Updated');
+  expect(stepSummary('trigger', current)).toBe('Custom event · Cart:Updated');
+  expect(host.querySelector('[role="alert"]')).toBeNull();
+
+  // Surrounding whitespace shows no error. Typing keeps it so names can contain inner spaces.
+  await act(async () => field('Custom event name').focus());
+  await change('Custom event name', 'checkout ');
+  expect(current.customEventName).toBe('checkout ');
+  await change('Custom event name', 'checkout complete');
+  expect(current.customEventName).toBe('checkout complete');
+  await change('Custom event name', '  cart:updated \t');
+  expect(current.customEventName).toBe('  cart:updated \t');
+  expect(host.querySelector('[role="alert"]')).toBeNull();
+  expect(field('Custom event name').hasAttribute('aria-invalid')).toBe(false);
+  expect(stepSummary('trigger', current)).toBe('Custom event · cart:updated');
+  // Leaving the field trims the saved name.
+  await act(async () => field('Custom event name').blur());
+  expect(current.customEventName).toBe('cart:updated');
+  expect(field('Custom event name').value).toBe('cart:updated');
+  expect(host.querySelector('[role="alert"]')).toBeNull();
+
+  await change('Start when', 'click');
+  expect(host.textContent).not.toContain('Custom event name');
+  expect(field('Target element').value).toBe('#legacy');
+  await change('Start when', 'custom-event');
+  expect(field('Custom event name').value).toBe('cart:updated');
+  expect(stepSummary('trigger', current)).toBe('Custom event · cart:updated');
+});

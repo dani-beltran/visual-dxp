@@ -46,7 +46,8 @@ export type TriggerEvent =
   | 'rage-click'
   | 'inactivity'
   | 'scroll-thrashing'
-  | 'scroll-depth';
+  | 'scroll-depth'
+  | 'custom-event';
 export interface StepConfig extends DataTransformConfig {
   changes?: PageChange[];
   textPath?: number[];
@@ -65,6 +66,8 @@ export interface StepConfig extends DataTransformConfig {
   scrollMinDistance?: number;
   /** Percentage of the page's scrollable distance. Defaults to 75. */
   scrollThreshold?: number;
+  /** Exact, case-sensitive CustomEvent type that starts a custom event trigger. */
+  customEventName?: string;
   selector?: string;
   /** Request URL; accepts {{path}} variables from incoming data. */
   url?: string;
