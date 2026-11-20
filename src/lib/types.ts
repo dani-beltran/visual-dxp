@@ -15,6 +15,7 @@ export type NodeKind =
   | 'fork'
   | 'loop'
   | 'popover'
+  | 'tour'
   | 'note'
   | 'frame';
 /** A styled text range using UTF-16 offsets, sorted without overlapping other ranges. */
@@ -142,6 +143,12 @@ export interface StepConfig extends DataTransformConfig {
   popoverAnimation?: 'none' | 'fade' | 'slide' | 'zoom' | 'bounce';
   position?: 'center' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'anchor';
   width?: number;
+  /** Ordered popovers that a Tour node shows one at a time. */
+  tourSteps?: TourStep[];
+  /** Tour button labels shown to visitors. Empty or omitted labels use Next, Previous and Done. */
+  tourNextLabel?: string;
+  tourPreviousLabel?: string;
+  tourDoneLabel?: string;
   /** Canvas annotation text; never executed or included in the exported script. */
   noteText?: string;
   /** Note background, as a six-digit hex color or 'transparent'. */
@@ -152,6 +159,13 @@ export interface StepConfig extends DataTransformConfig {
   noteItalic?: boolean;
   noteStrikethrough?: boolean;
 }
+/** Content, placement and appearance shared by Popover nodes and every Tour step. */
+export type PopoverSettings = Pick<
+  StepConfig,
+  'contentType' | 'content' | 'url' | 'position' | 'selector' | 'width' | 'popoverAnimation'
+>;
+/** One Tour step is exactly one popover's settings. */
+export type TourStep = PopoverSettings;
 export type StepData = {
   kind: NodeKind;
   label: string;

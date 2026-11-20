@@ -170,8 +170,8 @@ describe('optional builder presets', () => {
         expect(editor.textContent).toBe(note.data.config.noteText);
         expect(editor.getAttribute('contenteditable')).toBe('true');
       }
-      const editable = applied.nodes.find(
-        (node) => node.data.kind === 'dom' || node.data.kind === 'popover',
+      const editable = applied.nodes.find((node) =>
+        ['dom', 'popover', 'tour'].includes(node.data.kind),
       );
       if (!editable) throw new Error('Expected an editable action');
       await click(element(`[data-id="${editable.id}"]`));

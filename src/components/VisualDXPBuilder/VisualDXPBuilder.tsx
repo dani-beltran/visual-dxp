@@ -125,6 +125,7 @@ import { NodeLibrary } from '../NodeLibrary/NodeLibrary';
 import { PopoverPreview } from '../PopoverPreview/PopoverPreview';
 import { PresetsPanel } from '../PresetsPanel/PresetsPanel';
 import { Preview } from '../Preview/Preview';
+import { TourPreview } from '../TourPreview/TourPreview';
 import { WebsiteConnectionCheck } from '../WebsiteConnectionCheck/WebsiteConnectionCheck';
 import { WorkflowCard } from '../WorkflowCard/WorkflowCard';
 import { WorkflowEdge as RoutedWorkflowEdge } from '../WorkflowEdge/WorkflowEdge';
@@ -1926,6 +1927,19 @@ function Builder({
       )}
       {modal === 'popover-preview' && selected?.data.kind === 'popover' && (
         <PopoverPreview
+          key={selected.id}
+          onSave={(config) => {
+            patchNode({ config });
+            setModal(null);
+          }}
+          guidance={tutorialPanel}
+          node={selected}
+          websiteUrl={workflow.websiteUrl}
+          onClose={() => setModal(null)}
+        />
+      )}
+      {modal === 'popover-preview' && selected?.data.kind === 'tour' && (
+        <TourPreview
           key={selected.id}
           onSave={(config) => {
             patchNode({ config });

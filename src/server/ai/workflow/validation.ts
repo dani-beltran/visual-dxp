@@ -65,6 +65,7 @@ export function validateWorkflow(workflow: Workflow): ValidationIssue[] {
     'fork',
     'loop',
     'popover',
+    'tour',
     'note',
     'frame',
   ]);

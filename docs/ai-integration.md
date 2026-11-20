@@ -80,6 +80,7 @@ The policies cover these dependencies:
 | Condition | Condition type and data operator | Selector, comparison value/key, date/time range and time zone as applicable |
 | Popover | Content type and placement | HTML content or iframe URL; selector for anchored placement |
 | Experiment | No configuration modes | Optional assignment key and traffic split; configure shared analytics in the Analytics tab |
+| Tour | Not writable by AI tools | None. Tours are preserved in requests, fingerprints and edits, and can be connected, moved, relabeled or removed; steps and button labels are edited in the Tour editor |
 
 For example, changing an Incoming data condition from a comparison to an existence check removes its obsolete comparison value:
 

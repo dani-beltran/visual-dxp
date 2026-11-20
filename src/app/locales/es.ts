@@ -402,6 +402,10 @@ export const spanishMessages = {
   'nodeInspector.runsAfterThePause': 'Se ejecuta después de la pausa',
   'nodeInspector.runsAfterThePopoverIsDisplayed':
     'Se ejecuta después de mostrar la ventana emergente',
+  'nodeInspector.runsAfterTheTourEnds':
+    'Se ejecuta cuando el visitante termina o cierra la visita guiada',
+  'nodeInspector.tourHint':
+    'Cada paso es una ventana emergente con botones Anterior, Siguiente y Listo, y solo se muestra un paso a la vez. Listo y el botón de cerrar terminan la visita guiada y ejecutan el siguiente nodo. Los datos entrantes pasan sin cambios.',
   'nodeInspector.passesSubmittedFormDataToTheNextNode':
     'Espera a que se envíe el formulario y pasa sus campos al siguiente nodo',
   'nodeInspector.popoverFormDetected':
@@ -659,6 +663,30 @@ export const spanishMessages = {
   'popoverPreview.px': 'px',
   'popoverPreview.loadingWebsite': 'Cargando sitio web…',
   'popoverPreview.popoverPreviewWebsite': 'Sitio web de vista previa de la ventana emergente',
+  'tourEditor.editTour': 'Editar visita guiada',
+  'tourEditor.description':
+    'Crea la visita guiada paso a paso y previsualiza cada paso en tu sitio web.',
+  'tourEditor.settings': 'Configuración de la visita guiada',
+  'tourEditor.steps': 'Pasos',
+  'tourEditor.step': ({ number }) => `Paso ${number}`,
+  'tourEditor.stepSettings': ({ number }) => `Configuración del paso ${number}`,
+  'tourEditor.addStep': 'Añadir paso',
+  'tourEditor.moveStepUp': ({ number }) => `Subir el paso ${number}`,
+  'tourEditor.moveStepDown': ({ number }) => `Bajar el paso ${number}`,
+  'tourEditor.deleteStep': ({ number }) => `Eliminar el paso ${number}`,
+  'tourEditor.buttons': 'Textos de los botones',
+  'tourEditor.buttonsHint':
+    'Los ven los visitantes. Deja un texto vacío para usar el predeterminado.',
+  'tourEditor.previousLabel': 'Botón Anterior',
+  'tourEditor.nextLabel': 'Botón Siguiente',
+  'tourEditor.doneLabel': 'Botón Listo',
+  'tourEditor.formHint':
+    'Los pasos de una visita guiada no recogen datos de formulario. Enviar este formulario pasa al siguiente paso y el formulario nunca se envía.',
+  'tourEditor.unsavedChanges': 'Cambios sin guardar en la visita guiada',
+  'tourEditor.previewHint':
+    'La vista previa se abre en el paso seleccionado. Usa sus botones para recorrer la visita guiada.',
+  'tourEditor.cancelTitle': '¿Descartar los cambios sin guardar en la visita guiada?',
+  'tourEditor.previewWebsite': 'Sitio web de vista previa de la visita guiada',
   'presetsPanel.workflowPresets': 'Plantillas de flujos de trabajo',
   'presetsPanel.applyingAPresetReplacesAllCurrentNodesAndConnectionsYourWorkflowName':
     'Aplicar una plantilla reemplaza el nombre del flujo de trabajo, los nodos y las conexiones actuales. El sitio web de destino y la configuración de subpáginas se mantienen. Puedes deshacer este cambio.',
@@ -990,6 +1018,8 @@ export const spanishMessages = {
     'Repite los pasos conectados. Úsalo para ejecutar la misma secuencia más de una vez.',
   'nodes.popover.description':
     'Muestra un panel sobre la página. Úsalo para mostrar un mensaje o un sitio web incrustado, o para recoger datos de formulario.',
+  'nodes.tour.description':
+    'Guía a los visitantes por una secuencia de ventanas emergentes con botones Anterior, Siguiente y Listo. El siguiente nodo se ejecuta cuando la visita guiada termina o se cierra.',
   'nodes.note.description':
     'Añade texto al lienzo. Úsalo para documentar ideas, contexto o recordatorios.',
   'nodes.frame.description':
@@ -1060,6 +1090,7 @@ export const spanishMessages = {
   'nodes.fork.label': 'Condición',
   'nodes.loop.label': 'Bucle',
   'nodes.popover.label': 'Ventana emergente',
+  'nodes.tour.label': 'Visita guiada',
   'nodes.cookie.label': 'Guardar cookie',
   'nodes.note.label': 'Nota',
   'nodes.frame.label': 'Marco',
@@ -1170,6 +1201,10 @@ export const spanishMessages = {
     'Elige un elemento de anclaje para la ventana emergente.',
   'validation.popoverWidthMustBeBetween240And960Pixels':
     'El ancho de la ventana emergente debe ser de entre 240 y 960 píxeles.',
+  'validation.addAtLeastOneTourStep': 'Añade al menos un paso a la visita guiada.',
+  'validation.tourStepsMustContainPopoverSettings':
+    'Los pasos de la visita guiada deben ser una lista de configuraciones de ventanas emergentes.',
+  'validation.tourStepIssue': ({ step, message }) => `Paso ${step}: ${message}`,
   'validation.everyConnectionMustHaveAUniqueId': 'Cada conexión debe tener un ID único.',
   'validation.aConnectionRefersToAMissingStep':
     'Una conexión hace referencia a un paso inexistente.',
@@ -1378,6 +1413,7 @@ export const spanishMessages = {
   'summary.loop': ({ count }) => `Repetir ${count} ${count === 1 ? 'vez' : 'veces'}`,
   'summary.popover': ({ contentType, position }) =>
     `${contentType === 'iframe' ? 'Página incrustada' : 'HTML personalizado'} · ${spanishPositions[position] ?? position}`,
+  'summary.tour': ({ count }) => `${count} ${count === 1 ? 'paso' : 'pasos'}`,
   'aiSettings.activeProvider': ({ label }) => `Proveedor activo: ${label}`,
   'aiSettings.noActiveProvider': 'Ningún proveedor activo',
   'canvasChat.checkAiConfiguration':

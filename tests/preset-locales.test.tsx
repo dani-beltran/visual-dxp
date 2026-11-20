@@ -43,9 +43,24 @@ it.each(commonDXPPresets)('localizes $id while preserving executable configurati
     expect(node.data.label).not.toBe(original.data.label);
     const config = { ...node.data.config };
     const originalConfig = { ...original.data.config };
-    for (const key of ['content', 'noteText', 'noteMarks'] as const) {
+    for (const key of [
+      'content',
+      'noteText',
+      'noteMarks',
+      'tourPreviousLabel',
+      'tourNextLabel',
+      'tourDoneLabel',
+    ] as const) {
       delete config[key];
       delete originalConfig[key];
+    }
+    // Tour steps translate only their content; placement and appearance stay identical.
+    if (config.tourSteps) {
+      expect(config.tourSteps.map((step) => step.content)).not.toEqual(
+        originalConfig.tourSteps?.map((step) => step.content),
+      );
+      config.tourSteps = config.tourSteps.map(({ content: _, ...step }) => step);
+      originalConfig.tourSteps = originalConfig.tourSteps?.map(({ content: _, ...step }) => step);
     }
     if (config.action === 'text') {
       expect(config.value).not.toBe(originalConfig.value);

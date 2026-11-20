@@ -15,6 +15,8 @@ import './IsolatedPreview.css';
 interface IsolatedPreviewProps {
   url: string;
   searchParams?: string;
+  /** Open Tour nodes at these zero-based steps. Keep the object stable between renders. */
+  tourStartSteps?: Record<string, number>;
   workflow: Workflow;
   running: boolean;
   revision: number;
@@ -33,7 +35,16 @@ interface IsolatedPreviewProps {
 
 /** React owns preview state; the connection owns the isolated iframe protocol. */
 export function IsolatedPreview(props: IsolatedPreviewProps) {
-  const { url, searchParams, workflow, running, revision, title, picking = false } = props;
+  const {
+    url,
+    searchParams,
+    tourStartSteps,
+    workflow,
+    running,
+    revision,
+    title,
+    picking = false,
+  } = props;
   const { t } = useBuilderI18n();
   const frame = useRef<HTMLIFrameElement>(null);
   const connection = useRef<PreviewConnection | undefined>(undefined);
@@ -129,13 +140,16 @@ export function IsolatedPreview(props: IsolatedPreviewProps) {
     const id = running ? `${revision}:${crypto.randomUUID()}` : '';
     runId.current = id;
     if (running) latest.current.props.onExecution?.({ type: 'start', runId: id });
-    instance.send(running ? 'run' : 'stop', running ? { workflow, runId: id, searchParams } : {});
+    instance.send(
+      running ? 'run' : 'stop',
+      running ? { workflow, runId: id, searchParams, tourStartSteps } : {},
+    );
     return () => {
       latest.current.props.onExecution?.({ type: 'stop', runId: id });
       runId.current = '';
       instance.send('stop');
     };
-  }, [ready, state.channel, running, workflow, revision, searchParams]);
+  }, [ready, state.channel, running, workflow, revision, searchParams, tourStartSteps]);
 
   useEffect(() => {
     if (!ready || !picking) return;

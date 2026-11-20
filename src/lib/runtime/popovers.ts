@@ -2,13 +2,33 @@ import type { placePopover } from '../popoverPosition';
 import type { WorkflowNode } from '../types';
 import type { RuntimeContext } from './context';
 
-/** Settles when a form popover is submitted, or without data once it closes. */
-export type PopoverSubmission =
+/**
+ * How an interactive popover settled: a captured form submission, or closing without one.
+ * `action` names the control that closed it (`close` for the close button, or a control ID).
+ * It is absent when the popover was replaced by a newer instance or the runtime was destroyed.
+ */
+export type PopoverOutcome =
   | { submitted: true; value: Record<string, unknown> }
-  | { submitted: false };
+  | { submitted: false; action?: string };
+
+/** Optional buttons below the content. Each one closes the popover and settles with its ID. */
+export interface PopoverControls {
+  /** Short status text at the start of the control row, such as "2 / 5". */
+  progress?: string;
+  actions: { id: string; label: string; primary?: boolean }[];
+  /** Focus the primary control once shown, keeping keyboard users in place between popovers. */
+  focus?: boolean;
+  /** Scroll an anchor that is not fully visible into view, as in tours. */
+  scrollToAnchor?: boolean;
+}
 
 /** Shared DOM and styles for runtime popovers and the sandboxed inspector preview. */
-export function createPopoverElements(node: WorkflowNode, doc: Document, anchored: boolean) {
+export function createPopoverElements(
+  node: WorkflowNode,
+  doc: Document,
+  anchored: boolean,
+  controls?: PopoverControls,
+) {
   const config = node.data.config;
   const panel = doc.createElement('section');
   panel.dataset.visualDxpPopover = node.id;
@@ -96,35 +116,83 @@ export function createPopoverElements(node: WorkflowNode, doc: Document, anchore
       config.content ?? '<h3>Hello there 👋</h3><p>Welcome to your next experience.</p>';
   }
   surface.append(close, content);
+  const actions: HTMLButtonElement[] = [];
+  if (controls) {
+    const row = doc.createElement('div');
+    row.dataset.visualDxpPopoverControls = '';
+    Object.assign(row.style, {
+      display: 'flex',
+      flexWrap: 'wrap',
+      alignItems: 'center',
+      justifyContent: 'flex-end',
+      gap: '8px',
+      marginTop: '20px',
+    });
+    if (controls.progress) {
+      const progress = doc.createElement('span');
+      progress.textContent = controls.progress;
+      Object.assign(progress.style, {
+        marginRight: 'auto',
+        color: '#64717a',
+        fontSize: '13px',
+        fontVariantNumeric: 'tabular-nums',
+      });
+      row.appendChild(progress);
+    }
+    for (const { id, label, primary } of controls.actions) {
+      const button = doc.createElement('button');
+      button.type = 'button';
+      button.textContent = label;
+      button.dataset.visualDxpAction = id;
+      Object.assign(button.style, {
+        border: `1px solid ${primary ? '#17262e' : '#d5dde2'}`,
+        borderRadius: '8px',
+        background: primary ? '#17262e' : '#fff',
+        color: primary ? '#fff' : '#17262e',
+        cursor: 'pointer',
+        font: 'inherit',
+        fontWeight: '600',
+        padding: '8px 14px',
+      });
+      actions.push(button);
+      row.appendChild(button);
+    }
+    surface.appendChild(row);
+  }
   panel.appendChild(surface);
   if (arrow) panel.appendChild(arrow);
-  return { panel, surface, arrow, close };
+  return { panel, surface, arrow, close, actions };
 }
 
 /**
- * Display a popover. When its content contains a form, return a promise for the submission:
- * native submission is always prevented and the fields are captured instead.
+ * Display a popover. Interactive popovers return a promise for their outcome: those with
+ * controls, and those whose content contains a form. Native form submission is always
+ * prevented and the fields are captured instead. A popover replaces any earlier one shown
+ * for the same node ID.
  */
 export function showPopover(
   node: WorkflowNode,
   context: RuntimeContext,
   createElements: typeof createPopoverElements,
   positionPopover: typeof placePopover,
-): Promise<PopoverSubmission> | undefined {
+  controls?: PopoverControls,
+): Promise<PopoverOutcome> | undefined {
   const { doc, win, popovers, selectorElements } = context;
   const config = node.data.config;
   const anchor = config.position === 'anchor' ? selectorElements(config.selector)[0] : null;
   popovers.get(node.id)?.();
-  const { panel, arrow, close } = createElements(node, doc, Boolean(anchor));
+  const { panel, arrow, close, actions } = createElements(node, doc, Boolean(anchor), controls);
   (doc.body ?? doc.documentElement).appendChild(panel);
 
-  let settle: ((result: PopoverSubmission) => void) | undefined;
-  const submission = panel.querySelector('form')
-    ? new Promise<PopoverSubmission>((resolve) => {
-        settle = resolve;
-      })
-    : undefined;
-  function finish(result: PopoverSubmission): void {
+  let settle: ((result: PopoverOutcome) => void) | undefined;
+  const hasForm = Boolean(panel.querySelector('form'));
+  const submission =
+    hasForm || controls
+      ? new Promise<PopoverOutcome>((resolve) => {
+          settle = resolve;
+        })
+      : undefined;
+  function finish(result: PopoverOutcome): void {
     const resolve = settle;
     settle = undefined;
     resolve?.(result);
@@ -163,7 +231,13 @@ export function showPopover(
     dismiss();
   }
   // Capture first, so author markup cannot stop the submission from being intercepted.
-  if (submission) panel.addEventListener('submit', submit, true);
+  if (hasForm) panel.addEventListener('submit', submit, true);
+  function choose(event: Event): void {
+    const action = (event.currentTarget as HTMLElement).dataset.visualDxpAction;
+    finish({ submitted: false, action });
+    dismiss();
+  }
+  for (const button of actions) button.addEventListener('click', choose);
 
   let directionX = 0;
   let directionY = 1;
@@ -174,14 +248,33 @@ export function showPopover(
       position: config.position,
     }));
   }
+  const reducedMotion = () => Boolean(win.matchMedia?.('(prefers-reduced-motion: reduce)').matches);
+  // Only sequences the visitor is driving move the page; standalone popovers never scroll it.
+  if (anchor && controls?.scrollToAnchor && typeof anchor.scrollIntoView === 'function') {
+    const rect = anchor.getBoundingClientRect();
+    const viewportWidth = win.innerWidth || doc.documentElement.clientWidth;
+    const viewportHeight = win.innerHeight || doc.documentElement.clientHeight;
+    // Centering leaves room for the panel on either side; placement follows a smooth scroll.
+    if (
+      rect.top < 0 ||
+      rect.left < 0 ||
+      rect.bottom > viewportHeight ||
+      rect.right > viewportWidth
+    ) {
+      // 'instant' overrides a page's CSS scroll-behavior: smooth, which 'auto' would follow.
+      const behavior: ScrollBehavior = reducedMotion() ? 'instant' : 'smooth';
+      try {
+        anchor.scrollIntoView({ block: 'center', inline: 'nearest', behavior });
+      } catch {
+        // Browsers predating 'instant' reject it.
+        anchor.scrollIntoView({ block: 'center', inline: 'nearest' });
+      }
+    }
+  }
   place();
   const effect = config.popoverAnimation ?? 'none';
   function canAnimate(): boolean {
-    return (
-      effect !== 'none' &&
-      typeof panel.animate === 'function' &&
-      !win.matchMedia?.('(prefers-reduced-motion: reduce)').matches
-    );
+    return effect !== 'none' && typeof panel.animate === 'function' && !reducedMotion();
   }
   function playAnimation(reverse = false): Animation {
     // Individual transform properties preserve the centering transform and move the arrow too.
@@ -216,6 +309,9 @@ export function showPopover(
     });
   }
   if (canAnimate()) animation = playAnimation();
+  // Buttons follow the order of their descriptions.
+  if (controls?.focus)
+    actions[controls.actions.findIndex((entry) => entry.primary)]?.focus({ preventScroll: true });
   win.addEventListener('resize', place);
   win.addEventListener('scroll', place, true);
   const dispose = () => {
@@ -224,7 +320,8 @@ export function showPopover(
       animation.oncancel = null;
       animation.cancel();
     }
-    close.removeEventListener('click', dismiss);
+    close.removeEventListener('click', closeByVisitor);
+    for (const button of actions) button.removeEventListener('click', choose);
     panel.removeEventListener('submit', submit, true);
     win.removeEventListener('resize', place);
     win.removeEventListener('scroll', place, true);
@@ -238,6 +335,7 @@ export function showPopover(
     if (closing) return;
     closing = true;
     close.disabled = true;
+    for (const button of actions) button.disabled = true;
     // Closing without submitting releases the waiting step immediately.
     finish({ submitted: false });
     if (!canAnimate()) {
@@ -255,7 +353,11 @@ export function showPopover(
     animation.onfinish = dispose;
     animation.oncancel = dispose;
   }
-  close.addEventListener('click', dismiss);
+  function closeByVisitor(): void {
+    finish({ submitted: false, action: 'close' });
+    dismiss();
+  }
+  close.addEventListener('click', closeByVisitor);
   popovers.set(node.id, dispose);
   return submission;
 }

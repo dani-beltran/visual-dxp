@@ -18,7 +18,7 @@ Connect nodes by dragging from an output socket to an input socket. Back revisit
 
 ## Common DXP presets
 
-Import `commonDXPPresets` from `visual-dxp` and pass it as `<VisualDXPBuilder presets={commonDXPPresets} />` to enable Blank followed by fifteen editable examples, ordered from basic help to segmented onboarding. The demo opts in explicitly; builders without presets still have no Presets tab. See the [preset reference and setup guide](docs/common-dxp-presets.md) for every scenario, selectors, HTTP placeholders, CSS, and runtime limits.
+Import `commonDXPPresets` from `visual-dxp` and pass it as `<VisualDXPBuilder presets={commonDXPPresets} />` to enable Blank followed by sixteen editable examples, ordered from basic help to segmented onboarding. The demo opts in explicitly; builders without presets still have no Presets tab. See the [preset reference and setup guide](docs/common-dxp-presets.md) for every scenario, selectors, HTTP placeholders, CSS, and runtime limits.
 
 ## Run the demo
 
@@ -189,7 +189,7 @@ interface WorkflowPreset {
 }
 ```
 
-Bundled examples of increasing complexity live in [`src/presets`](src/presets). Start with [Draw attention to newsletter](src/presets/draw-attention-to-newsletter.ts), which connects a page-load trigger to a form-exists condition and an anchored popover, and includes setup notes. See the [common DXP presets reference](docs/common-dxp-presets.md) for all fifteen presets and their required setup.
+Bundled examples of increasing complexity live in [`src/presets`](src/presets). Start with [Draw attention to newsletter](src/presets/draw-attention-to-newsletter.ts), which connects a page-load trigger to a form-exists condition and an anchored popover, and includes setup notes. See the [common DXP presets reference](docs/common-dxp-presets.md) for all sixteen presets and their required setup.
 
 Pass a bundled preset explicitly from your host:
 
@@ -305,6 +305,7 @@ Hosts can reuse the configuration dialog with `builder.configureWebsite({ requir
 | Condition      | Tests incoming data, element existence, device, language, referrer, date ranges, time of day, URL parameters, or cookies (including local and session storage). The upper `true` output runs on a match; otherwise the lower `false` output runs.                                                          |
 | Loop           | Executes the complete `body` path 1–1,000 times, then executes the `done` path once. Do not connect the body back to the loop; graph cycles are rejected.                        |
 | Popover        | Author-provided HTML or a sandboxed iframe, 240–960px wide, placed at screen center, any corner, or beneath a picked anchor. Anchored popovers reposition on scrolling/resizing. HTML containing a `<form>` waits for its submission and outputs the submitted fields (see [Popover forms](#popover-forms)). |
+| Tour           | An ordered list of steps, each one a Popover with the same content, placement, width and animation settings. One step is shown at a time with its progress and **Previous**, **Next** and **Done** buttons (labels are configurable). The next node runs only once the visitor finishes or closes the tour; incoming data passes through unchanged (see [Tours](#tours)). |
 | Note           | Editable canvas text with bold, italic, and strikethrough formatting, preset or custom background colors, and a transparent option. Notes have no connections and do not run. |
 
 Connections from a step execute in order. HTTP requests output their response body as incoming data for downstream nodes, including Conditions. Data Transform outputs its selected and transformed value, and a Popover containing a form outputs its submitted fields; other nodes preserve their incoming data. Each outgoing path receives the same input independently; requests on one path do not overwrite sibling paths or concurrent runs. Repeat sends its incoming data to each body iteration and its Done branch. Conditions do not evaluate JavaScript expressions. An execution limit protects against excessive loops.
@@ -336,6 +337,16 @@ URLs and plain-text bodies insert strings directly and serialize other values as
 Successful HTTP responses parse valid JSON into native values and otherwise preserve the complete body as text. Failed requests continue with `{ "error": { "message": "Request failed: HTTP 503 Unavailable.", "code": 503 } }`; network/body-read failures use `"NETWORK_ERROR"`. Select `error.code` or `error.message` with Data Transform before a condition to handle failures. The execution log still records the request error. Cancellation stops the workflow.
 
 In Edit page, text, HTML, class, and attribute actions accept content; advanced controls expose the action and value directly. Combine text and variables, for example `Hello {{name}}`, `{{user.name}}`, or `{{items[0].price}}`. Variables resolve within the incoming data; `{{$}}` uses the entire input, including a primitive. Selectors also support variables for all actions (including Hide/Show), and the attribute action supports them in its attribute name. Input sockets use the data color when they receive data from a connected source; output sockets use it when their node produces or forwards data. This includes both outputs of conditions and repeat steps. There is no separate toggle. Data badges describe the connected path independently of variables: HTTP requests, Data Transform nodes, and Popovers whose HTML contains a `<form>` show **Produces data**; other nodes with data arriving from either source show **Forwards data** when connected to another executable step, or **Receives data** at the end of the path. Data is traced through intermediate steps, including delays and conditions. Nodes without an upstream data source show no data badge.
+
+### Tours
+
+A Tour node holds all of its steps; they are not separate nodes on the canvas. Select the node and choose **Edit tour** to open the same fullscreen editor used for popovers. The side panel lists the steps, where you can add, reorder and delete them (a tour keeps at least one), and edits the selected step with the Popover settings: HTML or an embedded website, position or anchor element (**Select on website** picks it for that step), animation and width. The website preview opens at the selected step, and its buttons move through the tour. **Button labels** sets the text visitors see; empty labels use Next, Previous and Done. Nothing is written to the workflow until **Save changes**, and the whole edit is one undo step.
+
+At runtime the first step appears when the tour node runs. The first step has no **Previous** button and the last one shows **Done** instead of **Next**. After a visitor navigates, keyboard focus moves to the new step's primary button. When an anchored step's element is not fully visible, the page scrolls to center it (instantly for visitors who prefer reduced motion), and the step follows its element during the scroll. Standalone Popover nodes never scroll the page. Every step replaces the one before, so only one is visible at a time. The workflow waits at the node and continues to downstream steps once the visitor selects **Done** or closes any step with its close button. The execution log reports which of the two happened and at which step. If the same tour is shown again by a newer run, or the workflow stops, the earlier run ends there without running downstream steps, like a form popover. A step that cannot be shown (for example, its anchor element is missing) fails the node with the Popover error. Tour steps do not collect form data: submitting a form inside a step is never sent and simply advances the tour. Tour markup can be styled through `[data-visual-dxp-popover="NODE_ID"]`, with buttons identified by `[data-visual-dxp-action="previous|next|done"]`.
+
+The [Guided website tour](src/presets/guided-website-tour.ts) preset shows a five-step tour once per browser, scrolling down to the newsletter form for its fourth step,, whether the visitor finishes or closes it.
+
+The AI assistant keeps tours intact and can connect, move, relabel or remove them, but it does not create tours or edit their steps.
 
 ### Popover forms
 

@@ -2,6 +2,7 @@ import { isAnalyticsSettings } from './analytics';
 import { type DataTransformation, dataTransformTools } from './dataTransform';
 import { isNoteMarks } from './noteText';
 import { isPageChange } from './pageChanges';
+import { isTourSteps } from './tour';
 import type { Workflow } from './types';
 
 const kinds = new Set([
@@ -16,6 +17,7 @@ const kinds = new Set([
   'fork',
   'loop',
   'popover',
+  'tour',
   'note',
   'frame',
 ]);
@@ -55,6 +57,9 @@ const strings = [
   'contentType',
   'content',
   'position',
+  'tourNextLabel',
+  'tourPreviousLabel',
+  'tourDoneLabel',
   'noteText',
   'noteColor',
 ];
@@ -114,6 +119,7 @@ export function isWorkflow(value: unknown): value is Workflow {
       return false;
     if (config.textPath !== undefined && !isPageChange({ selector: '', textPath: config.textPath }))
       return false;
+    if (config.tourSteps !== undefined && !isTourSteps(config.tourSteps)) return false;
     if (
       (config.experimentAnalytics !== undefined &&
         !['none', 'ga4'].includes(config.experimentAnalytics as string)) ||

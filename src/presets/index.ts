@@ -21,6 +21,7 @@ import {
 } from './engaged-reader-invitation';
 import { createExitIntentOfferPreset, exitIntentOfferPreset } from './exit-intent-offer';
 import { createFrustrationRecoveryPreset, frustrationRecoveryPreset } from './frustration-recovery';
+import { createGuidedWebsiteTourPreset, guidedWebsiteTourPreset } from './guided-website-tour';
 import { createHeadlineExperimentPreset, headlineExperimentPreset } from './headline-experiment';
 import {
   createInactivityAssistancePreset,
@@ -47,6 +48,7 @@ export {
   engagedReaderInvitationPreset,
   exitIntentOfferPreset,
   frustrationRecoveryPreset,
+  guidedWebsiteTourPreset,
   headlineExperimentPreset,
   inactivityAssistancePreset,
   mobileSpecificMessagingPreset,
@@ -66,6 +68,7 @@ export const commonDXPPresets: readonly WorkflowPreset[] = [
   campaignUrlPersonalizationPreset,
   welcomeJourneyPreset,
   exitIntentOfferPreset,
+  guidedWebsiteTourPreset,
   headlineExperimentPreset,
   inactivityAssistancePreset,
   contextualSupportPreset,
@@ -89,6 +92,7 @@ const spanishPresets: readonly WorkflowPreset[] = [
   createDelayedWelcomePreset(spanishPresetMessages),
   createEngagedReaderInvitationPreset(spanishPresetMessages),
   createExitIntentOfferPreset(spanishPresetMessages),
+  createGuidedWebsiteTourPreset(spanishPresetMessages),
   createHeadlineExperimentPreset(spanishPresetMessages),
   createFrustrationRecoveryPreset(spanishPresetMessages),
   createInactivityAssistancePreset(spanishPresetMessages),

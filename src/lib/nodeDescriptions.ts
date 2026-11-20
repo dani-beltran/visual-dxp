@@ -18,6 +18,7 @@ export const nodeDescriptions = {
   loop: 'Repeats connected steps. Use it to run the same sequence more than once.',
   popover:
     'Displays a panel over the page. Use it to show a message or an embedded website, or to collect form data.',
+  tour: 'Guides visitors through a sequence of popovers with Previous, Next and Done buttons. The next node runs once the tour is finished or closed.',
   note: 'Adds text to the canvas. Use it to document ideas, context, or reminders.',
   frame:
     'Groups nodes on the canvas so they move together. Use it to organize related parts of a workflow.',

@@ -12,6 +12,8 @@ export interface RuntimeOptions {
   analyticsMode?: 'live' | 'simulate';
   /** Optional query string for testing conditions without changing the page location. */
   searchParams?: string;
+  /** Editor previews open these Tour nodes at a zero-based step index instead of the first. */
+  tourStartSteps?: Record<string, number>;
   /** Original document base for HTTP steps in a proxied preview. */
   baseUrl?: string;
   signal?: AbortSignal;
