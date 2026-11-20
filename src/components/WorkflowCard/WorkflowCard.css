@@ -106,6 +106,10 @@
   gap: 4px;
   color: #95aa96;
 }
+.dxp-node-footer > span.dxp-node-missing-parameters {
+  color: var(--dxp-warning);
+  font-weight: 600;
+}
 .dxp-node-footer > span:last-child {
   font-size: 6.5px;
   letter-spacing: 1px;

@@ -773,6 +773,42 @@
         });
       })();
     </script>
+    <script id="demo-custom-event-script">
+      // Practice website code for the "A custom event is dispatched" trigger: enter the name
+      // demo-custom-event-1. Like a real website, the page dispatches it shortly after loading.
+      (() => {
+        const name = 'demo-custom-event-1';
+        const delay = 500;
+        let timer;
+        function schedule() {
+          // One pending dispatch at a time, so a run started right after loading fires once.
+          window.clearTimeout(timer);
+          timer = window.setTimeout(() => {
+            window.dispatchEvent(
+              new CustomEvent(name, {
+                detail: { source: 'demo-site', productId: 'stoneware-vase', price: 38 },
+              }),
+            );
+          }, delay);
+        }
+        if (document.readyState === 'complete') schedule();
+        else window.addEventListener('load', schedule, { once: true });
+        // In Test workflow the page finishes loading before the workflow starts: its listeners
+        // are installed when Run or Restart workflow sends "run". Dispatch again shortly after
+        // each run starts, so custom event triggers run immediately in the preview as well.
+        window.addEventListener('message', (event) => {
+          const data = event.data;
+          if (
+            window.parent !== window &&
+            event.source === window.parent &&
+            data &&
+            data.protocol === 'visual-dxp:preview' &&
+            data.type === 'run'
+          )
+            schedule();
+        });
+      })();
+    </script>
     <script id="visual-dxp-demo-bridge" src="/bridge.js" defer></script>
     <script id="visual-dxp-demo-bridge-config">
       (() => {

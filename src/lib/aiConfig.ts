@@ -1,6 +1,6 @@
 import { RecoverableToolError } from './aiToolErrors';
 import { dataTools } from './data';
-import { elementTriggerEvents, triggerOptions } from './triggers';
+import { triggerFields, triggerOptions } from './triggers';
 import type { NodeKind, StepConfig } from './types';
 
 type ConfigField = keyof StepConfig;
@@ -29,9 +29,7 @@ const configPolicies: Record<NodeKind, ConfigPolicy> = {
             event,
             {
               fields: [
-                ...(elementTriggerEvents.includes(event as NonNullable<StepConfig['event']>)
-                  ? ['selector' as const]
-                  : []),
+                ...triggerFields(event as NonNullable<StepConfig['event']>),
                 ...settings.map(({ key }) => key),
               ],
             },

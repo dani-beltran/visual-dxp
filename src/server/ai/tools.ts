@@ -107,7 +107,13 @@ const config = z.strictObject({
       'inactivity',
       'scroll-thrashing',
       'scroll-depth',
+      'custom-event',
     ])
+    .optional(),
+  customEventName: shortText
+    .describe(
+      'Trigger with event custom-event only: exact, case-sensitive name of the CustomEvent the website dispatches, e.g. cart:updated. Required and nonempty; surrounding whitespace is trimmed. No selector.',
+    )
     .optional(),
   rageClickCount: z
     .number()

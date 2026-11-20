@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { getNodeDataFlow } from '../src/lib/nodeData';
+import { getNodeDataFlow, getNodeDataPorts, producesData } from '../src/lib/nodeData';
 import type { NodeKind, StepConfig } from '../src/lib/types';
 
 function node(id: string, kind: NodeKind, config: StepConfig = {}) {
@@ -64,4 +64,53 @@ it.each(['note', 'frame', 'trigger'] as const)('does not trace data through %s n
   ];
   expect(getNodeDataFlow('blocked', nodes, edges)).toBeUndefined();
   expect(getNodeDataFlow('element', nodes, edges)).toBeUndefined();
+});
+
+it('treats custom event triggers as producers of the event detail', () => {
+  const custom = { event: 'custom-event', customEventName: 'cart:updated' } as const;
+  const nodes = [
+    node('start', 'trigger', custom),
+    node('delay', 'delay'),
+    node('element', 'dom'),
+    node('note', 'note'),
+  ];
+  const edges = [
+    { source: 'start', target: 'delay' },
+    { source: 'delay', target: 'element' },
+  ];
+  expect(nodes.map(({ id }) => getNodeDataFlow(id, nodes, edges))).toEqual([
+    'produces',
+    'forwards',
+    'receives',
+    undefined,
+  ]);
+  // Producers are labeled even before anything is connected, like HTTP requests.
+  expect(getNodeDataFlow('start', nodes, [])).toBe('produces');
+  expect(producesData({ kind: 'trigger', config: custom })).toBe(true);
+  expect(getNodeDataPorts({ kind: 'trigger', config: custom })).toEqual({
+    acceptsData: false,
+    outputsData: true,
+  });
+  // A custom event trigger in the middle of a path starts its own data rather than forwarding.
+  const relay = [node('http', 'http'), node('start', 'trigger', custom), node('element', 'dom')];
+  expect(
+    getNodeDataFlow('element', relay, [
+      { source: 'http', target: 'start' },
+      { source: 'start', target: 'element' },
+    ]),
+  ).toBe('receives');
+});
+
+it.each([
+  {},
+  { event: 'page-load' },
+  { event: 'click', selector: '#buy' },
+  { event: 'exit-intent' },
+] satisfies StepConfig[])('keeps other triggers without data: %j', (config) => {
+  const nodes = [node('start', 'trigger', config), node('element', 'dom')];
+  const edges = [{ source: 'start', target: 'element' }];
+  expect(getNodeDataFlow('start', nodes, edges)).toBeUndefined();
+  expect(getNodeDataFlow('element', nodes, edges)).toBeUndefined();
+  expect(producesData({ kind: 'trigger', config })).toBe(false);
+  expect(getNodeDataPorts({ kind: 'trigger', config }).outputsData).toBe(false);
 });

@@ -77,6 +77,7 @@ const kinds = new Set<NodeKind>([
 ]);
 const configStrings = [
   'event',
+  'customEventName',
   'selector',
   'url',
   'method',

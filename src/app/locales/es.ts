@@ -402,6 +402,8 @@ export const spanishMessages = {
   'nodeInspector.runsAfterThePause': 'Se ejecuta después de la pausa',
   'nodeInspector.runsAfterThePopoverIsDisplayed':
     'Se ejecuta después de mostrar la ventana emergente',
+  'nodeInspector.passesTheEventDetailToTheNextNode':
+    'Se ejecuta cuando ocurre el evento personalizado y pasa su detail al siguiente nodo',
   'nodeInspector.passesSubmittedFormDataToTheNextNode':
     'Espera a que se envíe el formulario y pasa sus campos al siguiente nodo',
   'nodeInspector.popoverFormDetected':
@@ -787,6 +789,7 @@ export const spanishMessages = {
   'workflowCard.needsAttention': 'Requiere atención',
   'workflowCard.completed': 'Completado',
   'workflowCard.configured': 'Configurado',
+  'workflowCard.missingParameters': 'Faltan parámetros',
   'workflowCard.2Paths': '2 RUTAS',
   'workflowCard.dataOut': 'SALIDA DE DATOS',
   'workflowCard.truePassesIncomingDataUnchanged':
@@ -797,6 +800,7 @@ export const spanishMessages = {
   'workflowCard.done': 'Finalizado',
   'workflowCard.responseDataOutput': 'Salida de datos de respuesta',
   'workflowCard.formDataOutput': 'Salida de datos del formulario enviado',
+  'workflowCard.eventDetailOutput': 'Salida del detail del evento personalizado',
   'errors.cookies.enterACookieNameWithoutSpacesOrSeparatorsSuchAs':
     'Introduce un nombre de cookie sin espacios ni separadores como = y ;.',
   'errors.cookies.missingNameVariable': ({ name }) =>
@@ -1107,6 +1111,13 @@ export const spanishMessages = {
   'triggers.startsOnceWhenTheVisitorScrollsDownToThisPercentage':
     'Empieza una vez cuando el visitante alcanza este porcentaje de la distancia desplazable de la página. El 100 % corresponde al final de la página.',
   'triggers.scrollThreshold': 'Umbral de desplazamiento (%)',
+  'triggers.aCustomEventIsDispatched': 'Se emite un evento personalizado',
+  'triggers.startsEachTimeTheWebsiteDispatchesACustomEvent':
+    'Se inicia cada vez que el sitio web emite un CustomEvent con exactamente este nombre. Se distinguen mayúsculas y minúsculas; se ignoran los eventos con otros nombres y los eventos nativos del navegador. No necesita un elemento de destino: el evento puede emitirse en window, document o cualquier elemento. El detail del evento se pasa al siguiente paso como datos (null si el evento no lo tiene).',
+  'triggers.customEventName': 'Nombre del evento personalizado',
+  'triggers.customEventNameHint':
+    'Usa el nombre exacto que tu sitio web pasa a new CustomEvent(), por ejemplo window.dispatchEvent(new CustomEvent("cart:updated", { detail: { items: 3 } })). Los pasos siguientes pueden leer el detail, por ejemplo con {{items}}.',
+  'triggers.customEventNamePlaceholder': 'p. ej., cart:updated',
   'validation.unsupportedTrigger': 'Elige un evento de disparo compatible.',
   'validation.aWorkflowMustContainArraysOfStepsAndConnections':
     'Un flujo de trabajo debe contener arrays de pasos y conexiones.',
@@ -1135,6 +1146,8 @@ export const spanishMessages = {
     'Los colores de las notas deben ser un color hexadecimal de seis dígitos o transparente.',
   'validation.chooseATargetElementForThisTrigger':
     'Elige un elemento de destino para este disparador.',
+  'validation.enterACustomEventNameForThisTrigger':
+    'Introduce un nombre de evento personalizado para este disparador.',
   'validation.enterAValidHttpOrHttpsRequestUrl':
     'Introduce una URL de solicitud HTTP o HTTPS válida.',
   'validation.chooseASupportedHttpMethod': 'Elige un método HTTP compatible.',
@@ -1235,6 +1248,7 @@ export const spanishMessages = {
   'summary.chooseElement': 'Elige un elemento',
   'summary.pageLoad': 'Cuando un visitante llega a tu sitio',
   'summary.exitIntent': 'Cuando un visitante tiene intención de salir',
+  'summary.chooseCustomEvent': 'Introduce un nombre de evento',
   'summary.configureUrl': 'Configura una URL',
   'summary.chooseCookie': 'Elige un nombre de cookie',
   'summary.dataLabel': 'Datos',
@@ -1355,6 +1369,7 @@ export const spanishMessages = {
   'summary.scrollThrashing': ({ count, seconds }) =>
     `${count} cambios de dirección de desplazamiento en ${seconds} s`,
   'summary.scrollDepth': ({ percent }) => `Desplazarse hasta el ${percent} %`,
+  'summary.customEvent': ({ name }) => `Evento personalizado · ${name}`,
   'summary.elementEvent': ({ event, element }) => `${spanishEvents[event] ?? event} · ${element}`,
   'summary.http': ({ method, url }) => `${method}  ${url}`,
   'summary.dom': ({ action, element, incoming, path }) =>

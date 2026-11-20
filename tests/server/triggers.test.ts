@@ -36,6 +36,7 @@ const configs: StepConfig[] = [
     scrollMinDistance: 40,
   },
   { event: 'scroll-depth', scrollThreshold: 60 },
+  { event: 'custom-event', customEventName: 'cart:updated' },
 ];
 describe('behavior trigger tools', () => {
   it.each(configs)(
@@ -109,5 +110,54 @@ describe('behavior trigger tools', () => {
     });
     expect(toolkit.getOperations()).toEqual([]);
     expect(toolkit.getWorkflow()).toEqual(base);
+  });
+
+  it.each([
+    [{ event: 'custom-event' }, 'Enter a custom event name for this trigger.'],
+    [{ event: 'custom-event', customEventName: '' }, 'Enter a custom event name for this trigger.'],
+    [
+      { event: 'custom-event', customEventName: '  ' },
+      'Enter a custom event name for this trigger.',
+    ],
+  ] satisfies [StepConfig, string][])(
+    'requires a custom event name: %j',
+    async (config, message) => {
+      const workflow = structuredClone(base);
+      workflow.nodes[0].data.config = config;
+      expect(validateWorkflow(workflow)).toEqual([{ nodeId: 'start', message }]);
+
+      const toolkit = createWorkflowTools(base, []);
+      const update = toolkit.tools.find((item) => item.name === 'update_node')!;
+      expect(JSON.parse(await update.invoke({ id: 'start', config }))).toMatchObject({
+        ok: false,
+        error: expect.stringContaining(message),
+      });
+      expect(toolkit.getOperations()).toEqual([]);
+      expect(toolkit.getWorkflow()).toEqual(base);
+    },
+  );
+
+  it('does not require a selector for custom events and drops stale element settings', async () => {
+    const toolkit = createWorkflowTools(
+      {
+        ...base,
+        nodes: [
+          {
+            ...base.nodes[0],
+            data: { ...base.nodes[0].data, config: { event: 'click', selector: '#buy' } },
+          },
+        ],
+      },
+      [],
+    );
+    const update = toolkit.tools.find((item) => item.name === 'update_node')!;
+    const config = { event: 'custom-event', customEventName: 'checkout:done' } as const;
+    expect(JSON.parse(await update.invoke({ id: 'start', config })).ok).toBe(true);
+    expect(toolkit.getWorkflow().nodes[0].data.config).toEqual(config);
+    expect(triggerOptions['custom-event'].settings).toEqual([]);
+    // Surrounding whitespace is trimmed at runtime, so it is not a validation error.
+    const padded = { event: 'custom-event', customEventName: '  cart:updated ' } as const;
+    expect(JSON.parse(await update.invoke({ id: 'start', config: padded })).ok).toBe(true);
+    expect(validateWorkflow(toolkit.getWorkflow())).toEqual([]);
   });
 });
