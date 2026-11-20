@@ -28,6 +28,8 @@ import { useBuilderI18n } from '../../lib/i18nContext';
 import { producesData } from '../../lib/nodeData';
 import { getPageChanges } from '../../lib/pageChanges';
 import { popoverHasForm } from '../../lib/popoverForm';
+import { popoverSettingsSummary } from '../../lib/popoverLabels';
+import { getTourSteps, tourButtonDefaults } from '../../lib/tour';
 import { elementTriggerEvents, getTriggerOptions } from '../../lib/triggers';
 import type { ConditionType, NodeKind, StepConfig, StepData, WorkflowNode } from '../../lib/types';
 import { DataTransformInspector } from '../DataTransformInspector/DataTransformInspector';
@@ -79,6 +81,7 @@ export function NodeInspector({
     popover: popoverHasForm(node.data.config)
       ? t('nodeInspector.passesSubmittedFormDataToTheNextNode')
       : t('nodeInspector.runsAfterThePopoverIsDisplayed'),
+    tour: t('nodeInspector.runsAfterTheTourEnds'),
   } satisfies Record<Exclude<NodeKind, 'experiment' | 'fork' | 'loop' | 'note' | 'frame'>, string>;
   const triggerOptions = getTriggerOptions(t);
   const prefix = useId();
@@ -930,38 +933,7 @@ export function NodeInspector({
               <Pencil size={15} /> {t('popoverEditor.editPopover')}
             </button>
             <p className="dxp-inspector-hint">
-              {t(
-                config.contentType === 'iframe'
-                  ? 'nodeInspector.embeddedWebsite'
-                  : 'nodeInspector.customHtml',
-              )}
-              {' · '}
-              {config.width ?? 360} {t('nodeInspector.px')}
-              {' · '}
-              {t(
-                (
-                  {
-                    center: 'nodeInspector.centerOfScreen',
-                    'top-left': 'nodeInspector.topLeft',
-                    'top-right': 'nodeInspector.topRight',
-                    'bottom-left': 'nodeInspector.bottomLeft',
-                    'bottom-right': 'nodeInspector.bottomRight',
-                    anchor: 'nodeInspector.nextToAnElement',
-                  } as const
-                )[config.position ?? 'bottom-right'],
-              )}
-              {' · '}
-              {t(
-                (
-                  {
-                    none: 'nodeInspector.animationNone',
-                    fade: 'nodeInspector.animationFade',
-                    slide: 'nodeInspector.animationSlide',
-                    zoom: 'nodeInspector.animationZoom',
-                    bounce: 'nodeInspector.animationBounce',
-                  } as const
-                )[config.popoverAnimation ?? 'none'],
-              )}
+              {popoverSettingsSummary(config, t)}
               {outputsData && ` · ${t('nodeInspector.collectsFormData')}`}
             </p>
             {outputsData && (
@@ -969,6 +941,26 @@ export function NodeInspector({
                 {t('nodeInspector.popoverFormDetected')}
               </InfoBox>
             )}
+          </>
+        )}
+        {node.data.kind === 'tour' && (
+          <>
+            <button
+              type="button"
+              className="dxp-button dxp-button-primary dxp-popover-editor-open"
+              onClick={onPreviewContent}
+            >
+              <Pencil size={15} /> {t('tourEditor.editTour')}
+            </button>
+            <p className="dxp-inspector-hint">
+              {[
+                t('summary.tour', { count: getTourSteps(config).length }),
+                config.tourPreviousLabel?.trim() || tourButtonDefaults.previous,
+                config.tourNextLabel?.trim() || tourButtonDefaults.next,
+                config.tourDoneLabel?.trim() || tourButtonDefaults.done,
+              ].join(' · ')}
+            </p>
+            <InfoBox summary={t('nodeInspector.howItWorks')}>{t('nodeInspector.tourHint')}</InfoBox>
           </>
         )}
         <section className="dxp-inspector-outputs" aria-labelledby={id('outputs-heading')}>

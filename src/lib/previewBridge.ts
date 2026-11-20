@@ -93,6 +93,15 @@ export function installPreviewBridge(
       { protocol: 'visual-dxp:preview', type, channel, ...detail },
       parentOrigin,
     );
+  // Keep only node IDs mapped to step indices; the bridge is serialized, so this stays local.
+  const startSteps = (value: unknown): Record<string, number> | undefined => {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined;
+    return Object.fromEntries(
+      Object.entries(value).filter(
+        ([, index]) => Number.isSafeInteger(index) && (index as number) >= 0,
+      ),
+    ) as Record<string, number>;
+  };
   window.addEventListener('message', (event) => {
     if (event.source !== window.parent || event.origin !== parentOrigin) return;
     const data = event.data;
@@ -140,6 +149,7 @@ export function installPreviewBridge(
         baseUrl,
         analyticsMode: 'simulate',
         searchParams: typeof data.searchParams === 'string' ? data.searchParams : undefined,
+        tourStartSteps: startSteps(data.tourStartSteps),
         onLog: (log) => send('log', { log, runId: data.runId }),
         onConnectionPreview: (edgeId, preview) => {
           // Bound transport and keep samples out of saved workflow/log objects.

@@ -14,6 +14,7 @@ export type NodeKind =
   | 'fork'
   | 'loop'
   | 'popover'
+  | 'tour'
   | 'note'
   | 'frame';
 export interface NoteMark {
@@ -138,6 +139,11 @@ export interface StepConfig extends DataTransformConfig {
   content?: string;
   position?: 'center' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'anchor';
   width?: number;
+  /** Read-only for AI tools: preserved so tours survive AI edits, never authored by them. */
+  tourSteps?: import('../../../lib/types').TourStep[];
+  tourNextLabel?: string;
+  tourPreviousLabel?: string;
+  tourDoneLabel?: string;
   noteText?: string;
   noteMarks?: NoteMark[];
   noteColor?: string;

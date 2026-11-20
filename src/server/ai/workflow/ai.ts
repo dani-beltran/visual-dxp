@@ -5,6 +5,7 @@ import { isAnalyticsSettings } from '../../../lib/analytics';
 import { type BrandingProfile, parseBrandingProfile } from '../../../lib/branding';
 import { type DataTransformation, dataTransformTools } from '../../../lib/dataTransform';
 import { isPageChange } from '../../../lib/pageChanges';
+import { isTourSteps } from '../../../lib/tour';
 import { parseNoteMarks } from './notes';
 import type { NodeKind, StepConfig, Workflow, WorkflowEdge, WorkflowNode } from './types';
 import { validateWorkflow } from './validation';
@@ -72,6 +73,7 @@ const kinds = new Set<NodeKind>([
   'fork',
   'loop',
   'popover',
+  'tour',
   'note',
   'frame',
 ]);
@@ -111,6 +113,9 @@ const configStrings = [
   'contentType',
   'content',
   'position',
+  'tourNextLabel',
+  'tourPreviousLabel',
+  'tourDoneLabel',
   'noteText',
   'noteColor',
 ] as const;
@@ -180,6 +185,12 @@ function config(value: unknown): StepConfig {
     if (!isPageChange({ selector: '', textPath: input.textPath }))
       throw new Error('Text paths must contain nonnegative child-node indices.');
     output.textPath = structuredClone(input.textPath);
+  }
+  // Tours are preserved so the assistant can read and keep them; tools never author steps.
+  if (input.tourSteps !== undefined) {
+    if (!isTourSteps(input.tourSteps))
+      throw new Error('Tour steps must be a list of popover settings.');
+    output.tourSteps = structuredClone(input.tourSteps);
   }
 
   for (const key of configStrings) {

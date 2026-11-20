@@ -181,6 +181,8 @@ const configPolicies: Record<NodeKind, ConfigPolicy> = {
       },
     ],
   },
+  // AI tools preserve, connect, relabel and remove tours, but do not author their steps.
+  tour: {},
   note: {
     fields: ['noteText', 'noteMarks', 'noteColor', 'noteBold', 'noteItalic', 'noteStrikethrough'],
   },

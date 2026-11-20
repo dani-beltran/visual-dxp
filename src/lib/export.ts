@@ -10,9 +10,69 @@ import { getPageChanges, isPageChange } from './pageChanges';
 import { getRuntimeSource } from './runtime';
 import { type ExportOptions, matchesTargetUrl, validateExportTarget } from './targeting';
 import { getTimeRange } from './timeRange';
+import { isTourSteps } from './tour';
 import { elementTriggerEvents, validateTriggerConfig } from './triggers';
-import type { ValidationIssue, Workflow } from './types';
+import type { PopoverSettings, ValidationIssue, Workflow } from './types';
 import { getWeekdays } from './weekdays';
+
+/** The message for a missing or invalid CSS selector, if any. */
+function selectorIssue(
+  value: string | undefined,
+  message: string,
+  t: BuilderTranslator,
+): string | undefined {
+  if (!value?.trim()) return message;
+  if (typeof document !== 'undefined') {
+    try {
+      document.querySelector(value);
+    } catch {
+      return t('validation.invalidSelector', { value });
+    }
+  }
+  return undefined;
+}
+
+/** The message for a missing, malformed or non-HTTP(S) URL, if any. */
+function urlIssue(
+  value: string | undefined,
+  message: string,
+  allowRelative = false,
+): string | undefined {
+  try {
+    if (!value?.trim()) throw new Error();
+    const parsed = new URL(value, allowRelative ? 'https://example.invalid/' : undefined);
+    if (!['http:', 'https:'].includes(parsed.protocol)) throw new Error();
+  } catch {
+    return message;
+  }
+  return undefined;
+}
+
+/** Checks shared by Popover nodes and every Tour step. */
+function popoverIssues(config: PopoverSettings, t: BuilderTranslator): string[] {
+  const issues: (string | undefined)[] = [];
+  if (config.contentType && !['html', 'iframe'].includes(config.contentType))
+    issues.push(t('validation.chooseHtmlOrAnIframeForThePopoverContent'));
+  if (
+    config.position &&
+    !['center', 'top-left', 'top-right', 'bottom-left', 'bottom-right', 'anchor'].includes(
+      config.position,
+    )
+  )
+    issues.push(t('validation.chooseASupportedPopoverPosition'));
+  if (config.contentType === 'iframe')
+    issues.push(urlIssue(config.url, t('validation.enterAValidHttpOrHttpsUrlForThePopover')));
+  if (config.position === 'anchor')
+    issues.push(
+      selectorIssue(config.selector, t('validation.chooseAnAnchorElementForThePopover'), t),
+    );
+  if (
+    config.width !== undefined &&
+    (!Number.isFinite(config.width) || config.width < 240 || config.width > 960)
+  )
+    issues.push(t('validation.popoverWidthMustBeBetween240And960Pixels'));
+  return issues.filter((issue) => issue !== undefined);
+}
 
 export function validateWorkflow(
   workflow: Workflow,
@@ -69,6 +129,7 @@ export function validateWorkflow(
     'fork',
     'loop',
     'popover',
+    'tour',
     'note',
     'frame',
   ]);
@@ -85,17 +146,8 @@ export function validateWorkflow(
     }
   }
   const selector = (value: string | undefined, nodeId: string, message: string) => {
-    if (!value?.trim()) {
-      add(message, nodeId);
-      return;
-    }
-    if (typeof document !== 'undefined') {
-      try {
-        document.querySelector(value);
-      } catch {
-        add(t('validation.invalidSelector', { value }), nodeId);
-      }
-    }
+    const issue = selectorIssue(value, message, t);
+    if (issue) add(issue, nodeId);
   };
   const url = (
     value: string | undefined,
@@ -103,13 +155,8 @@ export function validateWorkflow(
     message: string,
     allowRelative = false,
   ) => {
-    try {
-      if (!value?.trim()) throw new Error();
-      const parsed = new URL(value, allowRelative ? 'https://example.invalid/' : undefined);
-      if (!['http:', 'https:'].includes(parsed.protocol)) throw new Error();
-    } catch {
-      add(message, nodeId);
-    }
+    const issue = urlIssue(value, message, allowRelative);
+    if (issue) add(issue, nodeId);
   };
   if (workflow.includeSubpages !== undefined && typeof workflow.includeSubpages !== 'boolean')
     add(t('validation.includeSubpagesMustBeABoolean'));
@@ -170,6 +217,9 @@ export function validateWorkflow(
       'contentType',
       'content',
       'position',
+      'tourNextLabel',
+      'tourPreviousLabel',
+      'tourDoneLabel',
       'noteText',
       'noteColor',
     ] as const;
@@ -408,24 +458,18 @@ export function validateWorkflow(
           add(t('validation.repeatCountMustBeAnIntegerFrom1To1'), node.id);
         break;
       case 'popover':
-        if (config.contentType && !['html', 'iframe'].includes(config.contentType))
-          add(t('validation.chooseHtmlOrAnIframeForThePopoverContent'), node.id);
-        if (
-          config.position &&
-          !['center', 'top-left', 'top-right', 'bottom-left', 'bottom-right', 'anchor'].includes(
-            config.position,
-          )
-        )
-          add(t('validation.chooseASupportedPopoverPosition'), node.id);
-        if (config.contentType === 'iframe')
-          url(config.url, node.id, t('validation.enterAValidHttpOrHttpsUrlForThePopover'));
-        if (config.position === 'anchor')
-          selector(config.selector, node.id, t('validation.chooseAnAnchorElementForThePopover'));
-        if (
-          config.width !== undefined &&
-          (!Number.isFinite(config.width) || config.width < 240 || config.width > 960)
-        )
-          add(t('validation.popoverWidthMustBeBetween240And960Pixels'), node.id);
+        for (const issue of popoverIssues(config, t)) add(issue, node.id);
+        break;
+      case 'tour':
+        if (config.tourSteps !== undefined && !isTourSteps(config.tourSteps)) {
+          add(t('validation.tourStepsMustContainPopoverSettings'), node.id);
+          break;
+        }
+        if (!config.tourSteps?.length) add(t('validation.addAtLeastOneTourStep'), node.id);
+        config.tourSteps?.forEach((step, index) => {
+          for (const message of popoverIssues(step, t))
+            add(t('validation.tourStepIssue', { step: index + 1, message }), node.id);
+        });
         break;
     }
   }

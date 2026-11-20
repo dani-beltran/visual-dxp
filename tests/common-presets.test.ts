@@ -18,6 +18,7 @@ import {
   engagedReaderInvitationPreset,
   exitIntentOfferPreset,
   frustrationRecoveryPreset,
+  guidedWebsiteTourPreset,
   headlineExperimentPreset,
   inactivityAssistancePreset,
   mobileSpecificMessagingPreset,
@@ -225,6 +226,100 @@ describe('preset execution with a mocked browser and network', () => {
     expect(element('.hero h1').textContent).toBe(headline);
     expect(successful()).toEqual(['experiment-load', 'headline-split', `headline-${variant}`]);
     expect(request).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    { name: 'never shows the guided tour again once finished', ending: 'done', shownAgain: false },
+    { name: 'never shows the guided tour again once closed', ending: 'close', shownAgain: false },
+    {
+      name: 'shows the guided tour again after leaving mid-tour',
+      ending: 'leave',
+      shownAgain: true,
+    },
+  ] as const)('$name', async ({ ending, shownAgain }) => {
+    const tourPanel = () => popover('guided-tour');
+    const first = runtime(guidedWebsiteTourPreset);
+    first.start();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(tourPanel()?.querySelector('h2')?.textContent).toBe('Welcome to Atelier');
+    expect(tourPanel()?.textContent).toContain('1 / 5');
+    element('[data-visual-dxp-action="next"]').click();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(tourPanel()?.textContent).toContain('2 / 5');
+    // Anchored steps point at elements that exist on the page.
+    expect(tourPanel()?.querySelector('svg')).not.toBeNull();
+    // Nothing is remembered while the tour is still open.
+    expect(document.cookie).not.toContain('dxp_guided_tour');
+    if (ending === 'done') {
+      for (const _ of [3, 4, 5]) {
+        element('[data-visual-dxp-action="next"]').click();
+        await vi.advanceTimersByTimeAsync(0);
+      }
+      expect(tourPanel()?.textContent).toContain('5 / 5');
+      expect(element('[data-visual-dxp-action="done"]').textContent).toBe('Start browsing');
+      element('[data-visual-dxp-action="done"]').click();
+    } else if (ending === 'close') {
+      element(
+        '[data-visual-dxp-popover="guided-tour"] button[aria-label="Close experience"]',
+      ).click();
+    }
+    await vi.advanceTimersByTimeAsync(0);
+    if (ending === 'leave') {
+      expect(successful()).toEqual(['tour-trigger', 'tour-check']);
+    } else {
+      expect(tourPanel()).toBeNull();
+      expect(successful()).toEqual(['tour-trigger', 'tour-check', 'guided-tour', 'tour-cookie']);
+    }
+    first.destroy();
+    expect(tourPanel()).toBeNull();
+    expect(document.cookie.includes('dxp_guided_tour=seen')).toBe(!shownAgain);
+
+    logs = [];
+    runtime(guidedWebsiteTourPreset).start();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(tourPanel() !== null).toBe(shownAgain);
+    expect(successful()).toEqual(['tour-trigger', 'tour-check']);
+  });
+
+  it('anchors guided tour steps to elements on the demo website', () => {
+    const tour = guidedWebsiteTourPreset.workflow.nodes.find((node) => node.id === 'guided-tour');
+    const steps = required(tour?.data.config.tourSteps);
+    expect(steps).toHaveLength(5);
+    for (const step of steps) {
+      if (step.position === 'anchor')
+        expect(document.querySelector(required(step.selector)), step.selector).not.toBeNull();
+      // Each step is styled by selectors scoped to the tour node ID.
+      expect(step.content).toContain('[data-visual-dxp-popover="guided-tour"]');
+    }
+  });
+
+  it('scrolls the guided tour down to the newsletter form, which starts out of view', async () => {
+    const scroll = vi.fn();
+    Object.defineProperty(Element.prototype, 'scrollIntoView', {
+      configurable: true,
+      value: scroll,
+    });
+    try {
+      // jsdom has no layout: place the form below its 768px viewport, like the demo website.
+      vi.spyOn(element('#newsletter form'), 'getBoundingClientRect').mockReturnValue(
+        DOMRect.fromRect({ x: 40, y: 1100, width: 600, height: 40 }),
+      );
+      runtime(guidedWebsiteTourPreset).start();
+      await vi.advanceTimersByTimeAsync(0);
+      for (const _ of [2, 3]) {
+        element('[data-visual-dxp-action="next"]').click();
+        await vi.advanceTimersByTimeAsync(0);
+      }
+      expect(scroll).not.toHaveBeenCalled();
+      element('[data-visual-dxp-action="next"]').click();
+      await vi.advanceTimersByTimeAsync(0);
+      expect(popover('guided-tour')?.textContent).toContain('4 / 5');
+      expect(popover('guided-tour')?.textContent).toContain('Join the newsletter');
+      expect(scroll).toHaveBeenCalledOnce();
+      expect(scroll.mock.contexts[0]).toBe(element('#newsletter form'));
+    } finally {
+      Reflect.deleteProperty(Element.prototype, 'scrollIntoView');
+    }
   });
 
   it('shows the welcome gift once and welcomes the visitor back on the next load', async () => {

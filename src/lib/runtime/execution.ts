@@ -13,6 +13,7 @@ import type { matchesCondition } from './conditions';
 import type { RuntimeContext } from './context';
 import type { createExperimentAnalytics } from './experiment-analytics';
 import type { createPopoverElements, showPopover } from './popovers';
+import type { runTour } from './tours';
 import type { WorkflowRuntime } from './types';
 import type { createWorkflowAnalytics } from './workflow-analytics';
 
@@ -32,6 +33,7 @@ interface ExecutionModules {
   createPopoverElements: typeof createPopoverElements;
   showPopover: typeof showPopover;
   placePopover: typeof placePopover;
+  runTour: typeof runTour;
 }
 
 export function createExecution(
@@ -51,6 +53,7 @@ export function createExecution(
     createPopoverElements,
     showPopover,
     placePopover,
+    runTour,
     createDataTools,
     createDataTransformTools,
   }: ExecutionModules,
@@ -124,6 +127,8 @@ export function createExecution(
       let dismissed = false;
       // Captured form data, formatted exactly as the next step receives it, for the log.
       let capturedData: string | undefined;
+      // Replaces the generic completion message for steps that report their own result.
+      let resultMessage: string | undefined;
       log(nodeId, 'running', 'Running step');
       try {
         switch (node.data.kind) {
@@ -287,6 +292,25 @@ export function createExecution(
             } else dismissed = true;
             break;
           }
+          case 'tour': {
+            // Incoming data passes through; the path continues once the tour ends either way.
+            const tour = await runTour(node, context, {
+              showPopover,
+              createPopoverElements,
+              placePopover,
+            });
+            aborted();
+            if (tour.outcome === 'replaced') {
+              // Like a replaced form popover, the superseded path ends here.
+              dismissed = true;
+              resultMessage = 'Tour was shown again before it ended';
+            } else
+              resultMessage =
+                tour.outcome === 'completed'
+                  ? `Tour completed after ${tour.total} ${tour.total === 1 ? 'step' : 'steps'}`
+                  : `Tour closed at step ${tour.step} of ${tour.total}`;
+            break;
+          }
           default:
             throw new Error(`Unknown step type: ${String(node.data.kind)}.`);
         }
@@ -295,6 +319,7 @@ export function createExecution(
           nodeId,
           requestError !== undefined ? 'error' : 'success',
           requestError ??
+            resultMessage ??
             (selectedHandle
               ? node.data.kind === 'experiment'
                 ? `Experiment assigned variant ${selectedHandle.toUpperCase()}`

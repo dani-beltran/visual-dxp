@@ -427,6 +427,9 @@ export const englishMessages = {
   'nodeInspector.runsAfterTheCookieIsSaved': 'Runs after the cookie is saved',
   'nodeInspector.runsAfterThePause': 'Runs after the pause',
   'nodeInspector.runsAfterThePopoverIsDisplayed': 'Runs after the popover is displayed',
+  'nodeInspector.runsAfterTheTourEnds': 'Runs after the visitor finishes or closes the tour',
+  'nodeInspector.tourHint':
+    'Each step is a popover with Previous, Next and Done buttons, and only one step is visible at a time. Done and the close button both end the tour and run the next node. Incoming data passes through unchanged.',
   'nodeInspector.passesSubmittedFormDataToTheNextNode':
     'Waits for the form to be submitted, then passes its fields to the next node',
   'nodeInspector.popoverFormDetected':
@@ -690,6 +693,28 @@ export const englishMessages = {
   'popoverPreview.px': 'px',
   'popoverPreview.loadingWebsite': 'Loading website…',
   'popoverPreview.popoverPreviewWebsite': 'Popover preview website',
+  'tourEditor.editTour': 'Edit tour',
+  'tourEditor.description': 'Build your tour step by step and preview each step on your website.',
+  'tourEditor.settings': 'Tour settings',
+  'tourEditor.steps': 'Steps',
+  'tourEditor.step': ({ number }: { number: number }) => `Step ${number}`,
+  'tourEditor.stepSettings': ({ number }: { number: number }) => `Step ${number} settings`,
+  'tourEditor.addStep': 'Add step',
+  'tourEditor.moveStepUp': ({ number }: { number: number }) => `Move step ${number} up`,
+  'tourEditor.moveStepDown': ({ number }: { number: number }) => `Move step ${number} down`,
+  'tourEditor.deleteStep': ({ number }: { number: number }) => `Delete step ${number}`,
+  'tourEditor.buttons': 'Button labels',
+  'tourEditor.buttonsHint': 'Shown to visitors. Leave a label empty to use the default.',
+  'tourEditor.previousLabel': 'Previous button',
+  'tourEditor.nextLabel': 'Next button',
+  'tourEditor.doneLabel': 'Done button',
+  'tourEditor.formHint':
+    'Tour steps do not collect form data. Submitting this form moves to the next step, and the form is never sent.',
+  'tourEditor.unsavedChanges': 'Unsaved tour changes',
+  'tourEditor.previewHint':
+    'The preview opens at the selected step. Use its buttons to move through the tour.',
+  'tourEditor.cancelTitle': 'Discard unsaved tour changes?',
+  'tourEditor.previewWebsite': 'Tour preview website',
   'presetsPanel.workflowPresets': 'Workflow presets',
   'presetsPanel.applyingAPresetReplacesAllCurrentNodesAndConnectionsYourWorkflowName':
     'Applying a preset replaces all current nodes and connections and updates the workflow name. Your target website and subpage settings stay the same. You can undo this change.',
@@ -1121,6 +1146,8 @@ export const englishMessages = {
     'Repeats connected steps. Use it to run the same sequence more than once.',
   'nodes.popover.description':
     'Displays a panel over the page. Use it to show a message or an embedded website, or to collect form data.',
+  'nodes.tour.description':
+    'Guides visitors through a sequence of popovers with Previous, Next and Done buttons. The next node runs once the tour is finished or closed.',
   'nodes.note.description':
     'Adds text to the canvas. Use it to document ideas, context, or reminders.',
   'nodes.frame.description':
@@ -1190,6 +1217,7 @@ export const englishMessages = {
   'nodes.fork.label': 'Condition',
   'nodes.loop.label': 'Loop',
   'nodes.popover.label': 'Popover',
+  'nodes.tour.label': 'Tour',
   'nodes.cookie.label': 'Set cookie',
   'nodes.note.label': 'Note',
   'nodes.frame.label': 'Frame',
@@ -1293,6 +1321,11 @@ export const englishMessages = {
   'validation.chooseAnAnchorElementForThePopover': 'Choose an anchor element for the popover.',
   'validation.popoverWidthMustBeBetween240And960Pixels':
     'Popover width must be between 240 and 960 pixels.',
+  'validation.addAtLeastOneTourStep': 'Add at least one step to the tour.',
+  'validation.tourStepsMustContainPopoverSettings':
+    'Tour steps must be a list of popover settings.',
+  'validation.tourStepIssue': ({ step, message }: { step: number; message: string }) =>
+    `Step ${step}: ${message}`,
   'validation.everyConnectionMustHaveAUniqueId': 'Every connection must have a unique ID.',
   'validation.aConnectionRefersToAMissingStep': 'A connection refers to a missing step.',
   'validation.notesCannotHaveWorkflowConnections': 'Notes cannot have workflow connections.',
@@ -1402,6 +1435,7 @@ export const englishMessages = {
   'summary.loop': ({ count }: { count: number }) => `Repeat ${count} times`,
   'summary.popover': ({ contentType, position }: { contentType: string; position: string }) =>
     `${contentType === 'iframe' ? 'Embedded page' : 'Custom HTML'} · ${position.replaceAll('-', ' ')}`,
+  'summary.tour': ({ count }: { count: number }) => `${count} ${count === 1 ? 'step' : 'steps'}`,
   'summary.writeNote': 'Write a note…',
   'summary.frame': 'Move grouped nodes together',
 

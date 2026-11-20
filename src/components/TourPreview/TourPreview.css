@@ -1,0 +1,68 @@
+.dxp-tour-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0 0 12px;
+  padding: 0;
+  list-style: none;
+}
+.dxp-tour-step {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 4px 0 8px;
+  border-radius: 6px;
+}
+.dxp-tour-step-selected {
+  background: var(--dxp-primary-soft);
+}
+.dxp-tour-step-label {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+  padding: 7px 0;
+  border: 0;
+  background: none;
+  color: var(--dxp-text);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+.dxp-tour-step-label > span {
+  overflow: hidden;
+  color: var(--dxp-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dxp-tour-icon-button {
+  display: grid;
+  place-items: center;
+  padding: 6px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--dxp-muted);
+  cursor: pointer;
+}
+.dxp-tour-icon-button:hover:not(:disabled) {
+  background: var(--dxp-surface-muted);
+  color: var(--dxp-text);
+}
+.dxp-tour-icon-button:disabled {
+  cursor: default;
+  opacity: 0.35;
+}
+.dxp-tour-add-step {
+  justify-content: center;
+  margin-bottom: 8px;
+}
+.dxp-tour-editor-section {
+  margin-top: 14px;
+  padding-top: 20px;
+  border-top: 1px solid var(--dxp-line);
+}
+.dxp-tour-editor-section > .dxp-inspector-hint {
+  margin: -14px 0 14px;
+}

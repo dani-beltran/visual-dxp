@@ -10,6 +10,7 @@ import {
   Paintbrush,
   PanelTop,
   Repeat2,
+  Route,
   StickyNote,
   Timer,
 } from 'lucide-react';
@@ -19,6 +20,7 @@ import { dataTools } from './data';
 import { FRAME_HEIGHT, FRAME_WIDTH } from './frames';
 import { type BuilderTranslator, translateEnglish } from './i18n';
 import { nodeDescriptions } from './nodeDescriptions';
+import { createTourStep, getTourSteps } from './tour';
 import type { NodeKind, StepConfig, Workflow, WorkflowNode } from './types';
 import { weekdays } from './weekdays';
 export const catalog: {
@@ -89,6 +91,30 @@ export const catalog: {
       position: 'bottom-right',
       popoverAnimation: 'slide',
       width: 360,
+    },
+  },
+  {
+    kind: 'tour',
+    label: 'Tour',
+    description: nodeDescriptions.tour,
+    color: 'teal',
+    icon: Route,
+    category: 'Action',
+    config: {
+      tourSteps: [
+        {
+          ...createTourStep(),
+          content:
+            '<div style="font-family:system-ui;color:#203a30"><h3 style="font-size:20px;font-weight:600;margin:0 0 8px">Welcome aboard 👋</h3><p style="margin:0;color:#6b7770;line-height:1.5">Take a quick tour to see what you can do here.</p></div>',
+          position: 'center',
+        },
+        {
+          ...createTourStep(),
+          content:
+            '<div style="font-family:system-ui;color:#203a30"><h3 style="font-size:20px;font-weight:600;margin:0 0 8px">You are all set</h3><p style="margin:0;color:#6b7770;line-height:1.5">Reopen this tour whenever you need a refresher.</p></div>',
+          position: 'bottom-right',
+        },
+      ],
     },
   },
   {
@@ -302,6 +328,8 @@ export function stepSummary(
         contentType: c.contentType || 'html',
         position: c.position || 'center',
       });
+    case 'tour':
+      return t('summary.tour', { count: getTourSteps(c).length });
     case 'note':
       return c.noteText || t('summary.writeNote');
     case 'frame':

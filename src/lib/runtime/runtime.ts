@@ -16,6 +16,7 @@ import { createExecution } from './execution';
 import { createExperimentAnalytics } from './experiment-analytics';
 import { createPopoverElements, showPopover } from './popovers';
 import { startSwipeTrigger } from './swipe-trigger';
+import { runTour } from './tours';
 import { startTriggers } from './triggers';
 import type { RuntimeOptions, WorkflowRuntime } from './types';
 import { createWorkflowAnalytics } from './workflow-analytics';
@@ -42,6 +43,7 @@ const runtimeModules = {
   createPopoverElements,
   showPopover,
   placePopover,
+  runTour,
   startTriggers,
   startBehaviorTrigger,
   startZoomTrigger,

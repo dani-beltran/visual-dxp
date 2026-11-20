@@ -27,6 +27,7 @@ import { validateWorkflow } from './export';
 import { framesFirst, removeNodes } from './frames';
 import { isNoteMarks } from './noteText';
 import { isPageChange } from './pageChanges';
+import { isTourSteps } from './tour';
 import type { NodeKind, StepConfig, Workflow, WorkflowEdge, WorkflowNode } from './types';
 
 export interface AIChatMessage {
@@ -102,6 +103,7 @@ const kinds = new Set<NodeKind>([
   'fork',
   'loop',
   'popover',
+  'tour',
   'note',
   'frame',
 ]);
@@ -141,6 +143,9 @@ const configStrings = [
   'contentType',
   'content',
   'position',
+  'tourNextLabel',
+  'tourPreviousLabel',
+  'tourDoneLabel',
   'noteText',
   'noteColor',
 ] as const;
@@ -235,6 +240,15 @@ function config(value: unknown, complete = false): StepConfig {
     if (!isPageChange({ selector: '', textPath: input.textPath }))
       throw new Error('Text paths must contain nonnegative child-node indices.');
     output.textPath = structuredClone(input.textPath);
+  }
+  // Tours are preserved so AI edits and change detection never drop their steps.
+  if (input.tourSteps !== undefined) {
+    if (!isTourSteps(input.tourSteps))
+      throw Object.assign(new Error('Tour steps must be a list of popover settings.'), {
+        messageKey: 'validation.tourStepsMustContainPopoverSettings',
+        messageParams: {},
+      });
+    output.tourSteps = structuredClone(input.tourSteps);
   }
 
   for (const key of configStrings) {
